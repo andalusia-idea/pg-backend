@@ -1,0 +1,12 @@
+{
+  "[typescript]": {
+    "editor.formatOnSave": true
+  },
+  "jest.runMode": {
+    "type": "on-demand",
+  },
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma",
+    "editor.formatOnSave": true
+  }
+}
