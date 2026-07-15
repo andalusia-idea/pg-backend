@@ -1,8 +1,59 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/pg/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/pg/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/pg",
+  "projects": {
+    "auth": {
+      "type": "application",
+      "root": "apps/auth",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/auth/tsconfig.app.json"
+      }
+    },
+    "config": {
+      "type": "application",
+      "root": "apps/config",
+      "entryFile": "main",
+      "sourceRoot": "apps/config/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/config/tsconfig.app.json"
+      }
+    },
+    "pg": {
+      "type": "application",
+      "root": "apps/pg",
+      "entryFile": "main",
+      "sourceRoot": "apps/pg/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/pg/tsconfig.app.json"
+      }
+    },
+    "settlerecon": {
+      "type": "application",
+      "root": "apps/settlerecon",
+      "entryFile": "main",
+      "sourceRoot": "apps/settlerecon/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/settlerecon/tsconfig.app.json"
+      }
+    },
+    "transaction": {
+      "type": "application",
+      "root": "apps/transaction",
+      "entryFile": "main",
+      "sourceRoot": "apps/transaction/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/transaction/tsconfig.app.json"
+      }
+    }
   }
 }
