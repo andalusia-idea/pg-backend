@@ -15,7 +15,11 @@ export class AppConfig {
   }
 
   get API_PREFIX(): string {
-    return this.configService.getOrThrow<string>('API_PREFIX', 'v1');
+    return `/api/${this.VERSION}`;
+  }
+
+  get PORT(): number {
+    return this.configService.getOrThrow<number>('PORT', 3000);
   }
 
   get NODE_ENV(): Environment {

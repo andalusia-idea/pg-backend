@@ -1,8 +1,44 @@
 import { NestFactory } from '@nestjs/core';
-import { AuthModule } from './auth.module';
+import { AppModule } from './app/app.module';
+import { AppConfig, TCPConfig } from '@app/configuration';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AuthModule);
-  await app.listen(process.env.port ?? 3000);
+  const app = await NestFactory.create(AppModule);
+
+  const appConfig = app.get(AppConfig);
+  const tcpConfig = app.get(TCPConfig);
+
+  app.setGlobalPrefix(appConfig.API_PREFIX, {
+    exclude: ['/metrics'],
+  });
+
+  app.enableCors({
+    origin: appConfig.IS_PRODUCTION ? [''] : true,
+  });
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.TCP,
+    options: {
+      host: tcpConfig.AUTH.HOST,
+      port: tcpConfig.AUTH.PORT,
+    },
+  });
+
+  app.enableShutdownHooks();
+  await app.startAllMicroservices();
+
+  await app.listen(
+    appConfig.PORT,
+    appConfig.IS_PRODUCTION ? '0.0.0.0' : 'localhost',
+  );
+
+  console.log(
+    `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,
+  );
+  console.log(
+    `TCP Name [${tcpConfig.AUTH.NAME}], TCP Host [${tcpConfig.AUTH.HOST}], TCP PORT [${tcpConfig.AUTH.PORT}]`,
+  );
 }
-bootstrap();
+
+void bootstrap();
