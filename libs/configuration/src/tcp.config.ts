@@ -17,7 +17,9 @@ export class TCPConfig {
     const port = Number(value);
 
     if (!Number.isInteger(port)) {
-      throw new Error('PORT must be a valid integer');
+      throw new Error(
+        `key [${key}] value [${value}] PORT must be a valid integer`,
+      );
     }
     return port;
   }
