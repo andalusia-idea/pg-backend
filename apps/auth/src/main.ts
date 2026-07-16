@@ -14,7 +14,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: appConfig.IS_PRODUCTION ? [''] : true,
+    origin: appConfig.IS_PRODUCTION ? appConfig.CORS_ORIGINS : true,
   });
 
   app.connectMicroservice<MicroserviceOptions>({

@@ -6,6 +6,16 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "start:auth": "nest start auth --watch",
+    "start:config": "nest start config --watch",
+    "start:transaction": "nest start transaction --watch",
+    "start:settlerecon": "nest start settlerecon --watch",
+
+    "build:auth": "nest build auth",
+    "build:config": "nest build config",
+    "build:transaction": "nest build transaction",
+    "build:settlerecon": "nest build settlerecon",
+
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",

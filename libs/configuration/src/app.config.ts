@@ -7,11 +7,11 @@ export class AppConfig {
   constructor(private readonly configService: ConfigService) {}
 
   get APP_NAME(): string {
-    return this.configService.getOrThrow<string>('APP_NAME', 'PG');
+    return this.configService.getOrThrow<string>('APP_NAME');
   }
 
   get VERSION(): string {
-    return this.configService.getOrThrow<string>('VERSION', 'v1');
+    return this.configService.getOrThrow<string>('VERSION');
   }
 
   get API_PREFIX(): string {
@@ -19,18 +19,38 @@ export class AppConfig {
   }
 
   get PORT(): number {
-    return this.configService.getOrThrow<number>('PORT', 3000);
+    const value = this.configService.getOrThrow<string>('PORT');
+
+    const port = Number(value);
+
+    if (!Number.isInteger(port)) {
+      throw new Error('PORT must be a valid integer');
+    }
+
+    return port;
+  }
+
+  get CORS_ORIGINS(): string[] {
+    const value = this.configService.getOrThrow<string>('CORS_ORIGINS');
+
+    return value
+      .split(';')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
   }
 
   get NODE_ENV(): Environment {
-    return this.configService.getOrThrow<Environment>(
-      'NODE_ENV',
-      Environment.DEVELOPMENT,
-    );
+    const nodeEnv = this.configService.getOrThrow<Environment>('NODE_ENV');
+    if (!Object.values(Environment).includes(nodeEnv)) {
+      throw new Error(
+        `NODE_ENV must be one of: ${Object.values(Environment).join(', ')}`,
+      );
+    }
+    return nodeEnv;
   }
 
   get TIMEZONE(): string {
-    return this.configService.getOrThrow<string>('TIMEZONE', 'Asia/Jakarta');
+    return this.configService.getOrThrow<string>('TIMEZONE');
   }
 
   get IS_DEVELOPMENT(): boolean {

@@ -11,65 +11,46 @@ interface TCP {
 export class TCPConfig {
   constructor(private readonly configService: ConfigService) {}
 
+  private portValidator(key: string): number {
+    const value = this.configService.getOrThrow<number>(key);
+
+    const port = Number(value);
+
+    if (!Number.isInteger(port)) {
+      throw new Error('PORT must be a valid integer');
+    }
+    return port;
+  }
+
   get AUTH(): TCP {
     return {
-      NAME: this.configService.getOrThrow<string>(
-        'CLIENT_AUTH_NAME',
-        'PG_SERVICES',
-      ),
-      HOST: this.configService.getOrThrow<string>(
-        'CLIENT_AUTH_HOST',
-        '127.0.0.1',
-      ),
-      PORT: this.configService.getOrThrow<number>('CLIENT_AUTH_PORT', 4000),
+      NAME: this.configService.getOrThrow<string>('CLIENT_AUTH_NAME'),
+      HOST: this.configService.getOrThrow<string>('CLIENT_AUTH_HOST'),
+      PORT: this.portValidator('CLIENT_AUTH_PORT'),
     };
   }
 
   get CONFIG(): TCP {
     return {
-      NAME: this.configService.getOrThrow<string>(
-        'CLIENT_CONFIG_NAME',
-        'PG_SERVICES',
-      ),
-      HOST: this.configService.getOrThrow<string>(
-        'CLIENT_CONFIG_HOST',
-        '127.0.0.1',
-      ),
-      PORT: this.configService.getOrThrow<number>('CLIENT_CONFIG_PORT', 4000),
+      NAME: this.configService.getOrThrow<string>('CLIENT_CONFIG_NAME'),
+      HOST: this.configService.getOrThrow<string>('CLIENT_CONFIG_HOST'),
+      PORT: this.portValidator('CLIENT_CONFIG_PORT'),
     };
   }
 
   get TRANSACTION(): TCP {
     return {
-      NAME: this.configService.getOrThrow<string>(
-        'CLIENT_TRANSACTION_NAME',
-        'PG_SERVICES',
-      ),
-      HOST: this.configService.getOrThrow<string>(
-        'CLIENT_TRANSACTION_HOST',
-        '127.0.0.1',
-      ),
-      PORT: this.configService.getOrThrow<number>(
-        'CLIENT_TRANSACTION_PORT',
-        4000,
-      ),
+      NAME: this.configService.getOrThrow<string>('CLIENT_TRANSACTION_NAME'),
+      HOST: this.configService.getOrThrow<string>('CLIENT_TRANSACTION_HOST'),
+      PORT: this.portValidator('CLIENT_TRANSACTION_PORT'),
     };
   }
 
   get SETTLERECON(): TCP {
     return {
-      NAME: this.configService.getOrThrow<string>(
-        'CLIENT_SETTLERECON_NAME',
-        'PG_SERVICES',
-      ),
-      HOST: this.configService.getOrThrow<string>(
-        'CLIENT_SETTLERECON_HOST',
-        '127.0.0.1',
-      ),
-      PORT: this.configService.getOrThrow<number>(
-        'CLIENT_SETTLERECON_PORT',
-        4000,
-      ),
+      NAME: this.configService.getOrThrow<string>('CLIENT_SETTLERECON_NAME'),
+      HOST: this.configService.getOrThrow<string>('CLIENT_SETTLERECON_HOST'),
+      PORT: this.portValidator('CLIENT_SETTLERECON_PORT'),
     };
   }
 }
