@@ -41,6 +41,14 @@ export class AppConfig {
       .filter(Boolean);
   }
 
+  get DATABASE_URL_MASTER(): string {
+    return this.configService.getOrThrow<string>('DATABASE_URL_MASTER');
+  }
+
+  get DATABASE_URL_SLAVE(): string {
+    return this.configService.getOrThrow<string>('DATABASE_URL_SLAVE');
+  }
+
   get NODE_ENV(): Environment {
     const nodeEnv = this.configService.getOrThrow<Environment>('NODE_ENV');
     if (!Object.values(Environment).includes(nodeEnv)) {
