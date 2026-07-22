@@ -13,6 +13,6 @@ export default defineConfig({
 
   datasource: {
     url: env('DATABASE_URL_MASTER'),
-    shadowDatabaseUrl: env('DATABASE_URL_SLAVE'),
+    shadowDatabaseUrl: env('DATABASE_URL_SHADOW'),
   },
 });
