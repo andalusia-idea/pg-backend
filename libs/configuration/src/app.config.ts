@@ -49,10 +49,6 @@ export class AppConfig {
     return this.configService.getOrThrow<string>('DATABASE_URL_SLAVE');
   }
 
-  get DATABASE_URL_SHADOW(): string {
-    return this.configService.getOrThrow<string>('DATABASE_URL_SHADOW');
-  }
-
   get NODE_ENV(): Environment {
     const nodeEnv = this.configService.getOrThrow<Environment>('NODE_ENV');
     if (!Object.values(Environment).includes(nodeEnv)) {
