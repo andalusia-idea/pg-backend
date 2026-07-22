@@ -44,6 +44,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "dotenv": "^17.4.2",
+    "ioredis": "^5.11.1",
     "luxon": "^3.7.2",
     "nestjs-cls": "^6.2.1",
     "pg": "^8.22.0",
@@ -101,7 +102,8 @@
     ],
     "moduleNameMapper": {
       "^@app/configuration(|/.*)$": "<rootDir>/libs/configuration/src/$1",
-      "^@app/date-time(|/.*)$": "<rootDir>/libs/date-time/src/$1"
+      "^@app/date-time(|/.*)$": "<rootDir>/libs/date-time/src/$1",
+      "^@app/redis(|/.*)$": "<rootDir>/libs/redis/src/$1"
     }
   }
 }

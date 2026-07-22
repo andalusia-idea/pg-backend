@@ -55,6 +55,15 @@
         "tsConfigPath": "apps/pg/tsconfig.app.json"
       }
     },
+    "redis": {
+      "type": "library",
+      "root": "libs/redis",
+      "entryFile": "index",
+      "sourceRoot": "libs/redis/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/redis/tsconfig.lib.json"
+      }
+    },
     "settlerecon": {
       "type": "application",
       "root": "apps/settlerecon",

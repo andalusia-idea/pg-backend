@@ -34,6 +34,12 @@
       "@app/date-time/*": [
         "libs/date-time/src/*"
       ],
+      "@app/redis": [
+        "libs/redis/src"
+      ],
+      "@app/redis/*": [
+        "libs/redis/src/*"
+      ],
       "@auth/prisma": [
         "apps/auth/src/generated/prisma/client"
       ]
