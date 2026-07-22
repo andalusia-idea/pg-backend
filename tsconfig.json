@@ -27,6 +27,15 @@
       ],
       "@app/configuration/*": [
         "libs/configuration/src/*"
+      ],
+      "@app/date-time": [
+        "libs/date-time/src"
+      ],
+      "@app/date-time/*": [
+        "libs/date-time/src/*"
+      ],
+      "@auth/prisma": [
+        "apps/auth/src/generated/prisma/client"
       ]
     }
   }

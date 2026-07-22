@@ -1,0 +1,181 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  previewFeatures     = ["typedSql"]
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["auth"]
+}
+
+model Role {
+  id   Int    @id @default(autoincrement()) @db.Integer
+  name String @db.VarChar(100)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  Permission Permission[]
+  User       User[]
+
+  @@schema("auth")
+}
+
+model Permission {
+  id         Int      @id @default(autoincrement()) @db.Integer
+  action     String   @db.VarChar(50)
+  subject    String   @db.VarChar(50)
+  inverted   Boolean  @default(false)
+  field      String[] @db.VarChar(50)
+  conditions Json?    @db.JsonB()
+  reason     String?  @db.VarChar(255)
+
+  role   Role? @relation(fields: [roleId], references: [id])
+  roleId Int?  @db.Integer()
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+model User {
+  id       Int    @id @default(autoincrement()) @db.Integer
+  email    String @unique @db.VarChar(255)
+  password String
+
+  role   Role @relation(fields: [roleId], references: [id])
+  roleId Int  @db.Integer()
+
+  // // Self Relation (parent - children)
+  parentUser   User?   @relation("UserHierarcy", fields: [parentUserId], references: [id])
+  parentUserId Int?    @db.Integer()
+  nmid         String?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  AgentDetail       AgentDetail?
+  MerchantDetail    MerchantDetail?
+  AdminDetail       AdminDetail?
+  MerchantSignature MerchantSignature?
+  Users             User[]             @relation("UserHierarcy")
+
+  @@schema("auth")
+}
+
+model AdminDetail {
+  id       Int    @id @default(autoincrement()) @db.Integer
+  fullname String @db.VarChar(100)
+  address  String @db.VarChar(255)
+  phone    String @db.VarChar(25)
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique @db.Integer
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+model AgentDetail {
+  id                Int    @id @default(autoincrement()) @db.Integer
+  fullname          String @db.VarChar(100)
+  address           String @db.VarChar(255)
+  phone             String @db.VarChar(25)
+  bankCode          String @db.VarChar(10)
+  bankName          String @db.VarChar(100)
+  accountNumber     String @db.VarChar(50)
+  accountHolderName String @db.VarChar(100)
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique @db.Integer
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+model MerchantDetail {
+  id                Int     @id @default(autoincrement()) @db.Integer
+  ownerName         String  @db.VarChar(100)
+  businessName      String  @db.VarChar(100)
+  brandName         String  @db.VarChar(100)
+  phoneNumber       String  @db.VarChar(30)
+  nik               String  @db.VarChar(30)
+  ktpImage          String?
+  npwp              String  @db.VarChar(30)
+  address           String  @db.VarChar(255)
+  province          String  @db.VarChar(30)
+  regency           String  @db.VarChar(30) /// Kabupaten / Kota
+  district          String  @db.VarChar(30) /// Kecamatan
+  village           String  @db.VarChar(30) /// Kelurahan
+  postalCode        String  @db.VarChar(10)
+  bankCode          String  @db.VarChar(10)
+  bankName          String  @db.VarChar(100)
+  accountNumber     String  @db.VarChar(50)
+  accountHolderName String  @db.VarChar(100)
+  siupFile          String?
+  coordinate        String?
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique @db.Integer
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+model MerchantSignature {
+  id                Int     @id @default(autoincrement()) @db.Integer
+  clientId          String  @unique
+  secretKey         String?
+  previousSecretKey String?
+  status            String
+  credentials       Json    @default("{}") @db.JsonB
+
+  payoutUrl String? @db.VarChar(512)
+  payinUrl  String? @db.VarChar(512)
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique @db.Integer
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}

@@ -37,6 +37,15 @@
         "tsConfigPath": "libs/configuration/tsconfig.lib.json"
       }
     },
+    "date-time": {
+      "type": "library",
+      "root": "libs/date-time",
+      "entryFile": "index",
+      "sourceRoot": "libs/date-time/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/date-time/tsconfig.lib.json"
+      }
+    },
     "pg": {
       "type": "application",
       "root": "apps/pg",
