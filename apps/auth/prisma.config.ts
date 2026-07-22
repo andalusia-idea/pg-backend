@@ -12,6 +12,6 @@ export default defineConfig({
   // },
 
   datasource: {
-    url: env('DATABASE_URL_MASTER'),
+    url: env('POSTGRESQL_URL_MASTER'),
   },
 });

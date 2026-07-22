@@ -2,6 +2,7 @@ import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigModuleOptions } from '@nestjs/config';
 import { AppConfig } from './app.config';
 import { TCPConfig } from './tcp.config';
+import { DatabaseConfig } from './database.config';
 
 @Global()
 @Module({})
@@ -16,8 +17,8 @@ export class ConfigurationModule {
           ...options,
         }),
       ],
-      providers: [AppConfig, TCPConfig],
-      exports: [ConfigModule, AppConfig, TCPConfig],
+      providers: [AppConfig, TCPConfig, DatabaseConfig],
+      exports: [ConfigModule, AppConfig, TCPConfig, DatabaseConfig],
     };
   }
 }
