@@ -1,7 +1,7 @@
 import { AppConfig } from '@app/configuration';
 import { Provider } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient } from '@auth/prisma';
 import { auditTrailExtension } from './audit.extension';
 
 export const PRISMA_MASTER_PROVIDER_KEY = Symbol('PRISMA_MASTER_PROVIDER_KEY');
