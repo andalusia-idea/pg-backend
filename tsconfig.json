@@ -48,6 +48,9 @@
       ],
       "@auth/prisma": [
         "apps/auth/src/generated/prisma/client"
+      ],
+      "@config/prisma": [
+        "apps/config/src/generated/prisma/client"
       ]
     }
   }
