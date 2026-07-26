@@ -1,0 +1,201 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  previewFeatures     = ["typedSql"]
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["config"]
+}
+
+model Bank {
+  code String @id
+  name String
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("config")
+}
+
+model Merchant {
+  id                 Int       @id @db.Integer
+  settlementInterval Int       @default(120) @db.SmallInt /// in minutes like 30, 60, 120 or 1
+  lastSettlementAt   DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  merchantFees     MerchantFee[]
+  AgentShareholder AgentShareholder[]
+
+  @@schema("config")
+}
+
+model Agent {
+  id                Int     @id @db.Integer
+  providerName      String?
+  paymentMethodName String?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  AgentShareholders AgentShareholder[]
+
+  @@schema("config")
+}
+
+model AgentShareholder {
+  id         Int      @id @default(autoincrement()) @db.Integer
+  agentId    Int      @db.Integer
+  agent      Agent    @relation(fields: [agentId], references: [id])
+  merchantId Int      @db.Integer
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  percentagePerAgent Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@unique([agentId, merchantId])
+  @@schema("config")
+}
+
+// -- 1. Provider
+model Provider {
+  // id        Int      @id @default(autoincrement())
+  // code      String   @unique
+  name String @id
+
+  reconciliationTime   String //format: '02:00' (HH:mm)
+  lastReconciliationAt DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  baseFees BaseFee[]
+
+  @@schema("config")
+}
+
+// -- 2. Payment Method
+model PaymentMethod {
+  // id        Int      @id @default(autoincrement())
+  name             String                @id
+  explain          String
+  transactionTypes TransactionTypeEnum[]
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  baseFees BaseFee[]
+
+  @@schema("config")
+}
+
+// -- 4. Base Fee Config (default: hanya fee provider)
+model BaseFee {
+  id                Int                 @id @default(autoincrement()) @db.Integer
+  code              String              @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
+  providerName      String
+  paymentMethodName String
+  transactionType   TransactionTypeEnum
+
+  feeProviderFixed      Decimal @default(0.0) @db.Decimal(10, 2)
+  feeProviderPercentage Decimal @default(0.0) @db.Decimal(10, 2)
+
+  isActive Boolean @default(true)
+
+  provider      Provider      @relation(fields: [providerName], references: [name])
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodName], references: [name])
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  merchantFees MerchantFee[]
+
+  @@schema("config")
+}
+
+// -- 5. Merchant Fee Config (override internal & agent fee per merchant)
+model MerchantFee {
+  id         Int @id @default(autoincrement()) @db.Integer
+  merchantId Int @db.Integer
+  baseFeeId  Int @db.Integer
+
+  feeInternalFixed      Decimal @default(0.0) @db.Decimal(10, 4)
+  feeInternalPercentage Decimal @default(0.0) @db.Decimal(10, 4)
+
+  feeAgentFixed      Decimal @default(0.0) @db.Decimal(10, 4)
+  feeAgentPercentage Decimal @default(0.0) @db.Decimal(10, 4)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+  baseFee  BaseFee  @relation(fields: [baseFeeId], references: [id])
+
+  @@unique([merchantId, baseFeeId])
+  @@schema("config")
+}
+
+model Common {
+  id       Int     @id @default(autoincrement()) @db.SmallInt
+  div      String
+  value    String
+  isActive Boolean @db.Boolean
+  explain  String
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@schema("config")
+}
+
+enum TransactionTypeEnum {
+  WITHDRAW
+  TOPUP
+  DISBURSEMENT
+  PURCHASE
+
+  @@schema("config")
+}

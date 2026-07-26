@@ -1,0 +1,422 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  previewFeatures     = ["typedSql"]
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["transaction"]
+}
+
+model TopUpTransaction {
+  id                Int                   @id @default(autoincrement())
+  code              String                @unique @default(uuid())
+  merchantId        Int
+  externalId        String?
+  referenceId       String                @unique //reff id from bank
+  nominal           Decimal
+  netNominal        Decimal
+  status            TransactionStatusEnum @default(PENDING)
+  providerName      String
+  paymentMethodName String //transfer_bank, virtual_account
+  receiptImage      String
+
+  paidAt           DateTime?
+  metadata         Json?
+  settlementAt     DateTime?
+  reconciliationAt DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  merchantBalanceLog MerchantBalanceLog[]
+  agentBalanceLog    AgentBalanceLog[]
+  internalBalanceLog InternalBalanceLog[]
+  feeDetails         TopupFeeDetail[]
+
+  @@index([referenceId])
+  @@index([merchantId])
+  @@schema("transaction")
+}
+
+model TopupFeeDetail {
+  id            Int         @id @default(autoincrement())
+  agentId       Int?
+  topupId       Int
+  type          FeeTypeEnum
+  nominal       Decimal
+  feeFixed      Decimal
+  feePercentage Decimal
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topUpTransation TopUpTransaction @relation(fields: [topupId], references: [id], onDelete: Cascade)
+
+  @@index([topupId])
+  @@schema("transaction")
+}
+
+model WithdrawTransaction {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique @default(uuid())
+  externalId  String?
+  userId      Int
+  userRole    String
+  referenceId String  @unique //reff id from bank
+
+  providerName      String
+  paymentMethodName String // transfer_bank, virtual_account, dll
+  nominal           Decimal
+  netNominal        Decimal // nominal setelah dikenakan fee
+  status            TransactionStatusEnum @default(PENDING)
+
+  paidAt           DateTime?
+  metadata         Json?
+  reconciliationAt DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails         WithdrawFeeDetail[]
+  MerchantBalanceLog MerchantBalanceLog[]
+  AgentBalanceLog    AgentBalanceLog[]
+  InternalBalanceLog InternalBalanceLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model WithdrawFeeDetail {
+  id            Int         @id @default(autoincrement())
+  agentId       Int?
+  withdrawId    Int
+  type          FeeTypeEnum
+  nominal       Decimal
+  feeFixed      Decimal
+  feePercentage Decimal
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  withdrawTransaction WithdrawTransaction @relation(fields: [withdrawId], references: [id], onDelete: Cascade)
+
+  @@index([withdrawId])
+  @@schema("transaction")
+}
+
+model DisbursementTransaction {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique @default(uuid())
+  orderId     String  @unique
+  externalId  String?
+  referenceId String?
+  merchantId  Int
+
+  providerName      String
+  recipientName     String // bisa merchant, agent, atau pihak ketiga
+  recipientBankCode String
+  recipientBankName String?
+  recipientAccount  String
+  nominal           Decimal
+  netNominal        Decimal
+  status            TransactionStatusEnum @default(PENDING)
+
+  paidAt            DateTime?
+  paymentMethodName String
+  metadata          Json?
+  reconciliationAt  DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails         DisbursementFeeDetail[]
+  MerchantBalanceLog MerchantBalanceLog[]
+  AgentBalanceLog    AgentBalanceLog[]
+  InternalBalanceLog InternalBalanceLog[]
+
+  @@index([providerName])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model DisbursementFeeDetail {
+  id             Int         @id @default(autoincrement())
+  agentId        Int?
+  disbursementId Int
+  type           FeeTypeEnum
+  nominal        Decimal
+  feeFixed       Decimal
+  feePercentage  Decimal
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  disbursementTransaction DisbursementTransaction @relation(fields: [disbursementId], references: [id], onDelete: Cascade)
+
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+model PurchaseTransaction {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique
+  orderId     String  @unique
+  referenceId String?
+  externalId  String
+  merchantId  Int
+  nmid        String?
+
+  providerName      String
+  paymentMethodName String
+  nominal           Decimal
+  netNominal        Decimal
+  status            TransactionStatusEnum @default(PENDING)
+
+  paidAt           DateTime?
+  expiresAt        DateTime
+  metadata         Json?
+  settlementAt     DateTime?
+  reconciliationAt DateTime?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails         PurchaseFeeDetail[]
+  webhookLogs        WebhookLog[]
+  MerchantBalanceLog MerchantBalanceLog[]
+  AgentBalanceLog    AgentBalanceLog[]
+  InternalBalanceLog InternalBalanceLog[]
+
+  @@index([merchantId])
+  @@index([providerName])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model PurchaseFeeDetail {
+  id            Int         @id @default(autoincrement())
+  agentId       Int?
+  purchaseId    Int
+  type          FeeTypeEnum
+  nominal       Decimal
+  feeFixed      Decimal
+  feePercentage Decimal
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  transaction PurchaseTransaction @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseId])
+  @@schema("transaction")
+}
+
+model WebhookLog {
+  id              Int                 @id @default(autoincrement())
+  transactionId   Int
+  source          String // e.g. midtrans, xendit
+  payload         Json
+  rawSignature    String?
+  receivedAt      DateTime            @default(now())
+  transactionType TransactionTypeEnum
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  PurchaseTransaction   PurchaseTransaction? @relation(fields: [purchaseTransactionId], references: [id])
+  purchaseTransactionId Int?
+
+  @@index([source])
+  @@schema("transaction")
+}
+
+model TransactionAudit {
+  id              Int                   @id @default(autoincrement())
+  transactionId   Int
+  oldStatus       TransactionStatusEnum
+  newStatus       TransactionStatusEnum
+  source          String // "webhook", "admin", etc
+  changedAt       DateTime              @default(now())
+  transactionType TransactionTypeEnum
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  @@index([transactionId])
+  @@schema("transaction")
+}
+
+model MerchantBalanceLog {
+  id              Int                 @id @default(autoincrement())
+  topupId         Int?
+  purchaseId      Int?
+  withdrawId      Int?
+  disbursementId  Int?
+  merchantId      Int
+  changeAmount    Decimal // nominal perubahan (positif / negatif)
+  balanceActive   Decimal // saldo akhir merchant setelah perubahan
+  balancePending  Decimal
+  transactionType TransactionTypeEnum
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
+  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
+  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId])
+  @@index([topupId])
+  @@index([purchaseId])
+  @@index([withdrawId])
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+model AgentBalanceLog {
+  id              Int                 @id @default(autoincrement())
+  topupId         Int?
+  purchaseId      Int?
+  withdrawId      Int?
+  disbursementId  Int?
+  agentId         Int
+  changeAmount    Decimal // nominal perubahan (positif / negatif)
+  balanceActive   Decimal // saldo akhir merchant setelah perubahan
+  balancePending  Decimal
+  transactionType TransactionTypeEnum
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
+  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
+  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
+
+  @@index([agentId])
+  @@index([topupId])
+  @@index([purchaseId])
+  @@index([withdrawId])
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+model InternalBalanceLog {
+  id                Int                 @id @default(autoincrement())
+  topupId           Int?
+  purchaseId        Int?
+  withdrawId        Int?
+  disbursementId    Int?
+  merchantId        Int?
+  changeAmount      Decimal // nominal perubahan (positif / negatif)
+  balanceActive     Decimal // saldo akhir merchant setelah perubahan
+  balancePending    Decimal
+  transactionType   TransactionTypeEnum
+  providerName      String
+  paymentMethodName String
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
+  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
+  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
+
+  @@index([topupId])
+  @@index([purchaseId])
+  @@index([withdrawId])
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+enum TransactionStatusEnum {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+
+  @@schema("transaction")
+}
+
+enum FeeTypeEnum {
+  AGENT
+  INTERNAL
+  PROVIDER
+  MERCHANT
+
+  @@schema("transaction")
+}
+
+enum TransactionTypeEnum {
+  WITHDRAW
+  TOPUP
+  DISBURSEMENT
+  PURCHASE
+  SETTLEMENT_PURCHASE
+
+  @@schema("transaction")
+}
