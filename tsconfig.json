@@ -51,6 +51,9 @@
       ],
       "@config/prisma": [
         "apps/config/src/generated/prisma/client"
+      ],
+      "@transaction/prisma": [
+        "apps/transaction/src/generated/prisma/client"
       ]
     }
   }
