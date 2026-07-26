@@ -46,6 +46,15 @@
         "tsConfigPath": "libs/date-time/tsconfig.lib.json"
       }
     },
+    "logger": {
+      "type": "library",
+      "root": "libs/logger",
+      "entryFile": "index",
+      "sourceRoot": "libs/logger/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/logger/tsconfig.lib.json"
+      }
+    },
     "pg": {
       "type": "application",
       "root": "apps/pg",

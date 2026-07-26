@@ -2,12 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { AppConfig, TCPConfig } from '@app/configuration';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   const appConfig = app.get(AppConfig);
   const tcpConfig = app.get(TCPConfig);
+  app.useLogger(app.get(Logger));
 
   app.setGlobalPrefix(appConfig.API_PREFIX, {
     exclude: ['/metrics'],

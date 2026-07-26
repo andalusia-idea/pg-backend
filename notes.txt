@@ -1,0 +1,35 @@
+1. Create Triggered for Request callback to Upstream or get Status and update status
+2. Create Triggered Notify Callback to Merchant
+3. Settlement Bulking if Schedule Settlement failed
+4. Split Table Reconciliation (Reconciliation & Unreconciliation)
+5. Check Pembulatan Net Nominal (kebawah atau keatas) (Berapa angka di belakang koma)
+6. Approval System for Withdraw.
+7. RBAC merchant level
+8. setting integration (API Key, Secret Key, Notify payment, Notify Refund, Notify Transfer)
+9. API Document Standarization SNAP
+
+1. Master and Slave Database (Replica Set)
+2. IP Whitelist simpan di DB store ke Redis
+3. Settlement ID Batching
+
+4. TimeStampZ di PostgreeSQL + NestJS
+
+###########################################
+For coding and code review, the choice comes down to a capability-vs-speed tradeoff, and the current Claude lineup maps cleanly onto it:
+
+Claude Sonnet 5 — your default. This is the workhorse for engineering work. Fast, strong at code generation, review, and refactoring, and cost-efficient enough to use all day. For the bulk of what you described — writing features, reviewing diffs, iterating in a repo — Sonnet hits the sweet spot. Most developers live here.
+
+Claude Opus 5 — bring in for the hard stuff. The most capable model for deep reasoning: complex architecture decisions, gnarly multi-file debugging, large refactors where you need it to hold a lot of context and reason carefully, tricky algorithmic problems. It's slower and more expensive, so you reach for it when a task is genuinely difficult rather than for every edit. (This session is actually running on an Opus-tier model.)
+
+Claude Haiku 4.5 — speed and volume. Fast and cheap. Good for quick lookups, simple edits, boilerplate, or automated/high-frequency tasks where you don't need maximum reasoning. Often used under the hood for lightweight background steps.
+
+Claude Fable 5 is oriented toward creative/writing work rather than engineering, so it's not the one I'd pick for code.
+
+Practical recommendation for your needs: default to Sonnet 5, and manually switch up to Opus 5 when you hit a genuinely complex problem (thorny architecture, a bug that spans many files, a big design decision). That gives you speed most of the time and firepower when it counts. In Claude Code you can switch models per session, so this is easy to do on the fly.
+
+###########################################
+Here's how I'd split it:
+
+Use Claude Code (the Code menu) when the work lives inside a codebase. It runs in your project directory, sees your whole repo natively, edits files in place, runs your tests, uses git, and understands project context across many files. Reviewing a local project, refactoring, "implement this feature in my repo," "fix this failing test" — this is its home turf. It's built for developers who actually code, so it's the better default for your day-to-day.
+
+Use Cowork (this mode) when you want file outputs, connectors, or mixed tasks. Generating a standalone script or doc to download, reviewing a GitHub repo through the connector (no local clone needed), pulling in Linear/Slack/Datadog, building a spreadsheet or dashboard, scheduling recurring tasks. Cowork can also work in a local folder if you connect one to it, but it's not as deeply repo-native as Claude Code.
