@@ -1,0 +1,13 @@
+export enum TransactionUserRole {
+  ADMIN = 'ADMIN',
+  AGENT = 'AGENT',
+  MERCHANT = 'MERCHANT',
+}
+
+export enum TransactionTypeEnum {
+  WITHDRAW = 'WITHDRAW',
+  TOPUP = 'TOPUP',
+  DISBURSEMENT = 'DISBURSEMENT',
+  PURCHASE = 'PURCHASE',
+  SETTLEMENT_PURCHASE = 'SETTLEMENT_PURCHASE',
+}

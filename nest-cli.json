@@ -55,6 +55,15 @@
         "tsConfigPath": "libs/logger/tsconfig.lib.json"
       }
     },
+    "microservice-clients": {
+      "type": "library",
+      "root": "libs/microservice-clients",
+      "entryFile": "index",
+      "sourceRoot": "libs/microservice-clients/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/microservice-clients/tsconfig.lib.json"
+      }
+    },
     "pg": {
       "type": "application",
       "root": "apps/pg",

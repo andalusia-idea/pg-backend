@@ -40,6 +40,12 @@
       "@app/logger/*": [
         "libs/logger/src/*"
       ],
+      "@app/microservice-clients": [
+        "libs/microservice-clients/src"
+      ],
+      "@app/microservice-clients/*": [
+        "libs/microservice-clients/src/*"
+      ],
       "@app/redis": [
         "libs/redis/src"
       ],
