@@ -7,6 +7,7 @@ import { AppModule } from './app/app.module';
 import { AppConfig, TCPConfig } from '@app/configuration';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from 'nestjs-pino';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -18,6 +19,18 @@ async function bootstrap() {
   const appConfig = app.get(AppConfig);
   const tcpConfig = app.get(TCPConfig);
   app.useLogger(app.get(Logger));
+
+  const options = new DocumentBuilder()
+    .setTitle(`${appConfig.APP_NAME} Service`)
+    .setDescription(`${appConfig.APP_NAME} Service API Description`)
+    .setVersion(appConfig.VERSION)
+    .addServer(`http://localhost:${appConfig.PORT}`, 'Local')
+    .addServer(`http://103.94.238.214:3001`, 'Production') // Adjust with Server Proxy
+    .addServer(`https://api.manapay.id/auth`, 'Production DNS') // Adjust with Server Proxy
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('/swag-rwz', app, document);
 
   app.setGlobalPrefix(appConfig.API_PREFIX, {
     exclude: ['/metrics'],

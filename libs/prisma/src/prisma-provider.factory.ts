@@ -4,6 +4,7 @@ import { DatabaseConfig } from '@app/configuration';
 
 export const PRISMA_MASTER_PROVIDER_KEY = Symbol('PRISMA_MASTER_PROVIDER_KEY');
 export const PRISMA_SLAVE_PROVIDER_KEY = Symbol('PRISMA_SLAVE_PROVIDER_KEY');
+
 type PrismaClientLike = {
   $extends: (...args: any[]) => any;
 };
