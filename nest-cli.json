@@ -46,6 +46,15 @@
         "tsConfigPath": "libs/date-time/tsconfig.lib.json"
       }
     },
+    "health": {
+      "type": "library",
+      "root": "libs/health",
+      "entryFile": "index",
+      "sourceRoot": "libs/health/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/health/tsconfig.lib.json"
+      }
+    },
     "logger": {
       "type": "library",
       "root": "libs/logger",
@@ -71,6 +80,15 @@
       "sourceRoot": "apps/pg/src",
       "compilerOptions": {
         "tsConfigPath": "apps/pg/tsconfig.app.json"
+      }
+    },
+    "prisma": {
+      "type": "library",
+      "root": "libs/prisma",
+      "entryFile": "index",
+      "sourceRoot": "libs/prisma/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/prisma/tsconfig.lib.json"
       }
     },
     "redis": {
