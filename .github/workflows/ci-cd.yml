@@ -1,28 +1,22 @@
-name: CI/CD Direct Deployment
+name: CI/CD Pipeline Single Node (Direct Deploy)
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service:
-          - auth-service
-          - transaction-service
-          - settlement-recon-service
-          - config-fee-service
+        service: [auth, transaction, settlerecon, config]
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -33,31 +27,25 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           build-args: SERVICE_NAME=${{ matrix.service }}
           push: true
-          tags: ghcr.io/andalusia-idea/pg-backend-${{ matrix.service }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}-service:latest
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}-service:${{ github.sha }}
 
-  deploy:
+  deploy-to-server:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Executing Remote SSH Deployment
-        uses: appleboy/ssh-action@master
+      - name: Execute Remote Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Updating Kubernetes Deployments with new image tags..."
-
-            kubectl set image deployment/auth-service auth-service=ghcr.io/andalusia-idea/pg-backend-auth-service:${{ github.sha }} -n production
-            kubectl set image deployment/transaction-service transaction-service=ghcr.io/andalusia-idea/pg-backend-transaction-service:${{ github.sha }} -n production
-            kubectl set image deployment/settlement-recon-service settlement-recon-service=ghcr.io/andalusia-idea/pg-backend-settlement-recon-service:${{ github.sha }} -n production
-            kubectl set image deployment/config-fee-service config-fee-service=ghcr.io/andalusia-idea/pg-backend-config-fee-service:${{ github.sha }} -n production
-
-            echo "Restarting deployments completed. Verifying rollout status..."
-            kubectl rollout status deployment/auth-service -n production --timeout=60s
-            kubectl rollout status deployment/transaction-service -n production --timeout=60s
+            # Memperbarui image ke tag terbaru (commit SHA) di Kubernetes klaster lokal (K3s)
+            kubectl set image deployment/auth-deployment auth-service=ghcr.io/${{ github.repository_owner }}/auth-service:${{ github.sha }} -n production
+            kubectl set image deployment/transaction-deployment transaction-service=ghcr.io/${{ github.repository_owner }}/transaction-service:${{ github.sha }} -n production
+            kubectl set image deployment/settlerecon-deployment settlerecon-service=ghcr.io/${{ github.repository_owner }}/settlerecon-service:${{ github.sha }} -n production
+            kubectl set image deployment/config-deployment config-service=ghcr.io/${{ github.repository_owner }}/config-service:${{ github.sha }} -n production

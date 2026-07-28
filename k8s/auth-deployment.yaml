@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
+  name: auth-deployment
   namespace: production
 spec:
   replicas: 1
@@ -14,17 +14,17 @@ spec:
         app: auth-service
     spec:
       containers:
-        - name: auth-service
-          image: ghcr.io/USERNAME_GITHUB/auth-service:latest
-          ports:
-            - containerPort: 3000
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "150Mi"
-            limits:
-              cpu: "500m"
-              memory: "300Mi"
+      - name: auth-service
+        image: ghcr.io/andalusia-idea/auth-service:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "120Mi"
+          limits:
+            cpu: "1000m"
+            memory: "200Mi"
 ---
 apiVersion: v1
 kind: Service
@@ -35,5 +35,6 @@ spec:
   selector:
     app: auth-service
   ports:
-    - port: 3000
+    - protocol: TCP
+      port: 80
       targetPort: 3000
