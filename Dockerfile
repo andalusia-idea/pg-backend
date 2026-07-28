@@ -28,3 +28,4 @@ EXPOSE 3000
 
 # Jalankan main.js dari folder dist service terkait
 CMD node dist/apps/${SERVICE_NAME}/main.js
+
