@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway-ingress
+  namespace: production
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Batasi ukuran payload untuk keamanan (misal: 1MB)
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    # (Opsional) Rate limiting dasar di Nginx
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+spec:
+  rules:
+  - host: api.manapay.id # Ganti dengan domain Anda
+    http:
+      paths:
+      - path: /api/v1/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 80
+      - path: /api/v1/transactions
+        pathType: Prefix
+        backend:
+          service:
+            name: transaction-service
+            port:
+              number: 80
+      # ... (konfigurasi auth & transaction sebelumnya)
+      - path: /api/v1/settlement
+        pathType: Prefix
+        backend:
+          service:
+            name: settlerecon-service
+            port:
+              number: 80
+      - path: /api/v1/config
+        pathType: Prefix
+        backend:
+          service:
+            name: config-service
+            port:
+              number: 80
