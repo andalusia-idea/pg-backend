@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: settlerecon-service
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: settlerecon-service
+  template:
+    metadata:
+      labels:
+        app: settlerecon-service
+    spec:
+      containers:
+        - name: settlerecon-service
+          image: ghcr.io/USERNAME_GITHUB/settlerecon-service:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "300m"
+              memory: "200Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: settlerecon-service
+  namespace: production
+spec:
+  selector:
+    app: settlerecon-service
+  ports:
+    - port: 3000
+      targetPort: 3000

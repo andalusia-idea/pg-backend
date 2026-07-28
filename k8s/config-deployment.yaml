@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+    spec:
+      containers:
+        - name: config-service
+          image: ghcr.io/USERNAME_GITHUB/config-service:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "300m"
+              memory: "200Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: production
+spec:
+  selector:
+    app: config-service
+  ports:
+    - port: 3000
+      targetPort: 3000

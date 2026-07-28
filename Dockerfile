@@ -17,6 +17,7 @@ WORKDIR /app
 
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
+ENV NODE_OPTIONS="--max-old-space-size=120"
 
 # Copy hasil build dan node_modules yang dibutuhkan
 COPY --from=builder /app/dist/apps/${SERVICE_NAME} ./dist/apps/${SERVICE_NAME}

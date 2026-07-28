@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: ghcr.io/USERNAME_GITHUB/auth-service:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "150Mi"
+            limits:
+              cpu: "500m"
+              memory: "300Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: production
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 3000
+      targetPort: 3000

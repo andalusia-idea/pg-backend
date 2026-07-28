@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transaction-service
+  template:
+    metadata:
+      labels:
+        app: transaction-service
+    spec:
+      # CATATAN: nodeSelector DIHAPUS karena hanya ada 1 node
+      containers:
+      - name: transaction-service
+        image: ghcr.io/andalusia-idea/pg-backend-transaction:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=120"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: pg-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "120Mi"
+          limits:
+            cpu: "1000m"
+            memory: "200Mi"
