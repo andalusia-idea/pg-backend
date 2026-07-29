@@ -1,0 +1,70 @@
+---
+# 1. DEPLOYMENT CONFIGURATION
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-deployment
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: transaction-service
+  template:
+    metadata:
+      labels:
+        app: transaction-service
+    spec:
+      containers:
+      - name: transaction-service
+        image: ghcr.io/andalusia-idea/transaction-service:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "120Mi"
+          limits:
+            cpu: "1000m"
+            memory: "200Mi"
+        # Menyuntikkan Secret untuk kredensial
+        envFrom:
+        - secretRef:
+            name: app-secrets
+
+---
+# 2. SERVICE CONFIGURATION
+apiVersion: v1
+kind: Service
+metadata:
+  name: transaction-service
+  namespace: production
+spec:
+  selector:
+    app: transaction-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+
+---
+# 3. HORIZONTAL POD AUTOSCALER (HPA)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: transaction-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: transaction-deployment
+  minReplicas: 1
+  maxReplicas: 2 # Dibatasi 2 agar RAM 2GB tidak OOM
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
