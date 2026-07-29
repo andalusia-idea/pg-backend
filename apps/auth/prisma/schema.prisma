@@ -99,10 +99,12 @@ model AdminDetail {
 }
 
 model AgentDetail {
-  id                Int    @id @default(autoincrement()) @db.Integer
-  fullname          String @db.VarChar(100)
-  address           String @db.VarChar(255)
-  phone             String @db.VarChar(25)
+  id       Int    @id @default(autoincrement()) @db.Integer
+  fullname String @db.VarChar(100)
+  address  String @db.VarChar(255)
+  phone    String @db.VarChar(25)
+
+  // Withdraw Purpose
   bankCode          String @db.VarChar(10)
   bankName          String @db.VarChar(100)
   accountNumber     String @db.VarChar(50)
@@ -122,26 +124,28 @@ model AgentDetail {
 }
 
 model MerchantDetail {
-  id                Int     @id @default(autoincrement()) @db.Integer
-  ownerName         String  @db.VarChar(100)
-  businessName      String  @db.VarChar(100)
-  brandName         String  @db.VarChar(100)
-  phoneNumber       String  @db.VarChar(30)
-  nik               String  @db.VarChar(30)
-  ktpImage          String?
-  npwp              String  @db.VarChar(30)
-  address           String  @db.VarChar(255)
-  province          String  @db.VarChar(30)
-  regency           String  @db.VarChar(30) /// Kabupaten / Kota
-  district          String  @db.VarChar(30) /// Kecamatan
-  village           String  @db.VarChar(30) /// Kelurahan
-  postalCode        String  @db.VarChar(10)
-  bankCode          String  @db.VarChar(10)
-  bankName          String  @db.VarChar(100)
-  accountNumber     String  @db.VarChar(50)
-  accountHolderName String  @db.VarChar(100)
-  siupFile          String?
-  coordinate        String?
+  id           Int     @id @default(autoincrement()) @db.Integer
+  ownerName    String  @db.VarChar(100)
+  businessName String  @db.VarChar(100)
+  brandName    String  @db.VarChar(100)
+  phoneNumber  String  @db.VarChar(30)
+  nik          String  @db.VarChar(30)
+  ktpImage     String?
+  npwp         String  @db.VarChar(30)
+  address      String  @db.VarChar(255)
+  province     String  @db.VarChar(30)
+  regency      String  @db.VarChar(30) /// Kabupaten / Kota
+  district     String  @db.VarChar(30) /// Kecamatan
+  village      String  @db.VarChar(30) /// Kelurahan
+  postalCode   String  @db.VarChar(10)
+  siupFile     String?
+  coordinate   String?
+
+  // Withdraw Purpose
+  bankCode          String @db.VarChar(10)
+  bankName          String @db.VarChar(100)
+  accountNumber     String @db.VarChar(50)
+  accountHolderName String @db.VarChar(100)
 
   user   User @relation(fields: [userId], references: [id])
   userId Int  @unique @db.Integer
