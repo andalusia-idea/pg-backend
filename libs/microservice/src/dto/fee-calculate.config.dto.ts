@@ -86,7 +86,7 @@ export const MerchantFeeSchema = Type.Object(
 export type MerchantFeeDto = Static<typeof MerchantFeeSchema>;
 
 /////////////////////
-export const PurchaseFeeSchema = Type.Object(
+export const FeeCalculationResultSchema = Type.Object(
   {
     merchantFee: MerchantFeeSchema,
     agentFee: AgentFeeSchema,
@@ -95,15 +95,4 @@ export const PurchaseFeeSchema = Type.Object(
   },
   { additionalProperties: false },
 );
-export type PurchaseFeeDto = Static<typeof PurchaseFeeSchema>;
-
-export const DisbursementFeeSchema = Type.Object(
-  {
-    merchantFee: MerchantFeeSchema,
-    agentFee: AgentFeeSchema,
-    providerFee: ProviderFeeSchema,
-    internalFee: InternalFeeSchema,
-  },
-  { additionalProperties: false },
-);
-export type DisbursementFeeDto = Static<typeof DisbursementFeeSchema>;
+export type FeeCalculationResultDto = Static<typeof FeeCalculationResultSchema>;

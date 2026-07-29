@@ -2,12 +2,12 @@ import { ConfigurationModule } from '@app/configuration';
 import { Module } from '@nestjs/common';
 // import { DatabaseModule } from '../database/database.module';
 import { PrismaModule } from '@app/prisma';
-import { MicroserviceClientsModule } from '@app/microservice-clients';
 import { HealthModule } from '@app/health';
 import { PrismaClient } from '@transaction/prisma';
 import { auditTrailExtension } from '../database/audit.extension';
 import { RedisModule } from '@app/redis';
 import { LoggerModule } from '@app/logger';
+import { MicroserviceModule } from '@app/microservice';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { LoggerModule } from '@app/logger';
       prismaClient: PrismaClient,
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
-    MicroserviceClientsModule,
+    MicroserviceModule,
   ],
 })
 export class AppModule {}

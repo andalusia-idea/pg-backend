@@ -7,7 +7,7 @@ export const TRANSACTION_CLIENT = Symbol('TRANSACTION_CLIENT');
 
 export const CONFIG_CMD = {
   CALCULATE_FEE_PURCHASE: 'calculate_fee_purchase',
-  CALCULATE_FEE_WITHDRAW: 'calculate_fee_withdraw',
-  CALCULATE_FEE_TOPUP: 'calculate_fee_topup',
+  // CALCULATE_FEE_WITHDRAW: 'calculate_fee_withdraw',
+  // CALCULATE_FEE_TOPUP: 'calculate_fee_topup',
   CALCULATE_FEE_DISBURSEMENT: 'calculate_fee_disbursement',
 } as const;

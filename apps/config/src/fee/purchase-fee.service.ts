@@ -5,7 +5,7 @@ import {
   ProviderFeeDto,
   InternalFeeDto,
   MerchantFeeDto,
-  PurchaseFeeDto,
+  FeeCalculationResultDto,
 } from '@app/microservice';
 import {
   PRISMA_MASTER_PROVIDER_KEY,
@@ -26,7 +26,7 @@ export class PurchaseFeeService {
 
   private readonly transactionType = TransactionTypeEnum.PURCHASE;
 
-  async calculate(dto: FilterPurchaseFeeDto): Promise<PurchaseFeeDto> {
+  async calculate(dto: FilterPurchaseFeeDto): Promise<FeeCalculationResultDto> {
     const {
       merchantId,
       nominal: nominalString,
@@ -162,6 +162,6 @@ export class PurchaseFeeService {
       internalFee: internalFeeDto,
       agentFee: agentFeeDto,
       merchantFee: merchantFeeDto,
-    } as PurchaseFeeDto;
+    } as FeeCalculationResultDto;
   }
 }
