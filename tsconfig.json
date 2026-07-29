@@ -46,11 +46,17 @@
       "@app/logger/*": [
         "libs/logger/src/*"
       ],
+      "@app/microservice": [
+        "libs/microservice/src"
+      ],
       "@app/microservice-clients": [
         "libs/microservice-clients/src"
       ],
       "@app/microservice-clients/*": [
         "libs/microservice-clients/src/*"
+      ],
+      "@app/microservice/*": [
+        "libs/microservice/src/*"
       ],
       "@app/prisma": [
         "libs/prisma/src"

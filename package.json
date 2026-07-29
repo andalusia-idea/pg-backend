@@ -48,6 +48,8 @@
     "@nestjs/terminus": "^11.1.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@sinclair/typebox": "^0.34.52",
+    "ajv": "^8.20.0",
     "axios": "^1.18.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -119,6 +121,7 @@
       "^@app/date-time(|/.*)$": "<rootDir>/libs/date-time/src/$1",
       "^@app/health(|/.*)$": "<rootDir>/libs/health/src/$1",
       "^@app/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",
+      "^@app/microservice(|/.*)$": "<rootDir>/libs/microservice/src/$1",
       "^@app/microservice-clients(|/.*)$": "<rootDir>/libs/microservice-clients/src/$1",
       "^@app/prisma(|/.*)$": "<rootDir>/libs/prisma/src/$1",
       "^@app/redis(|/.*)$": "<rootDir>/libs/redis/src/$1"
