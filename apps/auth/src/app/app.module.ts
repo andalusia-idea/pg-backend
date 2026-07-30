@@ -8,6 +8,7 @@ import { PrismaModule } from '@app/prisma';
 import { PrismaClient } from '@auth/prisma';
 import { auditTrailExtension } from '../database/audit.extension';
 import { MicroserviceModule } from '@app/microservice';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -24,6 +25,9 @@ import { MicroserviceModule } from '@app/microservice';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+
+    // Business Module
+    UserModule,
   ],
 })
 export class AppModule {}

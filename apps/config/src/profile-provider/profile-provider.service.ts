@@ -3,7 +3,10 @@ import {
   ProfileProviderDto,
   UserRoleEnum,
 } from '@app/microservice';
-import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
+import {
+  PRISMA_MASTER_PROVIDER_KEY,
+  PRISMA_SLAVE_PROVIDER_KEY,
+} from '@app/prisma';
 import { PrismaClient } from '@config/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -12,6 +15,8 @@ export class ProfileProviderService {
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
+    @Inject(PRISMA_SLAVE_PROVIDER_KEY)
+    private readonly prismaSlave: PrismaClient,
   ) {}
 
   // TODO REDIS

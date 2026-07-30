@@ -19,6 +19,14 @@ export type FilterProfileProviderDto = Static<
   typeof FilterProfileProviderSchema
 >;
 
+export const FilterProfileBankSchema = Type.Object(
+  {
+    userId: Type.Number(),
+  },
+  { additionalProperties: false },
+);
+export type FilterProfileBankDto = Static<typeof FilterProfileBankSchema>;
+
 /// RESPONSE
 export const ProfileProviderSchema = Type.Object(
   {
@@ -30,3 +38,17 @@ export const ProfileProviderSchema = Type.Object(
   { additionalProperties: false },
 );
 export type ProfileProviderDto = Static<typeof ProfileProviderSchema>;
+
+export const ProfileBankSchema = Type.Object(
+  {
+    userId: Type.Number(),
+    profileId: Type.Number(),
+    userRole: Type.Enum(UserRoleEnum),
+    bankCode: Type.String(),
+    bankName: Type.String(),
+    accountNumber: Type.String(),
+    accountHolderName: Type.String(),
+  },
+  { additionalProperties: false },
+);
+export type ProfileBankDto = Static<typeof ProfileBankSchema>;

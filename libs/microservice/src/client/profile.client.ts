@@ -1,12 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   AUTH_CLIENT,
+  AUTH_CMD,
   CONFIG_CLIENT,
   CONFIG_CMD,
   MICROSERVICE_CALL_TIMEOUT_MS,
 } from '../microservice.constant';
 import { ClientProxy } from '@nestjs/microservices';
-import { FilterProfileProviderDto, ProfileProviderDto } from '../dto';
+import {
+  FilterProfileBankDto,
+  FilterProfileProviderDto,
+  ProfileBankDto,
+  ProfileProviderDto,
+} from '../dto';
 import { firstValueFrom, timeout } from 'rxjs';
 
 @Injectable()
@@ -18,6 +24,14 @@ export class ProfileClient {
     @Inject(CONFIG_CLIENT)
     private readonly configClient: ClientProxy,
   ) {}
+
+  findProfileBank(payload: FilterProfileBankDto) {
+    return firstValueFrom(
+      this.authClient
+        .send<ProfileBankDto>({ cmd: AUTH_CMD.FIND_PROFILE_BANK }, payload)
+        .pipe(timeout(MICROSERVICE_CALL_TIMEOUT_MS)),
+    );
+  }
 
   findProfileProvider(payload: FilterProfileProviderDto) {
     return firstValueFrom(
