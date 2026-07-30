@@ -45,6 +45,7 @@ export class PurchaseFeeService {
         paymentMethodName,
         transactionType: this.transactionType,
       },
+      select: { id: true, feeProviderFixed: true, feeProviderPercentage: true },
     });
     console.log({ baseFee });
 
@@ -65,6 +66,12 @@ export class PurchaseFeeService {
           merchantId,
           baseFeeId: baseFee.id,
         },
+      },
+      select: {
+        feeInternalFixed: true,
+        feeInternalPercentage: true,
+        feeAgentFixed: true,
+        feeAgentPercentage: true,
       },
     });
     console.log({ merchantFee });
@@ -102,6 +109,7 @@ export class PurchaseFeeService {
     if (isMerchantHaveAgents) {
       const shareholders = await this.prismaMaster.agentShareholder.findMany({
         where: { merchantId },
+        select: { agentId: true, percentagePerAgent: true },
       });
       agentDtos.push(
         ...shareholders.map((shareholder) => {

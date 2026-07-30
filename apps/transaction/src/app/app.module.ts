@@ -20,6 +20,7 @@ import { MicroserviceModule } from '@app/microservice';
     // DatabaseModule,
     PrismaModule.forRoot({
       prismaClient: PrismaClient,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,

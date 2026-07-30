@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { FeeCalculateConfigClient } from './client';
+import { Global, Module } from '@nestjs/common';
+import { FeeCalculateConfigClient, ProfileClient } from './client';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_CLIENT,
@@ -8,9 +8,10 @@ import {
 } from './microservice.constant';
 import { ConfigurationModule, TCPConfig } from '@app/configuration';
 
+@Global()
 @Module({
-  providers: [FeeCalculateConfigClient],
-  exports: [FeeCalculateConfigClient],
+  providers: [FeeCalculateConfigClient, ProfileClient],
+  exports: [FeeCalculateConfigClient, ProfileClient],
   imports: [
     ClientsModule.registerAsync([
       {

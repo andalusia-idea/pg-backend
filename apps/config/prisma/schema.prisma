@@ -196,6 +196,7 @@ enum TransactionTypeEnum {
   TOPUP
   DISBURSEMENT
   PURCHASE
+  SETTLEMENT_PURCHASE
 
   @@schema("config")
 }
