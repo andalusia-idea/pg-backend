@@ -7,6 +7,8 @@ export const TRANSACTION_CLIENT = Symbol('TRANSACTION_CLIENT');
 
 export const AUTH_CMD = {
   FIND_PROFILE_BANK: 'find_profile_bank',
+  MERCHANT_SIGNATURE_VALIDATION: 'merchant_signature_validation', // TODO
+  MERCHANT_SIGNATURE_WEBHOOK_URL: 'merchant_signature_webhook_url', // TODO
 } as const;
 
 export const CONFIG_CMD = {
