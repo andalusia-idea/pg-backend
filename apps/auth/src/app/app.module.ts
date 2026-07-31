@@ -9,6 +9,7 @@ import { PrismaClient } from '@auth/prisma';
 import { auditTrailExtension } from '../database/audit.extension';
 import { MicroserviceModule } from '@app/microservice';
 import { UserModule } from '../user/user.module';
+import { MerchantSignatureModule } from '../merchant-signature/merchant-signature.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UserModule } from '../user/user.module';
 
     // Business Module
     UserModule,
+    MerchantSignatureModule,
   ],
 })
 export class AppModule {}

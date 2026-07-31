@@ -10,6 +10,7 @@ import {
 import { PrismaClient } from '@auth/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 
+// TODO redis
 @Injectable()
 export class UserService {
   constructor(
