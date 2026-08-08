@@ -37,6 +37,15 @@
         "tsConfigPath": "libs/configuration/tsconfig.lib.json"
       }
     },
+    "dashboard": {
+      "type": "application",
+      "root": "apps/dashboard",
+      "entryFile": "main",
+      "sourceRoot": "apps/dashboard/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/dashboard/tsconfig.app.json"
+      }
+    },
     "date-time": {
       "type": "library",
       "root": "libs/date-time",
