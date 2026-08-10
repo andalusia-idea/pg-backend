@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { Prisma } from '@auth/prisma';
+import { Prisma } from '@dashboard/prisma';
 import { ClsServiceManager } from 'nestjs-cls';
 
 const AUDITED_MODELS = new Set<string>([

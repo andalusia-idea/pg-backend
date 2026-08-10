@@ -1,7 +1,7 @@
 import { DatabaseConfig } from '@app/configuration';
 import { Provider } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@config/prisma';
+import { PrismaClient } from '@dashboard/prisma';
 
 export const PRISMA_SLAVE_PROVIDER_KEY = Symbol('PRISMA_SLAVE_PROVIDER_KEY');
 
@@ -16,7 +16,6 @@ export const PrismaSlaveProvider: Provider = {
       adapter,
       log: ['query', 'info', 'warn', 'error'],
     });
-
     return prisma;
   },
   inject: [DatabaseConfig],

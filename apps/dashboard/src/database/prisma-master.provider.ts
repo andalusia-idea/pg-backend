@@ -1,6 +1,6 @@
 import { Provider } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@config/prisma';
+import { PrismaClient } from '@dashboard/prisma';
 import { auditTrailExtension } from './audit.extension';
 import { DatabaseConfig } from '@app/configuration';
 

@@ -4,9 +4,10 @@ import { defineConfig, env } from 'prisma/config';
 export default defineConfig({
   schema: 'apps/dashboard/prisma/schema.prisma',
 
-  migrations: {
-    path: 'apps/dashboard/prisma/migrations',
-  },
+  /// "never run migrate here"
+  // migrations: {
+  //   path: 'apps/dashboard/prisma/migrations',
+  // },
   // typedSql: {
   //   path: 'apps/auth/prisma/sql',
   // },
