@@ -28,12 +28,6 @@
       "@app/configuration/*": [
         "libs/configuration/src/*"
       ],
-      "@app/date-time": [
-        "libs/date-time/src"
-      ],
-      "@app/date-time/*": [
-        "libs/date-time/src/*"
-      ],
       "@app/health": [
         "libs/health/src"
       ],

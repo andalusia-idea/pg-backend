@@ -451,9 +451,9 @@ export type AgentBalanceLogScalarWhereWithAggregatesInput = {
 
 export type AgentBalanceLogCreateInput = {
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -474,9 +474,9 @@ export type AgentBalanceLogUncheckedCreateInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -530,9 +530,9 @@ export type AgentBalanceLogCreateManyInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -842,9 +842,9 @@ export type AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedIn
 
 export type AgentBalanceLogCreateWithoutTopupTransactionInput = {
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -863,9 +863,9 @@ export type AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -925,9 +925,9 @@ export type AgentBalanceLogScalarWhereInput = {
 
 export type AgentBalanceLogCreateWithoutWithdrawTransactionInput = {
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -946,9 +946,9 @@ export type AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
   purchaseId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -986,9 +986,9 @@ export type AgentBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = 
 
 export type AgentBalanceLogCreateWithoutDisbursementTransactionInput = {
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1007,9 +1007,9 @@ export type AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = 
   purchaseId?: number | null
   withdrawId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1047,9 +1047,9 @@ export type AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInpu
 
 export type AgentBalanceLogCreateWithoutPurchaseTransactionInput = {
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1068,9 +1068,9 @@ export type AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1112,9 +1112,9 @@ export type AgentBalanceLogCreateManyTopupTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1183,9 +1183,9 @@ export type AgentBalanceLogCreateManyWithdrawTransactionInput = {
   purchaseId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1254,9 +1254,9 @@ export type AgentBalanceLogCreateManyDisbursementTransactionInput = {
   purchaseId?: number | null
   withdrawId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null
@@ -1325,9 +1325,9 @@ export type AgentBalanceLogCreateManyPurchaseTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   agentId: number
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   createdAt?: Date | string
   createdBy?: number | null

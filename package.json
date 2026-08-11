@@ -16,6 +16,7 @@
     "build:config": "nest build config",
     "build:transaction": "nest build transaction",
     "build:settlerecon": "nest build settlerecon",
+    "prisma:merge:dashboard": "node apps/dashboard/prisma/merge-schema.js",
     "prisma:generate:dashboard": "dotenv -e apps/dashboard/.env.local -- prisma generate --schema apps/dashboard/prisma/schema.prisma",
     "prisma:generate:auth": "dotenv -e apps/auth/.env.local -- prisma generate --schema apps/auth/prisma/schema.prisma",
     "prisma:generate:config": "dotenv -e apps/config/.env.local -- prisma generate --schema apps/config/prisma/schema.prisma",
@@ -129,7 +130,6 @@
     ],
     "moduleNameMapper": {
       "^@app/configuration(|/.*)$": "<rootDir>/libs/configuration/src/$1",
-      "^@app/date-time(|/.*)$": "<rootDir>/libs/date-time/src/$1",
       "^@app/health(|/.*)$": "<rootDir>/libs/health/src/$1",
       "^@app/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",
       "^@app/microservice(|/.*)$": "<rootDir>/libs/microservice/src/$1",

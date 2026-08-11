@@ -9,6 +9,7 @@ import { AuthHelper } from './auth.helper';
 import { AuthDto } from './dto/auth.dto';
 import { AuthInfoDto } from './dto/auth-info.dto';
 import { LoginDto } from './dto/login.dto';
+import { UserRoleEnum } from '@app/microservice';
 
 /**
  * Which detail table holds the profile row for a given role.
@@ -19,13 +20,13 @@ import { LoginDto } from './dto/login.dto';
  * MERCHANT_ADMIN would resolve to the wrong table. Same behaviour, stated explicitly.
  */
 const PROFILE_TABLE_BY_ROLE = {
-  [ROLE.ADMIN_SUPER]: 'admin',
-  [ROLE.ADMIN_ROLE_PERMISSION]: 'admin',
-  [ROLE.ADMIN_AGENT]: 'admin',
-  [ROLE.ADMIN_MERCHANT]: 'admin',
-  [ROLE.AGENT]: 'agent',
-  [ROLE.MERCHANT]: 'merchant',
-} as const satisfies Partial<Record<ROLE, 'admin' | 'agent' | 'merchant'>>;
+  [ROLE.ADMIN_SUPER]: UserRoleEnum.ADMIN,
+  [ROLE.ADMIN_ROLE_PERMISSION]: UserRoleEnum.ADMIN,
+  [ROLE.ADMIN_AGENT]: UserRoleEnum.ADMIN,
+  [ROLE.ADMIN_MERCHANT]: UserRoleEnum.ADMIN,
+  [ROLE.AGENT]: UserRoleEnum.AGENT,
+  [ROLE.MERCHANT]: UserRoleEnum.MERCHANT,
+} as const satisfies Partial<Record<ROLE, UserRoleEnum>>;
 
 @Injectable()
 export class AuthService {
@@ -70,7 +71,7 @@ export class AuthService {
       PROFILE_TABLE_BY_ROLE[role as keyof typeof PROFILE_TABLE_BY_ROLE];
 
     switch (table) {
-      case 'admin': {
+      case UserRoleEnum.ADMIN: {
         const admin = await this.prismaSlave.adminDetail.findFirst({
           where: { userId, deletedAt: null },
           select: { id: true },
@@ -78,7 +79,7 @@ export class AuthService {
         if (!admin) throw ApiError.notFound('Admin profile');
         return admin.id;
       }
-      case 'agent': {
+      case UserRoleEnum.AGENT: {
         const agent = await this.prismaSlave.agentDetail.findFirst({
           where: { userId, deletedAt: null },
           select: { id: true },
@@ -86,7 +87,7 @@ export class AuthService {
         if (!agent) throw ApiError.notFound('Agent profile');
         return agent.id;
       }
-      case 'merchant': {
+      case UserRoleEnum.MERCHANT: {
         const merchant = await this.prismaSlave.merchantDetail.findFirst({
           where: { userId, deletedAt: null },
           select: { id: true },

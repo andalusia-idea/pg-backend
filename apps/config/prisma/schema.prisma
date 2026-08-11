@@ -67,7 +67,7 @@ model AgentShareholder {
   merchantId Int      @db.Integer
   merchant   Merchant @relation(fields: [merchantId], references: [id])
 
-  percentagePerAgent Decimal @db.Decimal(10, 2)
+  percentagePerAgent Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -128,8 +128,8 @@ model BaseFee {
   paymentMethodName String
   transactionType   TransactionTypeEnum
 
-  feeProviderFixed      Decimal @default(0.0) @db.Decimal(10, 2)
-  feeProviderPercentage Decimal @default(0.0) @db.Decimal(10, 2)
+  feeProviderFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  feeProviderPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
 
   isActive Boolean @default(true)
 
@@ -154,11 +154,11 @@ model MerchantFee {
   merchantId Int @db.Integer
   baseFeeId  Int @db.Integer
 
-  feeInternalFixed      Decimal @default(0.0) @db.Decimal(10, 4)
-  feeInternalPercentage Decimal @default(0.0) @db.Decimal(10, 4)
+  feeInternalFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  feeInternalPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
 
-  feeAgentFixed      Decimal @default(0.0) @db.Decimal(10, 4)
-  feeAgentPercentage Decimal @default(0.0) @db.Decimal(10, 4)
+  feeAgentFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  feeAgentPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()

@@ -1,14 +1,24 @@
 import 'dotenv/config';
 import { DateTime } from 'luxon';
-// import { TIMEZONE } from '../constant/global.constant';
-
-const TIMEZONE = process.env.TIMEZONE || 'Asia/Jakarta';
 
 /**
- * Centralized helper for all date/time operations with timezone awareness.
- * Ensures all services consistently use the configured TIMEZONE (e.g. Asia/Jakarta).
+ * Timezone-aware date handling for the dashboard's own API surface.
+ *
+ * Deliberately app-local rather than a shared lib: the transactional backends
+ * have to speak whatever date format each upstream provider / PJP mandates,
+ * which differs per integration. This helper only ever serves the internal
+ * dashboard and its frontend, so it can assume one timezone throughout.
+ *
+ * Read from the environment rather than injected config because the DTO
+ * transform decorators are plain functions, outside Nest's DI graph.
  */
+const TIMEZONE = process.env.TIMEZONE || 'Asia/Jakarta';
+
 export class DateHelper {
+  static get timezone(): string {
+    return TIMEZONE;
+  }
+
   static now(): DateTime {
     return DateTime.now().setZone(TIMEZONE);
   }
@@ -41,21 +51,17 @@ export class DateHelper {
     return DateTime.fromMillis(dateNumber, { zone: TIMEZONE });
   }
 
-  /**
-   * Returns an ISO8601 timestamp string with timezone, e.g. "2025-08-01T14:30:45+07:00".
-   * Suitable for APIs or external integrations (e.g. DANA, payment gateways).
-   */
+  /** e.g. "2026-08-10T17:32:41.000+07:00" - includes milliseconds. */
   static nowISO(): string {
-    return this.now().toISO() ?? this.now().toString(); // e.g. "2025-08-01T14:30:45+07:00"
+    return this.now().toISO() ?? this.now().toString();
   }
 
-  /**
-   * Converts a JS Date to ISO8601 with timezone.
-   */
+  /** e.g. "2026-08-10T17:32:41.000+07:00" - includes milliseconds. */
   static toISO(date: Date | string | DateTime): string | null {
     if (date instanceof DateTime) return date.setZone(TIMEZONE).toISO();
-    if (date instanceof Date)
+    if (date instanceof Date) {
       return DateTime.fromJSDate(date).setZone(TIMEZONE).toISO();
+    }
     return DateTime.fromISO(date, { zone: TIMEZONE }).toISO();
   }
 }

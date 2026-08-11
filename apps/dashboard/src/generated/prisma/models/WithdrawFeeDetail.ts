@@ -395,9 +395,9 @@ export type WithdrawFeeDetailScalarWhereWithAggregatesInput = {
 export type WithdrawFeeDetailCreateInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -412,9 +412,9 @@ export type WithdrawFeeDetailUncheckedCreateInput = {
   agentId?: number | null
   withdrawId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -459,9 +459,9 @@ export type WithdrawFeeDetailCreateManyInput = {
   agentId?: number | null
   withdrawId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -627,9 +627,9 @@ export type WithdrawFeeDetailUncheckedUpdateManyWithoutWithdrawTransactionNested
 export type WithdrawFeeDetailCreateWithoutWithdrawTransactionInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -642,9 +642,9 @@ export type WithdrawFeeDetailUncheckedCreateWithoutWithdrawTransactionInput = {
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -702,9 +702,9 @@ export type WithdrawFeeDetailCreateManyWithdrawTransactionInput = {
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null

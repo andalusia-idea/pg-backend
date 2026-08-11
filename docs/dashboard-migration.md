@@ -16,6 +16,8 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 | DB access | `PrismaMaster` for writes, `PrismaSlave` for reads — injected via `PRISMA_MASTER_PROVIDER_KEY` / `PRISMA_SLAVE_PROVIDER_KEY` from `@app/prisma` |
 | Module layout | One folder per domain module under `apps/dashboard/src/modules/<name>/` with `*.controller.ts`, `*.service.ts`, `*.module.ts`, `dto/` — mirroring legacy |
 | Shared code | `apps/dashboard/src/shared/` — deliberately **not** promoted to `libs/`, because it's class-validator-based and would clash with the TypeBox conventions the transactional apps use |
+| Date handling | App-local (`shared/helper/date.helper.ts`), **not** a shared lib. The transactional backends have to speak whatever date format each upstream provider / PJP mandates; the dashboard only ever serves the internal frontend, so it can assume one timezone |
+| Authorization | JWT + `@Roles()` role gates. No CASL — see D3 |
 | Refactoring | Port behavior as-is. Anything that looks like a real bug gets flagged in this doc and raised before changing it |
 
 ### Why shared code stays app-local
@@ -88,17 +90,16 @@ After migration all four collapse to a single dashboard base URL. **This is a fr
 
 ### 2.4 From settlerecon-service
 
-Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay out of scope. But settlement + reconciliation read the **same `transaction` Postgres schema** dashboard already maps (verified: settlerecon's legacy `schema.prisma` declares `schemas = ["transaction"]`), so these are portable without touching provider code.
+Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay out of scope. But settlement reads the **same `transaction` Postgres schema** dashboard already maps (verified: settlerecon's legacy `schema.prisma` declares `schemas = ["transaction"]`), so it is portable without touching provider code.
 
 | # | Method | Path | Legacy module | Frontend caller |
 |---|---|---|---|---|
 | 37 | GET | `settlement/settled` | `settlement` | `getSettleData` |
 | 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` |
-| 39 | GET | `reconciliation` | `reconciliation` | `getReconciliationData` |
-| 40 | GET | `reconciliation/calculate` | `reconciliation` | `getReconciliationCalc` |
-| 41 | POST | `reconciliation/file-upload/csv` | `reconciliation` | `reconUploadCsv` ⚠️ see Finding F5 |
 
 ### 2.5 Not migrated
+
+- **Reconciliation** (`GET reconciliation`, `GET reconciliation/calculate`, `POST reconciliation/file-upload/csv`) — **out of dashboard scope**. The business requirement is still under discussion, and the intent is a separate dedicated app (NestJS or Go, chosen for concurrency and a small memory footprint) that will also own scheduled / background file generation. Revisited only after everything else lands. See D5.
 
 - **Region lookup** (`getProvinces`/`getRegencies`/`getDistricts`/`getVillages`) — the frontend calls `emsifa.com/api-wilayah-indonesia` **directly** from the browser, no backend involvement. Nothing to port.
 - **CSV export endpoints** — legacy has `GET transactions/{purchase,topup,withdraw,disbursement}/csv`. The frontend doesn't call them yet. Not migrating now; noted here because they're an obvious near-future ask.
@@ -130,8 +131,7 @@ apps/dashboard/src/
     ├── topup/               # 30-33
     ├── withdraw/            # 34-35
     ├── disbursement/        # 36
-    ├── settlement/          # 37-38
-    └── reconciliation/      # 39-41
+    └── settlement/          # 37-38
 ```
 
 Write-path modules (`user`, `agent-detail`, `merchant-detail`, `merchant-signature`, `config-merchant`, `topup`, `withdraw`) use `PrismaMaster`. Everything else is `PrismaSlave`.
@@ -170,16 +170,16 @@ So I've centralized it behind one decorator, `@ApiMoneyProperty()`, which emits 
 
 It's still a single decorator at each call site, so it's no more verbose than `@ApiProperty({ type: Decimal })` — and it's self-documenting, so you don't have to explain it verbally to the frontend dev. If you'd rather have the literal `type: Decimal`, it's a **one-line change inside `ApiMoneyProperty`** and every DTO picks it up. Your call — flagging, not overriding.
 
-**Percentage precision — needs your input (Finding F4).** `MoneyType`'s 2-decimal rule doesn't hold for all percentage columns:
+**Percentage precision — settled (D4).** The rule across every schema is:
 
-| Column | Prisma type | Decimals |
+| Kind | Prisma column | DTO decorators |
 |---|---|---|
-| `BaseFee.feeProviderPercentage` | `Decimal(10, 2)` | 2 |
-| `MerchantFee.feeInternalPercentage` | `Decimal(10, 4)` | **4** |
-| `MerchantFee.feeAgentPercentage` | `Decimal(10, 4)` | **4** |
-| `AgentShareholder.percentagePerAgent` | `Decimal(10, 2)` | 2 |
+| **Money** | `Decimal(10, 2) // Money` | `@IsMoney()` / `@ToMoneyString()` |
+| **Percentage** | `Decimal(10, 4) // Percentage` | `@IsPercentage(4)` / `@ToPercentageString(4)` |
 
-Forcing everything to 2 decimals would **silently truncate** merchant/agent fee percentages on the `upsertMerchantFee` write path. So the percentage decorators are parameterized — `@IsPercentage(4)` / `@ToPercentageString(4)` — defaulting to 2. See F4 below for the open question.
+The source schemas now carry `// Money` / `// Percentage` markers on every Decimal column, so the intended scale is greppable rather than inferred. The percentage decorators stay parameterized (defaulting to 2) in case a 2-decimal percentage ever appears, but **every percentage column in the current schema is 4** — pass `4` explicitly on those paths.
+
+> Range note, not a blocker: `Decimal(10, 2)` allows 8 integer digits, so the largest representable amount is **99,999,999.99** (~100 juta IDR). Legacy settlerecon used `Decimal(18, 2)`. Fine if no single transaction, balance, or ledger entry ever exceeds ~100 million rupiah — worth a deliberate confirmation, since a balance log accumulates rather than resetting.
 
 ### 4.2 Dates — ISO 8601 string with Jakarta offset
 
@@ -231,11 +231,11 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ---
 
-## 5. Findings — need your input before I touch them
+## 5. Decisions
 
-Each of these is a real defect or ambiguity found while reading the legacy code. **None have been changed.**
+Each of these was a real defect or ambiguity found while reading the legacy code, now resolved.
 
-### F1 — Frontend `rejectTransactionTopUp` posts to `/approve`
+### D1 — Frontend `rejectTransactionTopUp` posts to `/approve` → **backend implements both**
 
 `transaction-top-up.api.ts`:
 
@@ -245,55 +245,70 @@ export function rejectTransactionTopUp(body: StatusTopUp) {
 }
 ```
 
-Legacy backend has both `POST /approve` and `POST /reject`. So today, clicking "reject" in the dashboard **approves the top-up** — real money movement in the wrong direction.
+Today, clicking "reject" in the dashboard **approves the top-up** — real money movement in the wrong direction.
 
-*Plan*: implement both endpoints correctly on the dashboard side (matching legacy), and flag the one-line frontend fix. **This is a frontend bug, not a backend one** — I can't fix it from here. Worth telling your frontend developer sooner rather than later.
+**Decision**: the dashboard implements `POST transactions/topup/approve` *and* `POST transactions/topup/reject` correctly, matching legacy. The frontend one-liner is a separate fix on the frontend dev's side. Until it lands, reject remains broken **in the frontend only** — the backend will be correct.
 
-### F2 — `agent-detail/dropdown` is `@PublicApi()` in legacy
+### D2 — `agent-detail/dropdown` was `@PublicApi()` → **removed**
 
-`agent-detail.controller.ts` marks the dropdown endpoint `@PublicApi()` — no auth. It leaks the full agent list (userId, profileId, fullname) to anyone who can reach the host. `merchant-detail/dropdown` is **not** public, so this looks accidental rather than deliberate.
+Legacy left the agent dropdown unauthenticated, leaking the full agent list (userId, profileId, fullname) to anyone who could reach the host. `merchant-detail/dropdown` was not public, confirming it was an oversight rather than a design choice.
 
-*Question*: port as-is (public), or require auth? I'd default to requiring auth unless something depends on it being open.
+**Decision**: no `@PublicApi()` on this endpoint. `POST /login` is the only public route in the app.
 
-### F3 — CASL `@CheckPolicies` is commented out almost everywhere
+### D3 — Authorization depth → **JWT + `@Roles()`**
 
-Every route in `agent-detail.controller.ts` has its policy check commented out; same pattern across most legacy controllers. Effectively, any authenticated user can read/update any agent or merchant.
+Legacy wired CASL `@CheckPolicies` then commented it out on nearly every controller, so any authenticated user could read or update any agent or merchant.
 
-*Question*: for dashboard, do you want (a) as-is — JWT only, no per-action policy, (b) JWT + `@Roles()` role gate, or (c) full CASL? I'd suggest **(b)** for now — meaningfully safer than (a), far less work than (c), and it maps onto the `Role`/`Permission` tables that already exist.
+**Decision**: JWT authentication plus `@Roles()` role gates. **No CASL scaffolding** — not even empty `@CheckPolicies()` placeholders, since the per-use-case policies aren't decided yet and dead decorators on 16 modules would be misleading about what's actually enforced. `RolesGuard` is already registered globally and throws a `403` with the offending role named. When policies are settled, CASL can be layered on without touching the role gates.
 
-### F4 — Percentage decimal precision (see §4.1)
+### D4 — Decimal precision → **Money 2dp, Percentage 4dp, everywhere**
 
-`MerchantFee.feeInternalPercentage` / `feeAgentPercentage` are `Decimal(10,4)`; the existing TypeBox `PercentageType` only allows 2 decimals. The legacy `PercentageType(decimalPlaces)` parameterized version is commented out in `libs/microservice/src/microservice.enum.ts`, which suggests you hit this already.
+Settled and applied across all schemas: `Decimal(10, 2) // Money`, `Decimal(10, 4) // Percentage`. See §4.1. The dashboard's merged schema is now generated from the source schemas rather than hand-maintained — see §6.
 
-*Question*: should merchant/agent fee percentages accept 4 decimals (matching the DB), or is 2 the real business rule and the `Decimal(10,4)` column is over-provisioned? I've built the decorators parameterized either way — just need to know which to apply on the `upsertMerchantFee` path.
+### D5 — Reconciliation → **out of scope**
 
-### F5 — Reconciliation CSV upload may be a no-op
+Deferred entirely; a separate dedicated app will own it along with scheduled / background file generation. See §2.5.
 
-My earlier audit of the legacy code flagged `reconciliation` as parsing uploaded CSVs but never persisting results. I haven't re-verified this in detail yet — I'll confirm when I reach that module (it's last in the order). If it is a no-op, porting it faithfully means porting a stub; worth deciding then whether to finish it or leave the endpoint returning success without doing anything.
+### D6 — `libs/date-time` → **deleted, moved into the dashboard**
 
-### F6 — Unrelated latent bug: `libs/date-time` barrel is broken — **fixed**
+The lib's barrel was also broken (it exported two files that never existed), so nothing could have imported it anyway.
 
-`libs/date-time/src/index.ts` exported `./date-time.module` and `./date-time.service` — **neither file existed**. Only `date.helper.ts` does. Any `import { DateHelper } from '@app/date-time'` would have failed to compile.
+**Decision**: `DateHelper` now lives at `apps/dashboard/src/shared/helper/date.helper.ts` and the lib is gone. Rationale: the transactional backends will each need date handling shaped by whatever their upstream provider / PJP mandates, so a single shared Luxon helper would have been a false abstraction. The dashboard's copy serves only the internal frontend. Removed from `nest-cli.json`, the `tsconfig.json` paths, and the Jest `moduleNameMapper`; all five apps verified building afterwards.
 
-Nothing imported it, so nothing was broken in practice. Dashboard is the first consumer, so the barrel now reads `export * from './date.helper'`. Verified all four other apps still build. Flagged because it's a change outside `apps/dashboard`.
+### D7 — Login validation runs *after* the auth guard → **kept as legacy**
 
-### F7 — Login validation runs *after* the auth guard (legacy behaviour, kept)
+`POST /login` carries `@ApiBody({ type: LoginDto })`, but `LoginDto`'s class-validator rules never execute: Nest runs guards before pipes, and `LocalAuthGuard` reads `email`/`password` straight off the raw body. Verified live — posting `{"email":"not-an-email","password":""}` returns **401**, not the 422 the DTO implies.
 
-`POST /login` carries `@ApiBody({ type: LoginDto })`, but `LoginDto`'s class-validator rules never execute: Nest runs guards before pipes, and `LocalAuthGuard` reads `email`/`password` straight off the raw body. Verified live — posting `{"email":"not-an-email","password":""}` returns **401 UNAUTHORIZED**, not the 422 the DTO implies.
-
-Legacy behaves identically. Kept as-is since the outcome (rejected login) is correct and only the status code/message differ. Raising it because the Swagger contract is misleading. Fixing it would mean validating inside `LocalStrategy` — say the word and I'll do it.
+**Decision**: keep legacy behaviour. The outcome (rejected login) is correct; only the status code differs. Noted so the Swagger contract isn't mistaken for enforced validation.
 
 ---
 
 ## 6. Deliberate deviations from legacy
 
-Everything else is a faithful port. These three are intentional, and each is behaviour-preserving:
+Everything else is a faithful port. These four are intentional, and each is behaviour-preserving:
 
 1. **`ApiError`** drops legacy's `DependencyErrorContext` / dependency-failure factories. Those existed to describe inter-service TCP call failures; the dashboard makes no such calls.
 2. **`PrismaClientKnownExceptionFilter`** is a lookup map covering request-time codes (P1xxx connection, P2xxx query engine) instead of legacy's ~90-case switch. The P3xxx (migrate), P4xxx (db pull) and P6xxx (Accelerate) branches it also listed are unreachable from a request handler. Unmapped codes still return their code as `PRISMA_<code>`. It also strips Prisma's nested `driverAdapterError` from the response — that object quotes raw SQL and relation names, which is schema disclosure; it stays in the logs.
-3. **Profile-table resolution on login** uses an explicit role→table map rather than legacy's substring test (`role.includes('admin')` checked before `'merchant'`). Identical results for today's eight roles — it only works in legacy because of the check order, so a future `MERCHANT_ADMIN` would silently resolve to the admin table.
+3. **Profile-table resolution on login** uses an explicit role→profile map keyed on `UserRoleEnum`, rather than legacy's substring test (`role.includes('admin')` checked before `'merchant'`). Identical results for today's eight roles — it only works in legacy because of the check order, so a future `MERCHANT_ADMIN` would silently resolve to the admin table.
+4. **The dashboard's `schema.prisma` is generated, not hand-maintained** — see §6.1.
 
 Also worth noting, in `LocalStrategy`: legacy constructed an `UnauthorizedException` and never threw it, so a bad password fell through as a null user. The port throws.
+
+### 6.1 The merged schema is generated
+
+`apps/dashboard/prisma/schema.prisma` is produced by `apps/dashboard/prisma/merge-schema.js`, which concatenates the auth, config and transaction schemas:
+
+```bash
+npm run prisma:merge:dashboard && npm run prisma:generate:dashboard
+```
+
+It was previously a hand-copied concatenation, which would silently drift whenever a source schema changed — and did: the Money/Percentage precision rework landed in `apps/config` and `apps/transaction` while the dashboard's copy kept the old types.
+
+The script also owns the enum-collision rename. Config and transaction each declare their own `TransactionTypeEnum` (necessary — Prisma requires every `@@schema` block to be self-contained), but Prisma needs globally unique identifiers within one file. So config's copy becomes `TransactionTypeEnumConfig` with `@@map("TransactionTypeEnum")` pointing back at the real Postgres type. **The rename is local to the dashboard's client; the database is untouched.** If a source schema ever stops declaring a renamed enum, the script fails loudly rather than silently skipping the rename.
+
+The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
+
+> Reminder: the dashboard **never migrates**. `migrations` is commented out in its `prisma.config.ts`, and no `prisma:migrate:*:dashboard` script exists. Each owning app migrates its own tables.
 
 ## 7. Progress
 
@@ -301,7 +316,9 @@ Also worth noting, in `LocalStrategy`: legacy constructed an `UnauthorizedExcept
 - [x] Migration plan + DTO conventions (this doc)
 - [x] `shared/` foundation — `ResponseDto`, pagination, `ApiError` + exception filters (incl. Prisma), `ResponseInterceptor`, `CustomValidationPipe`, money/date decorators, `DtoHelper`
 - [x] `auth/` foundation — `JwtConfig`, JWT + local strategies, `JwtAuthGuard`/`RolesGuard`, `@PublicApi`/`@Roles`/`@CurrentAuthInfo`, `POST /login`
-- [ ] Modules (17), in the order listed in §3
+- [x] Schema merge automated (`prisma:merge:dashboard`); Money/Percentage precision synced from the source schemas
+- [x] `libs/date-time` removed, `DateHelper` moved into the dashboard
+- [ ] Modules (16), in the order listed in §3
 
 ### Verified so far
 
