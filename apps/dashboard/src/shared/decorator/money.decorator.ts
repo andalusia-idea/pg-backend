@@ -7,19 +7,31 @@ import Decimal from 'decimal.js';
  * Money crosses the API boundary as a plain string with a fixed 2 decimal places
  * ("10000.00"), never as a float - floats can't represent currency exactly.
  *
- * Mirrors the TypeBox `MoneyType` used by the Fastify apps
- * (libs/microservice/src/microservice.enum.ts) so both stacks accept the same input.
+ * The integer part is capped at 13 digits to match `Decimal(15, 2)`, the width
+ * every Money column uses (max 9,999,999,999,999.99 - roughly 10 trillion IDR).
+ * Rejecting an over-wide amount here returns a 422 naming the field, rather than
+ * letting Postgres raise a numeric-overflow the caller cannot act on.
  */
-export const MONEY_PATTERN = /^\d+(\.\d{1,2})?$/;
+export const MONEY_INTEGER_DIGITS = 13;
+export const MONEY_DECIMAL_PLACES = 2;
+export const MONEY_PATTERN = new RegExp(
+  `^\\d{1,${MONEY_INTEGER_DIGITS}}(\\.\\d{1,${MONEY_DECIMAL_PLACES}})?$`,
+);
 export const MONEY_EXAMPLE = '10000.00';
 
 /**
- * Percentages allow a configurable scale because the columns disagree:
- * BaseFee.feeProviderPercentage is Decimal(10,2) while
- * MerchantFee.feeInternalPercentage / feeAgentPercentage are Decimal(10,4).
- * Validating everything at 2 would silently truncate merchant fee config.
+ * Percentage columns are `Decimal(8, 4)`. The pattern caps the value at 100
+ * regardless, since that is the business rule - the column is simply wide enough
+ * not to constrain it.
+ *
+ * The scale stays parameterised in case a 2-decimal percentage ever appears, but
+ * every percentage column in the current schema is 4.
  */
-export function percentagePattern(decimalPlaces: 2 | 4 = 2): RegExp {
+export const PERCENTAGE_DECIMAL_PLACES = 4;
+
+export function percentagePattern(
+  decimalPlaces: 2 | 4 = PERCENTAGE_DECIMAL_PLACES,
+): RegExp {
   return new RegExp(
     `^(100(\\.0{1,${decimalPlaces}})?|\\d{1,2}(\\.\\d{1,${decimalPlaces}})?)$`,
   );
@@ -79,7 +91,9 @@ export function ToMoneyString() {
 }
 
 /** Response side, for percentage columns. Scale must match the Prisma column. */
-export function ToPercentageString(decimalPlaces: 2 | 4 = 2) {
+export function ToPercentageString(
+  decimalPlaces: 2 | 4 = PERCENTAGE_DECIMAL_PLACES,
+) {
   return Transform(({ value }) => toFixedString(value, decimalPlaces), {
     toPlainOnly: true,
   });
@@ -99,7 +113,7 @@ export function IsMoney(validationOptions?: ValidationOptions) {
 
 /** Request side: 0-100 with up to `decimalPlaces` decimals. */
 export function IsPercentage(
-  decimalPlaces: 2 | 4 = 2,
+  decimalPlaces: 2 | 4 = PERCENTAGE_DECIMAL_PLACES,
   validationOptions?: ValidationOptions,
 ) {
   return applyDecorators(

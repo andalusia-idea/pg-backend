@@ -17,6 +17,8 @@ import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { RolesGuard } from '../auth/guard/roles.guard';
 import { auditTrailExtension } from '../database/audit.extension';
+import { PermissionModule } from '../modules/permission/permission.module';
+import { UserModule } from '../modules/user/user.module';
 import {
   AllExceptionsFilter,
   InvalidRequestExceptionFilter,
@@ -75,6 +77,10 @@ import { AppService } from './app.service';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     AuthModule,
+
+    // Feature modules, ported in the order listed in docs/dashboard-migration.md
+    UserModule,
+    PermissionModule,
   ],
 })
 export class AppModule {}

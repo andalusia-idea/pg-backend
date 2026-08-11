@@ -254,7 +254,7 @@ model AgentShareholder {
   merchantId Int      @db.Integer
   merchant   Merchant @relation(fields: [merchantId], references: [id])
 
-  percentagePerAgent Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
+  percentagePerAgent Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -291,7 +291,7 @@ model Provider {
 // -- 2. Payment Method
 model PaymentMethod {
   // id        Int      @id @default(autoincrement())
-  name             String                @id
+  name             String                      @id
   explain          String
   transactionTypes TransactionTypeEnumConfig[]
 
@@ -309,14 +309,14 @@ model PaymentMethod {
 
 // -- 4. Base Fee Config (default: hanya fee provider)
 model BaseFee {
-  id                Int                 @id @default(autoincrement()) @db.Integer
-  code              String              @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
+  id                Int                       @id @default(autoincrement()) @db.Integer
+  code              String                    @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
   providerName      String
   paymentMethodName String
   transactionType   TransactionTypeEnumConfig
 
-  feeProviderFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  feeProviderPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
+  feeProviderFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeProviderPercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
   isActive Boolean @default(true)
 
@@ -341,11 +341,11 @@ model MerchantFee {
   merchantId Int @db.Integer
   baseFeeId  Int @db.Integer
 
-  feeInternalFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  feeInternalPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
+  feeInternalFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeInternalPercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
-  feeAgentFixed      Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  feeAgentPercentage Decimal @default(0.0) @db.Decimal(10, 4) // Percentage
+  feeAgentFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeAgentPercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -384,9 +384,9 @@ enum TransactionTypeEnumConfig {
   DISBURSEMENT
   PURCHASE
   SETTLEMENT_PURCHASE
+
   /// Renamed for this merged schema only; the Postgres type is unchanged.
   @@map("TransactionTypeEnum")
-
   @@schema("config")
 }
 
@@ -400,8 +400,8 @@ model TopUpTransaction {
   merchantId        Int
   externalId        String?
   referenceId       String                @unique //reff id from bank
-  nominal           Decimal               @default(0.0) @db.Decimal(10, 2) // Money
-  netNominal        Decimal               @default(0.0) @db.Decimal(10, 2) // Money
+  nominal           Decimal               @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal               @default(0.0) @db.Decimal(15, 2) // Money
   status            TransactionStatusEnum @default(PENDING)
   providerName      String
   paymentMethodName String //transfer_bank, virtual_account
@@ -434,9 +434,9 @@ model TopupFeeDetail {
   agentId       Int?
   topupId       Int
   type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(10, 4) // Percentage
+  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -461,8 +461,8 @@ model WithdrawTransaction {
 
   providerName      String
   paymentMethodName String // transfer_bank, virtual_account, dll
-  nominal           Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(10, 2) // Money // nominal setelah dikenakan fee
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal setelah dikenakan fee
 
   status TransactionStatusEnum @default(PENDING)
 
@@ -493,9 +493,9 @@ model WithdrawFeeDetail {
   agentId       Int?
   withdrawId    Int
   type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(10, 4) // Percentage
+  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -523,8 +523,8 @@ model DisbursementTransaction {
   recipientBankCode String
   recipientBankName String?
   recipientAccount  String
-  nominal           Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
   status TransactionStatusEnum @default(PENDING)
 
@@ -556,9 +556,9 @@ model DisbursementFeeDetail {
   agentId        Int?
   disbursementId Int
   type           FeeTypeEnum
-  nominal        Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feeFixed       Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feePercentage  Decimal     @default(0.0) @db.Decimal(10, 4) // Percentage
+  nominal        Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage  Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -584,8 +584,8 @@ model PurchaseTransaction {
 
   providerName      String
   paymentMethodName String
-  nominal           Decimal @default(0.0) @db.Decimal(10, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
   status TransactionStatusEnum @default(PENDING)
 
@@ -620,9 +620,9 @@ model PurchaseFeeDetail {
   agentId       Int?
   purchaseId    Int
   type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(10, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(10, 4) // Percentage
+  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -688,9 +688,9 @@ model MerchantBalanceLog {
   withdrawId     Int?
   disbursementId Int?
   merchantId     Int
-  changeAmount   Decimal @default(0.0) @db.Decimal(10, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(10, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
+  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
+  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
   transactionType TransactionTypeEnum
 
@@ -721,9 +721,9 @@ model AgentBalanceLog {
   withdrawId     Int?
   disbursementId Int?
   agentId        Int
-  changeAmount   Decimal @default(0.0) @db.Decimal(10, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(10, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
+  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
+  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
   transactionType TransactionTypeEnum
 
@@ -748,15 +748,15 @@ model AgentBalanceLog {
 }
 
 model InternalBalanceLog {
-  id                Int                 @id @default(autoincrement())
-  topupId           Int?
-  purchaseId        Int?
-  withdrawId        Int?
-  disbursementId    Int?
-  merchantId        Int?
-  changeAmount      Decimal @default(0.0) @db.Decimal(10, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive     Decimal @default(0.0) @db.Decimal(10, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending    Decimal @default(0.0) @db.Decimal(10, 2) // Money
+  id             Int     @id @default(autoincrement())
+  topupId        Int?
+  purchaseId     Int?
+  withdrawId     Int?
+  disbursementId Int?
+  merchantId     Int?
+  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
+  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
+  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
   transactionType   TransactionTypeEnum
   providerName      String

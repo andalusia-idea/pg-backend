@@ -275,6 +275,60 @@ The lib's barrel was also broken (it exported two files that never existed), so 
 
 **Decision**: `DateHelper` now lives at `apps/dashboard/src/shared/helper/date.helper.ts` and the lib is gone. Rationale: the transactional backends will each need date handling shaped by whatever their upstream provider / PJP mandates, so a single shared Luxon helper would have been a false abstraction. The dashboard's copy serves only the internal frontend. Removed from `nest-cli.json`, the `tsconfig.json` paths, and the Jest `moduleNameMapper`; all five apps verified building afterwards.
 
+### D8 — `GET permissions` serves two different needs → **kept as legacy, flag raised**
+
+The frontend calls this one endpoint from two places with opposite intentions:
+
+| Caller | File | Wants |
+|---|---|---|
+| `getPermissionByAuthInfo()` | `store/ability.store.ts` → `router/guard/ability.guard.tsx` | **the caller's own** permissions, to build a CASL ability and render the menu |
+| `fetchPermissionAll()` | `store/permission.ts` | **all** permissions, presumably for a permission-management screen |
+
+Legacy's `findAll()` returns every permission row regardless of caller. So the ability built in `buildAbilityFromPermissions()` is the *union of all roles' permissions* for every signed-in user — meaning an agent or merchant session gets the full admin menu client-side.
+
+**Impact is UI-only**, not a data breach: server-side authorization is the role gate (D3), which is unaffected. But it's misleading navigation, and the naming shows the intent was per-user.
+
+**Decision**: port legacy behaviour unchanged. Scoping it to the caller's role would silently break `fetchPermissionAll()`, since both hit the same URL — the real fix is two endpoints (`GET permissions` for management, `GET permissions/me` for the ability), which needs a coordinated frontend change. Raising it rather than choosing unilaterally.
+
+Consequence for now: `GET permissions` is **deliberately not role-gated**. Gating it to admins would leave agent/merchant sessions with no navigation at all.
+
+### D9 — Role assignments on the ported endpoints → **proposed, confirm if wrong**
+
+Legacy had no role restrictions on these (any authenticated user could register a merchant). D3 says role-gate them, so these are my assignments:
+
+| Endpoint | Roles | Reasoning |
+|---|---|---|
+| `GET user/profile` | *(any authenticated)* | Returns only the caller's own profile |
+| `POST user/admin/register-merchant` | `ADMIN_SUPER`, `ADMIN_MERCHANT` | Path says `admin` |
+| `POST user/admin/register-agent` | `ADMIN_SUPER`, `ADMIN_AGENT` | Path says `admin` |
+| `GET permissions`, `GET permissions/:id` | *(any authenticated)* | See D8 |
+
+**One to check**: legacy passed `authInfo.userId` into merchant registration as the `agentId`, and config-service only created the `AgentShareholder` row when that id matched a real Agent — the code comment there reads "admins registering merchants are not agents". That implies **agents were expected to register their own merchants**, which my `MERCHANT_ADMIN_ROLES` currently forbids. If agents should be able to self-register merchants, add `ROLE.AGENT` to `MERCHANT_ADMIN_ROLES` in `apps/dashboard/src/auth/auth.constant.ts` — the shareholder logic already handles both cases correctly.
+
+### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
+
+Found while setting up a local database to test against. Every `prisma migrate` path fails:
+
+```
+$ npx dotenv -e apps/auth/.env.local -- npx prisma migrate status --schema apps/auth/prisma/schema.prisma
+Error: The datasource.url property is required in your Prisma config file when using prisma migrate status.
+```
+
+Two compounding causes:
+
+1. **No `prisma.config.ts` at the repo root.** Prisma 7 looks for the config in the working directory. Each app has one, but running from root finds none — so `datasource.url` is undefined, which `migrate` requires (`generate` doesn't, which is why `prisma:generate:*` works fine).
+2. **Passing `--config apps/auth/prisma.config.ts` doesn't help**: that file declares `schema: 'apps/auth/prisma/schema.prisma'`, and Prisma resolves it relative to the *config file's own directory*, producing `apps/auth/apps/auth/prisma/schema.prisma`.
+
+So `npm run prisma:migrate:dev:auth`, `prisma:migrate:deploy:auth`, and the `config` equivalents are all broken today. No app has a `migrations/` folder yet, so nothing has been migrated — consistent with this never having worked.
+
+**Not fixed here** because it affects the transactional apps' deployment path, not the dashboard. The likely fix is making paths inside each `prisma.config.ts` relative to the config file (`prisma/schema.prisma`, `prisma/migrations`) and passing `--config` in the scripts. Worth resolving before any deploy that needs `migrate deploy`.
+
+For local development in the meantime, `db push` works with an explicit URL:
+
+```bash
+npx prisma db push --schema apps/auth/prisma/schema.prisma --url "$POSTGRESQL_URL_MASTER"
+```
+
 ### D7 — Login validation runs *after* the auth guard → **kept as legacy**
 
 `POST /login` carries `@ApiBody({ type: LoginDto })`, but `LoginDto`'s class-validator rules never execute: Nest runs guards before pipes, and `LocalAuthGuard` reads `email`/`password` straight off the raw body. Verified live — posting `{"email":"not-an-email","password":""}` returns **401**, not the 422 the DTO implies.
@@ -318,7 +372,34 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 - [x] `auth/` foundation — `JwtConfig`, JWT + local strategies, `JwtAuthGuard`/`RolesGuard`, `@PublicApi`/`@Roles`/`@CurrentAuthInfo`, `POST /login`
 - [x] Schema merge automated (`prisma:merge:dashboard`); Money/Percentage precision synced from the source schemas
 - [x] `libs/date-time` removed, `DateHelper` moved into the dashboard
-- [ ] Modules (16), in the order listed in §3
+- [x] **`user`** — `GET user/profile`, `POST user/admin/register-merchant`, `POST user/admin/register-agent` (endpoints 4-6)
+- [x] **`permission`** — `GET permissions`, `GET permissions/:id` (endpoints 2-3)
+- [ ] Remaining modules (14), in the order listed in §3
+
+### End-to-end verification (real database)
+
+Against a local Postgres with all three schemas pushed (29 tables) and a seeded `ADMIN_SUPER`:
+
+| Check | Result |
+|---|---|
+| `POST /login` | 200, returns JWT + `authInfo` |
+| `GET /user/profile` | 200, admin block populated, agent/merchant null |
+| `GET /permissions` | 200, permission list |
+| `POST /user/admin/register-agent` | 201 — `auth.User` + `auth.AgentDetail` + `config.Agent` all created |
+| `POST /user/admin/register-merchant` | 201 — `auth.User` + `MerchantDetail` + `MerchantSignature` (clientId `3-<uuid>`) + `config.Merchant` (`settlementInterval` 60, not the 120 default) |
+| `config.AgentShareholder` after admin-registered merchant | **empty**, correct — the registrar is not an agent |
+| Duplicate email | 422 `email is already registered` |
+| `MERCHANT` token on an admin route | 403 naming the role |
+| Unauthenticated on any route | 401 in the standard envelope |
+| **Audit trail** | `createdBy = 1` stamped on every row the admin created — confirms JwtAuthGuard → CLS → Prisma extension |
+| **Transaction rollback** | Forced a `config.Merchant` PK collision mid-registration: 409 returned, **zero** orphaned `User` / `MerchantDetail` / `MerchantSignature` rows |
+
+That last row is the one legacy could not guarantee: auth committed its own transaction, *then* made a TCP call to config, so a config failure left an orphaned user with no merchant config.
+
+Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as separate Postgres types in the pushed database, confirming the merged-schema `@@map` rename targets real types.
+
+> Local test data: roles `ADMIN_SUPER`/`AGENT`/`MERCHANT`, `admin@manapay.id` / `password123`, plus one seeded agent and merchant. Wipe with
+> `DROP SCHEMA auth, config, transaction CASCADE;` then re-push.
 
 ### Verified so far
 

@@ -3,6 +3,7 @@ import { DATE_EXAMPLE } from './date.decorator';
 import {
   MONEY_EXAMPLE,
   MONEY_PATTERN,
+  PERCENTAGE_DECIMAL_PLACES,
   percentagePattern,
 } from './money.decorator';
 
@@ -28,7 +29,7 @@ export function ApiMoneyProperty(options?: ApiPropertyOptions) {
 }
 
 export function ApiPercentageProperty(
-  decimalPlaces: 2 | 4 = 2,
+  decimalPlaces: 2 | 4 = PERCENTAGE_DECIMAL_PLACES,
   options?: ApiPropertyOptions,
 ) {
   return ApiProperty({

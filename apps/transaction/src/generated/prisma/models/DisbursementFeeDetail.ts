@@ -395,9 +395,9 @@ export type DisbursementFeeDetailScalarWhereWithAggregatesInput = {
 export type DisbursementFeeDetailCreateInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -412,9 +412,9 @@ export type DisbursementFeeDetailUncheckedCreateInput = {
   agentId?: number | null
   disbursementId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -459,9 +459,9 @@ export type DisbursementFeeDetailCreateManyInput = {
   agentId?: number | null
   disbursementId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -627,9 +627,9 @@ export type DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransacti
 export type DisbursementFeeDetailCreateWithoutDisbursementTransactionInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -642,9 +642,9 @@ export type DisbursementFeeDetailUncheckedCreateWithoutDisbursementTransactionIn
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -702,9 +702,9 @@ export type DisbursementFeeDetailCreateManyDisbursementTransactionInput = {
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null

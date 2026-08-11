@@ -490,8 +490,8 @@ export type TopUpTransactionCreateInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -518,8 +518,8 @@ export type TopUpTransactionUncheckedCreateInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -601,8 +601,8 @@ export type TopUpTransactionCreateManyInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -877,8 +877,8 @@ export type TopUpTransactionCreateWithoutFeeDetailsInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -904,8 +904,8 @@ export type TopUpTransactionUncheckedCreateWithoutFeeDetailsInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -999,8 +999,8 @@ export type TopUpTransactionCreateWithoutMerchantBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -1026,8 +1026,8 @@ export type TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -1121,8 +1121,8 @@ export type TopUpTransactionCreateWithoutAgentBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -1148,8 +1148,8 @@ export type TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -1243,8 +1243,8 @@ export type TopUpTransactionCreateWithoutInternalBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
@@ -1270,8 +1270,8 @@ export type TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   merchantId: number
   externalId?: string | null
   referenceId: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   providerName: string
   paymentMethodName: string
