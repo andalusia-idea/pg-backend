@@ -353,6 +353,27 @@ Replaced with `ParseDtoArrayPipe(Dto)` (`shared/pipe/parse-dto-array.pipe.ts`), 
 
 Legacy's controller called `this.service.registerWebhook(...)` **without awaiting**, then immediately returned 201. A failed write still reported success, and the rejection surfaced as an unhandled promise rejection rather than a response. Now awaited.
 
+### D15 — Aggregate balances exclude PURCHASE, single balances don't → **ported as-is, needs a decision**
+
+The balance log tables are append-only snapshots: each row carries the resulting `balanceActive` / `balancePending`, so the current balance is simply the newest row.
+
+But the two families of endpoint disagree on which rows count:
+
+| Endpoint | `transactionType` filter |
+|---|---|
+| `GET balance/merchant/:id`, `balance/agent/:id` | **none** — newest row wins |
+| `GET balance/aggregate/*` | only `WITHDRAW`, `TOPUP`, `DISBURSEMENT`, `SETTLEMENT_PURCHASE` |
+
+So if a holder's newest row is a `PURCHASE`, the aggregate reads their *previous* row and reports a stale balance — meaning **the sum of the individual balances will not always equal the aggregate**.
+
+Ported unchanged, because which one is right is a business question and changing it moves numbers already shown on the dashboard. My read: the per-holder version looks correct (a snapshot is a snapshot regardless of what caused it) and the aggregate's filter looks like a leftover. If you agree, deleting `AGGREGATE_TRANSACTION_TYPES` from the three aggregate queries in `balance.service.ts` is the whole fix.
+
+**Related, worth knowing before production**: the two per-holder aggregates use Prisma `distinct: ['merchantId']` with `orderBy: createdAt`. Postgres `DISTINCT ON` requires the ordering to lead with the distinct column, which this doesn't — so Prisma cannot push it down and dedupes **in memory after fetching every matching row**. Fine at current volumes; it degrades linearly with balance-log growth. Legacy left the equivalent `DISTINCT ON` SQL in a comment marked *"TODO: Jangan di hapus => Performance"*, which is the ready-made replacement.
+
+### D16 — Ordering had no tiebreak → **fixed**
+
+Every "latest row" and listing query ordered by `createdAt` alone. Rows written inside one transaction can share a timestamp, and the winner was then arbitrary. All such queries now order by `createdAt DESC, id DESC` — `id` is monotonic on these append-only tables, so the newest row is picked deterministically.
+
 ### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
 
 Found while setting up a local database to test against. Every `prisma migrate` path fails:
@@ -429,9 +450,28 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 - [x] **`config-agent`** — `GET agent/:agentId/merchants` (endpoint 17)
 - [x] **`config-fee`** — `GET fee/config` (endpoint 19)
 - [x] **`config-merchant`** — interval, config, fee upsert, shareholder upsert (endpoints 20-23)
-- [ ] Remaining modules (7): `balance`, `purchase`, `topup`, `withdraw`, `disbursement`, `settlement`
+- [x] **`balance`** — 3 aggregates + 2 per-holder (endpoints 24-28)
+- [x] **`purchase` / `topup` / `withdraw` / `disbursement`** — listings (endpoints 29, 30, 34, 36)
+- [x] **`settlement`** — settled / unsettled (endpoints 37-38)
+- [ ] **Deferred — the 3 transaction write endpoints** (31, 32/33, 35): `POST transactions/topup`, `POST transactions/topup/{approve,reject}`, `POST transactions/withdraw`
 
-**23 of 38 endpoints ported.** What's left is the transaction side.
+**35 of 38 endpoints ported.**
+
+### Why the 3 write endpoints are deferred
+
+They are not more of the same — each pulls in a subsystem that isn't in the dashboard yet:
+
+| Endpoint | Depends on |
+|---|---|
+| `POST transactions/topup` | **Fee calculation.** Legacy calls config-service over TCP (`calculateTopupFeeConfigTCP`) to split a nominal into merchant / agent / provider / internal cuts. The dashboard has no TCP, so this means porting config's fee calculators — the four ~95%-duplicated services my earlier audit flagged for consolidation. |
+| `POST transactions/topup/approve` | **The balance ledger.** Approval calls `settlementTopup`, which moves money: Postgres advisory locks (global id 30, per-merchant `(10, id)`, per-agent `(20, id)`) around append-only inserts into `MerchantBalanceLog` / `AgentBalanceLog` / `InternalBalanceLog`. |
+| `POST transactions/withdraw` | Both of the above. |
+
+`POST topup/reject` is a one-line status update and could land immediately, but shipping reject without approve isn't useful.
+
+This is the highest-risk logic in the system — it is the money movement, and getting the lock ordering wrong causes deadlocks or double-spend under concurrency. It deserves its own focused pass with the lock semantics ported deliberately and tested under concurrent load, not appended to the end of a long session. The listings and balances above cover every read the dashboard needs; these three are the write path.
+
+The controllers carry a comment at the spot where each belongs.
 
 ### End-to-end verification (real database)
 
@@ -493,6 +533,24 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 | Money with 14 integer digits | 422 at the API boundary, not a Postgres overflow |
 | Percentage 150 | 422 |
 | `GET /merchant/999/config` | 404 |
+
+**balance + transaction listings**, same database (seeded 3 purchases incl. one 30 days old, plus topup / withdraw / disbursement and balance logs):
+
+| Check | Result |
+|---|---|
+| `balance/merchant/3` | `149300.00` / `25000.00` — picked the newer TOPUP row over the older settlement row |
+| `balance/agent/2`, `aggregate/internal` | correct snapshots |
+| `aggregate/internal?providerName=NOPE` | zeroes, not an error |
+| `balance/merchant/999` (no rows) | zeroes, not a 404 — no movement yet is a zero balance |
+| `transactions/purchase` default window | 2 of 3 rows; the 30-day-old one correctly excluded |
+| Same with an explicit 60-day range | all 3 |
+| Purchase row shape | `nominal: "100000.00"`, `totalFeeCut: "700.00"` (500 + 200 from feeDetails), `createdAt: "2026-08-10T20:37:41+07:00"`, `feePercentage: "0.0000"` |
+| `topup` / `withdraw` / `disbursement` listings | 1 row each, correct fields |
+| `settlement/settled` vs `unsettled` | correctly split the two successful purchases by `settlementAt` |
+| `status=PENDING` filter | returned only the pending row |
+| `merchantId=3` on withdraw | matched `userId` 3 — withdrawals key on userId, not merchantId |
+| `status=NOPE` | 422 |
+| `from=notadate` | 422 `Field 'from' must be a valid date-time` |
 
 ### Verified so far
 

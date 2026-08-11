@@ -17,6 +17,12 @@ import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { auditTrailExtension } from '../database/audit.extension';
 import { AgentDetailModule } from '../modules/agent-detail/agent-detail.module';
+import { BalanceModule } from '../modules/balance/balance.module';
+import { DisbursementModule } from '../modules/disbursement/disbursement.module';
+import { PurchaseModule } from '../modules/purchase/purchase.module';
+import { SettlementModule } from '../modules/settlement/settlement.module';
+import { TopupModule } from '../modules/topup/topup.module';
+import { WithdrawModule } from '../modules/withdraw/withdraw.module';
 import { ConfigAgentModule } from '../modules/config-agent/config-agent.module';
 import { ConfigCommonModule } from '../modules/config-common/config-common.module';
 import { ConfigFeeModule } from '../modules/config-fee/config-fee.module';
@@ -99,6 +105,12 @@ import { AppService } from './app.service';
     ConfigAgentModule,
     ConfigFeeModule,
     ConfigMerchantModule,
+    BalanceModule,
+    PurchaseModule,
+    TopupModule,
+    WithdrawModule,
+    DisbursementModule,
+    SettlementModule,
   ],
 })
 export class AppModule {}
