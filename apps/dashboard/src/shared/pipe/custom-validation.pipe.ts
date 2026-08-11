@@ -3,7 +3,7 @@ import { ValidationError } from 'class-validator';
 import { ApiError } from '../exception';
 
 /** Collapses nested validation errors into a flat `{ "a.b": "message" }` map. */
-function flattenValidationErrors(
+export function flattenValidationErrors(
   validationErrors: ValidationError[],
   parentPath = '',
 ): Record<string, string> {
@@ -28,17 +28,23 @@ function flattenValidationErrors(
   return fields;
 }
 
+/**
+ * Turns class-validator failures into a 422 carrying a per-field message map,
+ * so the frontend can attach errors to inputs instead of parsing prose.
+ */
+export const validationExceptionFactory = (
+  validationErrors: ValidationError[],
+): never => {
+  throw ApiError.validationFailed(flattenValidationErrors(validationErrors));
+};
+
 @Injectable()
 export class CustomValidationPipe extends ValidationPipe {
   constructor() {
     super({
       whitelist: true,
       transform: true,
-      exceptionFactory: (validationErrors: ValidationError[]) => {
-        throw ApiError.validationFailed(
-          flattenValidationErrors(validationErrors),
-        );
-      },
+      exceptionFactory: validationExceptionFactory,
     });
   }
 }

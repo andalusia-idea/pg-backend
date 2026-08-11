@@ -17,7 +17,12 @@ import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { auditTrailExtension } from '../database/audit.extension';
 import { AgentDetailModule } from '../modules/agent-detail/agent-detail.module';
+import { ConfigAgentModule } from '../modules/config-agent/config-agent.module';
+import { ConfigCommonModule } from '../modules/config-common/config-common.module';
+import { ConfigFeeModule } from '../modules/config-fee/config-fee.module';
+import { ConfigMerchantModule } from '../modules/config-merchant/config-merchant.module';
 import { MerchantDetailModule } from '../modules/merchant-detail/merchant-detail.module';
+import { MerchantSignatureModule } from '../modules/merchant-signature/merchant-signature.module';
 import { PermissionModule } from '../modules/permission/permission.module';
 import { UserModule } from '../modules/user/user.module';
 import {
@@ -89,6 +94,11 @@ import { AppService } from './app.service';
     PermissionModule,
     AgentDetailModule,
     MerchantDetailModule,
+    MerchantSignatureModule,
+    ConfigCommonModule,
+    ConfigAgentModule,
+    ConfigFeeModule,
+    ConfigMerchantModule,
   ],
 })
 export class AppModule {}

@@ -338,6 +338,21 @@ Both `merchant-detail` and `agent-detail` had it.
 
 Legacy's `findAll` / `findAllNames` on both agent-detail and merchant-detail queried without a `deletedAt` filter, so soft-deleted agents and merchants showed up in admin lists and dropdowns. Every query in the ported modules filters `deletedAt: null`, consistent with the rest of the app.
 
+### D13 — Array-body endpoints returned a different error shape → **fixed**
+
+`@Body(new ParseArrayPipe({ items: Dto }))` builds its own `ValidationPipe` with default options, ignoring the global `CustomValidationPipe`. So the two fee-upsert endpoints answered a validation failure with **400 and a prose message**, while every object-body endpoint answered with **422 and a per-field map** — the same class of failure in two shapes for the frontend to handle.
+
+Replaced with `ParseDtoArrayPipe(Dto)` (`shared/pipe/parse-dto-array.pipe.ts`), which passes the shared `validationExceptionFactory`. Both now return:
+
+```json
+{ "statusCode": 422, "error": { "code": "VALIDATION_FAILED",
+  "fields": { "feeInternalFixed": "...", "feeInternalPercentage": "..." } } }
+```
+
+### D14 — `registerWebhook` was fire-and-forget → **fixed**
+
+Legacy's controller called `this.service.registerWebhook(...)` **without awaiting**, then immediately returned 201. A failed write still reported success, and the rejection surfaced as an unhandled promise rejection rather than a response. Now awaited.
+
 ### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
 
 Found while setting up a local database to test against. Every `prisma migrate` path fails:
@@ -409,7 +424,14 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 - [x] **`permission`** — `GET permissions`, `GET permissions/:id` (endpoints 2-3)
 - [x] **`agent-detail`** — list, dropdown, by-userId, update (endpoints 7-10)
 - [x] **`merchant-detail`** — paginated list + filter, dropdown, by-userId, update (endpoints 11-14)
-- [ ] Remaining modules (12), in the order listed in §3
+- [x] **`merchant-signature`** — secret rotation, webhook URL registration (endpoints 15-16)
+- [x] **`config-common`** — `GET common/div` (endpoint 18)
+- [x] **`config-agent`** — `GET agent/:agentId/merchants` (endpoint 17)
+- [x] **`config-fee`** — `GET fee/config` (endpoint 19)
+- [x] **`config-merchant`** — interval, config, fee upsert, shareholder upsert (endpoints 20-23)
+- [ ] Remaining modules (7): `balance`, `purchase`, `topup`, `withdraw`, `disbursement`, `settlement`
+
+**23 of 38 endpoints ported.** What's left is the transaction side.
 
 ### End-to-end verification (real database)
 
@@ -448,6 +470,29 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 | Same for merchant | 200, email and businessName both updated |
 | `GET /agent-detail/999` | 404 `Agent not found` |
 | Legacy's update approach, run directly | `PrismaClientValidationError: Unknown argument 'email'` — confirms D11 |
+
+**merchant-signature + config modules**, same database (seeded 2 banks, 3 providers, 2 payment methods, 2 base fees):
+
+| Check | Result |
+|---|---|
+| `common/div?div=BANK` | 200, banks as `{name: code, explain: name}` |
+| `?div=PROVIDER` | 200, **INTERNAL excluded** as intended |
+| `?div=PROVIDER_TOPUP` | 200, fixed single INTERNAL option |
+| `?div=PAYMENT_METHOD_PURCHASE` | 200, filtered by `transactionTypes has PURCHASE` |
+| `?div=BOGUS` | 422 |
+| `GET /fee/config` | `feeProviderFixed: "500.00"` (Money 2dp), `feeProviderPercentage: "0.7000"` (Percentage 4dp) |
+| `GET /merchant/:id/interval` | 200, `settlementInterval: 60`, null date renders null |
+| `GET /merchant/:id/config` | 200; `merchantFeeConfig: null` where no override, `agentShareholders: null` when empty |
+| `POST /merchant/:id/provider` | 201; `"100"` → `"100.00"`, `"0.1"` → `"0.1000"` on read-back |
+| Action `D` in a batch | 201, override row removed |
+| `POST /:id/agent-shareholder` summing 60% | rejected: *"Sum of agent shareholder percentage must be 100%"*, `fields` reports `"Current sum is 60.0000%"` |
+| Same summing 100% | 201 |
+| `GET /agent/:id/merchants` | 0 before the shareholder link, 1 after — the cross-schema join that replaced legacy's TCP call |
+| Merchant rotates secret twice | new key returned each time; DB confirms `secretKey` = 2nd, `previousSecretKey` = 1st |
+| `register-webhook-url` with a bad URL | 422 |
+| Money with 14 integer digits | 422 at the API boundary, not a Postgres overflow |
+| Percentage 150 | 422 |
+| `GET /merchant/999/config` | 404 |
 
 ### Verified so far
 
