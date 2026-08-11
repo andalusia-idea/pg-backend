@@ -374,6 +374,66 @@ Ported unchanged, because which one is right is a business question and changing
 
 Every "latest row" and listing query ordered by `createdAt` alone. Rows written inside one transaction can share a timestamp, and the winner was then arbitrary. All such queries now order by `createdAt DESC, id DESC` — `id` is monotonic on these append-only tables, so the newest row is picked deterministically.
 
+### D17 — The legacy balance-ledger write path has three defects → **needs your decision before porting**
+
+Found while reading `topup.service.ts` and `withdraw.service.ts` to port the write endpoints. These are in **legacy, in production today** — they are not migration artifacts, and each one affects money.
+
+**1. Balance logs are written outside their transaction (withdraw).**
+
+`WithdrawService.createBalanceLog` is called from inside `this.prisma.$transaction(async (trx) => …)`, but every write inside it uses **`this.prisma.*`, not `trx`**:
+
+```ts
+return this.prisma.$transaction(async (trx) => {
+  const withdraw = await trx.withdrawTransaction.create({ … });   // in the transaction
+  await this.createBalanceLog({ … });                             // NOT in the transaction
+});
+…
+private async createBalanceLog(dto) {
+  return Promise.all([
+    this.prisma.merchantBalanceLog.create({ … }),   // separate connection
+    this.prisma.internalBalanceLog.create({ … }),
+    this.prisma.agentBalanceLog.createMany({ … }),
+  ]);
+}
+```
+
+Prisma's `this.prisma` runs on its own connection, so those three writes commit independently. **If the enclosing transaction rolls back, the withdrawal row vanishes but the balance debit survives** — the merchant is permanently charged for a withdrawal that does not exist.
+
+**2. No advisory locks on the topup/withdraw balance chains.**
+
+Both paths read the last balance and then write a new row derived from it, with nothing serializing them. Two concurrent operations on the same merchant read the same baseline and the second overwrites the first's effect — a classic lost update, on balances.
+
+The correct pattern already exists **in the same codebase**, in `purchase.1.api.ts` and `disbursement.1.api.ts`:
+
+```ts
+// Serialize shared balance chains to prevent stale baseline reads.
+await tx.$executeRaw`SELECT pg_advisory_xact_lock(30, 0)`;              // global
+await tx.$executeRaw`SELECT pg_advisory_xact_lock(10, ${merchantId})`;  // per merchant
+for (const agentId of agentIds) {                                       // per agent, sorted
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(20, ${agentId})`;
+}
+```
+
+Note the agent ids are `.sort()`ed there — consistent lock ordering is what stops two transactions deadlocking on each other. Topup and withdraw simply never got this treatment.
+
+The insufficient-balance guard has the same problem: `if (lastBalanceMerchant.balanceActive.lessThan(nominal)) throw` is a check-then-act, so two concurrent withdrawals can both pass it and overdraw the merchant.
+
+**3. `merchantId: withdraw.id` in the withdraw callback.**
+
+```ts
+await this.createBalanceLog({
+  withdrawId: withdraw.id,
+  merchantId: withdraw.id,   // ← transaction id passed as merchant id
+  …
+});
+```
+
+The create path passes `profileBank.profileId` correctly; the callback path passes the withdrawal's own id. So a withdraw settled via provider callback debits **whichever merchant happens to have that id**, not the one who withdrew. This is a plain bug, not a race — worth checking against production data independently of this migration.
+
+**Recommendation**: port these endpoints with all three corrected — locks and transaction scoping applied per the pattern the codebase already uses in its purchase/disbursement paths, and the merchant id fixed. That is not a redesign; it is applying this project's own established pattern to the two places that missed it. Porting them as-is would knowingly reproduce a lost-update race and a rollback hole.
+
+**Not yet implemented**, pending that decision.
+
 ### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
 
 Found while setting up a local database to test against. Every `prisma migrate` path fails:
