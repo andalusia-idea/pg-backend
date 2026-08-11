@@ -17,7 +17,7 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 | Module layout | One folder per domain module under `apps/dashboard/src/modules/<name>/` with `*.controller.ts`, `*.service.ts`, `*.module.ts`, `dto/` — mirroring legacy |
 | Shared code | `apps/dashboard/src/shared/` — deliberately **not** promoted to `libs/`, because it's class-validator-based and would clash with the TypeBox conventions the transactional apps use |
 | Date handling | App-local (`shared/helper/date.helper.ts`), **not** a shared lib. The transactional backends have to speak whatever date format each upstream provider / PJP mandates; the dashboard only ever serves the internal frontend, so it can assume one timezone |
-| Authorization | JWT + `@Roles()` role gates. No CASL — see D3 |
+| Authorization | **JWT only.** `@Roles()` and `@CheckPolicies()` are attached to every route but read by nothing yet — see D3 |
 | Refactoring | Port behavior as-is. Anything that looks like a real bug gets flagged in this doc and raised before changing it |
 
 ### Why shared code stays app-local
@@ -28,7 +28,7 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ## 2. Endpoint inventory
 
-40 endpoints across 4 legacy services, collapsing into one dashboard app. Legacy base URLs per the frontend's `.env`:
+The frontend calls 41 endpoints across 4 legacy services. Three (reconciliation) are out of scope per D5, leaving **38 in scope**, collapsing into one dashboard app. Legacy base URLs per the frontend's `.env`:
 
 - `kyAuth` → `/auth/api/v1`
 - `kyConfig` → `/config/api/v2` ← note: **v2**, everything else is v1
@@ -83,7 +83,7 @@ After migration all four collapse to a single dashboard base URL. **This is a fr
 | 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` |
 | 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` |
 | 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` |
-| 33 | POST | `transactions/topup/reject` | `topup` | ⚠️ see Finding F1 |
+| 33 | POST | `transactions/topup/reject` | `topup` | ⚠️ see D1 |
 | 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` |
 | 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` |
 | 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` |
@@ -113,26 +113,28 @@ Ported in dependency order. Each is self-contained: `controller` → `service` �
 
 ```
 apps/dashboard/src/
-├── shared/                  # ResponseDto, pagination, filters, interceptors, DTO decorators
-├── auth/                    # JWT strategy, guards, decorators, AuthInfoDto  (cross-cutting)
+├── shared/                  # ResponseDto, pagination, exceptions, filters, DTO decorators, DateHelper
+├── auth/                    # JWT + local strategies, guards, decorators, POST /login   (endpoint 1)
 └── modules/
-    ├── auth/                # 1      login
     ├── permission/          # 2-3
     ├── user/                # 4-6    profile, register-merchant, register-agent
     ├── agent-detail/        # 7-10
     ├── merchant-detail/     # 11-14
     ├── merchant-signature/  # 15-16
-    ├── config-common/       # 18
     ├── config-agent/        # 17
+    ├── config-common/       # 18
     ├── config-fee/          # 19
     ├── config-merchant/     # 20-23
     ├── balance/             # 24-28
+    ├── transaction-shared/  #        filter DTO, fee-detail DTO, date-range + fee-total helpers
     ├── purchase/            # 29
-    ├── topup/               # 30-33
-    ├── withdraw/            # 34-35
+    ├── topup/               # 30-33  (31/32/33 pending D17)
+    ├── withdraw/            # 34-35  (35 pending D17)
     ├── disbursement/        # 36
     └── settlement/          # 37-38
 ```
+
+`login` lives in `auth/` rather than `modules/` because that folder also holds the strategies and guards every other module depends on.
 
 Write-path modules (`user`, `agent-detail`, `merchant-detail`, `merchant-signature`, `config-merchant`, `topup`, `withdraw`) use `PrismaMaster`. Everything else is `PrismaSlave`.
 
@@ -170,16 +172,16 @@ So I've centralized it behind one decorator, `@ApiMoneyProperty()`, which emits 
 
 It's still a single decorator at each call site, so it's no more verbose than `@ApiProperty({ type: Decimal })` — and it's self-documenting, so you don't have to explain it verbally to the frontend dev. If you'd rather have the literal `type: Decimal`, it's a **one-line change inside `ApiMoneyProperty`** and every DTO picks it up. Your call — flagging, not overriding.
 
-**Percentage precision — settled (D4).** The rule across every schema is:
+**Precision — settled (D4).** The rule across every schema:
 
-| Kind | Prisma column | DTO decorators |
-|---|---|---|
-| **Money** | `Decimal(10, 2) // Money` | `@IsMoney()` / `@ToMoneyString()` |
-| **Percentage** | `Decimal(10, 4) // Percentage` | `@IsPercentage(4)` / `@ToPercentageString(4)` |
+| Kind | Prisma column | DTO decorators | Range |
+|---|---|---|---|
+| **Money** | `Decimal(15, 2) // Money` | `@IsMoney()` / `@ToMoneyString()` | up to 9,999,999,999,999.99 (~10 trillion IDR) |
+| **Percentage** | `Decimal(8, 4) // Percentage` | `@IsPercentage()` / `@ToPercentageString()` | capped at 100 by the validator |
 
-The source schemas now carry `// Money` / `// Percentage` markers on every Decimal column, so the intended scale is greppable rather than inferred. The percentage decorators stay parameterized (defaulting to 2) in case a 2-decimal percentage ever appears, but **every percentage column in the current schema is 4** — pass `4` explicitly on those paths.
+Every Decimal column carries a `// Money` or `// Percentage` marker, so the intended scale is greppable rather than inferred. Both decorators default to the right scale — `@IsPercentage()` is 4 decimals unless told otherwise. `@IsMoney()` also caps the integer part at 13 digits to match the column, so an over-wide amount returns a 422 naming the field rather than a Postgres numeric overflow the caller can't act on.
 
-> Range note, not a blocker: `Decimal(10, 2)` allows 8 integer digits, so the largest representable amount is **99,999,999.99** (~100 juta IDR). Legacy settlerecon used `Decimal(18, 2)`. Fine if no single transaction, balance, or ledger entry ever exceeds ~100 million rupiah — worth a deliberate confirmation, since a balance log accumulates rather than resetting.
+The widths were raised from an earlier `Decimal(10, 2)` / `Decimal(10, 4)`, which capped a single amount at 99,999,999.99 (~100 juta IDR) — a ceiling the accumulating balance-log columns would have reached first.
 
 ### 4.2 Dates — ISO 8601 string with Jakarta offset
 
@@ -211,11 +213,13 @@ paidAt: string | null;
 from: Date | null;              // parsed to JS Date for Prisma
 ```
 
-- `@ToJakartaISO()` — `toPlainOnly`; takes a JS `Date` from Prisma, emits ISO with `+07:00` via the existing `DateHelper.toISO()` in `libs/date-time`.
+- `@ToJakartaISO()` — `toPlainOnly`; takes a JS `Date` from Prisma and emits ISO with `+07:00` via the app-local `DateHelper` (`shared/helper/date.helper.ts`). It formats explicitly rather than calling Luxon's `toISO()`, which appends milliseconds — and `suppressMilliseconds` only drops them when they happen to be zero, so the shape would vary row to row.
 - `@ToJsDateNullable()` — request side; parses an incoming ISO string to a JS `Date` (what Prisma wants), throwing `ApiError.invalidDate()` on garbage. Validation lives inside the transform because class-transformer runs *before* class-validator in Nest's pipe, same as legacy.
 - No milliseconds, matching DANA's example. Trivial to switch on later if a SNAP-facing surface ever needs `.SSS`.
 
 Timezone comes from `DateHelper`, which reads `TIMEZONE` (default `Asia/Jakarta`) — already set in `apps/dashboard/.env.example`.
+
+Listing filters use the same helper to widen a range to whole days in that timezone. Taking the raw UTC instant would make `from=2026-08-01` start at 07:00 Jakarta and silently drop that morning's transactions.
 
 ### 4.3 Response envelope
 
@@ -233,7 +237,38 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Each of these was a real defect or ambiguity found while reading the legacy code, now resolved.
+Seventeen entries (D1–D17), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; six do. Sorted by number below — this table is the triage.
+
+### Open — needs a decision or action
+
+| # | What | Who acts | Why it matters |
+|---|---|---|---|
+| **D17** | Three defects in the legacy balance ledger: writes escaping their transaction, no advisory locks, and a wrong `merchantId` in the withdraw callback | **You** — confirm the corrected port | **Live in production today.** Also blocks the 3 remaining write endpoints |
+| **D1** | Frontend's "reject" button posts to `/approve` | Frontend dev | **Live in production today.** Rejecting a top-up currently approves it |
+| **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
+| **D10** | `prisma migrate` is unusable repo-wide | **You** / infra | No app can run migrations; blocks any deploy needing `migrate deploy` |
+| **D15** | Aggregate balances filter out `PURCHASE`; per-holder balances don't | **You** — business question | The sum of individual balances won't always match the aggregate shown on the dashboard |
+| **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
+
+> **D17 and D1 are not migration issues.** Both are defects in the code running in production right now, found while reading it. They're worth acting on independently of this port.
+
+### Settled — no action needed
+
+| # | What | Outcome |
+|---|---|---|
+| D2 | `agent-detail/dropdown` was public | Fixed — auth required |
+| D4 | Decimal precision | Settled: Money `Decimal(15,2)`, Percentage `Decimal(8,4)` |
+| D5 | Reconciliation | Out of scope — future dedicated app |
+| D6 | `libs/date-time` | Deleted; `DateHelper` moved into the dashboard |
+| D7 | Login validation runs after the auth guard | Kept as legacy — outcome is correct, only the status code differs |
+| D9 | Intended roles per endpoint | Recorded (enforcement pending D3) |
+| D11 | Agent/merchant update threw on `email` | Fixed — split across `auth.User` and the detail table |
+| D12 | Soft-deleted rows appeared in lists | Fixed — every query filters `deletedAt` |
+| D13 | Array-body endpoints had a different error shape | Fixed — `ParseDtoArrayPipe` |
+| D14 | `registerWebhook` was fire-and-forget | Fixed — awaited |
+| D16 | Ordering had no tiebreak | Fixed — `createdAt DESC, id DESC` |
+
+---
 
 ### D1 — Frontend `rejectTransactionTopUp` posts to `/approve` → **backend implements both**
 
@@ -273,9 +308,11 @@ This is the inverse of legacy's failure mode, which had real policies written ou
 
 ⚠️ **Until enforcement is enabled, any authenticated user can call any endpoint**, including merchant/agent registration and updates. Fine for internal development; must be settled before production.
 
-### D4 — Decimal precision → **Money 2dp, Percentage 4dp, everywhere**
+### D4 — Decimal precision → **Money `Decimal(15,2)`, Percentage `Decimal(8,4)`, everywhere**
 
-Settled and applied across all schemas: `Decimal(10, 2) // Money`, `Decimal(10, 4) // Percentage`. See §4.1. The dashboard's merged schema is now generated from the source schemas rather than hand-maintained — see §6.
+Settled and applied across all schemas, with `// Money` / `// Percentage` markers on every Decimal column. See §4.1 for the DTO side and the range each width allows.
+
+The dashboard's merged schema is generated from the source schemas rather than hand-maintained — see §6.1. That automation exists because of this decision: the precision rework landed in `apps/config` and `apps/transaction` while the dashboard's hand-copied schema silently kept the old types.
 
 ### D5 — Reconciliation → **out of scope**
 
@@ -286,6 +323,12 @@ Deferred entirely; a separate dedicated app will own it along with scheduled / b
 The lib's barrel was also broken (it exported two files that never existed), so nothing could have imported it anyway.
 
 **Decision**: `DateHelper` now lives at `apps/dashboard/src/shared/helper/date.helper.ts` and the lib is gone. Rationale: the transactional backends will each need date handling shaped by whatever their upstream provider / PJP mandates, so a single shared Luxon helper would have been a false abstraction. The dashboard's copy serves only the internal frontend. Removed from `nest-cli.json`, the `tsconfig.json` paths, and the Jest `moduleNameMapper`; all five apps verified building afterwards.
+
+### D7 — Login validation runs *after* the auth guard → **kept as legacy**
+
+`POST /login` carries `@ApiBody({ type: LoginDto })`, but `LoginDto`'s class-validator rules never execute: Nest runs guards before pipes, and `LocalAuthGuard` reads `email`/`password` straight off the raw body. Verified live — posting `{"email":"not-an-email","password":""}` returns **401**, not the 422 the DTO implies.
+
+**Decision**: keep legacy behaviour. The outcome (rejected login) is correct; only the status code differs. Noted so the Swagger contract isn't mistaken for enforced validation.
 
 ### D8 — `GET permissions` serves two different needs → **kept as legacy, flag raised**
 
@@ -317,6 +360,30 @@ Consequence for now: `GET permissions` is **deliberately not role-gated**. Gatin
 **Merchants are onboarded by their agent, not by an admin.** The internal team is issued an "AgentInternal" agent account and signs in as an agent to register merchants. That keeps every merchant attached to an agent, which is what the `AgentShareholder` row created during registration depends on.
 
 Consequence in `registerMerchant`: the `registrarIsAgent` check now normally holds, so the shareholder row is created every time. The check stays because `@Roles()` isn't enforced — without it, a non-agent caller would hit a foreign key violation on `agentId` rather than simply not getting a shareholder row.
+
+### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
+
+Found while setting up a local database to test against. Every `prisma migrate` path fails:
+
+```
+$ npx dotenv -e apps/auth/.env.local -- npx prisma migrate status --schema apps/auth/prisma/schema.prisma
+Error: The datasource.url property is required in your Prisma config file when using prisma migrate status.
+```
+
+Two compounding causes:
+
+1. **No `prisma.config.ts` at the repo root.** Prisma 7 looks for the config in the working directory. Each app has one, but running from root finds none — so `datasource.url` is undefined, which `migrate` requires (`generate` doesn't, which is why `prisma:generate:*` works fine).
+2. **Passing `--config apps/auth/prisma.config.ts` doesn't help**: that file declares `schema: 'apps/auth/prisma/schema.prisma'`, and Prisma resolves it relative to the *config file's own directory*, producing `apps/auth/apps/auth/prisma/schema.prisma`.
+
+So `npm run prisma:migrate:dev:auth`, `prisma:migrate:deploy:auth`, and the `config` equivalents are all broken today. No app has a `migrations/` folder yet, so nothing has been migrated — consistent with this never having worked.
+
+**Not fixed here** because it affects the transactional apps' deployment path, not the dashboard. The likely fix is making paths inside each `prisma.config.ts` relative to the config file (`prisma/schema.prisma`, `prisma/migrations`) and passing `--config` in the scripts. Worth resolving before any deploy that needs `migrate deploy`.
+
+For local development in the meantime, `db push` works with an explicit URL:
+
+```bash
+npx prisma db push --schema apps/auth/prisma/schema.prisma --url "$POSTGRESQL_URL_MASTER"
+```
 
 ### D11 — Legacy's agent/merchant update threw on `email` → **fixed**
 
@@ -434,36 +501,6 @@ The create path passes `profileBank.profileId` correctly; the callback path pass
 
 **Not yet implemented**, pending that decision.
 
-### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
-
-Found while setting up a local database to test against. Every `prisma migrate` path fails:
-
-```
-$ npx dotenv -e apps/auth/.env.local -- npx prisma migrate status --schema apps/auth/prisma/schema.prisma
-Error: The datasource.url property is required in your Prisma config file when using prisma migrate status.
-```
-
-Two compounding causes:
-
-1. **No `prisma.config.ts` at the repo root.** Prisma 7 looks for the config in the working directory. Each app has one, but running from root finds none — so `datasource.url` is undefined, which `migrate` requires (`generate` doesn't, which is why `prisma:generate:*` works fine).
-2. **Passing `--config apps/auth/prisma.config.ts` doesn't help**: that file declares `schema: 'apps/auth/prisma/schema.prisma'`, and Prisma resolves it relative to the *config file's own directory*, producing `apps/auth/apps/auth/prisma/schema.prisma`.
-
-So `npm run prisma:migrate:dev:auth`, `prisma:migrate:deploy:auth`, and the `config` equivalents are all broken today. No app has a `migrations/` folder yet, so nothing has been migrated — consistent with this never having worked.
-
-**Not fixed here** because it affects the transactional apps' deployment path, not the dashboard. The likely fix is making paths inside each `prisma.config.ts` relative to the config file (`prisma/schema.prisma`, `prisma/migrations`) and passing `--config` in the scripts. Worth resolving before any deploy that needs `migrate deploy`.
-
-For local development in the meantime, `db push` works with an explicit URL:
-
-```bash
-npx prisma db push --schema apps/auth/prisma/schema.prisma --url "$POSTGRESQL_URL_MASTER"
-```
-
-### D7 — Login validation runs *after* the auth guard → **kept as legacy**
-
-`POST /login` carries `@ApiBody({ type: LoginDto })`, but `LoginDto`'s class-validator rules never execute: Nest runs guards before pipes, and `LocalAuthGuard` reads `email`/`password` straight off the raw body. Verified live — posting `{"email":"not-an-email","password":""}` returns **401**, not the 422 the DTO implies.
-
-**Decision**: keep legacy behaviour. The outcome (rejected login) is correct; only the status code differs. Noted so the Swagger contract isn't mistaken for enforced validation.
-
 ---
 
 ## 6. Deliberate deviations from legacy
@@ -495,7 +532,7 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 
 ## 7. Progress
 
-- [x] Frontend endpoint inventory (40 endpoints mapped to legacy modules)
+- [x] Frontend endpoint inventory (41 called, 38 in scope, mapped to legacy modules)
 - [x] Migration plan + DTO conventions (this doc)
 - [x] `shared/` foundation — `ResponseDto`, pagination, `ApiError` + exception filters (incl. Prisma), `ResponseInterceptor`, `CustomValidationPipe`, money/date decorators, `DtoHelper`
 - [x] `auth/` foundation — `JwtConfig`, JWT + local strategies, `JwtAuthGuard`/`RolesGuard`, `@PublicApi`/`@Roles`/`@CurrentAuthInfo`, `POST /login`
@@ -515,23 +552,27 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 - [x] **`settlement`** — settled / unsettled (endpoints 37-38)
 - [ ] **Deferred — the 3 transaction write endpoints** (31, 32/33, 35): `POST transactions/topup`, `POST transactions/topup/{approve,reject}`, `POST transactions/withdraw`
 
-**35 of 38 endpoints ported.**
+**35 of 38 endpoints ported.** Every read the dashboard needs is done; what remains is the write path.
 
-### Why the 3 write endpoints are deferred
+### Why the 3 write endpoints are still open
 
-They are not more of the same — each pulls in a subsystem that isn't in the dashboard yet:
+Two reasons — one structural, one blocking.
+
+**Structural:** each pulls in a subsystem the dashboard doesn't have yet.
 
 | Endpoint | Depends on |
 |---|---|
-| `POST transactions/topup` | **Fee calculation.** Legacy calls config-service over TCP (`calculateTopupFeeConfigTCP`) to split a nominal into merchant / agent / provider / internal cuts. The dashboard has no TCP, so this means porting config's fee calculators — the four ~95%-duplicated services my earlier audit flagged for consolidation. |
-| `POST transactions/topup/approve` | **The balance ledger.** Approval calls `settlementTopup`, which moves money: Postgres advisory locks (global id 30, per-merchant `(10, id)`, per-agent `(20, id)`) around append-only inserts into `MerchantBalanceLog` / `AgentBalanceLog` / `InternalBalanceLog`. |
+| `POST transactions/topup` | **Fee calculation.** Legacy calls config-service over TCP (`calculateTopupFeeConfigTCP`) to split a nominal into merchant / agent / provider / internal cuts. The dashboard has no TCP, so this means porting config's fee calculators — the four ~95%-duplicated services the earlier audit flagged for consolidation. |
+| `POST transactions/topup/approve` | **The balance ledger** — advisory locks around append-only inserts into `MerchantBalanceLog` / `AgentBalanceLog` / `InternalBalanceLog`. |
 | `POST transactions/withdraw` | Both of the above. |
 
 `POST topup/reject` is a one-line status update and could land immediately, but shipping reject without approve isn't useful.
 
-This is the highest-risk logic in the system — it is the money movement, and getting the lock ordering wrong causes deadlocks or double-spend under concurrency. It deserves its own focused pass with the lock semantics ported deliberately and tested under concurrent load, not appended to the end of a long session. The listings and balances above cover every read the dashboard needs; these three are the write path.
+**Blocking: D17.** Reading the legacy write path turned up three defects that affect money. Porting faithfully would reproduce them; correcting them changes financial behaviour. That needs your call before any of this code gets written.
 
-The controllers carry a comment at the spot where each belongs.
+Also unresolved, and it changes the ledger arithmetic: **for a WITHDRAW, is `netNominal` greater or smaller than `nominal`?** Legacy records `changeAmount: nominal` but debits `balanceActive.minus(netNominal)`, which is only correct if withdrawal fees are added on top rather than deducted. That matches the earlier audit's note ("deducted for PURCHASE/TOPUP, added on top for WITHDRAW/DISBURSEMENT") but is worth confirming rather than assuming — backwards, it leaks the fee to the merchant on every withdrawal.
+
+The controllers carry a comment at the spot where each endpoint belongs.
 
 ### End-to-end verification (real database)
 
@@ -612,15 +653,16 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 | `status=NOPE` | 422 |
 | `from=notadate` | 422 `Field 'from' must be a valid date-time` |
 
-### Verified so far
+### Standing checks
 
-- `nest build` clean for **all five apps** (dashboard + the four transactional ones — confirms the `libs/` changes didn't regress anything).
-- `eslint` clean (0 errors, 0 warnings) across `apps/dashboard`, `libs/configuration`, `libs/date-time`.
-- App boots; routes map; Redis connects; Prisma reaches Postgres.
-- Live: `POST /auth-info` without a token → `401` in the correct envelope. `POST /login` → mapped Prisma error (the local DB has no `auth` schema yet, which is what surfaced it).
-- DTO decorators tested against a **real Prisma `Decimal`**: `10000.5` → `"10000.50"`, `9750` → `"9750.00"`, 4-dp percentage `2.5` → `"2.5000"`, `Date(2026-08-10T10:32:41Z)` → `"2026-08-10T17:32:41+07:00"`. Validation rejects >2 decimals, negatives, and percentages over 100.
+- `nest build` clean for **all five apps** (dashboard + the four transactional ones — confirms the shared-lib changes didn't regress anything).
+- `eslint` clean (0 errors, 0 warnings) across `apps/dashboard` and `libs/configuration`.
+- App boots; every route maps; Redis connects; Prisma reaches Postgres.
+- DTO decorators tested against a **real Prisma `Decimal`**: `10000.5` → `"10000.50"`, `9750` → `"9750.00"`, 4-dp percentage `2.5` → `"2.5000"`, `Date(2026-08-10T10:32:41Z)` → `"2026-08-10T17:32:41+07:00"`. Validation rejects too many decimals, negatives, over-wide amounts, and percentages over 100.
 
-> Worth knowing: Prisma's `Decimal` is a **different class** from the app's `decimal.js` — `instanceof` returns false across the two. The money transform converts via `toString()` for exactly this reason.
+> Two things worth remembering:
+> - Prisma's `Decimal` is a **different class** from the app's `decimal.js` — `instanceof` returns false across the two. The money transform converts via `toString()` for exactly this reason.
+> - `nest build` can report an error and **still emit output**. A red build here does not guarantee `dist/` is stale, which can mislead while debugging.
 
 ### Dependencies added
 
