@@ -45,11 +45,13 @@ export const PROFILE_KIND_BY_ROLE = {
   [ROLE.MERCHANT]: UserRoleEnum.MERCHANT,
 } as const satisfies Partial<Record<ROLE, UserRoleEnum>>;
 
-/** Roles permitted to administer merchants. */
-export const MERCHANT_ADMIN_ROLES: ROLE[] = [
-  ROLE.ADMIN_SUPER,
-  ROLE.ADMIN_MERCHANT,
-];
+/**
+ * Merchants are onboarded by their agent, never directly by an admin - the
+ * internal team is issued an "AgentInternal" agent account and signs in as an
+ * agent to do it. That keeps every merchant attached to an agent, which is what
+ * the AgentShareholder row in registerMerchant depends on.
+ */
+export const MERCHANT_REGISTRAR_ROLES: ROLE[] = [ROLE.AGENT];
 
 /** Roles permitted to administer agents. */
 export const AGENT_ADMIN_ROLES: ROLE[] = [ROLE.ADMIN_SUPER, ROLE.ADMIN_AGENT];

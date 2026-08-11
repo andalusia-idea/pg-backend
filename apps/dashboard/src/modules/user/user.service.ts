@@ -93,8 +93,11 @@ export class UserService {
         },
       });
 
-      // The registering user becomes an initial shareholder only if they are
-      // themselves an agent - an admin registering a merchant is not one.
+      // Merchants are onboarded by their agent (the internal team signs in as
+      // an "AgentInternal" agent to do it), so this normally holds and the
+      // shareholder row is always created. The check stays because @Roles() is
+      // not enforced yet - without it, a non-agent caller would hit a foreign
+      // key violation on agentId instead of simply not getting a shareholder.
       const registrarIsAgent = await tx.agent.findUnique({
         where: { id: authInfo.userId },
         select: { id: true },

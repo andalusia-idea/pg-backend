@@ -255,11 +255,23 @@ Legacy left the agent dropdown unauthenticated, leaking the full agent list (use
 
 **Decision**: no `@PublicApi()` on this endpoint. `POST /login` is the only public route in the app.
 
-### D3 — Authorization depth → **JWT + `@Roles()`**
+### D3 — Authorization depth → **JWT enforced; `@Roles()` and `@CheckPolicies()` are placeholders**
 
 Legacy wired CASL `@CheckPolicies` then commented it out on nearly every controller, so any authenticated user could read or update any agent or merchant.
 
-**Decision**: JWT authentication plus `@Roles()` role gates. **No CASL scaffolding** — not even empty `@CheckPolicies()` placeholders, since the per-use-case policies aren't decided yet and dead decorators on 16 modules would be misleading about what's actually enforced. `RolesGuard` is already registered globally and throws a `403` with the offending role named. When policies are settled, CASL can be layered on without touching the role gates.
+**Decision**: only **authentication** is enforced right now. Both authorization decorators are attached to every route but read by nothing, pending an internal decision on the role model.
+
+| Decorator | Status | Guard |
+|---|---|---|
+| `JwtAuthGuard` | **Enforced** | Registered globally |
+| `@Roles(...)` | Metadata only | `RolesGuard` exists and works, deliberately **not registered** |
+| `@CheckPolicies()` | Metadata only | No `PoliciesGuard` exists yet |
+
+Enabling role enforcement is one line in `app.module.ts` (the commented `{ provide: APP_GUARD, useClass: RolesGuard }`). Keeping the decorators on the routes means intended access is recorded next to each handler and greppable, so switching enforcement on is a flag flip rather than an audit of every controller.
+
+This is the inverse of legacy's failure mode, which had real policies written out and then commented out — reading as "authorized" at a glance while enforcing nothing.
+
+⚠️ **Until enforcement is enabled, any authenticated user can call any endpoint**, including merchant/agent registration and updates. Fine for internal development; must be settled before production.
 
 ### D4 — Decimal precision → **Money 2dp, Percentage 4dp, everywhere**
 
@@ -292,18 +304,39 @@ Legacy's `findAll()` returns every permission row regardless of caller. So the a
 
 Consequence for now: `GET permissions` is **deliberately not role-gated**. Gating it to admins would leave agent/merchant sessions with no navigation at all.
 
-### D9 — Role assignments on the ported endpoints → **proposed, confirm if wrong**
+### D9 — Intended roles per endpoint → **recorded (not enforced, see D3)**
 
-Legacy had no role restrictions on these (any authenticated user could register a merchant). D3 says role-gate them, so these are my assignments:
+| Endpoint | Intended roles |
+|---|---|
+| `GET user/profile` | *(any authenticated)* — returns only the caller's own profile |
+| `POST user/admin/register-merchant` | `AGENT` (`MERCHANT_REGISTRAR_ROLES`) |
+| `POST user/admin/register-agent` | `ADMIN_SUPER`, `ADMIN_AGENT` (`AGENT_ADMIN_ROLES`) |
+| `GET permissions`, `GET permissions/:id` | *(any authenticated)* — see D8 |
+| `agent-detail/*`, `merchant-detail/*` | *(any authenticated)* — pending the role decision |
 
-| Endpoint | Roles | Reasoning |
-|---|---|---|
-| `GET user/profile` | *(any authenticated)* | Returns only the caller's own profile |
-| `POST user/admin/register-merchant` | `ADMIN_SUPER`, `ADMIN_MERCHANT` | Path says `admin` |
-| `POST user/admin/register-agent` | `ADMIN_SUPER`, `ADMIN_AGENT` | Path says `admin` |
-| `GET permissions`, `GET permissions/:id` | *(any authenticated)* | See D8 |
+**Merchants are onboarded by their agent, not by an admin.** The internal team is issued an "AgentInternal" agent account and signs in as an agent to register merchants. That keeps every merchant attached to an agent, which is what the `AgentShareholder` row created during registration depends on.
 
-**One to check**: legacy passed `authInfo.userId` into merchant registration as the `agentId`, and config-service only created the `AgentShareholder` row when that id matched a real Agent — the code comment there reads "admins registering merchants are not agents". That implies **agents were expected to register their own merchants**, which my `MERCHANT_ADMIN_ROLES` currently forbids. If agents should be able to self-register merchants, add `ROLE.AGENT` to `MERCHANT_ADMIN_ROLES` in `apps/dashboard/src/auth/auth.constant.ts` — the shareholder logic already handles both cases correctly.
+Consequence in `registerMerchant`: the `registrarIsAgent` check now normally holds, so the shareholder row is created every time. The check stays because `@Roles()` isn't enforced — without it, a non-agent caller would hit a foreign key violation on `agentId` rather than simply not getting a shareholder row.
+
+### D11 — Legacy's agent/merchant update threw on `email` → **fixed**
+
+`UpdateAgentDetailDto extends PartialType(CreateAgentDto)`, so it carries `email` and `password` — but those columns live on `auth.User`, not `auth.AgentDetail`. Legacy spread the filtered DTO straight into `agentDetail.update({ data: {...dto} })`.
+
+That only appeared to work because the frontend sends `email: null` when untouched, and `DtoHelper.filter` drops nulls. **The moment anyone actually edited an email or password, it threw.** Verified against the real client:
+
+```
+ERROR TYPE: PrismaClientValidationError
+MESSAGE : Invalid `prisma.agentDetail.update()` invocation:
+          data: { fullname: "X", email: "legacy@style.id", ~~~~~ }   ← Unknown argument `email`
+```
+
+Both `merchant-detail` and `agent-detail` had it.
+
+**Fix**: the DTOs declare their fields explicitly rather than deriving from the create DTO, and the service splits the payload — `email`/`password` to `auth.User`, everything else to the detail table — inside one transaction. Passwords are argon2-hashed before write. Verified end-to-end: after updating an agent's email *and* password, that agent can sign in with the new credentials.
+
+### D12 — Soft-deleted rows appeared in list endpoints → **fixed**
+
+Legacy's `findAll` / `findAllNames` on both agent-detail and merchant-detail queried without a `deletedAt` filter, so soft-deleted agents and merchants showed up in admin lists and dropdowns. Every query in the ported modules filters `deletedAt: null`, consistent with the rest of the app.
 
 ### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
 
@@ -374,7 +407,9 @@ The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 - [x] `libs/date-time` removed, `DateHelper` moved into the dashboard
 - [x] **`user`** — `GET user/profile`, `POST user/admin/register-merchant`, `POST user/admin/register-agent` (endpoints 4-6)
 - [x] **`permission`** — `GET permissions`, `GET permissions/:id` (endpoints 2-3)
-- [ ] Remaining modules (14), in the order listed in §3
+- [x] **`agent-detail`** — list, dropdown, by-userId, update (endpoints 7-10)
+- [x] **`merchant-detail`** — paginated list + filter, dropdown, by-userId, update (endpoints 11-14)
+- [ ] Remaining modules (12), in the order listed in §3
 
 ### End-to-end verification (real database)
 
@@ -400,6 +435,19 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 
 > Local test data: roles `ADMIN_SUPER`/`AGENT`/`MERCHANT`, `admin@manapay.id` / `password123`, plus one seeded agent and merchant. Wipe with
 > `DROP SCHEMA auth, config, transaction CASCADE;` then re-push.
+
+**agent-detail / merchant-detail**, same database:
+
+| Check | Result |
+|---|---|
+| `GET /agent-detail`, `/dropdown`, `/:userId` | 200, flattened AgentDetail + User |
+| `GET /merchant-detail?page=1&size=10` | 200 with `pagination` populated |
+| `businessName` filter | case-insensitive partial match; 1 hit for `toko`, 0 for `zzz` |
+| `PATCH /agent-detail/update/:userId`, detail fields only | 200; nulls dropped, untouched fields preserved |
+| `PATCH` **with `email` + `password`** | 200 — email updated on `auth.User`, password re-hashed, **and the agent then signed in with the new credentials** |
+| Same for merchant | 200, email and businessName both updated |
+| `GET /agent-detail/999` | 404 `Agent not found` |
+| Legacy's update approach, run directly | `PrismaClientValidationError: Unknown argument 'email'` — confirms D11 |
 
 ### Verified so far
 

@@ -15,8 +15,9 @@ import {
 import { ClsModule } from 'nestjs-cls';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { RolesGuard } from '../auth/guard/roles.guard';
 import { auditTrailExtension } from '../database/audit.extension';
+import { AgentDetailModule } from '../modules/agent-detail/agent-detail.module';
+import { MerchantDetailModule } from '../modules/merchant-detail/merchant-detail.module';
 import { PermissionModule } from '../modules/permission/permission.module';
 import { UserModule } from '../modules/user/user.module';
 import {
@@ -59,7 +60,12 @@ import { AppService } from './app.service';
     },
 
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
+
+    // RolesGuard is deliberately NOT registered: @Roles() is metadata-only for
+    // now, marking intended access while the role model is settled internally.
+    // Authentication (JwtAuthGuard) is the only thing enforced today.
+    // Re-enabling is this one line:
+    //   { provide: APP_GUARD, useClass: RolesGuard },
   ],
   imports: [
     ConfigurationModule.forRoot({
@@ -81,6 +87,8 @@ import { AppService } from './app.service';
     // Feature modules, ported in the order listed in docs/dashboard-migration.md
     UserModule,
     PermissionModule,
+    AgentDetailModule,
+    MerchantDetailModule,
   ],
 })
 export class AppModule {}

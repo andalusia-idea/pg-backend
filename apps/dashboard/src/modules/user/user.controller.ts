@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import {
   AGENT_ADMIN_ROLES,
-  MERCHANT_ADMIN_ROLES,
+  MERCHANT_REGISTRAR_ROLES,
 } from '../../auth/auth.constant';
 import { CheckPolicies, CurrentAuthInfo, Roles } from '../../auth/decorator';
 import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
@@ -39,7 +39,7 @@ export class UserController {
   }
 
   @Post('admin/register-merchant')
-  @Roles(...MERCHANT_ADMIN_ROLES)
+  @Roles(...MERCHANT_REGISTRAR_ROLES)
   @CheckPolicies()
   @ApiOperation({ summary: 'Register a merchant (user + detail + config)' })
   @ApiBody({ type: CreateMerchantDto })
