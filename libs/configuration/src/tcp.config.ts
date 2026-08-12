@@ -47,12 +47,4 @@ export class TCPConfig {
       PORT: this.portValidator('CLIENT_TRANSACTION_PORT'),
     };
   }
-
-  get SETTLERECON(): TCP {
-    return {
-      NAME: this.configService.getOrThrow<string>('CLIENT_SETTLERECON_NAME'),
-      HOST: this.configService.getOrThrow<string>('CLIENT_SETTLERECON_HOST'),
-      PORT: this.portValidator('CLIENT_SETTLERECON_PORT'),
-    };
-  }
 }

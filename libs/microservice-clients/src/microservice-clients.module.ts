@@ -10,9 +10,8 @@ import { FeeCalculateConfigClient } from './clients/fee-calculate-config.client'
 import { ProfileProviderConfigClient } from './clients/profile-provider-config.client';
 
 /**
- * TCP connections to Auth and Config only. Settlerecon is not implemented
- * yet, and nothing in the current scope (Auth/Config/Transaction) calls
- * Transaction as a peer - that's Settlerecon's job in the legacy services.
+ * TCP connections to Auth and Config only. Nothing in the current scope
+ * (Auth/Config/Transaction) calls Transaction as a peer.
  */
 @Global()
 @Module({

@@ -109,15 +109,6 @@
         "tsConfigPath": "libs/redis/tsconfig.lib.json"
       }
     },
-    "settlerecon": {
-      "type": "application",
-      "root": "apps/settlerecon",
-      "entryFile": "main",
-      "sourceRoot": "apps/settlerecon/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/settlerecon/tsconfig.app.json"
-      }
-    },
     "transaction": {
       "type": "application",
       "root": "apps/transaction",

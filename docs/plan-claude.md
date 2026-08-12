@@ -1,8 +1,12 @@
 # Migrate 4 standalone NestJS microservices into the `pg` monorepo (production-grade revamp)
 
+> **Scope change (12 Aug 2026): `settlerecon` is deferred and out of current scope.** The `apps/settlerecon` skeleton has been removed from the monorepo, along with its nest-cli project entry, npm scripts, TCP config getter, k8s manifest, ingress route, nginx upstream, docker-compose service, CI/CD matrix entry, and the `CLIENT_SETTLERECON_*` env vars. The migration target is now **3 apps: auth, config, transaction.**
+>
+> Audit findings about the *legacy* settlerecon-service are kept below — it still runs in production, and its schema/settlement design directly informs the `apps/transaction` work. Read them as reference material, not as a build plan. If settlerecon comes back into scope, this section is where to restart.
+
 ## Context
 
-The user runs 4 separately-deployed NestJS microservices in production — **auth**, **config**, **transaction**, **settlerecon** — each its own repo, each communicating with the others over TCP microservice calls. They now have more time and want to consolidate all 4 into the NestJS monorepo already scaffolded at `C:\le\andalusia\pg` (which currently has `apps/auth` partially wired — Prisma master/slave + Redis + audit trail, but zero business logic — plus bare-skeleton `apps/config`, `apps/transaction`, `apps/settlerecon`).
+The user runs 4 separately-deployed NestJS microservices in production — **auth**, **config**, **transaction**, **settlerecon** — each its own repo, each communicating with the others over TCP microservice calls. They now have more time and want to consolidate them into the NestJS monorepo at `C:\le\andalusia\pg`. *(As originally written this plan targeted all 4; per the scope change above, `settlerecon` is deferred and the target is auth + config + transaction.)*
 
 This is explicitly framed as a **revamp**, not a mechanical copy: rewire everything, verify every business process, and reach a production-grade bar before this goes live. Reference material for the migration is 4 zip snapshots of the legacy standalone repos, supplied at:
 - `C:\prelion\pg\auth-service\auth.zip`
@@ -11,7 +15,7 @@ This is explicitly framed as a **revamp**, not a mechanical copy: rewire everyth
 - `C:\prelion\pg\settlerecon-service\settlerecon.zip`
 
 A full audit of all 4 (structure, business logic, shared plumbing, security posture) was completed before writing this plan. Decisions the user already confirmed:
-- **Sequencing**: dependency order — finish `auth`, then `config`, then `transaction`+`settlerecon` together (the latter two share/diverge on the same Postgres schema, so they should be unified in one pass rather than ported as two forks).
+- **Sequencing**: dependency order — finish `auth`, then `config`, then `transaction`. ~~then `transaction`+`settlerecon` together~~ — superseded by the scope change above; `transaction` is now ported alone, though the unified-schema reasoning below still applies to how its schema is designed.
 - **Ambiguous/dead legacy code** (Zipay integration, an orphaned `NetzmeModule`, 3 orphaned settlement TCP handlers, a non-functional reconciliation upload): flag each with findings + a suggested action when its module comes up for porting, rather than deciding all of it now.
 - **Security remediation is required, blocking work** — not a fast-follow backlog.
 - **Port style**: consolidate duplicated code into shared libs and fix clear bugs while porting, while preserving every real business rule exactly.
@@ -20,8 +24,8 @@ A full audit of all 4 (structure, business logic, shared plumbing, security post
 
 - **`auth`'s Prisma schema already matches the monorepo's** (7 models: Role, Permission, User, AdminDetail, AgentDetail, MerchantDetail, MerchantSignature) — but **none of its 7 business modules are ported yet** (users, roles, permissions, agent-detail, merchant-detail, merchant-signature, CASL). Only DB/Redis/audit plumbing exists so far.
 - **121 files are byte-for-byte identical across all 4 legacy services** — the entire inter-service TCP client layer (`src/microservice/**`, 79 files) and a shared helper layer (`src/shared/**`, 42 files). This is a clean, unambiguous shared-lib extraction.
-- **`config`, `transaction`, `settlerecon` need to be built from scratch** in the monorepo (schema, DB module, every business module).
-- **`transaction` and `settlerecon` currently run two divergent forked Prisma schemas against what looks like the same physical Postgres tables** (`Int` vs `BigInt` PKs, different decimal precision, different timestamp-management strategy). This must be unified into one schema, not ported twice.
+- **`config` and `transaction` need to be built from scratch** in the monorepo (schema, DB module, every business module). *(Originally also `settlerecon` — now deferred.)*
+- **`transaction` and `settlerecon` currently run two divergent forked Prisma schemas against what looks like the same physical Postgres tables** (`Int` vs `BigInt` PKs, different decimal precision, different timestamp-management strategy). Still relevant with settlerecon deferred: `apps/transaction`'s schema should be designed to serve *both* uses, so a future settlerecon doesn't re-fork it. See Phase 3.1.
 - **Real bugs to fix while porting**: a `ZipayProviderClient` that calls PDN's TCP cmd/URL instead of its own (bug exists identically in all 4 copies); a settlement cron using `'0 */90 * * * *'` (invalid — minutes can't step by 90); `user-provider` hardcoding the literal provider name `'aaa'` for admin transactions; CASL `@CheckPolicies` enforcement wired up but commented out on almost every controller; `CaslCacheService` caches permissions forever in an in-memory `Map` with no TTL and a `clearCache()` that's never called.
 - **Security gaps that must be closed before launch**: legacy `.gitignore`s have the `.env` exclusion lines commented out, so DB password / JWT secrets / an encryption key look actually committed to those git histories; hardcoded API tokens/keys in source for Inacash, Payhere, Pakaidonk, and a PDN Ed25519 **private key duplicated 3 times in source** (service file, a comment block, and a standalone debug script); **none of the 4 payment-provider webhook callbacks verify a signature** before trusting a payin/payout status update.
 
@@ -37,7 +41,7 @@ New libs to create (joining the existing `libs/{configuration,date-time,redis,lo
 | `libs/logger` (existing stub → finished) | Wire the already-added `nestjs-pino`/`pino-http` deps into a real `LoggerService`. This replaces ~30+ scattered `console.log`/`console.error` calls across the legacy code and the buggy `MyLogger.logToConsole()` pattern (calls `.close()` on the Winston transport after every single log line) plus its local `./logs/*.log` file writes — the monorepo should log to stdout, ready for centralized shipping in a containerized deploy. |
 | `libs/configuration` (existing → extended) | Add `JwtConfig`. Reconcile the TCP port scheme — legacy uses 4000-4003, the monorepo's `apps/auth/.env.example` already stubs 4001-4004; pick one. Decide the fate of `ENCRYPTION_KEY` (declared in every legacy `.env` but referenced by zero source code — likely drop, confirm with user when reached). |
 
-CASL stays **auth-app-local** (it's an in-process ability cache keyed to auth's own Role/Permission tables — not shared TCP plumbing, and `config`-service's `@casl/*` deps were confirmed dead/unused). Payment-provider integrations (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay inside `apps/settlerecon`.
+CASL stays **auth-app-local** (it's an in-process ability cache keyed to auth's own Role/Permission tables — not shared TCP plumbing, and `config`-service's `@casl/*` deps were confirmed dead/unused). Payment-provider integrations (Inacash/PDN/Pakaidonk/Payhere/Zipay) were scoped to `apps/settlerecon` and are **deferred with it** — no provider integration is in current scope. When they return, decide then whether they live in the app that owns them or in a shared lib.
 
 ## Phased roadmap
 
@@ -69,21 +73,24 @@ Fix-as-we-go items (per the user's "consolidate + fix" choice):
 5. `settlement-scheduler`: fix the invalid `*/90` cron expression; add a distributed lock (Redis is available) since this and the reconciliation cron have no leader-election today and would double-fire across replicas.
 6. The hardcoded `'aaa'` provider fallback in `user-provider` needs a real value from the user — surface this explicitly when this module comes up, since guessing wrong would misroute real admin transactions.
 
-### Phase 3 — Build `apps/transaction` + `apps/settlerecon` together
-This pair shares one Postgres schema in legacy (forked into two incompatible Prisma clients) — resolve that **before** porting either app's modules:
+### Phase 3 — Build `apps/transaction`
+Originally scoped as `transaction` + `settlerecon` together, since the pair shares one Postgres schema in legacy (forked into two incompatible Prisma clients). With settlerecon deferred, only `transaction` gets built — but design its schema as the *single* schema for that Postgres namespace, so a future settlerecon extends it rather than re-forking it:
 1. Design one unified Prisma schema for the shared `"transaction"` schema. Recommend basing it on settlerecon's more rigorous version (`BigInt` PKs, explicit `Decimal(18,2)`/`Decimal(10,2)` precision, the composite indexes tuned for settlement/reconciliation queries) plus the `timestampzExtension` pattern, rather than transaction-service's looser types.
 2. Port the **balance ledger + Postgres advisory-lock pattern** bit-for-bit correct — this is the highest-risk piece of logic in the whole migration (global lock id 30 + per-merchant `(10,id)`/per-agent `(20,id)` locks around append-only `*BalanceLog` inserts; "current balance" = latest row by id, no running total column).
 3. Port the transaction **code-format correlation key** (`{timestampMs}{type}{method}{provider}-{userId}[-random]`) and its parsing regex exactly — it's load-bearing for every callback path.
 4. `apps/transaction`: purchase, topup, withdraw, disbursement, balance, and the merchant-facing Open API v1. Drop the confirmed-orphaned `NetzmeModule` (never imported) and the fully-commented-out dead code in `disbursement.service.ts` (the real disbursement logic lives in `Disbursement1Api` instead) — surface both explicitly rather than silently omitting.
-5. `apps/settlerecon`: balance (decide single-source-of-truth vs. read-only relative to transaction's copy), settlement (the two-phase pending→active balance mover — port its `Serializable`-isolation + retry-on-`P2034` pattern carefully), reconciliation (flag: currently parses uploads but never persists results — decide finish-it vs. preserve-as-stub when reached), and the provider integrations.
-6. **Provider integrations — security remediation is required here specifically**: for Inacash/PDN/Pakaidonk/Payhere, move every hardcoded credential/key to `libs/configuration`-managed env vars with no source fallback, and add webhook-signature verification before any callback payload is trusted (today none of the 4 verify anything). Drop the two orphaned `mtcpay-*.js` debug scripts and the unreferenced Pakaidonk `.pem` file pair (confirm truly unused before deleting). Zipay: flag when reached (broken client + blank credentials in legacy — likely a drop candidate, user's call).
-7. Add retry/backoff (or a Redis-backed queue) for the currently fire-and-forget merchant webhook delivery — a concrete "production grade" gap the audit flagged.
+5. Add retry/backoff (or a Redis-backed queue) for the currently fire-and-forget merchant webhook delivery — a concrete "production grade" gap the audit flagged.
+
+**Deferred with settlerecon** (kept here so nothing is lost if it returns to scope):
+- `apps/settlerecon` modules: balance (decide single-source-of-truth vs. read-only relative to transaction's copy), settlement (the two-phase pending→active balance mover — port its `Serializable`-isolation + retry-on-`P2034` pattern carefully), reconciliation (currently parses uploads but never persists results — decide finish-it vs. preserve-as-stub).
+- **Provider integrations + their security remediation**: for Inacash/PDN/Pakaidonk/Payhere, move every hardcoded credential/key to `libs/configuration`-managed env vars with no source fallback, and add webhook-signature verification before any callback payload is trusted (today none of the 4 verify anything). Drop the two orphaned `mtcpay-*.js` debug scripts and the unreferenced Pakaidonk `.pem` file pair (confirm truly unused before deleting). Zipay: broken client + blank credentials in legacy — likely a drop candidate, user's call.
+- Note: the **credential rotation** in Phase 0.6 is *not* deferred — those keys are exposed in legacy git history regardless of what gets ported.
 
 ### Phase 4 — Production-grade hardening (cross-cutting, closes out the migration)
 - **CI/CD**: legacy is 4 independent SSH+docker-compose-to-one-VM pipelines, no lint/test gate on PRs. Design one consolidated pipeline for the monorepo (path-based/affected-app builds), and add lint+test as an actual required PR check (currently absent everywhere). Fix the inconsistent secret name found between workflows (`BIZNET_DEPLOY_PATH` vs `BIZNET_SSH_DEPLOY_PATH`) if the SSH/docker-compose deploy mechanism carries forward.
 - **Testing**: bring each legacy `*.spec.ts` along as its module is ported (Phases 1-3), then make the CI pipeline actually run them (today they exist but nothing gates on them).
 - **Full env-var consolidation**: fold every env var found across the 4 legacy services into `libs/configuration`'s typed config classes, with one clean `.env.example` per app (today none of the 4 legacy services even has a `.env.example` — only real `.env*` files).
-- **End-to-end business-process verification**: once all 4 apps are ported, walk every real flow end-to-end against the running monorepo (register merchant → configure fees → purchase → provider callback → settlement → reconciliation → withdraw/disbursement → merchant webhook) to confirm behavioral parity — this is the direct answer to "check all the business process before deliver it into production."
+- **End-to-end business-process verification**: once the 3 in-scope apps are ported, walk every real flow end-to-end against the running monorepo (register merchant → configure fees → purchase → provider callback → withdraw/disbursement → merchant webhook) to confirm behavioral parity — settlement/reconciliation steps drop out of this walkthrough while settlerecon is deferred — this is the direct answer to "check all the business process before deliver it into production."
 
 ## Immediate next step
 

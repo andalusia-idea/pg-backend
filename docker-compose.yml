@@ -67,7 +67,6 @@ services:
       - auth-service
       - transaction-service
       - config-service
-      - settlerecon-service
     networks:
       - payment-network
 
@@ -133,28 +132,6 @@ services:
       args:
         SERVICE_NAME: config # Sesuai script: nest build config
     container_name: config-service
-    environment:
-      - PORT=3000
-      - DB_HOST_MASTER=postgres-master
-      - DB_HOST_SLAVE=postgres-slave
-      - DB_PORT=5432
-      - DB_USERNAME=pg_user
-      - DB_PASSWORD=pg_password
-      - DB_NAME=payment_db
-    depends_on:
-      - postgres-master
-      - postgres-slave
-    networks:
-      - payment-network
-
-  # Settlement Recon Service
-  settlerecon-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SERVICE_NAME: settlerecon # Sesuai script: nest build settlerecon
-    container_name: settlerecon-service
     environment:
       - PORT=3000
       - DB_HOST_MASTER=postgres-master

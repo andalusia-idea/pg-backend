@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth, transaction, settlerecon, config]
+        service: [auth, transaction, config]
 
     steps:
       - name: Checkout Code
@@ -51,5 +51,4 @@ jobs:
             # Memperbarui image ke tag terbaru (commit SHA) di Kubernetes klaster lokal (K3s)
             kubectl set image deployment/auth-deployment auth-service=ghcr.io/${{ github.repository_owner }}/auth-service:${{ github.sha }} -n production
             kubectl set image deployment/transaction-deployment transaction-service=ghcr.io/${{ github.repository_owner }}/transaction-service:${{ github.sha }} -n production
-            kubectl set image deployment/settlerecon-deployment settlerecon-service=ghcr.io/${{ github.repository_owner }}/settlerecon-service:${{ github.sha }} -n production
             kubectl set image deployment/config-deployment config-service=ghcr.io/${{ github.repository_owner }}/config-service:${{ github.sha }} -n production

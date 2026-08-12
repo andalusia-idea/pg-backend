@@ -29,13 +29,6 @@ spec:
             port:
               number: 80
       # ... (konfigurasi auth & transaction sebelumnya)
-      - path: /api/v1/settlement
-        pathType: Prefix
-        backend:
-          service:
-            name: settlerecon-service
-            port:
-              number: 80
       - path: /api/v1/config
         pathType: Prefix
         backend:

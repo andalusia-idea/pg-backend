@@ -1,6 +1,6 @@
 # TLS for internal TCP microservices
 
-Applies to the TCP calls between `auth`, `config`, `transaction`, `settlerecon` (`libs/microservice`). Written up after checking the real deploy topology (single-node K3s cluster, see `k8s/*.yaml` + `.github/workflows/ci-cd.yml`) and verifying the mechanics below with real openssl/Node runs — not just from docs.
+Applies to the TCP calls between `auth`, `config`, `transaction` (`libs/microservice`). Written up after checking the real deploy topology (single-node K3s cluster, see `k8s/*.yaml` + `.github/workflows/ci-cd.yml`) and verifying the mechanics below with real openssl/Node runs — not just from docs.
 
 ## What TLS actually does
 
@@ -45,7 +45,7 @@ openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 \
   -subj "/CN=manapay-internal-ca" -out ca.crt
 
-# 2. Per service (repeat for auth-service, config-service, transaction-service, settlerecon-service):
+# 2. Per service (repeat for auth-service, config-service, transaction-service):
 openssl genrsa -out config-service.key 2048
 openssl req -new -key config-service.key -subj "/CN=config-service" \
   -addext "subjectAltName=DNS:config-service" -out config-service.csr

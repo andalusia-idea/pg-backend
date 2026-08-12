@@ -11,7 +11,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Argument service name (auth, config, transaction, settlerecon)
+# Argument service name (auth, config, transaction)
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
 
