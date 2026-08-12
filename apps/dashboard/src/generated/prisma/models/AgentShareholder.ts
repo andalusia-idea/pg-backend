@@ -353,7 +353,7 @@ export type AgentShareholderScalarWhereWithAggregatesInput = {
 }
 
 export type AgentShareholderCreateInput = {
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -368,7 +368,7 @@ export type AgentShareholderUncheckedCreateInput = {
   id?: number
   agentId: number
   merchantId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -406,7 +406,7 @@ export type AgentShareholderCreateManyInput = {
   id?: number
   agentId: number
   merchantId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -605,7 +605,7 @@ export type DecimalFieldUpdateOperationsInput = {
 }
 
 export type AgentShareholderCreateWithoutMerchantInput = {
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -618,7 +618,7 @@ export type AgentShareholderCreateWithoutMerchantInput = {
 export type AgentShareholderUncheckedCreateWithoutMerchantInput = {
   id?: number
   agentId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -670,7 +670,7 @@ export type AgentShareholderScalarWhereInput = {
 }
 
 export type AgentShareholderCreateWithoutAgentInput = {
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -683,7 +683,7 @@ export type AgentShareholderCreateWithoutAgentInput = {
 export type AgentShareholderUncheckedCreateWithoutAgentInput = {
   id?: number
   merchantId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -721,7 +721,7 @@ export type AgentShareholderUpdateManyWithWhereWithoutAgentInput = {
 export type AgentShareholderCreateManyMerchantInput = {
   id?: number
   agentId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -768,7 +768,7 @@ export type AgentShareholderUncheckedUpdateManyWithoutMerchantInput = {
 export type AgentShareholderCreateManyAgentInput = {
   id?: number
   merchantId: number
-  percentagePerAgent: runtime.Decimal | runtime.DecimalJsLike | number | string
+  percentagePerAgent?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null

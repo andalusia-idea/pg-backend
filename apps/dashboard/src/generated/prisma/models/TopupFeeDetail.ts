@@ -395,9 +395,9 @@ export type TopupFeeDetailScalarWhereWithAggregatesInput = {
 export type TopupFeeDetailCreateInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -412,9 +412,9 @@ export type TopupFeeDetailUncheckedCreateInput = {
   agentId?: number | null
   topupId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -459,9 +459,9 @@ export type TopupFeeDetailCreateManyInput = {
   agentId?: number | null
   topupId: number
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -631,9 +631,9 @@ export type EnumFeeTypeEnumFieldUpdateOperationsInput = {
 export type TopupFeeDetailCreateWithoutTopUpTransationInput = {
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -646,9 +646,9 @@ export type TopupFeeDetailUncheckedCreateWithoutTopUpTransationInput = {
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -706,9 +706,9 @@ export type TopupFeeDetailCreateManyTopUpTransationInput = {
   id?: number
   agentId?: number | null
   type: $Enums.FeeTypeEnum
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feeFixed: runtime.Decimal | runtime.DecimalJsLike | number | string
-  feePercentage: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  feePercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null

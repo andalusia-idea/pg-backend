@@ -3,6 +3,7 @@ import { ConfigModule, ConfigModuleOptions } from '@nestjs/config';
 import { AppConfig } from './app.config';
 import { TCPConfig } from './tcp.config';
 import { DatabaseConfig } from './database.config';
+import { JwtConfig } from './jwt.config';
 
 @Global()
 @Module({})
@@ -17,8 +18,8 @@ export class ConfigurationModule {
           ...options,
         }),
       ],
-      providers: [AppConfig, TCPConfig, DatabaseConfig],
-      exports: [ConfigModule, AppConfig, TCPConfig, DatabaseConfig],
+      providers: [AppConfig, TCPConfig, DatabaseConfig, JwtConfig],
+      exports: [ConfigModule, AppConfig, TCPConfig, DatabaseConfig, JwtConfig],
     };
   }
 }

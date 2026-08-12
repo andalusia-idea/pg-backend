@@ -475,9 +475,9 @@ export type InternalBalanceLogScalarWhereWithAggregatesInput = {
 
 export type InternalBalanceLogCreateInput = {
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -500,9 +500,9 @@ export type InternalBalanceLogUncheckedCreateInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -562,9 +562,9 @@ export type InternalBalanceLogCreateManyInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -886,9 +886,9 @@ export type InternalBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNeste
 
 export type InternalBalanceLogCreateWithoutTopupTransactionInput = {
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -909,9 +909,9 @@ export type InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -975,9 +975,9 @@ export type InternalBalanceLogScalarWhereInput = {
 
 export type InternalBalanceLogCreateWithoutWithdrawTransactionInput = {
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -998,9 +998,9 @@ export type InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
   purchaseId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1040,9 +1040,9 @@ export type InternalBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput
 
 export type InternalBalanceLogCreateWithoutDisbursementTransactionInput = {
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1063,9 +1063,9 @@ export type InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput
   purchaseId?: number | null
   withdrawId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1105,9 +1105,9 @@ export type InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionI
 
 export type InternalBalanceLogCreateWithoutPurchaseTransactionInput = {
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1128,9 +1128,9 @@ export type InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1174,9 +1174,9 @@ export type InternalBalanceLogCreateManyTopupTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1253,9 +1253,9 @@ export type InternalBalanceLogCreateManyWithdrawTransactionInput = {
   purchaseId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1332,9 +1332,9 @@ export type InternalBalanceLogCreateManyDisbursementTransactionInput = {
   purchaseId?: number | null
   withdrawId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string
@@ -1411,9 +1411,9 @@ export type InternalBalanceLogCreateManyPurchaseTransactionInput = {
   withdrawId?: number | null
   disbursementId?: number | null
   merchantId?: number | null
-  changeAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending: runtime.Decimal | runtime.DecimalJsLike | number | string
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
   providerName: string
   paymentMethodName: string

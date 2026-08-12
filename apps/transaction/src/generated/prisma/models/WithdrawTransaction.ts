@@ -481,8 +481,8 @@ export type WithdrawTransactionCreateInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -508,8 +508,8 @@ export type WithdrawTransactionUncheckedCreateInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -588,8 +588,8 @@ export type WithdrawTransactionCreateManyInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -814,8 +814,8 @@ export type WithdrawTransactionCreateWithoutFeeDetailsInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -840,8 +840,8 @@ export type WithdrawTransactionUncheckedCreateWithoutFeeDetailsInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -932,8 +932,8 @@ export type WithdrawTransactionCreateWithoutMerchantBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -958,8 +958,8 @@ export type WithdrawTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1050,8 +1050,8 @@ export type WithdrawTransactionCreateWithoutAgentBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1076,8 +1076,8 @@ export type WithdrawTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1168,8 +1168,8 @@ export type WithdrawTransactionCreateWithoutInternalBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -1194,8 +1194,8 @@ export type WithdrawTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   referenceId: string
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue

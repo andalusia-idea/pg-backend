@@ -532,8 +532,8 @@ export type DisbursementTransactionCreateInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -563,8 +563,8 @@ export type DisbursementTransactionUncheckedCreateInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -655,8 +655,8 @@ export type DisbursementTransactionCreateManyInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -905,8 +905,8 @@ export type DisbursementTransactionCreateWithoutFeeDetailsInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -935,8 +935,8 @@ export type DisbursementTransactionUncheckedCreateWithoutFeeDetailsInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1039,8 +1039,8 @@ export type DisbursementTransactionCreateWithoutMerchantBalanceLogInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1069,8 +1069,8 @@ export type DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1173,8 +1173,8 @@ export type DisbursementTransactionCreateWithoutAgentBalanceLogInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1203,8 +1203,8 @@ export type DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput = 
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1307,8 +1307,8 @@ export type DisbursementTransactionCreateWithoutInternalBalanceLogInput = {
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string
@@ -1337,8 +1337,8 @@ export type DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput
   recipientBankCode: string
   recipientBankName?: string | null
   recipientAccount: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   paymentMethodName: string

@@ -521,8 +521,8 @@ export type PurchaseTransactionCreateInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -552,8 +552,8 @@ export type PurchaseTransactionUncheckedCreateInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -644,8 +644,8 @@ export type PurchaseTransactionCreateManyInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -904,8 +904,8 @@ export type PurchaseTransactionCreateWithoutFeeDetailsInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -934,8 +934,8 @@ export type PurchaseTransactionUncheckedCreateWithoutFeeDetailsInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1038,8 +1038,8 @@ export type PurchaseTransactionCreateWithoutWebhookLogsInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1068,8 +1068,8 @@ export type PurchaseTransactionUncheckedCreateWithoutWebhookLogsInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1172,8 +1172,8 @@ export type PurchaseTransactionCreateWithoutMerchantBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1202,8 +1202,8 @@ export type PurchaseTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1306,8 +1306,8 @@ export type PurchaseTransactionCreateWithoutAgentBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1336,8 +1336,8 @@ export type PurchaseTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1440,8 +1440,8 @@ export type PurchaseTransactionCreateWithoutInternalBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
@@ -1470,8 +1470,8 @@ export type PurchaseTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   nmid?: string | null
   providerName: string
   paymentMethodName: string
-  nominal: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal: runtime.Decimal | runtime.DecimalJsLike | number | string
+  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   expiresAt: Date | string
