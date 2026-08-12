@@ -35,7 +35,7 @@ New libs to create (joining the existing `libs/{configuration,date-time,redis,lo
 
 | Lib | Contents (ported from legacy `src/microservice/**` + `src/shared/**`) |
 |---|---|
-| `libs/microservice-clients` | The `SERVICES` cmd/path/url registry + all 14 `*.client.ts` TCP client classes + their system DTOs. Fix the Zipay cmd bug and the missing `@Injectable()` on `ZipayProviderClient` while porting. Decide whether to add the missing Payhere client for parity (currently the only provider with no client stub). |
+| `libs/microservice` (existing → extended) | The `SERVICES` cmd/path/url registry + all 14 `*.client.ts` TCP client classes + their system DTOs. Fix the Zipay cmd bug and the missing `@Injectable()` on `ZipayProviderClient` while porting. Decide whether to add the missing Payhere client for parity (currently the only provider with no client stub). Already holds the Auth/Config `ClientProxy` registrations and the clients for the 5 cmds implemented so far; DTOs here are **TypeBox schemas + `AjvPipe`**, not `class-validator` decorators — port remaining legacy DTOs into that idiom. |
 | `libs/auth` (new) | `JwtAuthGuard`, `RolesGuard`, `MerchantSignatureHeadersGuard`, `JwtStrategy`, the `@PublicApi/@SystemApi/@MerchantApi/@Roles/@CurrentAuthInfo` decorators, `AuthInfoDto`, `ROLE` enum — plus a typed `JwtConfig` (extends the existing `libs/configuration` pattern) replacing the legacy raw `process.env` reads. |
 | `libs/common` (new) | `ApiError`/`DependencyErrorContext`/`DependencyErrorHelper`, `ResponseException`/`ResponseDto`. Normalize onto the newer `DependencyErrorHelper.withFallback()` pattern only — the legacy code has two competing fallback implementations (older raw try/catch+console.log vs. this one); don't port the older one. |
 | `libs/logger` (existing stub → finished) | Wire the already-added `nestjs-pino`/`pino-http` deps into a real `LoggerService`. This replaces ~30+ scattered `console.log`/`console.error` calls across the legacy code and the buggy `MyLogger.logToConsole()` pattern (calls `.close()` on the Winston transport after every single log line) plus its local `./logs/*.log` file writes — the monorepo should log to stdout, ready for centralized shipping in a containerized deploy. |
@@ -46,8 +46,8 @@ CASL stays **auth-app-local** (it's an in-process ability cache keyed to auth's 
 ## Phased roadmap
 
 ### Phase 0 — Foundations (do this first; unblocks everything else)
-1. Create `libs/microservice-clients`, `libs/auth`, `libs/common` (scaffold via `nest g library`, matching the existing lib pattern in [nest-cli.json](nest-cli.json)/[tsconfig.json](tsconfig.json)).
-2. Port the `SERVICES` registry + 14 TCP clients into `libs/microservice-clients`, fixing the Zipay bug and `@Injectable()` gap.
+1. Create `libs/auth`, `libs/common` (scaffold via `nest g library`, matching the existing lib pattern in [nest-cli.json](nest-cli.json)/[tsconfig.json](tsconfig.json)). `libs/microservice` already exists and is wired into all 4 apps.
+2. Port the `SERVICES` registry + remaining TCP clients into `libs/microservice`, fixing the Zipay bug and `@Injectable()` gap.
 3. Port guards/strategy/decorators into `libs/auth`; add `JwtConfig` to `libs/configuration`.
 4. Finish [libs/logger/src/logger.service.ts](libs/logger/src/logger.service.ts) with real `nestjs-pino` wiring.
 5. Add missing root dependencies confirmed by the audit: `passport`, `passport-jwt`, `@nestjs/jwt`, `class-validator`, `class-transformer`, `argon2`, `canonicalize`, `decimal.js`, `@casl/ability`+`@casl/prisma` (auth only), `uuid` — standardize on the newer major versions found (e.g. `uuid@13`, not the `^9` used by 3 of the 4 legacy services).
@@ -94,7 +94,7 @@ Originally scoped as `transaction` + `settlerecon` together, since the pair shar
 
 ## Immediate next step
 
-Start with **Phase 0**: scaffold `libs/microservice-clients`, `libs/auth`, `libs/common`, finish `libs/logger`, extend `libs/configuration` with `JwtConfig`, and add the missing root dependencies. This unblocks Phase 1 (`auth`), which is the natural next milestone since it's already partially wired.
+Start with **Phase 0**: scaffold `libs/auth`, `libs/common`, extend `libs/microservice` with the remaining TCP clients, finish `libs/logger`, extend `libs/configuration` with `JwtConfig`, and add the missing root dependencies. This unblocks Phase 1 (`auth`), which is the natural next milestone since it's already partially wired.
 
 ## Verification approach
 

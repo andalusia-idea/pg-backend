@@ -100,7 +100,7 @@ No `.env.example` exists in any of the 4 zips — only real `.env`/`.env.develop
 `nest-cli.json` and `tsconfig.build.json` byte-identical across all 4. `tsconfig.json` identical in config/transaction/settlerecon; **auth's has one extra flag** (`esModuleInterop: true`) the others lack — safe to standardize on. `eslint.config.mjs` (flat, ESLint 9) byte-identical across all 4 — this is the active config. Legacy `.eslintrc.js` only in transaction/settlerecon — dead weight, don't port.
 
 ### Suggested lib split (feeds directly into the plan)
-- **`libs/microservice-clients`**: `SERVICES` registry + all 14 clients + DTOs — fix Zipay bug + missing `@Injectable()` while porting.
+- **`libs/microservice`**: `SERVICES` registry + all 14 clients + DTOs — fix Zipay bug + missing `@Injectable()` while porting.
 - **`libs/auth`**: guards/strategy/decorators, `AuthInfoDto`, `ROLE` enum, a real `JwtConfig`.
 - **`libs/common`**: `ApiError`/`DependencyErrorContext`/`DependencyErrorHelper`/`ResponseException`/`ResponseDto` — normalize onto the newer fallback pattern only.
 - **Stays per-app**: CASL (auth-only), each provider's server-side implementation, provider credential material (needs real secrets management, not a repo re-commit).

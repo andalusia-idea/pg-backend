@@ -1,6 +1,8 @@
 import {
   FilterProfileProviderDto,
+  PaymentMethodNameEnum,
   ProfileProviderDto,
+  ProviderNameEnum,
   UserRoleEnum,
 } from '@app/microservice';
 import {
@@ -30,8 +32,8 @@ export class ProfileProviderService {
       return {
         userId,
         userRole,
-        providerName: 'default', // TODO default
-        paymentMethodName: 'TRANSFERBANK',
+        providerName: ProviderNameEnum.INTERNAL,
+        paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
       } as ProfileProviderDto;
     }
 
@@ -43,8 +45,9 @@ export class ProfileProviderService {
       return {
         userId,
         userRole,
-        providerName: agent.providerName ?? 'default', // TODO default
-        paymentMethodName: agent.paymentMethodName ?? 'TRANSFERBANK', // TODO default
+        providerName: agent.providerName ?? ProviderNameEnum.INTERNAL,
+        paymentMethodName:
+          agent.paymentMethodName ?? PaymentMethodNameEnum.TRANSFERBANK,
       } as ProfileProviderDto;
     }
 

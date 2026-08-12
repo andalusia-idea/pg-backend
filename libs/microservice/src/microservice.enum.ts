@@ -33,7 +33,7 @@ export const ProviderNameEnum = {
   PDNT1: 'PDNT1',
   ZIPAY: 'ZIPAY',
   PAKAIDONK: 'PAKAIDONK',
-};
+} as const;
 export type ProviderNameEnum =
   (typeof ProviderNameEnum)[keyof typeof ProviderNameEnum];
 

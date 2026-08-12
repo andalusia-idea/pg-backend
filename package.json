@@ -132,7 +132,6 @@
       "^@app/health(|/.*)$": "<rootDir>/libs/health/src/$1",
       "^@app/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",
       "^@app/microservice(|/.*)$": "<rootDir>/libs/microservice/src/$1",
-      "^@app/microservice-clients(|/.*)$": "<rootDir>/libs/microservice-clients/src/$1",
       "^@app/prisma(|/.*)$": "<rootDir>/libs/prisma/src/$1",
       "^@app/redis(|/.*)$": "<rootDir>/libs/redis/src/$1"
     }
