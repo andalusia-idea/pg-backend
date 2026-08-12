@@ -6,8 +6,9 @@ import {
   type FilterProfileBankDto,
   FilterProfileBankSchema,
 } from '@app/microservice';
-import { UsePipes } from '@nestjs/common';
+import { Controller, UsePipes } from '@nestjs/common';
 
+@Controller()
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

@@ -6,6 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "kill-port": "node scripts/kill-port.js",
+    "start:dev:all": "node scripts/start-dev-all.js",
     "start:dashboard": "nest start dashboard --watch",
     "start:auth": "nest start auth --watch",
     "start:config": "nest start config --watch",
