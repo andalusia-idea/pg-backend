@@ -67,7 +67,15 @@ export class MotionPayAuthService {
         ...config.headers,
       },
     };
-    this.logger.log(configRequest);
+
+    // Never log `configRequest` — it carries the bearer token in its headers.
+    // Log the routing facts only.
+    this.logger.debug({
+      msg: 'MotionPay request',
+      method: configRequest.method,
+      url: configRequest.url,
+    });
+
     const response = await firstValueFrom(
       this.httpService.request<T>(configRequest),
     );
@@ -85,7 +93,6 @@ export class MotionPayAuthService {
   async getToken(): Promise<string> {
     const nowSeconds = Math.floor(Date.now() / 1000);
 
-    this.logger.log({ token: this.cachedToken });
     if (this.cachedToken && nowSeconds < this.cachedToken.expiresAtSeconds) {
       return this.cachedToken.token;
     }
@@ -144,10 +151,15 @@ export class MotionPayAuthService {
     }
 
     const token: string = parsed.data.token;
-    this.cachedToken = {
-      token,
-      expiresAtSeconds: this.resolveExpiry(token),
-    };
+    const expiresAtSeconds = this.resolveExpiry(token);
+    this.cachedToken = { token, expiresAtSeconds };
+
+    // Expiry only — the token is a live credential and must never reach a log
+    // line, a log file, or the log shipper.
+    this.logger.log({
+      msg: 'MotionPay token acquired',
+      expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
+    });
 
     return token;
   }

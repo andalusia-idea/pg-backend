@@ -53,24 +53,22 @@ export class MotionPayService {
    * business layer should not need to know which provider handled a purchase.
    */
   async createQrisPayment(
-    body: MotionPayCreateQrisRequestDto,
+    params: CreateQrisPaymentParams,
   ): Promise<UpstreamPurchaseResult> {
-    const params = { code: '111' };
-    // const body: MotionPayCreateQrisRequestDto = {
-    //   terminal_id: this.assertExternalIdLength(
-    //     params.terminalId ?? params.code,
-    //     'terminal_id',
-    //   ),
-    //   external_id: this.assertExternalIdLength(params.code, 'external_id'),
-    //   amount: this.toWholeRupiah(params.nominal),
-    //   session_time: params.sessionTimeMinutes,
-    //   // Required keys, but the provider allows empty values.
-    //   fullname: params.customer?.fullname ?? '',
-    //   email: params.customer?.email ?? '',
-    //   phone_number: params.customer?.phoneNumber ?? '',
-    //   ...(params.description ? { description: params.description } : {}),
-    // };
-    this.logger.log(body);
+    const body: MotionPayCreateQrisRequestDto = {
+      terminal_id: this.assertExternalIdLength(
+        params.terminalId ?? params.code,
+        'terminal_id',
+      ),
+      external_id: this.assertExternalIdLength(params.code, 'external_id'),
+      amount: this.toWholeRupiah(params.nominal),
+      session_time: params.sessionTimeMinutes,
+      // Required keys, but the provider allows empty values.
+      fullname: params.customer?.fullname ?? '',
+      email: params.customer?.email ?? '',
+      phone_number: params.customer?.phoneNumber ?? '',
+      ...(params.description ? { description: params.description } : {}),
+    };
 
     const raw = await this.request(
       {
@@ -80,8 +78,6 @@ export class MotionPayService {
       },
       'createQrisPayment',
     );
-    this.logger.log('createQrisPayment');
-    this.logger.log(raw);
 
     const parsed = assertUpstreamSchema<MotionPayCreateQrisResponseDto>(
       ProviderNameEnum.MOTIONPAY,
@@ -114,6 +110,31 @@ export class MotionPayService {
       message: data.description ?? parsed.status.message,
       metadata: { ...parsed } as Record<string, unknown>,
     };
+  }
+
+  /**
+   * Send a create-payment request exactly as given and return MotionPay's
+   * reply verbatim — no request mapping, no response normalization.
+   *
+   * Exists so the wire contract can be exercised directly while the
+   * integration is still being commissioned (paste MotionPay's documented
+   * example, see precisely what they answer). Keeping it as its own method is
+   * what lets `createQrisPayment` above stay strict: the test path never has
+   * to loosen the production path.
+   *
+   * Not for business use — no envelope check, no typed response.
+   */
+  async createQrisPaymentRaw(
+    body: MotionPayCreateQrisRequestDto,
+  ): Promise<unknown> {
+    return this.request(
+      {
+        method: 'POST',
+        url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
+        data: body,
+      },
+      'createQrisPaymentRaw',
+    );
   }
 
   /**

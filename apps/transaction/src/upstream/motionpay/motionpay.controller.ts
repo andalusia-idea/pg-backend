@@ -83,7 +83,7 @@ export class MotionPayController {
     this.assertNotProduction();
 
     return this.surfaceUpstreamErrors(() =>
-      this.motionPayService.createQrisPayment(body),
+      this.motionPayService.createQrisPaymentRaw(body),
     );
   }
 
@@ -117,12 +117,10 @@ export class MotionPayController {
   })
   async checkToken() {
     this.assertNotProduction();
-    this.logger.log('Check Token');
 
     return this.surfaceUpstreamErrors(async () => {
       const token = await this.motionPayAuthService.getToken();
       const expiresAt = this.readExpiry(token);
-      this.logger.log(token);
       return {
         ok: true,
         // Enough to confirm a real JWT came back without disclosing it.
@@ -145,8 +143,16 @@ export class MotionPayController {
     try {
       return await run();
     } catch (error) {
-      this.logger.error(error);
       if (error instanceof UpstreamException) {
+        // Structured, and safe to log: UpstreamException carries the provider's
+        // response, never our request headers, so no credential rides along.
+        this.logger.error({
+          msg: 'MotionPay call failed',
+          provider: error.provider,
+          reason: error.message,
+          context: error.context,
+        });
+
         throw new HttpException(
           {
             provider: error.provider,
