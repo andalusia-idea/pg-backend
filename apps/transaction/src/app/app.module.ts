@@ -8,8 +8,13 @@ import { auditTrailExtension } from '../database/audit.extension';
 import { RedisModule } from '@app/redis';
 import { LoggerModule } from '@app/logger';
 import { MicroserviceModule } from '@app/microservice';
+import { MotionPayModule } from '../upstream/motionpay';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
+  controllers: [AppController],
+  providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
       envFilePath: ['apps/transaction/.env.local', 'apps/transaction/.env'],
@@ -24,6 +29,7 @@ import { MicroserviceModule } from '@app/microservice';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+    MotionPayModule,
   ],
 })
 export class AppModule {}

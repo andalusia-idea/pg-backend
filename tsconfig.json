@@ -58,6 +58,12 @@
       "@app/redis/*": [
         "libs/redis/src/*"
       ],
+      "@app/upstream": [
+        "libs/upstream/src"
+      ],
+      "@app/upstream/*": [
+        "libs/upstream/src/*"
+      ],
       "@dashboard/prisma": [
         "apps/dashboard/src/generated/prisma/client"
       ],

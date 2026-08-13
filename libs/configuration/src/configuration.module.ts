@@ -4,6 +4,7 @@ import { AppConfig } from './app.config';
 import { TCPConfig } from './tcp.config';
 import { DatabaseConfig } from './database.config';
 import { JwtConfig } from './jwt.config';
+import { MotionPayConfig } from './motionpay.config';
 
 @Global()
 @Module({})
@@ -18,8 +19,21 @@ export class ConfigurationModule {
           ...options,
         }),
       ],
-      providers: [AppConfig, TCPConfig, DatabaseConfig, JwtConfig],
-      exports: [ConfigModule, AppConfig, TCPConfig, DatabaseConfig, JwtConfig],
+      providers: [
+        AppConfig,
+        TCPConfig,
+        DatabaseConfig,
+        JwtConfig,
+        MotionPayConfig,
+      ],
+      exports: [
+        ConfigModule,
+        AppConfig,
+        TCPConfig,
+        DatabaseConfig,
+        JwtConfig,
+        MotionPayConfig,
+      ],
     };
   }
 }

@@ -29,10 +29,11 @@ export type UserRoleEnum = (typeof UserRoleEnum)[keyof typeof UserRoleEnum];
 
 export const ProviderNameEnum = {
   INTERNAL: 'INTERNAL',
-  INACASH: 'INACASH',
-  PDNT1: 'PDNT1',
-  ZIPAY: 'ZIPAY',
-  PAKAIDONK: 'PAKAIDONK',
+  MOTIONPAY: 'MOTIONPAY',
+  // INACASH: 'INACASH',
+  // PDNT1: 'PDNT1',
+  // ZIPAY: 'ZIPAY',
+  // PAKAIDONK: 'PAKAIDONK',
 } as const;
 export type ProviderNameEnum =
   (typeof ProviderNameEnum)[keyof typeof ProviderNameEnum];
