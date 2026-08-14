@@ -48,19 +48,21 @@ import {
           // Defence in depth for credentials that should never be logged.
           // Redaction is not a licence to log secrets — it only catches the
           // ones that slip through.
-          redact: {
-            paths: [
-              'req.headers.authorization',
-              'headers.authorization',
-              'headers.Authorization',
-              'config.headers.Authorization',
-              'token',
-              'token.token',
-              'accessToken',
-              '*.accessToken',
-            ],
-            censor: '[REDACTED]',
-          },
+          redact: appConfig.IS_PRODUCTION
+            ? {
+                paths: [
+                  'req.headers.authorization',
+                  'headers.authorization',
+                  'headers.Authorization',
+                  'config.headers.Authorization',
+                  'token',
+                  'token.token',
+                  'accessToken',
+                  '*.accessToken',
+                ],
+                censor: '[REDACTED]',
+              }
+            : [],
           transport: {
             targets: appConfig.IS_PRODUCTION
               ? [

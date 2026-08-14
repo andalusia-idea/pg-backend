@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { MotionPayAuthService } from './motionpay-auth.service';
-import { MotionPayService } from './motionpay.service';
+import { MotionPayService } from './motionpay.qris.service';
 import { MotionPayController } from './motionpay.controller';
 
 /**

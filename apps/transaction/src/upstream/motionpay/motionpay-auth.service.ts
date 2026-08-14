@@ -67,7 +67,7 @@ export class MotionPayAuthService {
         ...config.headers,
       },
     };
-
+    console.log({ configRequest });
     // Never log `configRequest` — it carries the bearer token in its headers.
     // Log the routing facts only.
     this.logger.debug({
@@ -91,6 +91,10 @@ export class MotionPayAuthService {
 
   /** Returns a valid token, reusing the cached one until it is close to expiry. */
   async getToken(): Promise<string> {
+    console.log('getToken');
+    // return Promise.resolve(
+    //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODcyMjA2MjEsIm1lcmNoYW50X2lkIjoiNTkyNDAiLCJtZXJjaGFudF9uYW1lIjoiQU5EQVBBWSIsIm1lcmNoYW50X3V1aWQiOiIwMDA1OTEwMiJ9.O1WTwWWAUQkuZYMc0-FfblnBI5tCt9ju5lcUi-Ky4V0',
+    // );
     const nowSeconds = Math.floor(Date.now() / 1000);
 
     if (this.cachedToken && nowSeconds < this.cachedToken.expiresAtSeconds) {
@@ -158,6 +162,7 @@ export class MotionPayAuthService {
     // line, a log file, or the log shipper.
     this.logger.log({
       msg: 'MotionPay token acquired',
+      token: token,
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
 

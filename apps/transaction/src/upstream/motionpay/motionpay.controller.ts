@@ -13,7 +13,7 @@ import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AppConfig } from '@app/configuration';
 import { AjvPipe, ProviderNameEnum } from '@app/microservice';
 import { UpstreamException } from '@app/upstream';
-import { MotionPayService } from './motionpay.service';
+import { MotionPayQRISService } from './motionpay.qris.service';
 import { MotionPayAuthService } from './motionpay-auth.service';
 import {
   type MotionPayCreateQrisRequestDto,
@@ -37,7 +37,7 @@ import {
 export class MotionPayController {
   private readonly logger = new Logger(MotionPayController.name);
   constructor(
-    private readonly motionPayService: MotionPayService,
+    private readonly motionPayService: MotionPayQRISService,
     private readonly motionPayAuthService: MotionPayAuthService,
     private readonly appConfig: AppConfig,
   ) {}
