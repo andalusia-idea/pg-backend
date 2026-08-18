@@ -20,12 +20,61 @@ export const PercentageType = Type.String({
 //   });
 // }
 
+/**
+ * The coarse profile category a user belongs to - which detail table holds
+ * their profile row, and what crosses service boundaries in DTOs.
+ *
+ * Distinct from `ROLE` below: several roles can map to one category (both
+ * ADMIN_SUPER and ADMIN are `ADMIN` here). Use `PROFILE_KIND_BY_ROLE` to go
+ * from one to the other.
+ */
 export const UserRoleEnum = {
   ADMIN: 'ADMIN',
   AGENT: 'AGENT',
   MERCHANT: 'MERCHANT',
 } as const;
 export type UserRoleEnum = (typeof UserRoleEnum)[keyof typeof UserRoleEnum];
+
+/**
+ * Role names exactly as stored in `auth.Role.name`.
+ *
+ * Shared because every app reasons about roles: auth issues them, the dashboard
+ * gates on them, and they travel inside the JWT. Modelled as a const object
+ * rather than a TS enum so the derived type is a plain string-literal union -
+ * values arriving as JSON (JWT claims, request bodies) are structurally
+ * compatible with no cast, and Swagger / class-validator both accept the object
+ * form.
+ *
+ * SYSTEM and SCHEDULER are machine principals: they have no profile row and
+ * cannot sign in.
+ */
+export const ROLE = {
+  SYSTEM: 'SYSTEM',
+  SCHEDULER: 'SCHEDULER',
+  SUPER_ADMIN: 'ADMIN_SUPER',
+  ADMIN: 'ADMIN',
+  AGENT: 'AGENT',
+  MERCHANT: 'MERCHANT',
+} as const;
+export type ROLE = (typeof ROLE)[keyof typeof ROLE];
+
+/**
+ * Which detail table holds a role's profile row.
+ *
+ * Legacy resolved this by substring-matching the role name
+ * (`role.includes('MERCHANT')`, `includes('AGENT')`, else admin). That happens
+ * to be right for today's names, but only by luck of the check order - a future
+ * `MERCHANT_ADMIN` would resolve to the merchant table. Stated explicitly here
+ * so the answer does not depend on how the names are spelled.
+ *
+ * SYSTEM and SCHEDULER are absent on purpose - they have no profile row.
+ */
+export const PROFILE_KIND_BY_ROLE = {
+  [ROLE.SUPER_ADMIN]: UserRoleEnum.ADMIN,
+  [ROLE.ADMIN]: UserRoleEnum.ADMIN,
+  [ROLE.AGENT]: UserRoleEnum.AGENT,
+  [ROLE.MERCHANT]: UserRoleEnum.MERCHANT,
+} as const satisfies Partial<Record<ROLE, UserRoleEnum>>;
 
 export const ProviderNameEnum = {
   INTERNAL: 'INTERNAL',
