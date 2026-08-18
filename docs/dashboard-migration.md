@@ -396,7 +396,43 @@ Migrate from the owning app instead:
 
 `generate` still works there normally.
 
-**Still open — baselining.** The local database was created with `db push`, so it has tables but no migration history; `migrate status` reports *"The current database is not managed by Prisma Migrate."* Before the first real migration, decide whether to reset the dev database and let `migrate dev` create the initial migration cleanly, or baseline the existing schema. This matters more for any environment holding data you care about.
+**Baselining — done.** The dev database was reset and each app now has an initial migration:
+
+| App | Migration | Tables |
+|---|---|---|
+| `auth` | `20260818185352_init` | 7 |
+| `config` | `20260818185412_init` | 9 |
+| `transaction` | `20260818185415_init` | 13 |
+
+All three report *"Database schema is up to date!"*
+
+### D10.1 — Three apps sharing one database collided on migration history
+
+Creating those migrations surfaced a problem that only appears in this architecture. **Prisma puts `_prisma_migrations` in the connection string's default schema**, and none of the three URLs specified one — so all three landed on `public._prisma_migrations`, sharing a single history table.
+
+The result: after `auth`'s migration applied, running `config`'s refused to proceed —
+
+```
+The following migration(s) are applied to the database but missing from the
+local migrations directory: 20260818185230_init
+We need to reset the following schemas: "config"
+```
+
+Each app saw the *other* apps' migrations as foreign history and wanted to reset to recover. With three apps this never converges — whichever ran last would always want to wipe.
+
+**Fix**: each app's connection string now carries `&schema=<its own schema>`, which puts its migration history inside its own namespace:
+
+```
+auth         → auth._prisma_migrations
+config       → config._prisma_migrations
+transaction  → transaction._prisma_migrations
+```
+
+Verified: all three migrations applied in sequence with no reset prompt, three separate history tables exist, and all 29 tables are present.
+
+The dashboard's URL deliberately has **no** `schema` param — it never migrates, so it has no history to place, and leaving it unset keeps it neutral across all three namespaces. Runtime is unaffected either way: with `multiSchema`, Prisma fully qualifies every table name, so the search path doesn't influence queries. Confirmed by running the dashboard against the rebuilt database — `POST /login` correctly reached `auth.User` and returned `401 Invalid email or password`.
+
+> Worth knowing if a fourth app is ever added against this database: it needs its own `&schema=` too, or it will collide the same way.
 
 ### D11 — Legacy's agent/merchant update threw on `email` → **fixed**
 
