@@ -57,12 +57,12 @@ export type MerchantDetailMinAggregateOutputType = {
   district: string | null
   village: string | null
   postalCode: string | null
+  siupFile: string | null
+  coordinate: string | null
   bankCode: string | null
   bankName: string | null
   accountNumber: string | null
   accountHolderName: string | null
-  siupFile: string | null
-  coordinate: string | null
   userId: number | null
   createdAt: Date | null
   createdBy: number | null
@@ -87,12 +87,12 @@ export type MerchantDetailMaxAggregateOutputType = {
   district: string | null
   village: string | null
   postalCode: string | null
+  siupFile: string | null
+  coordinate: string | null
   bankCode: string | null
   bankName: string | null
   accountNumber: string | null
   accountHolderName: string | null
-  siupFile: string | null
-  coordinate: string | null
   userId: number | null
   createdAt: Date | null
   createdBy: number | null
@@ -117,12 +117,12 @@ export type MerchantDetailCountAggregateOutputType = {
   district: number
   village: number
   postalCode: number
+  siupFile: number
+  coordinate: number
   bankCode: number
   bankName: number
   accountNumber: number
   accountHolderName: number
-  siupFile: number
-  coordinate: number
   userId: number
   createdAt: number
   createdBy: number
@@ -165,12 +165,12 @@ export type MerchantDetailMinAggregateInputType = {
   district?: true
   village?: true
   postalCode?: true
+  siupFile?: true
+  coordinate?: true
   bankCode?: true
   bankName?: true
   accountNumber?: true
   accountHolderName?: true
-  siupFile?: true
-  coordinate?: true
   userId?: true
   createdAt?: true
   createdBy?: true
@@ -195,12 +195,12 @@ export type MerchantDetailMaxAggregateInputType = {
   district?: true
   village?: true
   postalCode?: true
+  siupFile?: true
+  coordinate?: true
   bankCode?: true
   bankName?: true
   accountNumber?: true
   accountHolderName?: true
-  siupFile?: true
-  coordinate?: true
   userId?: true
   createdAt?: true
   createdBy?: true
@@ -225,12 +225,12 @@ export type MerchantDetailCountAggregateInputType = {
   district?: true
   village?: true
   postalCode?: true
+  siupFile?: true
+  coordinate?: true
   bankCode?: true
   bankName?: true
   accountNumber?: true
   accountHolderName?: true
-  siupFile?: true
-  coordinate?: true
   userId?: true
   createdAt?: true
   createdBy?: true
@@ -342,12 +342,12 @@ export type MerchantDetailGroupByOutputType = {
   district: string
   village: string
   postalCode: string
+  siupFile: string | null
+  coordinate: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile: string | null
-  coordinate: string | null
   userId: number
   createdAt: Date
   createdBy: number | null
@@ -395,12 +395,12 @@ export type MerchantDetailWhereInput = {
   district?: Prisma.StringFilter<"MerchantDetail"> | string
   village?: Prisma.StringFilter<"MerchantDetail"> | string
   postalCode?: Prisma.StringFilter<"MerchantDetail"> | string
+  siupFile?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
+  coordinate?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
   bankCode?: Prisma.StringFilter<"MerchantDetail"> | string
   bankName?: Prisma.StringFilter<"MerchantDetail"> | string
   accountNumber?: Prisma.StringFilter<"MerchantDetail"> | string
   accountHolderName?: Prisma.StringFilter<"MerchantDetail"> | string
-  siupFile?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
-  coordinate?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
   userId?: Prisma.IntFilter<"MerchantDetail"> | number
   createdAt?: Prisma.DateTimeFilter<"MerchantDetail"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"MerchantDetail"> | number | null
@@ -426,12 +426,12 @@ export type MerchantDetailOrderByWithRelationInput = {
   district?: Prisma.SortOrder
   village?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
+  siupFile?: Prisma.SortOrderInput | Prisma.SortOrder
+  coordinate?: Prisma.SortOrderInput | Prisma.SortOrder
   bankCode?: Prisma.SortOrder
   bankName?: Prisma.SortOrder
   accountNumber?: Prisma.SortOrder
   accountHolderName?: Prisma.SortOrder
-  siupFile?: Prisma.SortOrderInput | Prisma.SortOrder
-  coordinate?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -461,12 +461,12 @@ export type MerchantDetailWhereUniqueInput = Prisma.AtLeast<{
   district?: Prisma.StringFilter<"MerchantDetail"> | string
   village?: Prisma.StringFilter<"MerchantDetail"> | string
   postalCode?: Prisma.StringFilter<"MerchantDetail"> | string
+  siupFile?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
+  coordinate?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
   bankCode?: Prisma.StringFilter<"MerchantDetail"> | string
   bankName?: Prisma.StringFilter<"MerchantDetail"> | string
   accountNumber?: Prisma.StringFilter<"MerchantDetail"> | string
   accountHolderName?: Prisma.StringFilter<"MerchantDetail"> | string
-  siupFile?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
-  coordinate?: Prisma.StringNullableFilter<"MerchantDetail"> | string | null
   createdAt?: Prisma.DateTimeFilter<"MerchantDetail"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"MerchantDetail"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"MerchantDetail"> | Date | string | null
@@ -491,12 +491,12 @@ export type MerchantDetailOrderByWithAggregationInput = {
   district?: Prisma.SortOrder
   village?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
+  siupFile?: Prisma.SortOrderInput | Prisma.SortOrder
+  coordinate?: Prisma.SortOrderInput | Prisma.SortOrder
   bankCode?: Prisma.SortOrder
   bankName?: Prisma.SortOrder
   accountNumber?: Prisma.SortOrder
   accountHolderName?: Prisma.SortOrder
-  siupFile?: Prisma.SortOrderInput | Prisma.SortOrder
-  coordinate?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -529,12 +529,12 @@ export type MerchantDetailScalarWhereWithAggregatesInput = {
   district?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
   village?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
   postalCode?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
+  siupFile?: Prisma.StringNullableWithAggregatesFilter<"MerchantDetail"> | string | null
+  coordinate?: Prisma.StringNullableWithAggregatesFilter<"MerchantDetail"> | string | null
   bankCode?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
   bankName?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
   accountNumber?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
   accountHolderName?: Prisma.StringWithAggregatesFilter<"MerchantDetail"> | string
-  siupFile?: Prisma.StringNullableWithAggregatesFilter<"MerchantDetail"> | string | null
-  coordinate?: Prisma.StringNullableWithAggregatesFilter<"MerchantDetail"> | string | null
   userId?: Prisma.IntWithAggregatesFilter<"MerchantDetail"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MerchantDetail"> | Date | string
   createdBy?: Prisma.IntNullableWithAggregatesFilter<"MerchantDetail"> | number | null
@@ -558,12 +558,12 @@ export type MerchantDetailCreateInput = {
   district: string
   village: string
   postalCode: string
+  siupFile?: string | null
+  coordinate?: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile?: string | null
-  coordinate?: string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -588,12 +588,12 @@ export type MerchantDetailUncheckedCreateInput = {
   district: string
   village: string
   postalCode: string
+  siupFile?: string | null
+  coordinate?: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile?: string | null
-  coordinate?: string | null
   userId: number
   createdAt?: Date | string
   createdBy?: number | null
@@ -617,12 +617,12 @@ export type MerchantDetailUpdateInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -647,12 +647,12 @@ export type MerchantDetailUncheckedUpdateInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -677,12 +677,12 @@ export type MerchantDetailCreateManyInput = {
   district: string
   village: string
   postalCode: string
+  siupFile?: string | null
+  coordinate?: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile?: string | null
-  coordinate?: string | null
   userId: number
   createdAt?: Date | string
   createdBy?: number | null
@@ -706,12 +706,12 @@ export type MerchantDetailUpdateManyMutationInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -735,12 +735,12 @@ export type MerchantDetailUncheckedUpdateManyInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -770,12 +770,12 @@ export type MerchantDetailCountOrderByAggregateInput = {
   district?: Prisma.SortOrder
   village?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
+  siupFile?: Prisma.SortOrder
+  coordinate?: Prisma.SortOrder
   bankCode?: Prisma.SortOrder
   bankName?: Prisma.SortOrder
   accountNumber?: Prisma.SortOrder
   accountHolderName?: Prisma.SortOrder
-  siupFile?: Prisma.SortOrder
-  coordinate?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
@@ -808,12 +808,12 @@ export type MerchantDetailMaxOrderByAggregateInput = {
   district?: Prisma.SortOrder
   village?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
+  siupFile?: Prisma.SortOrder
+  coordinate?: Prisma.SortOrder
   bankCode?: Prisma.SortOrder
   bankName?: Prisma.SortOrder
   accountNumber?: Prisma.SortOrder
   accountHolderName?: Prisma.SortOrder
-  siupFile?: Prisma.SortOrder
-  coordinate?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
@@ -838,12 +838,12 @@ export type MerchantDetailMinOrderByAggregateInput = {
   district?: Prisma.SortOrder
   village?: Prisma.SortOrder
   postalCode?: Prisma.SortOrder
+  siupFile?: Prisma.SortOrder
+  coordinate?: Prisma.SortOrder
   bankCode?: Prisma.SortOrder
   bankName?: Prisma.SortOrder
   accountNumber?: Prisma.SortOrder
   accountHolderName?: Prisma.SortOrder
-  siupFile?: Prisma.SortOrder
-  coordinate?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
@@ -907,12 +907,12 @@ export type MerchantDetailCreateWithoutUserInput = {
   district: string
   village: string
   postalCode: string
+  siupFile?: string | null
+  coordinate?: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile?: string | null
-  coordinate?: string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -936,12 +936,12 @@ export type MerchantDetailUncheckedCreateWithoutUserInput = {
   district: string
   village: string
   postalCode: string
+  siupFile?: string | null
+  coordinate?: string | null
   bankCode: string
   bankName: string
   accountNumber: string
   accountHolderName: string
-  siupFile?: string | null
-  coordinate?: string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -980,12 +980,12 @@ export type MerchantDetailUpdateWithoutUserInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1009,12 +1009,12 @@ export type MerchantDetailUncheckedUpdateWithoutUserInput = {
   district?: Prisma.StringFieldUpdateOperationsInput | string
   village?: Prisma.StringFieldUpdateOperationsInput | string
   postalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   bankName?: Prisma.StringFieldUpdateOperationsInput | string
   accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
   accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
-  siupFile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  coordinate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1040,12 +1040,12 @@ export type MerchantDetailSelect<ExtArgs extends runtime.Types.Extensions.Intern
   district?: boolean
   village?: boolean
   postalCode?: boolean
+  siupFile?: boolean
+  coordinate?: boolean
   bankCode?: boolean
   bankName?: boolean
   accountNumber?: boolean
   accountHolderName?: boolean
-  siupFile?: boolean
-  coordinate?: boolean
   userId?: boolean
   createdAt?: boolean
   createdBy?: boolean
@@ -1071,12 +1071,12 @@ export type MerchantDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   district?: boolean
   village?: boolean
   postalCode?: boolean
+  siupFile?: boolean
+  coordinate?: boolean
   bankCode?: boolean
   bankName?: boolean
   accountNumber?: boolean
   accountHolderName?: boolean
-  siupFile?: boolean
-  coordinate?: boolean
   userId?: boolean
   createdAt?: boolean
   createdBy?: boolean
@@ -1102,12 +1102,12 @@ export type MerchantDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   district?: boolean
   village?: boolean
   postalCode?: boolean
+  siupFile?: boolean
+  coordinate?: boolean
   bankCode?: boolean
   bankName?: boolean
   accountNumber?: boolean
   accountHolderName?: boolean
-  siupFile?: boolean
-  coordinate?: boolean
   userId?: boolean
   createdAt?: boolean
   createdBy?: boolean
@@ -1133,12 +1133,12 @@ export type MerchantDetailSelectScalar = {
   district?: boolean
   village?: boolean
   postalCode?: boolean
+  siupFile?: boolean
+  coordinate?: boolean
   bankCode?: boolean
   bankName?: boolean
   accountNumber?: boolean
   accountHolderName?: boolean
-  siupFile?: boolean
-  coordinate?: boolean
   userId?: boolean
   createdAt?: boolean
   createdBy?: boolean
@@ -1148,7 +1148,7 @@ export type MerchantDetailSelectScalar = {
   deletedBy?: boolean
 }
 
-export type MerchantDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerName" | "businessName" | "brandName" | "phoneNumber" | "nik" | "ktpImage" | "npwp" | "address" | "province" | "regency" | "district" | "village" | "postalCode" | "bankCode" | "bankName" | "accountNumber" | "accountHolderName" | "siupFile" | "coordinate" | "userId" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantDetail"]>
+export type MerchantDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerName" | "businessName" | "brandName" | "phoneNumber" | "nik" | "ktpImage" | "npwp" | "address" | "province" | "regency" | "district" | "village" | "postalCode" | "siupFile" | "coordinate" | "bankCode" | "bankName" | "accountNumber" | "accountHolderName" | "userId" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantDetail"]>
 export type MerchantDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -1188,12 +1188,12 @@ export type $MerchantDetailPayload<ExtArgs extends runtime.Types.Extensions.Inte
      */
     village: string
     postalCode: string
+    siupFile: string | null
+    coordinate: string | null
     bankCode: string
     bankName: string
     accountNumber: string
     accountHolderName: string
-    siupFile: string | null
-    coordinate: string | null
     userId: number
     createdAt: Date
     createdBy: number | null
@@ -1639,12 +1639,12 @@ export interface MerchantDetailFieldRefs {
   readonly district: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly village: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly postalCode: Prisma.FieldRef<"MerchantDetail", 'String'>
+  readonly siupFile: Prisma.FieldRef<"MerchantDetail", 'String'>
+  readonly coordinate: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly bankCode: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly bankName: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly accountNumber: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly accountHolderName: Prisma.FieldRef<"MerchantDetail", 'String'>
-  readonly siupFile: Prisma.FieldRef<"MerchantDetail", 'String'>
-  readonly coordinate: Prisma.FieldRef<"MerchantDetail", 'String'>
   readonly userId: Prisma.FieldRef<"MerchantDetail", 'Int'>
   readonly createdAt: Prisma.FieldRef<"MerchantDetail", 'DateTime'>
   readonly createdBy: Prisma.FieldRef<"MerchantDetail", 'Int'>

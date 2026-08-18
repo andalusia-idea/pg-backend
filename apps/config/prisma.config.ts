@@ -1,14 +1,16 @@
 import 'dotenv/config';
 import { defineConfig, env } from 'prisma/config';
 
+// Prisma resolves relative to the config file's own directory.
+// Config-Relative Path
 export default defineConfig({
-  schema: 'apps/config/prisma/schema.prisma',
+  schema: 'prisma/schema.prisma',
 
   migrations: {
-    path: 'apps/config/prisma/migrations',
+    path: 'prisma/migrations',
   },
   // typedSql: {
-  //   path: 'apps/config/prisma/sql',
+  //   path: 'prisma/sql',
   // },
 
   datasource: {

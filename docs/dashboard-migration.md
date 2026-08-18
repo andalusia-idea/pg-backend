@@ -246,7 +246,7 @@ Seventeen entries (D1–D17), each a real defect or ambiguity found while readin
 | **D17** | Three defects in the legacy balance ledger: writes escaping their transaction, no advisory locks, and a wrong `merchantId` in the withdraw callback | **You** — confirm the corrected port | **Live in production today.** Also blocks the 3 remaining write endpoints |
 | **D1** | Frontend's "reject" button posts to `/approve` | Frontend dev | **Live in production today.** Rejecting a top-up currently approves it |
 | **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
-| **D10** | `prisma migrate` is unusable repo-wide | **You** / infra | No app can run migrations; blocks any deploy needing `migrate deploy` |
+| **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
 | **D15** | Aggregate balances filter out `PURCHASE`; per-holder balances don't | **You** — business question | The sum of individual balances won't always match the aggregate shown on the dashboard |
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
 
@@ -361,29 +361,42 @@ Consequence for now: `GET permissions` is **deliberately not role-gated**. Gatin
 
 Consequence in `registerMerchant`: the `registrarIsAgent` check now normally holds, so the shareholder row is created every time. The check stays because `@Roles()` isn't enforced — without it, a non-agent caller would hit a foreign key violation on `agentId` rather than simply not getting a shareholder row.
 
-### D10 — `prisma migrate` is currently unusable in this repo → **flagged, not fixed**
+### D10 — `prisma migrate` was unusable repo-wide → **fixed**
 
-Found while setting up a local database to test against. Every `prisma migrate` path fails:
+Found while setting up a local database to test against. Every `prisma migrate` path failed:
 
 ```
-$ npx dotenv -e apps/auth/.env.local -- npx prisma migrate status --schema apps/auth/prisma/schema.prisma
 Error: The datasource.url property is required in your Prisma config file when using prisma migrate status.
 ```
 
 Two compounding causes:
 
-1. **No `prisma.config.ts` at the repo root.** Prisma 7 looks for the config in the working directory. Each app has one, but running from root finds none — so `datasource.url` is undefined, which `migrate` requires (`generate` doesn't, which is why `prisma:generate:*` works fine).
-2. **Passing `--config apps/auth/prisma.config.ts` doesn't help**: that file declares `schema: 'apps/auth/prisma/schema.prisma'`, and Prisma resolves it relative to the *config file's own directory*, producing `apps/auth/apps/auth/prisma/schema.prisma`.
+1. **No `prisma.config.ts` at the repo root.** Prisma 7 looks for the config in the working directory. Each app had one, but running from root found none — so `datasource.url` was undefined, which `migrate` requires (`generate` doesn't, which is why `prisma:generate:*` kept working and masked the problem).
+2. **Passing `--config apps/auth/prisma.config.ts` didn't help**: that file declared `schema: 'apps/auth/prisma/schema.prisma'`, and Prisma resolves it relative to the *config file's own directory*, producing `apps/auth/apps/auth/prisma/schema.prisma`.
 
-So `npm run prisma:migrate:dev:auth`, `prisma:migrate:deploy:auth`, and the `config` equivalents are all broken today. No app has a `migrations/` folder yet, so nothing has been migrated — consistent with this never having worked.
+**Fix**: paths inside each `prisma.config.ts` are now relative to the config file (`prisma/schema.prisma`, `prisma/migrations`), and every script passes `--config` instead of `--schema`. Verified — all four generate scripts and all three `migrate status` scripts now resolve correctly, each correctly scoped to its own namespace:
 
-**Not fixed here** because it affects the transactional apps' deployment path, not the dashboard. The likely fix is making paths inside each `prisma.config.ts` relative to the config file (`prisma/schema.prisma`, `prisma/migrations`) and passing `--config` in the scripts. Worth resolving before any deploy that needs `migrate deploy`.
-
-For local development in the meantime, `db push` works with an explicit URL:
-
-```bash
-npx prisma db push --schema apps/auth/prisma/schema.prisma --url "$POSTGRESQL_URL_MASTER"
 ```
+Loaded Prisma config from apps\auth\prisma.config.ts.
+Prisma schema loaded from apps\auth\prisma\schema.prisma.
+Datasource "db": PostgreSQL database "pg", schemas "auth" at "localhost:5432"
+```
+
+This mattered more than "migrations are blocked": Prisma 7 also removed `--from-url` from `migrate diff`, so the config file is now the only way to reach most schema tooling.
+
+Added along the way: `migrate dev`/`deploy` scripts for `transaction` (which owns tables but had none), and `migrate:status:*` for all three.
+
+**The dashboard is guarded, not merely undocumented.** Omitting the `migrations` block does *not* stop Prisma — it falls back to a default `prisma/migrations` path, which I confirmed by running `migrate status` against the dashboard config and watching it proceed. Since the dashboard's schema spans all three namespaces with no migration history, `migrate dev` there would try to author one migration covering all 29 tables and offer to reset the shared database. So `apps/dashboard/prisma.config.ts` now throws on any `migrate` invocation:
+
+```
+apps/dashboard never runs migrations - it owns none of its tables.
+Migrate from the owning app instead:
+  npm run prisma:migrate:dev:auth …
+```
+
+`generate` still works there normally.
+
+**Still open — baselining.** The local database was created with `db push`, so it has tables but no migration history; `migrate status` reports *"The current database is not managed by Prisma Migrate."* Before the first real migration, decide whether to reset the dev database and let `migrate dev` create the initial migration cleanly, or baseline the existing schema. This matters more for any environment holding data you care about.
 
 ### D11 — Legacy's agent/merchant update threw on `email` → **fixed**
 
@@ -528,7 +541,7 @@ The script also owns the enum-collision rename. Config and transaction each decl
 
 The output carries a `DO NOT EDIT` banner. Edit the source schemas, then re-run.
 
-> Reminder: the dashboard **never migrates**. `migrations` is commented out in its `prisma.config.ts`, and no `prisma:migrate:*:dashboard` script exists. Each owning app migrates its own tables.
+> Reminder: the dashboard **never migrates** — its `prisma.config.ts` throws on any `migrate` invocation, and no `prisma:migrate:*:dashboard` script exists. Each owning app migrates its own tables. See D10.
 
 ## 7. Progress
 

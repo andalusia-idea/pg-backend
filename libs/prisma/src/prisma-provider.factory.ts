@@ -1,6 +1,7 @@
 import { Provider } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { DatabaseConfig } from '@app/configuration';
+import { Pool } from 'pg';
 
 export const PRISMA_MASTER_PROVIDER_KEY = Symbol('PRISMA_MASTER_PROVIDER_KEY');
 export const PRISMA_SLAVE_PROVIDER_KEY = Symbol('PRISMA_SLAVE_PROVIDER_KEY');
@@ -23,7 +24,8 @@ export function createPrismaMasterProvider<T extends PrismaClientLike>(
     useFactory: (databaseConfig: DatabaseConfig) => {
       const dsn = databaseConfig.POSTGRESQL_URL_MASTER;
       if (!dsn) throw new Error('POSTGRESQL_URL_MASTER is not defined');
-      const adapter = new PrismaPg({ connectionString: dsn });
+      const pool = new Pool({ connectionString: dsn });
+      const adapter = new PrismaPg(pool);
 
       const client = new PrismaClientClass({
         adapter,
@@ -45,7 +47,8 @@ export function createPrismaSlaveProvider<T extends PrismaClientLike>(
     useFactory: (databaseConfig: DatabaseConfig) => {
       const dsn = databaseConfig.POSTGRESQL_URL_SLAVE;
       if (!dsn) throw new Error('POSTGRESQL_URL_SLAVE is not defined');
-      const adapter = new PrismaPg({ connectionString: dsn });
+      const pool = new Pool({ connectionString: dsn });
+      const adapter = new PrismaPg(pool);
 
       return new PrismaClientClass({
         adapter,
