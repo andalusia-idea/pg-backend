@@ -56,4 +56,43 @@ export class MotionPayConfig {
       DEFAULT_TOKEN_SKEW_SECONDS,
     );
   }
+
+  /* ------------------------------------------------------------------ *
+   * Transfer service (payout)                                          *
+   *                                                                    *
+   * Transfer is a separate product from QRIS with its own host and its *
+   * own token endpoint, so it gets its own settings rather than reusing *
+   * BASE_URL above. Credentials fall back to the QRIS pair when the     *
+   * transfer-specific ones are unset, since a merchant may be issued    *
+   * one set for both.                                                   *
+   * ------------------------------------------------------------------ */
+
+  /**
+   * Transfer base URL, no trailing slash.
+   *
+   * Note this is the **secure.** host, not the **app.** host QRIS uses —
+   * `https://sandbox-secure.flashmobile.id` / `https://secure.flashmobile.id`.
+   * MotionPay's own cURL samples for transfer contradict this and show the app
+   * host; see docs/upstream/motionpay.md.
+   */
+  get TRANSFER_BASE_URL(): string {
+    const value = this.configService.getOrThrow<string>(
+      'MOTIONPAY_TRANSFER_BASE_URL',
+    );
+    return value.replace(/\/+$/, '');
+  }
+
+  get TRANSFER_CLIENT_KEY(): string {
+    return (
+      this.configService.get<string>('MOTIONPAY_TRANSFER_CLIENT_KEY') ||
+      this.CLIENT_KEY
+    );
+  }
+
+  get TRANSFER_SERVER_KEY(): string {
+    return (
+      this.configService.get<string>('MOTIONPAY_TRANSFER_SERVER_KEY') ||
+      this.SERVER_KEY
+    );
+  }
 }

@@ -1,9 +1,18 @@
-# MotionPay (Flash Mobile) — QRIS Upstream
+# MotionPay (Flash Mobile) — QRIS & Transfer Upstream
 
-Source: <https://api-doc.flashmobile.id/qris#/> — "QRIS Service 2.6", OpenAPI `3.0.0`, doc version `1.0.0`.
-Extracted 12 Aug 2026 from the live OpenAPI document behind the docs site (Stoplight Elements), so the field tables below are the spec's own, not a transcription of rendered HTML.
+Sources, both extracted from the live OpenAPI documents behind the docs site (Stoplight Elements), so the field tables below are the specs' own rather than a transcription of rendered HTML:
 
-**Scope of this document and of the code in [apps/transaction/src/upstream/motionpay](../../apps/transaction/src/upstream/motionpay):** QRIS **purchase (pay-in)** only — Authentication, Create QRIS Payment, Get QRIS Status. Payouts, disbursement, and the callback/webhook receiver are out of scope for now.
+- <https://api-doc.flashmobile.id/qris#/> — "QRIS Service 2.6" (extracted 12 Aug 2026)
+- <https://api-doc.flashmobile.id/transfer#/> — "Transfer Service 2.6" (extracted 13 Aug 2026)
+
+**Scope of this document and of the code in [apps/transaction/src/upstream/motionpay](../../apps/transaction/src/upstream/motionpay):**
+
+- **QRIS pay-in** — Authentication, Create QRIS Payment, Get QRIS Status. **Working in sandbox.**
+- **Transfer payout** — Authentication, Account Inquiry, Fund Transfer, Check Transfer Status, Check Balance, plus the callback payload shape. **Implemented, not yet exercised against sandbox.**
+
+The inbound webhook *receivers* for both products are still out of scope — see §14.
+
+> **⚠️ QRIS and Transfer are two different products that share only a brand.** Different host, different token endpoint, different response envelope, different status vocabulary, possibly different credentials. Sections 1–10 cover QRIS; §11 onward covers Transfer. Do not assume anything carries across — the table in §11.1 lists every difference.
 
 ---
 
@@ -392,3 +401,201 @@ Things to know while testing:
 - `MotionPayService.createQrisPayment` (the normalized, domain-shaped method the real purchase flow should call) is untouched and still validates responses — only this test endpoint bypasses it via `createQrisPaymentRaw`.
 - **Blocked in production.** The endpoints are unauthenticated and, against live credentials, would create real upstream QRIS transactions our system has no record of, so they return 403 when `NODE_ENV=production`. Delete the controller or move it behind the real auth guards once the purchase flow in `src/api` supersedes it.
 - To probe MotionPay's real `external_id` limit (open question #1 in §7), raise `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` in `motionpay.constant.ts` — that single constant drives both the request-body validation and the service-side assertion.
+
+---
+
+# Part II — Transfer Service (payout)
+
+Source: <https://api-doc.flashmobile.id/transfer#/> — "Transfer Service 2.6", extracted 13 Aug 2026.
+
+Flash Transfer sends money from a **prepaid merchant deposit** to Indonesian bank accounts and e-wallets in real time. The deposit is debited on every call, so an empty deposit means failed payouts rather than an overdraft.
+
+## 11. How Transfer differs from QRIS
+
+This is the section to re-read before assuming any QRIS knowledge carries over.
+
+| | QRIS (pay-in) | Transfer (payout) |
+|---|---|---|
+| Sandbox host | `sandbox-app.flashmobile.id` | **`sandbox-secure.flashmobile.id`** |
+| Production host | `app.flashmobile.id` | **`secure.flashmobile.id`** |
+| Token endpoint | `/priv/v1/pg/token` | **`/auth/v2/access-token`** |
+| Token response envelope | `status: { code, message }` | **`status: <number>`, `message`, `description`** |
+| Service response envelope | `status: { code: <number>, message }` | **`status: { success: <bool>, code: "<string>", message }`** |
+| Success code | `0` (payments), `200` (token) | **`"0001"`** — a zero-padded string |
+| Status keyed by | MotionPay's `transaction_id` | **our `external_id`** |
+| Amount bounds | 1.000 – 10.000.000 | **10.000 – 50.000.000** |
+| `external_id` max | 16 (disputed) | **50** |
+| IP whitelisting | not mentioned | **required** |
+| Extra header | — | **`x-server-key`** (see §13.1) |
+
+Three envelope shapes exist across the two products, which is why none of the QRIS schemas are reused:
+
+```
+QRIS service     -> status: { code: 0,       message: "..." }
+Transfer token   -> status: 200, message: "success", description: "..."
+Transfer service -> status: { success: true, code: "0001", message: "..." }
+```
+
+### 11.1 Prerequisite: IP whitelisting — 🔴 currently blocking
+
+The docs state it plainly: merchants must provide their public IP to a Flash representative to be whitelisted before sandbox or production calls will work. This is a people step, not a code step, and it blocks the very first call.
+
+**Verified blocking as of 13 Aug 2026.** Probed from this machine with the existing MotionPay credentials:
+
+| Request | Result | Reading |
+|---|---|---|
+| `POST sandbox-secure…/auth/v2/access-token` | **403**, `text/html` | — |
+| `GET sandbox-secure…/transfer/api/v1/balance` | **403**, `text/html` | — |
+| `GET sandbox-secure…/` (bare root) | **403**, `text/html` | Every path on the host returns the same HTML 403 → this is an **edge/WAF block, not an application response**. Classic IP-allowlist rejection. |
+| `POST sandbox-app…/auth/v2/access-token` | **200**, token issued | Auth is reachable on the app host, and the **QRIS credentials work for Transfer** (same merchant, ANDAPAY 59240) |
+| `GET sandbox-app…/transfer/api/v1/balance` | **404** | The transfer service endpoints are **not** on the app host |
+
+Conclusions:
+
+1. **The transfer service lives on `secure.`**, exactly as the OpenAPI `servers` block says. The cURL samples pointing at `sandbox-app` are wrong — this resolves open question #6 below, and note it is the *opposite* outcome to the QRIS `.co.id` case, so the samples cannot be trusted either way.
+2. **Our public IP is not whitelisted.** That is the only thing standing between this implementation and a working call.
+3. **Separate Transfer credentials are probably not needed** — the QRIS pair authenticated successfully against the transfer token endpoint.
+
+Practical consequence: your workstation's public IP and the K3s node's egress IP are different addresses. Send Flash both, or testing works in one place and fails in the other.
+
+## 12. Authentication
+
+`POST {transferBaseUrl}/auth/v2/access-token` — body `{ client_key, server_key }`, same field names as QRIS.
+
+```json
+{
+  "status": 200,
+  "message": "success",
+  "description": "Token received.",
+  "data": { "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+  "meta": {}
+}
+```
+
+Note `status` is a **bare number** here — checking `parsed.status.code` (the QRIS pattern) would throw. The sample credentials look structurally different from the QRIS pair (`FM-0077-…` / `FMPA-…`), which suggests Transfer is issued its own keys; our config falls back to the QRIS keys when the transfer-specific ones are unset, so either arrangement works.
+
+The token is a JWT, so the same `exp`-derived caching applies as for QRIS.
+
+## 13. Endpoints
+
+### 13.1 The `x-server-key` header
+
+Undocumented in every header table, but it appears as a parameter on Check Transfer Status and Check Balance, and in MotionPay's own balance cURL sample:
+
+```bash
+curl --location --request GET '.../transfer/api/v1/balance' --header 'x-server-key: ziAwN1NMZQXB_VTBNO2lPAU5ywE' --header 'Authorization: Bearer {token}'
+```
+
+Our client sends it on **all** transfer calls. An ignored extra header is harmless; a missing required one is a 401 that is tedious to diagnose. Worth confirming with their team whether it is actually required.
+
+### 13.2 Account Inquiry — `POST /transfer/api/v1/inquiry`
+
+Validates a beneficiary before sending money.
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `bank_code` | Required | String, "3" | See §13.6 — the stated length is wrong |
+| `bank_account` | Required | String, 16 | |
+| `external_id` | Required | String, 50 | Unique per merchant transaction |
+
+A failed lookup is **HTTP 200** with `status.success = false`, `status.code = "0003"`, and `name: ""` — not an error status. Our client returns `valid: false` rather than throwing, because a wrong account number is a business outcome the caller must decide about, not an upstream fault.
+
+### 13.3 Fund Transfer — `POST /transfer/api/v1/payment`
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `recipient_bank` | Required | String, "3" | |
+| `recipient_account` | Required | String, 16 | |
+| `recipient_name` | Optional | String, 45 | |
+| `amount` | Required | Integer | **10.000 – 50.000.000** |
+| `note` | Required | String, 64 | |
+| `external_id` | Required | String, 64 → "max 50 characters" | Contradictory in the same row; we enforce 50 |
+
+**The expected happy path is `"0002" / On Process`, not `"0001"`.** Settlement is asynchronous. Treating only `0001` as success would fail nearly every real payout, so our client throws only on an outright `0003`.
+
+### 13.4 Check Transfer Status — `GET /transfer/api/v1/status/{external_id}`
+
+Keyed by **our** `external_id` — the reverse of QRIS, which is keyed by MotionPay's transaction id. Worth remembering when writing reconciliation.
+
+Returns both `data.status` (`SUCCESS`/`PENDING`/`FAILED`) and the envelope's `status.code` (`0001`/`0002`/`0003`). Our client trusts the envelope code, since it is the documented vocabulary and is always present.
+
+### 13.5 Check Balance — `GET /transfer/api/v1/balance`
+
+Returns `{ disbursement_id, deposit }`. `deposit` is the remaining prepaid balance in rupiah. This is the cheapest call that proves the whole Transfer chain works — credentials, host, IP whitelisting — without moving money. Start here.
+
+### 13.6 Bank codes — the stated length is wrong
+
+`bank_code` is documented as `String, 3`, but the published list contains **4-character** codes (`013S`, `114S`, `542S` — the Syariah variants) and **word** codes (`LINKAJA`, `SHOPEEPAY`, `GOPAY`, `OVO`, `DANA`). A `maxLength: 3` rule would reject valid destinations.
+
+The full list lives in [motionpay-bank-code.constant.ts](../../apps/transaction/src/upstream/motionpay/motionpay-bank-code.constant.ts) and is served by the test controller at `upstream/motionpay/transfer/bank-codes`. Unknown codes are **warned about, not rejected** — the list is a snapshot, and MotionPay adding a bank should not become our outage.
+
+Also note e-wallets share the namespace with banks, so a "bank transfer" here can actually be a wallet top-up.
+
+## 14. Callback
+
+MotionPay POSTs to a URL registered in their merchant dashboard:
+
+```json
+{
+  "data": {
+    "transaction_id": "7176C9C558E794D5F263B07246A656D6A8A5B5A29B9BB013",
+    "external_id": "82b2d513-b910-47ad-a35b-fcd6f82d",
+    "id": "7672",
+    "fm_user_reference_number": null,
+    "user_reference_number": null
+  },
+  "status": { "success": true, "code": "0001", "message": "Success" }
+}
+```
+
+`MotionPayTransferService.mapCallback` normalizes this shape. The receiving controller is **not** implemented.
+
+> **🔴 The callback has no documented authentication.** No signature, no shared secret, no HMAC — the URL is simply registered in a dashboard. Anything that can reach the endpoint can post a "success" for an arbitrary `external_id`.
+>
+> Do not let a callback drive a balance movement until either (a) MotionPay confirms an authentication mechanism, or (b) every callback is independently re-verified with `checkTransferStatus` before it is trusted. (b) is implementable today and is the safer default regardless. This is the same gap the migration audit flagged across all four legacy provider integrations — worth not repeating.
+
+## 15. Status codes
+
+| Code | Message | Meaning |
+|---|---|---|
+| `0001` | Success | Settled |
+| `0002` | PENDING / On Process | Accepted, settling asynchronously |
+| `0003` | Failed | Rejected |
+
+| HTTP | Meaning |
+|---|---|
+| 400 | Invalid parameter format |
+| 401 | Invalid or expired token |
+| 402 | Access Forbidden — merchant request invalid |
+| 422 | Invalid parameter entity format |
+| 500 | Server error |
+
+Same undefined-code rule as QRIS: anything unrecognized must be held as **Pending** until next-business-day reconciliation. Our mapper does that, which for a payout is also the only safe default — guessing "failed" risks a double-send, guessing "success" risks releasing funds that never moved.
+
+## 16. Testing Transfer from Swagger
+
+Tag **"Upstream · MotionPay Transfer (manual test)"**.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `upstream/motionpay/transfer/token` | Verify credentials + IP whitelisting |
+| `GET` | `upstream/motionpay/transfer/balance` | Remaining deposit — **safest first call** |
+| `POST` | `upstream/motionpay/transfer/inquiry` | Validate a beneficiary account |
+| `POST` | `upstream/motionpay/transfer/payment` | ⚠️ **Moves real money** |
+| `GET` | `upstream/motionpay/transfer/status/{externalId}` | Poll a transfer |
+| `GET` | `upstream/motionpay/transfer/bank-codes` | Local reference list, no upstream call |
+
+Suggested order: **token → balance → inquiry → payment → status**. The first two prove the chain without moving anything; if IP whitelisting is missing, `token` is where it surfaces.
+
+Same conventions as the QRIS test controller: request bodies are MotionPay's verbatim wire contract with their documented example pre-loaded, nothing is persisted, upstream failures come back as HTTP 502 with the provider's own message, and every endpoint returns 403 when `NODE_ENV=production`.
+
+**`payment` debits the real deposit.** It is blocked in production, but against sandbox credentials it still exercises a real transfer. Check `balance` before and after.
+
+## 17. Transfer open questions
+
+1. **🔴 BLOCKER — the public IP is not whitelisted.** Confirmed by probe, see §11.1. Nothing else can be tested until Flash whitelists it. Send them **both** your workstation IP and the K3s node's egress IP.
+2. ~~**Are Transfer credentials separate from QRIS?**~~ — **resolved**: the QRIS pair authenticated fine against the transfer token endpoint. `MOTIONPAY_TRANSFER_CLIENT_KEY` / `_SERVER_KEY` can stay unset; they fall back to the QRIS pair.
+3. **Is `x-server-key` actually required?** Undocumented in the header tables, present in the samples. We always send it. Untestable until #1 clears.
+4. **Callback authentication** — see §14. The most serious of these, and independent of #1.
+5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50.
+6. ~~**Host contradiction**~~ — **resolved**: `secure.` is correct (the `servers` block), the cURL samples are wrong. The app host 404s every `/transfer/api/v1/*` path. See §11.1.

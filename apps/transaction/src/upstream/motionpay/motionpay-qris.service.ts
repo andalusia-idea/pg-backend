@@ -127,38 +127,38 @@ export class MotionPayQRISService {
   async createQrisPaymentRaw(
     body: MotionPayCreateQrisRequestDto,
   ): Promise<unknown> {
-    const data: MotionPayCreateQrisRequestDto = {
-      // terminal_id: '1234567890123456',
-      // external_id: '1234567890123456',
-      // amount: 10000,
-      // session_time: 3,
-      // fullname: '',
-      // email: '',
-      // phone_number: '',
-
-      // terminal_id: 'PRODUCT-01',
-      // external_id: '2023-02',
-      // amount: 1000,
-      // description: 'Description of transaction',
-      // session_time: 3,
-      // fullname: 'John Doe',
-      // email: 'email@email.com',
-      // phone_number: '081510076749',
-
-      terminal_id: 'PRODUCT01',
-      external_id: 'PRD2608131733001',
-      amount: 1000,
-      description: 'QR Dynamic Test',
-      session_time: 60,
-      fullname: 'Test Transaction',
-      email: 'test@Transaction.com',
-      phone_number: '0816122025',
-    };
+    // const data: MotionPayCreateQrisRequestDto = {
+    // terminal_id: '1234567890123456',
+    // external_id: '1234567890123456',
+    // amount: 10000,
+    // session_time: 3,
+    // fullname: '',
+    // email: '',
+    // phone_number: '',
+    //////////
+    // terminal_id: 'PRODUCT-01',
+    // external_id: '2023-02',
+    // amount: 1000,
+    // description: 'Description of transaction',
+    // session_time: 3,
+    // fullname: 'John Doe',
+    // email: 'email@email.com',
+    // phone_number: '081510076749',
+    /////////
+    // terminal_id: 'PRODUCT01',
+    // external_id: 'PRD2608131733001',
+    // amount: 1000,
+    // description: 'QR Dynamic Test',
+    // session_time: 60,
+    // fullname: 'Test Transaction',
+    // email: 'test@Transaction.com',
+    // phone_number: '0816122025',
+    // };
     return this.request(
       {
         method: 'POST',
         url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
-        data: data,
+        data: body,
       },
       'createQrisPaymentRaw',
     );

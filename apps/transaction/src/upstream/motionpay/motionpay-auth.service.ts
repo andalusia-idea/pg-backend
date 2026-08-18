@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { MotionPayConfig } from '@app/configuration';
-import { assertUpstreamSchema, UpstreamException } from '@app/upstream';
+import {
+  assertUpstreamSchema,
+  readJwtExpSeconds,
+  UpstreamException,
+} from '@app/upstream';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosRequestConfig } from 'axios';
 import {
@@ -162,7 +166,6 @@ export class MotionPayAuthService {
     // line, a log file, or the log shipper.
     this.logger.log({
       msg: 'MotionPay token acquired',
-      token: token,
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
 
@@ -182,7 +185,7 @@ export class MotionPayAuthService {
     const nowSeconds = Math.floor(Date.now() / 1000);
     const skew = this.motionPayConfig.TOKEN_SKEW_SECONDS;
 
-    const exp = this.readJwtExp(token);
+    const exp = readJwtExpSeconds(token);
     if (exp === null) {
       this.logger.warn(
         'Could not read `exp` from the MotionPay token; not caching it',
@@ -193,29 +196,5 @@ export class MotionPayAuthService {
     // If exp is already within the skew window the token is effectively dead;
     // returning `nowSeconds` forces a fresh fetch on the next call.
     return Math.max(exp - skew, nowSeconds);
-  }
-
-  private readJwtExp(token: string): number | null {
-    try {
-      const payloadSegment = token.split('.')[1];
-      if (!payloadSegment) return null;
-
-      const payload: unknown = JSON.parse(
-        Buffer.from(payloadSegment, 'base64url').toString('utf8'),
-      );
-
-      if (
-        typeof payload !== 'object' ||
-        payload === null ||
-        !('exp' in payload)
-      ) {
-        return null;
-      }
-
-      const exp = (payload as { exp: unknown }).exp;
-      return typeof exp === 'number' && Number.isFinite(exp) ? exp : null;
-    } catch {
-      return null;
-    }
   }
 }

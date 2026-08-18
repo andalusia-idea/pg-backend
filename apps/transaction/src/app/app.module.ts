@@ -29,6 +29,8 @@ import { AppService } from './app.service';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+
+    /// Business Module
     MotionPayModule,
   ],
 })
