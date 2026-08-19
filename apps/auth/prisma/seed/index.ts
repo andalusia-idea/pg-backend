@@ -2,8 +2,8 @@ import { PrismaClient } from '@auth/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { roleEngineSeed } from './role-engine.seed';
-import { authDevSeed } from './auth.dev.seed';
-import { authEngineSeed } from './auth.engine.seed';
+import { authDevSeed } from './auth-dev.seed';
+import { authEngineSeed } from './auth-engine.seed';
 
 /**
  * auth seeder.

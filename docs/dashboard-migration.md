@@ -647,6 +647,11 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 
 > Local test data: roles `ADMIN_SUPER`/`AGENT`/`MERCHANT`, `admin@manapay.id` / `password123`, plus one seeded agent and merchant. Wipe with
 > `DROP SCHEMA auth, config, transaction CASCADE;` then re-push.
+>
+> **Superseded.** Those rows were hand-made before the seeders existed, and the role
+> names predate ROLE being cut to six. A local database now comes from
+> `npm run prisma:seed:auth:dev` then `npm run prisma:seed:config:dev` (auth first -
+> config resolves its ids from `auth.User`). See [§8](#8-seeding).
 
 **agent-detail / merchant-detail**, same database:
 
@@ -716,3 +721,78 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 ### Dependencies added
 
 `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `passport-local`, `argon2`, plus `@types/passport-jwt` / `@types/passport-local` — the same set legacy uses. `JWT_*` variables added to `apps/dashboard/.env.example` and `.env.local`; the access-token secret must match the auth service's, since the dashboard verifies tokens that service issues.
+
+---
+
+## 8. Seeding
+
+Two seeders, one per schema-owning app. The dashboard has none — it owns no tables.
+
+```bash
+npm run prisma:seed:auth          # engine only
+npm run prisma:seed:auth:dev      # engine + dev fixtures
+npm run prisma:seed:config        # engine only
+npm run prisma:seed:config:dev    # engine + dev fixtures
+```
+
+**Order matters.** Config resolves `config.Agent.id` / `config.Merchant.id` from
+`auth.User` by email, so auth runs first. There is no cross-schema foreign key to
+enforce this — Prisma cannot express one across `multiSchema` clients — so the
+seeds check explicitly: the config engine tier throws with the command to run,
+and the dev tier skips with a message. Neither writes rows pointing at users that
+do not exist.
+
+### Two tiers
+
+| Tier | Contents | Safe in production |
+|---|---|---|
+| **engine** | auth: 6 roles, 5 system + 10 scheduler + 5 reserved accounts, `superadmin@pg.id`, `agentinternal@pg.id`. config: 91 banks, Agent Internal's `config.Agent` row, the INTERNAL provider, payment methods. | yes |
+| **dev** | auth: 4 agents + 4 merchants + signatures. config: third-party providers, their config rows, provider fee config, fee overrides, shareholder splits. | **no** — refuses to run under `NODE_ENV=production` |
+
+Engine is the data the system cannot boot without. Dev is everything ported from
+the legacy seed to make a fresh local database usable.
+
+Every step is an upsert, so re-running fills in what is missing and never
+overwrites a value corrected in the database. Verified: three consecutive full
+runs leave identical row counts.
+
+### Things worth knowing
+
+**Agent Internal is engine data.** Merchants are onboarded by an agent, and the
+internal team signs in as `agentinternal@pg.id` to do it. Without its
+`config.Agent` row, `registerMerchant`'s `registrarIsAgent` lookup misses and no
+`AgentShareholder` row is written — a silent failure, because the merchant is
+still registered successfully. It lands on id 22 on a fresh database, but the
+seed looks the id up by email rather than hardcoding it: nothing enforces that id,
+so a stale hardcode would not error, it would just point at nothing.
+
+**Permissions are deliberately not seeded.**
+
+**Only INTERNAL is an engine provider.** INTERNAL is the house provider —
+transactions settled by us rather than routed out — so it exists everywhere.
+Everything else in `ProviderNameEnum` is a commercial integration that exists in
+an environment because a contract was signed and credentials were issued, so the
+dev tier seeds those. It is derived by subtraction rather than listed, so a new
+provider added to the enum lands in dev automatically. Note that
+`BaseFee.providerName` is a real foreign key to `Provider.name`, which is why the
+dev tier writes its providers before its fee rows.
+
+**Provider fee rates are dev-only, and invented.** Real rates are commercial terms
+from a signed agreement and must be entered through the dashboard's fee-config
+screens. A production database carrying plausible-looking but fictional rates is
+worse than one carrying none — nothing fails loudly, the fees are simply wrong and
+every settlement quietly mis-splits.
+
+**The bank list was de-duplicated.** The legacy list held 97 entries under 91
+distinct codes, and `Bank.code` is the primary key — it would have thrown P2002
+partway through. Renamed banks collapsed to one entry; Bank NTB / Bank SulutGo were
+split across 127 / 128.
+
+**`--dev` needs a `--` separator.** `prisma db seed` spawns the seed as a child
+process and only forwards arguments after `--`. The npm scripts therefore end in a
+bare `--`, which looks like a typo but is load-bearing: without it the flag is
+swallowed and the dev tier is skipped *silently* rather than erroring.
+
+`prisma migrate reset` also runs these, via `migrations.seed`. It passes no
+arguments, so a reset restores engine data only — the right default for a command
+that just wiped the database.
