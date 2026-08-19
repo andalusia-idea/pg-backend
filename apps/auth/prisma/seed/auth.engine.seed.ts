@@ -44,7 +44,7 @@ export type EngineSeedResult = {
  * Idempotent: upserts on the unique `email`, so re-running is safe and will not
  * rotate passwords or duplicate accounts.
  */
-export async function userEngineSeed(
+export async function authEngineSeed(
   prisma: PrismaClient,
   roleIds: RoleIds,
 ): Promise<EngineSeedResult> {

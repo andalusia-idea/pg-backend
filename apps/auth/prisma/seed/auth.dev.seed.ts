@@ -114,7 +114,7 @@ const DEV_MERCHANT_ADDRESS = {
  * Idempotent: upserts on the unique `email`, and merchant signatures upsert on
  * the unique `userId` so their generated clientId stays stable across re-runs.
  */
-export async function userDevSeed(
+export async function authDevSeed(
   prisma: PrismaClient,
   roleIds: RoleIds,
   system01Id: number,
