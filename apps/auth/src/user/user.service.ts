@@ -28,7 +28,7 @@ export class UserService {
     });
     const role = user.role.name;
 
-    if (role.includes(UserRoleEnum.MERCHANT)) {
+    if (role.startsWith(UserRoleEnum.MERCHANT)) {
       const merchant = await this.prismaMaster.merchantDetail.findUniqueOrThrow(
         {
           where: { userId: userId },
@@ -53,7 +53,7 @@ export class UserService {
       } as ProfileBankDto;
     }
 
-    if (role.includes(UserRoleEnum.AGENT)) {
+    if (role.startsWith(UserRoleEnum.AGENT)) {
       const agent = await this.prismaMaster.agentDetail.findUniqueOrThrow({
         where: { userId: userId },
         select: {

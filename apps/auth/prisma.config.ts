@@ -8,7 +8,13 @@ export default defineConfig({
 
   migrations: {
     path: 'prisma/migrations',
-    seed: 'tsx prisma/seed',
+
+    // NOT config-relative. `schema` and `migrations.path` resolve against this
+    // file's directory, but the seed command is spawned from the working
+    // directory Prisma was invoked in - the repo root - so this path is
+    // repo-relative. Verified: 'prisma/seed' resolved to <root>/prisma/seed and
+    // failed with ERR_MODULE_NOT_FOUND.
+    seed: 'tsx apps/auth/prisma/seed',
   },
   // typedSql: {
   //   path: 'prisma/sql',

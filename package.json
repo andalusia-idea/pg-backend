@@ -27,6 +27,9 @@
     "prisma:migrate:deploy:auth": "dotenv -e apps/auth/.env.local -- prisma migrate deploy --config apps/auth/prisma.config.ts",
     "prisma:migrate:deploy:config": "dotenv -e apps/config/.env.local -- prisma migrate deploy --config apps/config/prisma.config.ts",
     "prisma:migrate:deploy:transaction": "dotenv -e apps/transaction/.env.local -- prisma migrate deploy --config apps/transaction/prisma.config.ts",
+    "prisma:seed:auth": "dotenv -e apps/auth/.env.local -- prisma db seed --config apps/auth/prisma.config.ts --",
+    "prisma:seed:auth:dev": "dotenv -e apps/auth/.env.local -- prisma db seed --config apps/auth/prisma.config.ts -- --dev",
+    "prisma:migrate:reset:auth": "dotenv -e apps/auth/.env.local -- prisma migrate reset --config apps/auth/prisma.config.ts",
     "prisma:migrate:status:auth": "dotenv -e apps/auth/.env.local -- prisma migrate status --config apps/auth/prisma.config.ts",
     "prisma:migrate:status:config": "dotenv -e apps/config/.env.local -- prisma migrate status --config apps/config/prisma.config.ts",
     "prisma:migrate:status:transaction": "dotenv -e apps/transaction/.env.local -- prisma migrate status --config apps/transaction/prisma.config.ts",
@@ -109,6 +112,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.23.12",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

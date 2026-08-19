@@ -51,7 +51,7 @@ export type UserRoleEnum = (typeof UserRoleEnum)[keyof typeof UserRoleEnum];
 export const ROLE = {
   SYSTEM: 'SYSTEM',
   SCHEDULER: 'SCHEDULER',
-  SUPER_ADMIN: 'ADMIN_SUPER',
+  SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   AGENT: 'AGENT',
   MERCHANT: 'MERCHANT',
