@@ -277,6 +277,13 @@ export type JsonFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
+export type EnumMerchantSignatureStatusEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.MerchantSignatureStatusEnum | Prisma.EnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel> | $Enums.MerchantSignatureStatusEnum
+}
+
 export type JsonWithAggregatesFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
@@ -302,6 +309,16 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedJsonFilter<$PrismaModel>
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
+}
+
+export type EnumMerchantSignatureStatusEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.MerchantSignatureStatusEnum | Prisma.EnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumMerchantSignatureStatusEnumWithAggregatesFilter<$PrismaModel> | $Enums.MerchantSignatureStatusEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel>
 }
 
 export type NestedIntFilter<$PrismaModel = never> = {
@@ -529,6 +546,13 @@ export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedStringNullableFilter<$PrismaModel>
 }
 
+export type NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.MerchantSignatureStatusEnum | Prisma.EnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel> | $Enums.MerchantSignatureStatusEnum
+}
+
 export type NestedJsonFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -551,6 +575,16 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumMerchantSignatureStatusEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.MerchantSignatureStatusEnum | Prisma.EnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.MerchantSignatureStatusEnum[] | Prisma.ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumMerchantSignatureStatusEnumWithAggregatesFilter<$PrismaModel> | $Enums.MerchantSignatureStatusEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumMerchantSignatureStatusEnumFilter<$PrismaModel>
 }
 
 

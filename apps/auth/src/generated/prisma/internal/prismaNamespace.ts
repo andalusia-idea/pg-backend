@@ -1099,8 +1099,8 @@ export const MerchantSignatureScalarFieldEnum = {
   clientId: 'clientId',
   secretKey: 'secretKey',
   previousSecretKey: 'previousSecretKey',
-  status: 'status',
   credentials: 'credentials',
+  status: 'status',
   payoutUrl: 'payoutUrl',
   payinUrl: 'payinUrl',
   userId: 'userId',
@@ -1229,6 +1229,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'MerchantSignatureStatusEnum'
+ */
+export type EnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MerchantSignatureStatusEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'MerchantSignatureStatusEnum[]'
+ */
+export type ListEnumMerchantSignatureStatusEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MerchantSignatureStatusEnum[]'>
     
 
 

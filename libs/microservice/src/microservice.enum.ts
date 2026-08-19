@@ -106,3 +106,11 @@ export const TransactionTypeEnum = {
 } as const;
 export type TransactionTypeEnum =
   (typeof TransactionTypeEnum)[keyof typeof TransactionTypeEnum];
+
+export const MerchantSignatureStatusEnum = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  SUSPENDED: 'SUSPENDED',
+};
+export type MerchantSignatureStatusEnum =
+  (typeof MerchantSignatureStatusEnum)[keyof typeof MerchantSignatureStatusEnum];

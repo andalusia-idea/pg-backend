@@ -165,8 +165,9 @@ model MerchantSignature {
   clientId          String  @unique
   secretKey         String?
   previousSecretKey String?
-  status            String
   credentials       Json    @default("{}") @db.JsonB
+
+  status MerchantSignatureStatusEnum
 
   payoutUrl String? @db.VarChar(512)
   payinUrl  String? @db.VarChar(512)
@@ -180,6 +181,14 @@ model MerchantSignature {
   updatedBy Int?      @db.Integer()
   deletedAt DateTime? @db.Timestamptz(6)
   deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+enum MerchantSignatureStatusEnum {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 
   @@schema("auth")
 }
