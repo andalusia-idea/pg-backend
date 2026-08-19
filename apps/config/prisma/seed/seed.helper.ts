@@ -1,12 +1,7 @@
 import { PrismaClient } from '@config/prisma';
 
-/**
- * Engine accounts created by the auth engine seed. Config depends on both:
- * `agentinternal@pg.id` gets a `config.Agent` row, and `system01@pg.id` is the
- * `createdBy` stamped on every engine row.
- */
+/** Agent Internal, created by the auth engine seed. */
 export const AGENT_INTERNAL_EMAIL = 'agentinternal@pg.id';
-export const SYSTEM_01_EMAIL = 'system01@pg.id';
 
 /** Reconciliation runs at 02:00 unless a provider dictates otherwise. */
 export const DEFAULT_RECONCILIATION_TIME = '02:00';

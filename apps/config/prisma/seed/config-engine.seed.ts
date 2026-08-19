@@ -4,12 +4,23 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice';
 import { PrismaClient } from '@config/prisma';
-import {
-  AGENT_INTERNAL_EMAIL,
-  DEFAULT_RECONCILIATION_TIME,
-  logSeeded,
-  SYSTEM_01_EMAIL,
-} from './seed.helper';
+import { DEFAULT_RECONCILIATION_TIME, logSeeded } from './seed.helper';
+
+/**
+ * The two auth engine accounts config depends on: `agentinternal@pg.id` gets a
+ * `config.Agent` row, and `system01@pg.id` is stamped as `createdBy`.
+ *
+ * Hardcoded deliberately - these are the ids the auth engine seed produces on a
+ * fresh database, and that seed is treated as fixed for production data.
+ *
+ * Nothing verifies them at runtime. There is no foreign key from `config.Agent`
+ * to `auth.User`, so a wrong id here does not error, it points at nothing. Two
+ * things invalidate them: changing the auth engine seed's account counts (say
+ * SCHEDULER_COUNT moving off 10, which shifts every id after it), or running this
+ * seed against a database where the auth engine seed never ran. Both are silent.
+ */
+const AGENT_INTERNAL_USER_ID = 22;
+const SYSTEM_01_USER_ID = 1;
 
 /**
  * INTERNAL is the house provider - transactions we settle ourselves rather than
@@ -85,35 +96,13 @@ const PAYMENT_METHODS: {
  * 3. **Payment methods**, the routing vocabulary every BaseFee and transaction
  *    references.
  *
- * Runs AFTER the auth engine seed: the two user ids are resolved by email rather
- * than hardcoded. They are stable in practice (agentinternal lands on id 22 on a
- * fresh database) but only while the engine account counts stay put - bumping
- * SCHEDULER_COUNT would shift every id after it. There is no foreign key from
- * `config.Agent` to `auth.User`, so a wrong id would not error; it would just
- * point at nothing. One query removes that whole class of problem.
+ * Runs AFTER the auth engine seed - it reuses that seed's user ids. See
+ * AGENT_INTERNAL_USER_ID above for what that assumption costs.
  */
 export async function configEngineSeed(prisma: PrismaClient): Promise<void> {
-  // const userIds = await findAuthUserIdsByEmail(prisma, [
-  //   AGENT_INTERNAL_EMAIL,
-  //   SYSTEM_01_EMAIL,
-  // ]);
-
-  // const agentInternalId = userIds.get(AGENT_INTERNAL_EMAIL);
-  // const system01Id = userIds.get(SYSTEM_01_EMAIL);
-
-  const agentInternalId = 22;
-  const system01Id = 1;
-
-  if (!agentInternalId || !system01Id) {
-    throw new Error(
-      `Auth engine data missing (${AGENT_INTERNAL_EMAIL}, ${SYSTEM_01_EMAIL}). ` +
-        'Run `npm run prisma:seed:auth` first.',
-    );
-  }
-
   await prisma.agent.upsert({
-    where: { id: agentInternalId },
-    create: { id: agentInternalId, createdBy: system01Id },
+    where: { id: AGENT_INTERNAL_USER_ID },
+    create: { id: AGENT_INTERNAL_USER_ID, createdBy: SYSTEM_01_USER_ID },
     update: {},
     select: { id: true },
   });
@@ -125,7 +114,7 @@ export async function configEngineSeed(prisma: PrismaClient): Promise<void> {
         create: {
           name,
           reconciliationTime: DEFAULT_RECONCILIATION_TIME,
-          createdBy: system01Id,
+          createdBy: SYSTEM_01_USER_ID,
         },
         update: {},
         select: { name: true },
@@ -137,14 +126,14 @@ export async function configEngineSeed(prisma: PrismaClient): Promise<void> {
     PAYMENT_METHODS.map((method) =>
       prisma.paymentMethod.upsert({
         where: { name: method.name },
-        create: { ...method, createdBy: system01Id },
+        create: { ...method, createdBy: SYSTEM_01_USER_ID },
         update: {},
         select: { name: true },
       }),
     ),
   );
 
-  logSeeded('agent internal', `config.Agent id ${agentInternalId}`);
+  logSeeded('agent internal', `config.Agent id ${AGENT_INTERNAL_USER_ID}`);
   logSeeded(
     'providers',
     `${ENGINE_PROVIDERS.length} (${ENGINE_PROVIDERS.join(', ')})`,
