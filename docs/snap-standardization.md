@@ -1,6 +1,6 @@
 # SNAP Standardization — Technical Guidance
 
-Status: **research/guidance only — no SNAP-related code has been written.** Last reviewed 12 Aug 2026. This document synthesizes everything in [`docs/aspi-snap/`](aspi-snap) into one reference for standardizing manapay's transactional APIs toward SNAP compliance. It's meant to be read now for orientation and re-read later as the actual implementation phases start.
+Status: **research/guidance only — no SNAP-related code has been written.** Last reviewed 20 Aug 2026 — §3's licensing/scope questions are now resolved and cross-checked against the live MotionPay integration. This document synthesizes everything in [`docs/aspi-snap/`](aspi-snap) into one reference for standardizing manapay's transactional APIs toward SNAP compliance. It's meant to be read now for orientation and re-read later as the actual implementation phases start.
 
 Every claim below traces back to one of the 9 source PDFs. Where the sources are ambiguous, contradict each other, or seem to contain a documentation error, that's called out explicitly rather than papered over — verify those specific points empirically (with a partner bank/PSP, or against the live ASPI portal) before building on them.
 
@@ -10,8 +10,10 @@ Every claim below traces back to one of the 9 source PDFs. Where the sources are
 
 - **SNAP** (Standar Nasional Open API Pembayaran) is Bank Indonesia's mandatory Open API standard for payment-system interoperability, established 16 Aug 2021, now administered day-to-day by **ASPI** (handover from BI, 1 Sept 2023). It standardizes *how PJSPs call each other's APIs* — auth, signing, headers, data shapes, error codes — for account/balance/transfer/QR/direct-debit style services.
 - **The 3 "buletin" PDFs are not SNAP documents.** They're ASPI's QRIS MPM bulletins (2020–2021), a separate, earlier BI/ASPI QR-payment standard. Still relevant to manapay (it already supports QRIS), but track it as a second, independent compliance surface, not folded into SNAP.
-- **The single biggest open question is legal/business, not technical**: whether manapay needs its **own** Bank Indonesia PJP license, or operates as a downstream, contractually-bound party under a partner bank's license. The SNAP governance doc doesn't resolve this — it points at a separate regulation (PBI 22/23/PBI/2020) that apparently names "Payment Gateway" as its own licensed activity category. Resolve this before committing to an implementation shape, since it changes whether manapay is ever the *signature-verifying server* side of SNAP or only ever the *signing client* side.
-- **Technically, SNAP compliance is mostly a new outbound client layer + inbound webhook layer**, not a rewrite of manapay's core business logic. It maps cleanly onto the multi-provider integration pattern manapay already has (Inacash/PDN/Pakaidonk/Payhere clients) — the appeal of SNAP for an aggregator is that *one* signing/calling convention works against *any* SNAP-compliant bank, instead of bespoke integration per provider.
+- **§3's licensing question is resolved: manapay is a Merchant Aggregator (MA), not a licensed PJP** — it operates downstream under partner PJP licenses (a **Non-PJP Pengguna Layanan**, in the governance doc's vocabulary), aggregating small merchants (toko kelontong, toko elektrik, warung) onto a partner's already-licensed rails rather than holding its own.
+- **The SNAP-relevant relationship is manapay ↔ its upstream PJP partner, in both directions** (manapay's outbound calls *and* the upstream's inbound notify/webhook calls back) — not manapay's own merchant-facing API, which is very likely outside SNAP's scope entirely (a merchant isn't a PJSP). See §3.2 for the reasoning.
+- **The current (and only) upstream, MotionPay/Flash Mobile, is not SNAP-compliant today** — confirmed against its live integration ([docs/upstream/motionpay.md](upstream/motionpay.md)): proprietary body-based auth, three inconsistent response envelopes across its own products, no request signing, and a payout callback with **no authentication at all**. SNAP prep doesn't reduce any current MotionPay work — it only pays off once a SNAP-compliant upstream actually exists. See §3.3–§4.1.
+- **When that becomes relevant, SNAP compliance is mostly a new provider-integration module**, not a rewrite of manapay's core business logic — it would sit alongside the existing per-provider upstream pattern (`apps/transaction/src/upstream/*`) as one more provider implementation, just one that happens to follow a standardized shape instead of a bespoke one like MotionPay's.
 - **Real DB/schema impact exists but is additive**, not a rewrite: a merchant/sub-merchant/store/terminal hierarchy SNAP expects that manapay's current `Merchant`/`Agent` model doesn't have; a per-day-unique external-reference-ID concept alongside the existing transaction code-format key; storing RSA keypairs + HMAC client secrets per counterparty; and a response envelope shape (`responseCode`/`responseMessage`) to normalize into or wrap around.
 - **No SNAP "Settlement API" exists.** Bank Statement + Transaction History are the closest thing (reconciliation feeds), confirmed by full-text search of the 585-page data spec doc. Manapay's own settlement/balance-ledger logic stays manapay's own problem — SNAP doesn't replace it, it just standardizes the wire format for the transfer/QR/VA calls that feed it.
 - **This is a future workstream, sequenced behind the current monorepo migration** — nothing here blocks the phased migration plan already in progress ([plan-claude.md](plan-claude.md)). Treat this doc as the reference to come back to when that's far enough along to start on SNAP.
@@ -38,21 +40,47 @@ Every claim below traces back to one of the 9 source PDFs. Where the sources are
 
 ---
 
-## 3. Business/legal questions to resolve before implementation (not engineering decisions)
+## 3. Business/legal position (confirmed 20 Aug 2026)
 
-These came directly out of the governance-document research and aren't answerable from the SNAP docs alone:
+The three open questions from the original research pass are now answered directly by the business.
 
-1. **Is manapay a licensed PJP, or does it operate under a partner bank's license?** The governance doc uses two roles for the API-consuming side — **PJP Pengguna Layanan** (licensed, own compliance/reporting duties) vs **Non-PJP Pengguna Layanan** (unlicensed, obligations flow through contract with whichever bank is the **Penyedia Layanan**). Which bucket manapay falls into is a licensing-status question governed by a different regulation (PBI 22/23/PBI/2020), not by anything in these SNAP documents.
-2. **Does manapay only ever call out to partner banks/PSPs (client-side signing only), or does it also need to expose a SNAP-compliant API to its own merchants (server-side signature verification, OAuth token issuance)?** These are very different engineering scopes. Section 5 assumes the first (outbound-client) posture as the default, since that matches manapay's current aggregator shape — flag if that assumption is wrong.
-3. **Which SNAP sub-APIs are actually in scope?** Section 4 proposes a mapping based on manapay's current payment methods and transaction types; confirm it against actual partner-bank requirements once specific integrations are chosen, since not every bank exposes every sub-API.
+### 3.1 Licensing status: manapay is a Merchant Aggregator (MA), not a licensed PJP
 
-None of these block starting the technical prep work in §5–§6, but they determine how far that work eventually needs to go (e.g., whether inbound signature verification is ever needed at all).
+Manapay does not hold, and isn't pursuing, its own Bank Indonesia PJP license. It operates as a **downstream party under one or more partner PJP licenses** — in the governance doc's vocabulary, manapay is a **Non-PJP Pengguna Layanan**, and its upstream partner (currently MotionPay/Flash Mobile) is the **Penyedia Layanan**.
+
+The business model: manapay aggregates many small, typically bank-underserved merchants (toko kelontong, toko elektrik, warung) that a PJP wouldn't cost-effectively onboard and manage one-by-one, and routes their transactions through the partner PJP's already-licensed rails. Mutually beneficial: the partner PJP gets indirect reach into a merchant segment it doesn't want to manage directly, and manapay gets access to licensed payment rails without carrying the licensing burden itself.
+
+**Implication for §10 (certification path)**: per how that process is actually described in the guideline docs, it's the **Penyedia Layanan** who applies for the Surat Rekomendasi via SILA, naming its Pengguna Layanan — bulk/mixed submissions explicitly support naming multiple service users in one package. Manapay likely doesn't pursue certification independently; it's named inside its upstream partner's submission. Worth confirming directly with the partner rather than assuming, but nothing in the docs suggests a Non-PJP Pengguna Layanan certifies on its own.
+
+### 3.2 Which relationship actually needs to speak SNAP
+
+Manapay has three distinct API relationships, and they don't all carry the same SNAP obligation:
+
+1. **Manapay calling the upstream PJP** (e.g. Create QRIS Payment, Fund Transfer) — outbound requests, signed per §5.2 if/when the upstream is SNAP-compliant.
+2. **The upstream PJP calling manapay back** (SNAP's `*-notify` endpoints — QR MPM Payment Notify, VA Payment Notify, etc.) — this is *part of the same Pengguna-Layanan relationship as (1)*, not a separate question. If an upstream is SNAP-compliant, manapay needs a receiver for these too, verifying whatever signature the upstream sends and acknowledging with `responseCode`/`responseMessage` (§7). "Outbound client" doesn't mean manapay never runs a server endpoint for this integration — it does, just scoped to the specific notify contract SNAP defines, not a general-purpose API.
+3. **Manapay's own Public API to its merchants** — a genuinely separate question. SNAP's documents define roles for *Penyedia Layanan*, *PJP Pengguna Layanan*, *Non-PJP Pengguna Layanan*, and *Konsumen*; a merchant using manapay's platform doesn't fit cleanly into any of those. SNAP governs interoperability between PJSPs/payment-system participants — a toko kelontong accepting QRIS through manapay reads as manapay's own commercial customer, not a party to a regulated Open-API relationship. **This is my own inference from the roles as defined, not something the SNAP documents state outright** — worth a direct confirmation from the upstream partner or legal counsel, but on current evidence, manapay's merchant-facing Public API is manapay's own design choice, not something SNAP's technical standard mandates the shape of.
+
+Net: **§5 and §7's SNAP-shaped work applies to (1) and (2) together** — both sides of the manapay↔upstream-PJP relationship. (3), the merchant-facing API, can stay whatever shape best serves manapay's own product.
+
+### 3.3 Scope is bounded by the upstream, not by manapay's roadmap
+
+Per the business: today's only upstream is **MotionPay (Flash Mobile)**, and its offering is **QRIS, TransferBank, EMoney, and Biller**. That's the real ceiling on which SNAP sub-APIs would ever matter for this integration specifically — no amount of manapay-side engineering effort makes Virtual Account or Interbank Bulk relevant if the upstream never exposes them.
+
+And separately: MotionPay's *live* API for what it does expose is a proprietary Flash Mobile format, not SNAP-shaped at all (§4.1). So "scope bounded by the upstream" cuts two ways — it bounds what SNAP work would ever be *worth* doing, and it means none of that work applies to today's MotionPay integration. It's only relevant once a SNAP-compliant upstream (a different partner, or a future SNAP-compliant version of MotionPay) enters the picture.
+
+### 3.4 What's already in the codebase (grounding, not new information)
+
+Per the business, and consistent with what's in the schema: manapay stores `Merchant` and `Agent` records, connects them to upstream providers (`ProviderNameEnum`, now including `MOTIONPAY`), and calculates a profit split across four parties on every transaction — merchant, agent, manapay itself, and the upstream provider — via `BaseFee`/`MerchantFee` in `apps/config`. Any SNAP-routed transaction would need to feed the same fee-split logic; SNAP doesn't change that calculation, only the wire format of the calls that produce the transaction data feeding into it (consistent with §6/§7's "additive, not a rewrite" framing).
+
+None of this blocks the technical prep work in §5–§6, but it determines how far that work eventually needs to go — and, per §3.3, that it isn't worth starting until a SNAP-compliant upstream is actually on the table.
 
 ---
 
 ## 4. Mapping manapay's current product onto SNAP's API catalog
 
 SNAP organizes ~81 sub-APIs into 5 categories (Registrasi, Informasi Saldo, Riwayat Transaksi, Transfer Kredit, Transfer Debit). Cross-referencing against manapay's existing `PaymentMethodNameEnum` / `TransactionTypeEnum` (in `libs/microservice/src/microservice.enum.ts`):
+
+> **Read this as SNAP's generic taxonomy, not as what MotionPay actually offers today.** MotionPay's live API (§4.1, and [docs/upstream/motionpay.md](upstream/motionpay.md)) is a proprietary Flash Mobile format with no SNAP shape at all — none of the sub-APIs below are actually callable in SNAP's form against MotionPay right now. This mapping is for whenever a SNAP-compliant upstream is in scope.
 
 | Manapay concept | Closest SNAP sub-API(s) | Category | Notes |
 |---|---|---|---|
@@ -89,11 +117,25 @@ SNAP organizes ~81 sub-APIs into 5 categories (Registrasi, Informasi Saldo, Riwa
 
 (The remaining ~50 sub-APIs — RTGS/SKNBI transfer, QR CPM, Direct Debit, Auth Payment, most of Registration — are cataloged in the source PDF but weren't deep-dived since they don't currently map to manapay's product surface. Pull them from `SNAP_StandarDataSpesifikasiTeknis.pdf` directly if that changes.)
 
+### 4.1 Against today's actual upstream (MotionPay)
+
+Per the business, MotionPay currently offers **QRIS, TransferBank, EMoney, and Biller** — narrower than, and not fully aligned with, manapay's own `PaymentMethodNameEnum` (which also has `VIRTUALACCOUNT`, not currently offered by MotionPay at all):
+
+| MotionPay service | Coded in `apps/transaction/src/upstream/motionpay/`? | Notes |
+|---|---|---|
+| QRIS (pay-in) | **Yes** — auth, create payment, status. | Sandbox blocked on a merchant PTEN-registration issue as of the last integration note ([docs/upstream/motionpay.md](upstream/motionpay.md) §7) — not a code problem. |
+| TransferBank (payout) | **Yes** — auth, account inquiry, fund transfer, status, balance. | Sandbox blocked on IP whitelisting as of the last integration note (§11.1). Already silently covers e-wallet payouts too — GOPAY/OVO/DANA/SHOPEEPAY/LINKAJA share the same `bank_code` namespace as banks (`motionpay-bank-code.constant.ts`). |
+| EMoney | **Not yet coded.** No `motionpay-emoney.*` module exists. | Closest conceptual overlap with manapay's `DIRECTEWALLET`/`TRANSFEREWALLET` — but the Transfer e-wallet payout support above may already cover part of this without a separate module. |
+| Biller | **Not yet coded**, and not currently in manapay's own `PaymentMethodNameEnum` either. | No single clear SNAP sub-API surfaced for bill-payment/PPOB-style products in the sections deep-dived so far — worth a dedicated look at `SNAP_StandarDataSpesifikasiTeknis.pdf` if this becomes a near-term priority. |
+| VirtualAccount (in manapay's own enum) | N/A | Not among MotionPay's stated services — either a future upstream would need to supply this, or it's not currently reachable through any live provider. |
+
+This doesn't change anything already built — it's the current boundary of what's real vs. aspirational, kept next to the SNAP mapping so the two don't get conflated. It's also worth registering as a standalone fact regardless of SNAP: MotionPay's own Transfer callback has no authentication mechanism at all (§7 below), and its documentation carries several self-contradictions (token TTL, field-length limits, host URLs) worked around empirically in [docs/upstream/motionpay.md](upstream/motionpay.md) — a preview of the kind of per-provider documentation risk SNAP's standardization is meant to reduce, once a partner actually implements it.
+
 ---
 
 ## 5. Security & auth architecture
 
-This is the part of SNAP that's a genuinely new architectural layer, not a data-shape tweak. Two independent signature schemes are involved, used in different places:
+This is the part of SNAP that's a genuinely new architectural layer, not a data-shape tweak — and it applies specifically to the manapay↔upstream-PJP relationship (both manapay's outbound calls and the upstream's inbound notify calls back, §3.2), not to manapay's own merchant-facing API. Two independent signature schemes are involved, used in different places:
 
 ### 5.1 Token acquisition (once per session, not per-transaction)
 
@@ -177,7 +219,7 @@ This is the concrete answer to "will this change the database" — here's what's
 
 ## 7. Business process impact
 
-- **Webhook/callback contract changes.** SNAP's `*-notify` endpoints (VA payment notify, QR MPM payment notify, bulk-transfer notify, bulk-cashin notify) define a specific inbound payload shape manapay would need to receive and acknowledge with a bare `responseCode`/`responseMessage`. This is architecturally the same *kind* of thing as the currently-flagged "zero webhook-signature verification on payment callbacks" gap from the legacy-code audit — if/when SNAP integration happens, building real signature verification on inbound webhooks should cover both needs at once rather than being solved twice.
+- **Webhook/callback contract changes.** SNAP's `*-notify` endpoints (VA payment notify, QR MPM payment notify, bulk-transfer notify, bulk-cashin notify) define a specific inbound payload shape manapay would need to receive and acknowledge with a bare `responseCode`/`responseMessage`. This is architecturally the same *kind* of gap already confirmed live today: MotionPay's own Transfer callback (§14 of [docs/upstream/motionpay.md](upstream/motionpay.md)) has **no authentication mechanism at all** — no signature, no shared secret, anything that can reach the endpoint can post a fake success for an arbitrary `external_id`. Building real inbound-webhook signature verification once, generically, would close the MotionPay gap now and be ready for SNAP's notify contract later, rather than solving it twice.
 - **Reconciliation shifts toward Bank Statement / Transaction History.** Both have hard limits worth designing around: **max 1-month date range per query, 1-year retrievable history, DESC-only sort, page size ≤50.** These become a real data source for settlement/reconciliation once SNAP-routed transactions exist, but they're report-pull APIs with retention limits — not a substitute for manapay keeping its own permanent transaction/ledger records.
 - **No change forced onto manapay's own settlement computation.** Reiterating from §4: SNAP has no settlement/netting API. The balance-ledger + advisory-lock design already planned for `apps/transaction` stays as-is; SNAP only standardizes the *inputs* (transfer/QR/VA call results) to that logic when a counterparty is SNAP-compliant.
 - **Compliance-operations obligations, not just code**: a designated **Data Protection Officer** function, a documented **BCP/BRP**, **72-hour breach/incident notification** (to consumers, counterparties, and authorities), **20-working-day complaint resolution SLA** (extendable by 20 more days under conditions), and **consent revocation taking effect within 72 hours**. These are process/staffing commitments the solo-dev team should know about even though they're not code changes per se.
@@ -234,8 +276,8 @@ No Bank Indonesia involvement in individual applications is described anywhere i
 
 Not urgent, and explicitly not blocking the current monorepo migration — for when the team is ready to pick this up:
 
-1. **Resolve the licensing/role question (§3)** — this determines whether manapay ever needs inbound (server-side) SNAP compliance or only outbound (client-side).
-2. **Pick the first 1–2 target sub-APIs** based on whichever partner bank/PSP integration is most immediate (Virtual Account and QR MPM are the highest-leverage starting points given manapay's current payment methods).
+1. ~~Resolve the licensing/role question~~ — **done, see §3.** Manapay is confirmed non-PJP/MA; the SNAP-relevant work is scoped to the manapay↔upstream-PJP relationship only.
+2. **Watch for the actual trigger: a SNAP-compliant upstream.** Nothing below is actionable until either MotionPay adopts SNAP or a new upstream partner requires/offers it — check that before investing engineering time here. When it happens, QR MPM is the most plausible first target (MotionPay's current QRIS product is the closest live analog); Virtual Account has no current upstream offering it at all, so it's lower priority than the original ranking suggested.
 3. **Build the SNAP signing/client layer as a shared lib** — RSA/HMAC signing (§5.2), header construction (§5.3), response-envelope normalization (§6) — designed once, reusable across every future SNAP-compliant counterparty, replacing what would otherwise be bespoke per-provider integration code.
 4. **Add the additive schema pieces (§6)** only as specific partners require them (sub-merchant/store/terminal hierarchy, per-counterparty key storage, AML originator fields) rather than speculatively building the full hierarchy up front.
 5. **Register on the Developer Site and sandbox-test** against the chosen sub-APIs.
@@ -245,4 +287,4 @@ Not urgent, and explicitly not blocking the current monorepo migration — for w
 
 ## Sources
 
-All facts above were extracted directly from the 9 files in [`docs/aspi-snap/`](aspi-snap), cross-checked against each other where they overlap, and spot-verified against public sources where the PDFs referenced external material or seemed potentially outdated (Bank Indonesia's SNAP pages, ASPI's own site, and public SNAP integration docs from BRI, Espay, and Faspay — used only to identify inconsistencies in the primary source, never treated as more authoritative than it).
+All facts above were extracted directly from the 9 files in [`docs/aspi-snap/`](aspi-snap), cross-checked against each other where they overlap, and spot-verified against public sources where the PDFs referenced external material or seemed potentially outdated (Bank Indonesia's SNAP pages, ASPI's own site, and public SNAP integration docs from BRI, Espay, and Faspay — used only to identify inconsistencies in the primary source, never treated as more authoritative than it). §3's business/legal position and §4.1's upstream-scope details were added 20 Aug 2026 based on direct input from the business owner, cross-checked against the live codebase (`apps/transaction/src/upstream/motionpay/`, `libs/microservice/src/microservice.enum.ts`) and [docs/upstream/motionpay.md](upstream/motionpay.md).
