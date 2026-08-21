@@ -1,0 +1,337 @@
+# Merchant Signature — Design Guidance
+
+Status: **guidance only — no code changed.** Written 20 Aug 2026.
+
+Scope: the `Authorization`-equivalent header signature that merchants use to authenticate against manapay's own Public API (`/open/v1/payin/*`). This is the **manapay ↔ merchant** boundary — per [snap-standardization.md §3.2](snap-standardization.md), that boundary is very likely *outside* SNAP's regulatory scope, so this is manapay's own design to make. That's a freedom, not a gap: this document is about designing it deliberately rather than inheriting it.
+
+Sources: legacy `C:\prelion\pg\auth-service` + `transaction-service`, the current [apps/auth/prisma/schema.prisma](../apps/auth/prisma/schema.prisma), and the team's merchant-facing PDF ("1.1 Manapay Payin"). Claims about legacy behavior below were verified by running the actual code, not by reading it — the two most serious findings only show up when you execute it.
+
+---
+
+## 1. TL;DR
+
+- **The published PDF describes a security control that does not exist.** It tells merchants their nonce is checked for replay within a 10-minute window. In the code that check is a `// TODO`. Replay protection is currently **timestamp-only, with a 2-hour window** — not the "few minutes" the doc claims. This is the single most important finding here.
+- **Two verified crash/correctness bugs** (§3): a wrong-length signature throws `RangeError` → HTTP 500 instead of 401, and the PDF's documented `x-signature` length of "8 - 256" actively invites merchants to trigger it. Separately, hashing the *parsed DTO* instead of the raw body means any unknown field a merchant sends silently breaks their signature.
+- **Stay symmetric. You are not cutting a corner.** SNAP's own per-transaction signature is symmetric `HMAC_SHA512(clientSecret, ...)`. Its asymmetric RSA half exists *only* to authenticate the OAuth token request. No token endpoint → no reason for RSA. Your instinct here matches the standard's own design (§4).
+- **Keep the 5-line canonical string, fix what's under it.** The legacy scheme's *shape* is sound and arguably better-suited than SNAP's for this boundary (newline delimiter, real nonce, no token round-trip). The problems are in enforcement, not design.
+- **The biggest structural change to make: move validation out of business logic into a guard, and hash raw bytes instead of the parsed DTO.** Today it's called by hand at 9+ call sites, each re-deriving the request path from route params — meaning query strings are silently dropped and a forgotten call site is an unauthenticated endpoint.
+- **Webhook signing is undesigned.** The PDF issues merchants a "Webhook Secret key" and then never specifies a signature anywhere. Outbound webhooks are currently unauthenticated in both directions (§9).
+
+---
+
+## 2. Is the PDF still accurate?
+
+You asked whether the merchant-facing doc still matches the code. Mostly — the core scheme is faithfully documented. But there are seven divergences, and two of them matter a lot.
+
+| PDF says | Legacy code actually does | Verdict |
+|---|---|---|
+| 5 headers: `x-client-id`, `x-timestamp`, `x-nonce`, `x-signature`, `x-sign-alg` | Same five, all required | ✅ match |
+| Canonical string = 5 lines joined by `\n`: METHOD, PATH, TIMESTAMP, NONCE, SHA256(body) | Same | ✅ match |
+| `signature = HMAC_SHA256(base64_decode(secretKey), stringToSign).hexLowerCase()` | Same | ✅ match |
+| Nonce "cached for 10 minutes, any duplicate within this timeframe will be rejected" | **Not implemented.** `// TODO Nonce (Redis)` in `merchant-signature.service.ts:114` | ❌ **documents a control that does not exist** |
+| "Request must be within a few minutes of server time" | `isTimestampValid(ts, toleranceSeconds = 7200)` → **2 hours**. The function's own JSDoc says "Default tolerance: 10 minutes" — so code, docstring, and PDF all disagree | ❌ ~24× wider than documented |
+| `x-signature` length "8 - 256" | Must be **exactly 64** hex chars or the request 500s (§3.1) | ❌ doc invites a crash |
+| `x-sign-alg` "Must be `hmac-sha256`" | Header presence is required; **the value is never read or validated** | ⚠️ doc stricter than code |
+| PATH "Include query string if present" | Call sites rebuild the path from route params — `` `/open/v1/payin/purchase/${transactionId}` `` — so **query strings never reach the signature** | ❌ documented behavior unimplementable |
+| Body: "canonicalized before hashing follow RFC8785" **and** "Hash the exact JSON string sent (preserve spaces/formatting)" | Canonicalizes (which by definition discards formatting) | ❌ **the PDF contradicts itself**; the first statement is the true one |
+| Empty body → hash `""` | Also maps `{}` → `""`, where RFC8785 would give `"{}"` | ⚠️ edge case divergence |
+| Credentials include a "Webhook Secret key" | No webhook signature is specified anywhere in the doc, and none is verified in code | ❌ dangling credential |
+| Sandbox base URL | "TBC" | ⚠️ still unset |
+
+**What to do with the PDF**: don't reissue it as-is. Three of these (nonce, timestamp window, signature length) describe stronger or different security properties than the system actually has, which is worse than documenting nothing — a merchant could reasonably rely on them. The fix direction below makes the *documented* behavior true rather than weakening the doc to match the code.
+
+---
+
+## 3. Verified defects in the legacy implementation
+
+Ordered by severity. Items 3.1 and 3.2 were confirmed by executing the real code paths.
+
+### 3.1 🔴 Wrong-length signature → HTTP 500, not 401 (verified)
+
+`CryptoHelper.verifySignature` guards the input with `/^[0-9a-f]+$/i` — which validates hex *characters* but not *length* — then calls `crypto.timingSafeEqual`, which throws when buffer lengths differ. Running the exact legacy function:
+
+```
+valid sig  -> true
+len   2 -> THREW RangeError: Input buffers must have the same byte length
+len   8 -> THREW RangeError: Input buffers must have the same byte length
+len  63 -> THREW RangeError: Input buffers must have the same byte length
+len  66 -> THREW RangeError: Input buffers must have the same byte length
+empty   -> false
+UPPER   -> true
+```
+
+Any merchant sending a signature that isn't exactly 64 hex chars gets an unhandled exception instead of a clean auth failure. The published doc's "8 - 256" length range makes this a *documented* input range that reliably 500s. Fix: length-check before comparing, return `false`.
+
+(Also note `UPPER -> true`: uppercase hex is accepted even though the doc says lowercase. Harmless, but the spec should say so explicitly rather than leave it to `Buffer.from` semantics.)
+
+### 3.2 🔴 Body hash is computed over the parsed DTO, not the request bytes (verified)
+
+The controller passes `@Body() body: CreatePurchaseRequestApi` — a class-validated, class-transformed object — into the signature check. So the server hashes *its reconstruction* of the body, not what the merchant actually sent. Verified:
+
+```
+wire      : {"amount":100000,"currency":"IDR","extra":"x","orderId":"ORD-1"}
+after DTO : {"amount":100000,"currency":"IDR","orderId":"ORD-1"}
+MATCH?    : false
+```
+
+If validation strips one unknown field, the signature fails — and the merchant gets "Signature is invalid", not "unknown field `extra`". That is an extremely expensive error to debug from the merchant's side, and it's exactly the kind of thing a warung-tier integrator will not self-diagnose. It also means the signature does **not** actually attest to the received bytes, which is the entire point of body hashing.
+
+Related: `canonicalizeBody` short-circuits `{}` to `''`, diverging from the RFC8785 rule the PDF documents (`{}` → `"{}"`), so a merchant POSTing an empty object and following the doc literally fails.
+
+### 3.3 🔴 Nonce is never checked — replay is possible for 2 hours
+
+Nothing consumes `x-nonce`. Combined with the 7200-second timestamp tolerance, a captured request can be replayed verbatim for two hours. For `POST /open/v1/payin/purchase` that means duplicate transaction creation. `orderId` uniqueness may catch some of it at the DB layer depending on constraints — but that's an accident of schema design, not an auth control, and it wouldn't help on non-idempotent endpoints.
+
+`libs/redis` already exists in the monorepo and is currently unused. This is what it's for.
+
+### 3.4 🟠 Validation lives in business logic, not in a guard
+
+`MerchantSignatureHeadersGuard` only checks that the five headers are *present*. Actual verification happens inside each API method:
+
+```ts
+const merchantSignature = await this.merchantSignatureClient.signatureValidationTCP({
+  headers, body: '', method: HttpMethodEnum.GET,
+  path: `/open/v1/payin/purchase/${transactionId}`,   // hand-rebuilt at every call site
+});
+if (!merchantSignature || !merchantSignature.isValid) throw ApiError.invalidMerchantSignature();
+```
+
+repeated at 9+ sites across `purchase.1.api.ts`, `disbursement.1.api.ts`, `balance.1.api.ts`. Consequences:
+
+- **A forgotten call is a silently unauthenticated endpoint.** `@MerchantApi()` makes the JWT and roles guards stand down (`jwt-auth.guard.ts:47`), so the signature check is the *only* thing standing there — and it's opt-in per method.
+- **The path is reconstructed, not observed.** Query strings are lost (contradicting the doc), and any drift between the literal string and the real route silently changes what's being signed.
+- **Every call site can get the method/body wrong independently** and nothing catches it.
+
+### 3.5 🟠 `previousSecretKey` is written but never read
+
+`generateSecretKey` moves the old key to `previousSecretKey`, but `validateSignature` only ever tries `secretKey`. So rotation is a hard cutover: the instant a merchant clicks "generate", every in-flight and not-yet-redeployed request of theirs starts failing. The column exists to provide a grace window and currently provides nothing. (Already flagged in the migration plan; repeating here since it's core to this subsystem.)
+
+### 3.6 🟠 The HTTP fallback path puts the request body in a query string
+
+`MerchantSignatureAuthClient.signatureValidation` does `axios.get(url, { params: filter })` where `filter` includes the full `body`. On the HTTP fallback path, merchant request bodies are serialized into a URL — landing in access logs, proxy logs, and any intermediary. Bodies also blow past URL length limits. The TCP path (`signatureValidationTCP`) is fine; the fallback is not.
+
+Fixing §5's design removes this entirely: send a **body hash**, never a body.
+
+### 3.7 🟡 Smaller items
+
+- **`x-sign-alg` is required but ignored.** Either validate it against an allowlist (and reject anything else) or drop the header. A required-but-unread field is worse than neither — it implies negotiation that doesn't exist.
+- **`secretKey` is stored in plaintext.** HMAC needs the plaintext at verify time so it can't be hashed like a password, but it can be encrypted at rest. Note legacy declared an `ENCRYPTION_KEY` env var that no code ever referenced — that's the gap it was presumably meant for.
+- **`clientId` leaks the internal user ID**: `generateClientId` returns `` `${userId}-${uuidv4}` ``. Minor, but it hands out an internal primary key and makes IDs enumerable-ish. Prefer an opaque random identifier.
+- **A DB round-trip per merchant request.** `findUnique({ where: { clientId } })` on every call. Indexed and cheap, but cacheable (§7) — relevant given the performance priority on this path.
+- **`credentials Json` on `MerchantSignature`** is returned through the validation DTO but its purpose isn't obvious from the signature code. Audit what actually reads it before carrying it forward.
+
+---
+
+## 4. The design question: how much SNAP should this adopt?
+
+You framed symmetric-only as the pragmatic-but-weaker choice. Worth correcting that framing, because it changes the decision:
+
+> **SNAP's own per-transaction signature is symmetric.** Its default scheme ("Type 1") is `HMAC_SHA512(clientSecret, stringToSign)` using a shared secret. The RSA/`SHA256withRSA` half of SNAP exists for exactly one purpose: authenticating the **OAuth token request** to `/access-token/b2b`. If there is no token endpoint, the asymmetric key has no job.
+
+So "symmetric HMAC per request" isn't a downgrade from SNAP — it *is* what SNAP does for the transaction calls themselves. Your instinct was right, and it's defensible to a partner or auditor on the standard's own terms.
+
+### What symmetric actually costs you
+
+One honest tradeoff, worth knowing even though I don't think it changes the decision: with a shared secret, **manapay can compute any signature a merchant can**. If a merchant ever disputes a transaction ("I never sent that"), the signature alone can't settle it, because both parties could have produced it. Asymmetric signing gives real non-repudiation — manapay would hold only the public key and be structurally incapable of forging.
+
+For an aggregator holding merchant funds, that's a genuine consideration. But it's a *dispute-resolution* property, not a request-security one, and it's better addressed with audit logging than by pushing keypair management onto warung-tier integrators. Recommendation: **stay symmetric by default**, and if a large merchant ever demands non-repudiation, offer asymmetric as an opt-in per-merchant mode (the `algorithm` column in §6 leaves that door open).
+
+### What NOT to borrow from SNAP
+
+| SNAP does | Recommendation | Why |
+|---|---|---|
+| OAuth2 `client_credentials` token, 15-min TTL, re-fetched constantly | **Skip.** Keep direct per-request signing | Adds a mandatory network round-trip before every merchant's first call, plus token caching logic on *their* side. Pure integration friction for your merchant tier, and latency on the hot path. |
+| RSA keypair + `SHA256withRSA` for the token call | **Skip** | Only exists to protect the token endpoint you're not building. |
+| HMAC-**SHA512** | **Keep SHA256** | SHA512 offers no meaningful security margin here and produces a 128-char header. SHA256 is universally available in every language your merchants use. |
+| `:` as the `stringToSign` delimiter | **Keep `\n`** | `:` appears inside ISO-8601 timestamps *and* URLs, so SNAP's delimiter is ambiguous by construction. Newline can't appear in a header value or URL path — it's genuinely the better choice, and you already have it. |
+| Replay defense via `X-EXTERNAL-ID` unique-per-day | **Keep the nonce** (once implemented) | Same storage cost, tighter window, simpler semantics. Your `orderId` already covers the business-idempotency role that `X-EXTERNAL-ID` doubles as. |
+
+### What IS worth borrowing
+
+- **Validate the algorithm header strictly** against a single allowed value, the way SNAP pins its scheme. Fixes §3.7.
+- **Key versioning.** SNAP's key-management requirements call for "clear master key versioning." You have the raw material (`previousSecretKey`) — §8 turns it into a real rotation story.
+- **A machine-readable error vocabulary.** SNAP's `responseCode`/`responseMessage` convention is genuinely good for integrator experience. Merchants need to distinguish "clock skew" from "wrong secret" from "replayed nonce" — today they all surface as "Signature is invalid" (§5.4).
+
+---
+
+## 5. Recommended target scheme
+
+Deliberately close to what merchants already implement — this is a fix-and-tighten, not a redesign they have to relearn.
+
+### 5.1 Headers
+
+| Header | Required | Value |
+|---|---|---|
+| `Content-Type` | yes | `application/json` |
+| `X-Client-Id` | yes | opaque merchant client ID |
+| `X-Timestamp` | yes | ISO-8601 **with offset**, e.g. `2026-08-20T10:15:30+07:00` |
+| `X-Nonce` | yes | 16–32 byte hex, or UUID. Unique per request |
+| `X-Signature` | yes | **exactly 64** lowercase hex chars |
+| `X-Sign-Alg` | yes | **exactly** `HMAC-SHA256` — validated, rejected if anything else |
+
+Header names are case-insensitive per HTTP, so existing lowercase senders keep working. Document one canonical casing and accept any.
+
+### 5.2 Canonical string — unchanged shape, two fixes
+
+```
+METHOD \n PATH_WITH_QUERY \n TIMESTAMP \n NONCE \n SHA256_HEX(raw_request_body_bytes)
+```
+
+1. **`PATH_WITH_QUERY` comes from the actual request**, not from reassembled route params — so query strings are included exactly as the doc always claimed.
+2. **The body hash covers raw bytes**, not a canonicalized reconstruction (§5.3).
+
+Empty body (GET/DELETE) → `SHA256("")` = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. State this constant explicitly in the merchant doc — it's the single most common integration stumbling block.
+
+```
+X-Signature = HMAC_SHA256(base64_decode(secretKey), canonicalString) → lowercase hex
+```
+
+Unchanged, and worth keeping unchanged: existing merchants' signing code stays valid.
+
+### 5.3 Raw bytes vs. canonical JSON — the one real breaking change
+
+**Recommendation: hash the raw request body bytes.** Drop RFC8785 canonicalization entirely.
+
+| | Raw bytes | Canonical JSON (today) |
+|---|---|---|
+| Merchant does | `sha256(the exact string I'm about to POST)` | implement RFC8785, then hash |
+| Robustness | signature attests to received bytes — always | breaks if any field is stripped/coerced (§3.2) |
+| Dependency | none | `canonicalize` on both sides, must match exactly |
+| Performance | one hash pass | canonicalize + serialize + hash per request |
+| Familiarity | same model as Stripe, Midtrans, Xendit | unusual; integrators must read carefully |
+
+Canonicalization solves key-reordering by intermediaries — a problem that essentially doesn't occur when a merchant signs the exact string they're about to send. It costs real fragility and a per-request serialization pass on your hot path in exchange.
+
+**This is breaking for existing merchants**, so it needs a dual-accept window (§10). If you'd rather not break anyone, the alternative is to keep canonicalization but hash the **raw body parsed independently of the DTO** — that fixes §3.2 without changing the merchant contract, at the cost of keeping the canonicalize dependency. Both are defensible; raw bytes is the better end state.
+
+### 5.4 Validation order, and telling merchants what went wrong
+
+Fail fast, cheap checks first, and return a *distinguishable* reason:
+
+1. Headers present → `MISSING_HEADER` (name it)
+2. `X-Sign-Alg` == `HMAC-SHA256` → `UNSUPPORTED_ALG`
+3. `X-Signature` is 64 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*
+4. Timestamp parses and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift
+5. Nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
+6. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
+7. HMAC matches current secret, else previous secret within grace window (§8) → `INVALID_SIGNATURE`
+
+All of these should be HTTP 401 with a stable machine-readable code in the body. Do **not** collapse them into one opaque message: "Signature is invalid" for what is actually a 3-minute clock drift is the top integration-support cost in every payment API. The distinction leaks nothing useful to an attacker — they already know whether they possess a valid secret.
+
+**±5 min tolerance + 10 min nonce TTL is deliberate**: the nonce must be remembered for at least as long as a timestamp stays acceptable, or a request becomes replayable once its nonce expires. 10 minutes covers the full ±5 window with margin — and it happens to make the PDF's existing "cached for 10 minutes" claim true.
+
+---
+
+## 6. Schema changes
+
+Current model, for reference:
+
+```prisma
+model MerchantSignature {
+  clientId          String  @unique
+  secretKey         String?
+  previousSecretKey String?
+  credentials       Json    @default("{}") @db.JsonB
+  status            MerchantSignatureStatusEnum
+  payoutUrl         String? @db.VarChar(512)
+  payinUrl          String? @db.VarChar(512)
+  ...
+}
+```
+
+The bones are right. Suggested additions, all additive:
+
+| Field | Purpose |
+|---|---|
+| `secretKeyRotatedAt DateTime?` | Bounds the `previousSecretKey` grace window (§8). Without it, the old key is valid forever. |
+| `algorithm String @default("HMAC-SHA256")` | Makes the scheme per-merchant data rather than a global constant. This is what lets you migrate merchants individually (§10) or offer asymmetric later without a second table. |
+| `webhookSecret String?` | The PDF already promises merchants one (§9). It has no column today. Must be distinct from `secretKey` — different direction, different blast radius. |
+| `lastUsedAt DateTime?` | Cheap, high-value for ops: spot dormant credentials and confirm a rotation actually took effect. |
+
+Worth reconsidering rather than just adding:
+
+- **`secretKey` at rest.** Encrypt it (application-level, key from `libs/configuration`). It can't be hashed — HMAC needs the plaintext — but encryption meaningfully changes what a database dump is worth. This is also where legacy's orphaned `ENCRYPTION_KEY` finally earns its place.
+- **`credentials Json`** — audit what reads this before carrying it into the new model. Untyped JSONB on an auth-critical table is a place where undocumented coupling accumulates.
+- **`payinUrl` / `payoutUrl`** live here, which is reasonable, but note they're webhook-delivery config rather than signature material. Fine to keep; just don't let the model become "everything merchant-integration-related."
+
+---
+
+## 7. Where validation should run
+
+**Move it into a guard.** Concretely, in `libs/auth` alongside the other guards, applied wherever `@MerchantApi()` appears — so it is impossible to expose a merchant endpoint without it, rather than depending on every author remembering a manual call.
+
+The guard needs the **raw body**, which the parsed DTO can't give it. On Fastify (which `apps/transaction/src/main.ts` uses) that means capturing the buffer at the content-type-parser level and stashing it on the request before JSON parsing. Worth prototyping early — it's the one piece of this design with real framework-integration risk, and it determines whether §5.3 is viable at all.
+
+### Keep verification inside `apps/auth`
+
+The secret should never leave the auth service. So the guard (running in `transaction`) should **hash the body locally and send only the hash** over TCP:
+
+```
+{ clientId, timestamp, nonce, signature, signAlg, method, pathWithQuery, bodyHash }
+```
+
+Small, fixed-size, no request bodies crossing a service boundary — which also eliminates §3.6's query-string leak by construction. `AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION` already exists in [microservice.constant.ts](../libs/microservice/src/microservice.constant.ts) marked `// TODO`; this is its contract.
+
+That leaves one TCP hop per merchant request. Given the performance priority, the instinct is to eliminate it by caching secrets in `transaction` — **don't**. Copying the secret into a second service doubles the places it can leak and makes suspension/rotation eventually-consistent. Instead cache *inside auth*: `clientId → {secretKey, previousSecretKey, secretKeyRotatedAt, status, userId}` in `libs/redis`, short TTL, explicitly invalidated on rotate/suspend. That removes the DB round-trip (§3.7) while keeping the secret in one service, and leaves a local TCP hop that's worth its cost.
+
+Redis then does double duty here — nonce store and secret cache — which is a good reason to stand it up properly for this subsystem rather than piecemeal.
+
+---
+
+## 8. Key rotation
+
+Make `previousSecretKey` real (§3.5):
+
+1. On rotate: `previousSecretKey = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
+2. On verify: try `secretKey`. On failure, if `secretKeyRotatedAt` is within the grace window, try `previousSecretKey`.
+3. Grace window: **24 hours** is a reasonable default — long enough for a merchant to redeploy, short enough to bound exposure. Make it configurable.
+4. After the window, `previousSecretKey` is ignored (and ideally nulled by a scheduled job).
+
+Two details worth getting right:
+
+- **Both attempts must be constant-time**, and a match on the previous key must not be distinguishable from a match on the current one by timing or response.
+- **Log which key matched.** A merchant still using the old key 20 hours in is about to have an outage; that's worth an alert, and it's invisible without the log line.
+
+This directly serves the "merchant can regenerate from the dashboard whenever they want" workflow you described — today that workflow is a self-inflicted outage.
+
+---
+
+## 9. The other direction: webhook signatures
+
+The PDF hands merchants a **"Webhook Secret key — Key for validation webhook / notification from Manapay"**, then never specifies how to use it. Section 5 documents the webhook payload with no signature header, and the schema has no column for such a key. So today the promise is undelivered in three places at once.
+
+This matters more than it looks: an unsigned webhook means anything that can reach a merchant's callback URL can tell them a payment succeeded. That's a fraud vector against *your merchants*, delivered through *your* integration.
+
+Recommendation: use the **same canonical-string construction, inverted** — manapay signs, merchant verifies. Same `X-Signature`/`X-Timestamp`/`X-Nonce` headers, keyed on `webhookSecret` rather than `secretKey`. One scheme, two directions, one document to write, one implementation for merchants to understand.
+
+Note the symmetry with the *upstream* side: MotionPay's callback to manapay has no authentication either ([upstream/motionpay.md §14](upstream/motionpay.md)), and the legacy audit found zero signature verification on any of the four legacy provider callbacks. A single generic "verify an inbound HMAC-signed webhook" helper plus its outbound counterpart covers manapay→merchant, MotionPay→manapay, and any future upstream. Worth building once, deliberately.
+
+---
+
+## 10. Suggested sequencing
+
+Ordered so that nothing merchant-visible breaks until the invisible fixes are already in.
+
+**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Implement the nonce check in Redis (§3.3) — this makes the published doc true rather than changing it. Wire up `previousSecretKey` (§8).
+
+**Phase 2 — structural, still no contract change.** Move validation into a guard (§7). Switch the TCP payload to a body hash (§3.6). Add Redis caching. Add the schema columns (§6). At this point hash the raw body but keep canonicalizing as a fallback comparison, so nothing breaks yet.
+
+**Phase 3 — the one breaking change.** Move to raw-byte body hashing (§5.3). Run dual-accept: try raw-bytes first, fall back to canonical, and **log which path each merchant hits**. When a merchant's traffic is 100% raw-bytes, flip their `algorithm` column. Drop the fallback when the last merchant is migrated. The per-merchant `algorithm` field is what makes this a gradual migration instead of a flag day.
+
+**Phase 4 — webhooks.** Design and ship outbound signing (§9), then reuse the same primitive for inbound provider callbacks.
+
+**Then reissue the merchant PDF** — after Phase 3, when the documented behavior and actual behavior finally agree. Add the empty-body hash constant, the error-code table from §5.4, and a worked end-to-end example (real secret, real canonical string, real resulting signature) that a merchant can paste into a test to check their implementation. That single example prevents more support tickets than the rest of the document combined.
+
+---
+
+## 11. Open questions
+
+1. **What reads `MerchantSignature.credentials`?** It's returned by `validateSignature` and threaded into the validation DTO alongside `nmid`, but its purpose isn't clear from the signature path alone. Worth tracing before it's carried into the new model.
+2. **Is `orderId` uniquely constrained per merchant in the DB?** It's currently the only thing resembling replay protection on `POST /purchase`. Once the nonce check lands this matters less, but it should be a deliberate constraint rather than an implicit one.
+3. **Does any live merchant currently send a query string** on the GET endpoints? If yes, they're signing something the server never validates (§3.4), and Phase 2 will change their behavior.
+4. **Sandbox environment** is "TBC" in the doc. Merchants can't safely develop a signing implementation against production — this is worth resolving alongside the doc reissue.
+5. **Do you want per-merchant clock-skew tolerance?** Some POS/warung devices keep genuinely bad time. A global ±5 min may be too tight for a small tail of merchants; the `MerchantSignature` row is the natural place for an override if so.
+
+---
+
+*Legacy references: `auth-service/src/shared/helper/crypto.helper.ts`, `auth-service/src/modules/merchant-signature/merchant-signature.service.ts`, `auth-service/src/microservice/auth/guard/merchant-signature-headers.guard.ts`, `transaction-service/src/modules/api/v1/*.1.api.ts`. Current model: [apps/auth/prisma/schema.prisma](../apps/auth/prisma/schema.prisma). Related: [snap-standardization.md](snap-standardization.md), [upstream/motionpay.md](upstream/motionpay.md).*
