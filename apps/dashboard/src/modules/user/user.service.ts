@@ -8,9 +8,9 @@ import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
 import { ApiError } from '../../shared/exception';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
+import { MerchantSignatureStatusEnum } from '@app/microservice';
 
 const DEFAULT_SETTLEMENT_INTERVAL_MINUTES = 120;
-const MERCHANT_SIGNATURE_STATUS_ACTIVE = 'ACTIVE';
 
 @Injectable()
 export class UserService {
@@ -80,7 +80,7 @@ export class UserService {
         data: {
           userId: user.id,
           clientId: `${user.id}-${randomUUID()}`,
-          status: MERCHANT_SIGNATURE_STATUS_ACTIVE,
+          status: MerchantSignatureStatusEnum.ACTIVE,
         },
       });
 

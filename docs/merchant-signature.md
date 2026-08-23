@@ -14,7 +14,8 @@ Sources: legacy `C:\prelion\pg\auth-service` + `transaction-service`, the curren
 - **Two verified crash/correctness bugs** (§3): a wrong-length signature throws `RangeError` → HTTP 500 instead of 401, and the PDF's documented `x-signature` length of "8 - 256" actively invites merchants to trigger it. Separately, hashing the *parsed DTO* instead of the raw body means any unknown field a merchant sends silently breaks their signature.
 - **Stay symmetric. You are not cutting a corner.** SNAP's own per-transaction signature is symmetric `HMAC_SHA512(clientSecret, ...)`. Its asymmetric RSA half exists *only* to authenticate the OAuth token request. No token endpoint → no reason for RSA. Your instinct here matches the standard's own design (§4).
 - **Keep the 5-line canonical string, fix what's under it.** The legacy scheme's *shape* is sound and arguably better-suited than SNAP's for this boundary (newline delimiter, real nonce, no token round-trip). The problems are in enforcement, not design.
-- **The biggest structural change to make: move validation out of business logic into a guard, and hash raw bytes instead of the parsed DTO.** Today it's called by hand at 9+ call sites, each re-deriving the request path from route params — meaning query strings are silently dropped and a forgotten call site is an unauthenticated endpoint.
+- **The biggest structural change to make: move validation out of business logic into a global guard, and hash raw bytes instead of the parsed DTO.** In legacy it's called by hand at 9+ call sites, each re-deriving the request path from route params — meaning query strings are silently dropped and a forgotten call site is an unauthenticated endpoint. Splitting the dashboard into its own app makes this much cleaner than it was: `apps/transaction` can carry one unconditional guard instead of an opt-in decorator (§7).
+- **Without a shared nonce store, this subsystem is not complete** — 9 of 11 requirements land without Redis, but replay rejection isn't one of them (§11).
 - **Webhook signing is undesigned.** The PDF issues merchants a "Webhook Secret key" and then never specifies a signature anywhere. Outbound webhooks are currently unauthenticated in both directions (§9).
 
 ---
@@ -258,9 +259,33 @@ Worth reconsidering rather than just adding:
 
 ## 7. Where validation should run
 
-**Move it into a guard.** Concretely, in `libs/auth` alongside the other guards, applied wherever `@MerchantApi()` appears — so it is impossible to expose a merchant endpoint without it, rather than depending on every author remembering a manual call.
+**Confirmed 20 Aug 2026**: `@MerchantApi()` / `@SystemApi()` no longer exist anywhere in the monorepo. JWT, roles, and `@PublicApi()` guards now live exclusively in `apps/dashboard`. `apps/transaction/src/api/` and `apps/transaction/src/merchant-signature/` are empty placeholder directories — nothing is implemented yet. This section is written for that topology, not the legacy one.
 
-The guard needs the **raw body**, which the parsed DTO can't give it. On Fastify (which `apps/transaction/src/main.ts` uses) that means capturing the buffer at the content-type-parser level and stashing it on the request before JSON parsing. Worth prototyping early — it's the one piece of this design with real framework-integration risk, and it determines whether §5.3 is viable at all.
+### 7.1 Split the apps, invert the default
+
+Splitting the dashboard out is what makes the signature story clean, and it changes the guard's polarity:
+
+| | Legacy (one mixed app) | Now |
+|---|---|---|
+| Auth styles per app | JWT *and* signature in the same controller surface | dashboard = JWT only; transaction = signature only |
+| How signature applied | `@MerchantApi()` **opt-in**, per handler | **global guard**, opt-out |
+| Failure mode | forget the decorator → unauthenticated endpoint | forget the opt-out → endpoint 401s loudly |
+
+That inversion is the entire point. Legacy's worst property was that the safe path required remembering something; here, forgetting produces a noisy failure instead of a silent hole. Register the guard with `APP_GUARD` in the transaction app's module rather than decorating handlers.
+
+### 7.2 Three things the global guard must handle
+
+1. **Skip non-HTTP contexts.** A globally-registered NestJS guard also fires for TCP `@MessagePattern` handlers — which have no HTTP headers and would fail every internal call. Gate on `context.getType() !== 'http'` → allow. This is the one mistake that will look like "microservices randomly broke."
+2. **An opt-out decorator** for the routes in `apps/transaction` that legitimately aren't merchant-signed: `HealthModule`'s endpoints, `/metrics`, `/swag-rwz`, upstream callbacks from MotionPay (authenticated differently — see §9), and the `upstream/motionpay/*` manual test controllers. Name it for what it means (`@NoMerchantSignature()`), not `@PublicApi()` — these routes aren't public, they're *differently* authenticated, and the name should stop someone reaching for it casually.
+3. **Guards run before pipes.** NestJS order is middleware → guards → interceptors → pipes → handler, so the guard sees the request before `AjvPipe` touches it. That's the correct order here: authenticate, then validate shape.
+
+### 7.3 Fastify + Ajv: two specifics that matter
+
+**Ajv is an argument for raw-byte hashing, not against it.** [`AjvPipe`](../libs/microservice/src/ajv-validation.pipe.ts) is configured with `removeAdditional: true` and `coerceTypes: true`. That is precisely the §3.2 landmine, now present in the new codebase: if the body hash were ever computed after the pipe, every merchant who sends one extra field would get "invalid signature" instead of a useful error, and every coerced `"100"` → `100` would too. Hashing raw bytes in the guard sidesteps both, and lets Ajv keep stripping and coercing freely — the two concerns stop interfering.
+
+**Fastify parses JSON before the guard sees it**, so `request.body` is already an object and the raw bytes are gone. Capture them at the content-type-parser level in `apps/transaction/src/main.ts` and stash them on the request, then parse as normal — no extra dependency needed, and it's a handful of lines. Prototype this early: it's the one piece of the design with real framework-integration risk, and if it doesn't work cleanly, §5.3 (raw-byte hashing) doesn't either.
+
+Two things to get right while doing it: apply the parser **only** to the merchant API routes if possible (or accept a small retained buffer everywhere), and set a body size limit — you're now holding the raw body in memory alongside the parsed one.
 
 ### Keep verification inside `apps/auth`
 
@@ -312,7 +337,7 @@ Note the symmetry with the *upstream* side: MotionPay's callback to manapay has 
 
 Ordered so that nothing merchant-visible breaks until the invisible fixes are already in.
 
-**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Implement the nonce check in Redis (§3.3) — this makes the published doc true rather than changing it. Wire up `previousSecretKey` (§8).
+**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Wire up `previousSecretKey` (§8). The nonce check (§3.3) belongs here too and makes the published doc true rather than changing it — if it's deferred, see §11 for what has to compensate in the meantime.
 
 **Phase 2 — structural, still no contract change.** Move validation into a guard (§7). Switch the TCP payload to a body hash (§3.6). Add Redis caching. Add the schema columns (§6). At this point hash the raw body but keep canonicalizing as a fallback comparison, so nothing breaks yet.
 
@@ -324,7 +349,37 @@ Ordered so that nothing merchant-visible breaks until the invisible fixes are al
 
 ---
 
-## 11. Open questions
+## 11. Is it complete? — definition of done
+
+Nothing is implemented in the monorepo yet, so this is the checklist to measure against. The honest headline: **without a shared nonce store, merchant signature is not complete — it's functional but knowingly replay-vulnerable.**
+
+| # | Requirement | Needs Redis? | Complete without it? |
+|---|---|---|---|
+| 1 | Canonical string + HMAC-SHA256 verification | no | ✅ |
+| 2 | Signature length-checked before compare (§3.1) | no | ✅ |
+| 3 | `X-Sign-Alg` validated against an allowlist | no | ✅ |
+| 4 | Timestamp window enforced, server time echoed on skew | no | ✅ |
+| 5 | Raw-byte body hashing via Fastify parser (§7.3) | no | ✅ |
+| 6 | Global guard + opt-out decorator, non-HTTP contexts skipped (§7.2) | no | ✅ |
+| 7 | Distinguishable error codes (§5.4) | no | ✅ |
+| 8 | `previousSecretKey` rotation grace window (§8) | no | ✅ |
+| 9 | Body hash (not body) sent over TCP to auth (§3.6) | no | ✅ |
+| 10 | **Nonce replay rejection** | **yes** | ❌ **the gap** |
+| 11 | Secret cache to remove the per-request DB hit (§3.7) | yes | ⚠️ perf only, not correctness |
+
+So 9 of 11 land without touching Redis. Deferring it is a reasonable call — but two things have to be true while it's deferred:
+
+**Narrow the timestamp window, since it becomes the *only* replay defense.** ±5 min is sized to pair with a nonce store; without one, that's a 10-minute window in which any captured request can be replayed verbatim — including `POST /open/v1/payin/purchase`. Tighten to ±1–2 min until the nonce check exists, and accept that a few merchants with bad clocks will feel it.
+
+**Do not "temporarily" use an in-memory `Map`.** The k8s manifests run `maxReplicas: 2`, so an in-process nonce cache is wrong the moment it scales: a replayed request routed to the other pod sails through. It would also read as complete in code review while providing nothing. If Redis genuinely needs to wait but you want correctness sooner, a Postgres table with a unique constraint on `(clientId, nonce)` plus a TTL cleanup job is slower but actually correct — an atomic insert is a real replay check in a way a per-pod Map is not.
+
+**Worth knowing: Redis is already wired into all four apps**, including transaction, via `RedisModule` in each `app.module.ts`. So item 10 is not blocked on infrastructure — only on writing the check (a `SET NX` with a TTL matching the timestamp window). That's a small piece of work sitting behind a much larger one, which is worth weighing before deferring it far.
+
+**Until item 10 ships, the merchant PDF must not claim nonce replay protection** (§2). Ship the code and the doc together, or the doc is describing a control that doesn't exist — which is exactly the situation this whole review started from.
+
+---
+
+## 12. Open questions
 
 1. **What reads `MerchantSignature.credentials`?** It's returned by `validateSignature` and threaded into the validation DTO alongside `nmid`, but its purpose isn't clear from the signature path alone. Worth tracing before it's carried into the new model.
 2. **Is `orderId` uniquely constrained per merchant in the DB?** It's currently the only thing resembling replay protection on `POST /purchase`. Once the nonce check lands this matters less, but it should be a deliberate constraint rather than an implicit one.
