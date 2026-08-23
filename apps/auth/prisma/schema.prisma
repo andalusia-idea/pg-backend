@@ -161,16 +161,18 @@ model MerchantDetail {
 }
 
 model MerchantSignature {
-  id                Int     @id @default(autoincrement()) @db.Integer
-  clientId          String  @unique
-  secretKey         String?
-  previousSecretKey String?
-  credentials       Json    @default("{}") @db.JsonB
+  id       Int    @id @default(autoincrement()) @db.Integer
+  clientId String @unique
 
-  status MerchantSignatureStatusEnum
+  secretKey          String?
+  secretKeyPrevious  String?
+  secretKeyRotatedAt DateTime? @db.Timestamptz(6)
 
-  payoutUrl String? @db.VarChar(512)
+  credentials Json                        @default("{}") @db.JsonB
+  status      MerchantSignatureStatusEnum
+
   payinUrl  String? @db.VarChar(512)
+  payoutUrl String? @db.VarChar(512)
 
   user   User @relation(fields: [userId], references: [id])
   userId Int  @unique @db.Integer
