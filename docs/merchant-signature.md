@@ -147,6 +147,27 @@ For an aggregator holding merchant funds, that's a genuine consideration. But it
 | `:` as the `stringToSign` delimiter | **Keep `\n`** | `:` appears inside ISO-8601 timestamps *and* URLs, so SNAP's delimiter is ambiguous by construction. Newline can't appear in a header value or URL path — it's genuinely the better choice, and you already have it. |
 | Replay defense via `X-EXTERNAL-ID` unique-per-day | **Keep the nonce** (once implemented) | Same storage cost, tighter window, simpler semantics. Your `orderId` already covers the business-idempotency role that `X-EXTERNAL-ID` doubles as. |
 
+### Considered and rejected: a symmetric token layer
+
+Asked directly (20 Aug 2026): *if SNAP uses asymmetric for the token call and symmetric for transactions, what about adding a token layer that's symmetric on both sides?*
+
+The security value of SNAP's two-layer design isn't that one layer is asymmetric — it's that the two layers use **independent credentials**. The RSA key gets a token; the `clientSecret` signs transactions; the token is embedded in the transaction `stringToSign`. An attacker holding only one credential can do nothing. That property is reproducible with two symmetric secrets — but **not with one**, and with one secret a token layer is pure ceremony: whoever can mint a token can already sign transactions.
+
+Two secrets is technically the stronger arrangement, but the gain is conditional on storing them differently (SNAP implies this; it doesn't mandate it). Merchants at this tier will keep both in the same `.env` on the same host, where two secrets ≈ one secret with extra steps.
+
+**Decision: no token layer, single secret, per-request signing.** The costs are concrete — a mandatory round-trip before a merchant's first call, token caching and expiry handling in every merchant integration, token state on the server — and the benefit doesn't materialize at this tier. It also matches what merchants' developers already know from Stripe/Midtrans/Xendit.
+
+Two things worth recording so this isn't re-derived later:
+
+- **What the token layer would genuinely buy**: SNAP's `tokenType: "Mac"` variant issues a short-lived **session key** alongside the token. If merchants signed with that instead of their long-term secret, `apps/transaction` could verify locally and the per-request TCP hop to `apps/auth` (§7) disappears. Real architectural win, paid for in merchant-side complexity — reconsider only if that hop ever measures as a bottleneck against a Redis-cached lookup.
+- **The one thing merchants actually want from a token endpoint** is a way to test credentials before attempting a real transaction. A signed `GET /open/v1/ping` returning server time delivers that for a fraction of the cost, and doubles as the clock-skew diagnostic §5.4 calls for.
+
+### Where asymmetric would actually pay off (not now, but know why)
+
+Not crypto strength — HMAC-SHA256 is entirely adequate. The property is that **a verifier cannot forge**. Symmetric verification requires the same secret used for signing, which forces a choice in §7: either `transaction` calls `auth` on every request (contained, costs a hop) or merchant secrets get replicated into `transaction` (no hop, wider blast radius). Asymmetric escapes the dilemma — `transaction` holds public keys, verifies locally, and is structurally incapable of producing a valid merchant signature. It also gives genuine non-repudiation in a dispute.
+
+That makes asymmetric a reasonable **per-merchant opt-in for large merchants later** (the `algorithm` column in §6 is what keeps that door open), and a poor default for the warung tier this product is built for.
+
 ### What IS worth borrowing
 
 - **Validate the algorithm header strictly** against a single allowed value, the way SNAP pins its scheme. Fixes §3.7.
@@ -189,9 +210,13 @@ X-Signature = HMAC_SHA256(base64_decode(secretKey), canonicalString) → lowerca
 
 Unchanged, and worth keeping unchanged: existing merchants' signing code stays valid.
 
-### 5.3 Raw bytes vs. canonical JSON — the one real breaking change
+### 5.3 Raw bytes vs. canonical JSON — decided: raw bytes
 
-**Recommendation: hash the raw request body bytes.** Drop RFC8785 canonicalization entirely.
+**Hash the raw request body bytes.** Drop RFC8785 canonicalization entirely.
+
+**Confirmed 23 Aug 2026: there are no live merchants on the legacy API**, so this is not a breaking change and needs no migration window — the dual-accept scheme earlier drafts described is not being built.
+
+The merchant-facing rule is *"hash the exact bytes you are about to send."* There is **no key-ordering requirement** — a merchant may order keys however they like, as long as they don't re-serialize between signing and sending.
 
 | | Raw bytes | Canonical JSON (today) |
 |---|---|---|
@@ -203,7 +228,7 @@ Unchanged, and worth keeping unchanged: existing merchants' signing code stays v
 
 Canonicalization solves key-reordering by intermediaries — a problem that essentially doesn't occur when a merchant signs the exact string they're about to send. It costs real fragility and a per-request serialization pass on your hot path in exchange.
 
-**This is breaking for existing merchants**, so it needs a dual-accept window (§10). If you'd rather not break anyone, the alternative is to keep canonicalization but hash the **raw body parsed independently of the DTO** — that fixes §3.2 without changing the merchant contract, at the cost of keeping the canonicalize dependency. Both are defensible; raw bytes is the better end state.
+The trade it makes is worth stating plainly, since it's the one thing merchants must get right: raw-byte hashing breaks if something re-serializes the JSON between signing and sending (typically: signing a serialization, then handing the *object* to an HTTP client that stringifies it again). Canonical hashing tolerates that, but requires both sides to implement RFC8785 identically — and number formatting, unicode escaping, and empty-object handling are all places implementations diverge. Legacy already shipped one such divergence (`{}` hashed as `""` rather than `"{}"`). For merchants on PHP/Node with no RFC8785 library at hand, "hash the string you're sending" is the far more reliable instruction.
 
 ### 5.4 Validation order, and telling merchants what went wrong
 
@@ -213,9 +238,11 @@ Fail fast, cheap checks first, and return a *distinguishable* reason:
 2. `X-Sign-Alg` == `HMAC-SHA256` → `UNSUPPORTED_ALG`
 3. `X-Signature` is 64 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*
 4. Timestamp parses and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift
-5. Nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
-6. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
-7. HMAC matches current secret, else previous secret within grace window (§8) → `INVALID_SIGNATURE`
+5. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
+6. HMAC matches current secret, else previous secret within grace window (§8) → `INVALID_SIGNATURE`
+7. **Last**: nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
+
+**The nonce check goes last, after the signature verifies.** Consuming it earlier lets unauthenticated traffic write arbitrary keys into Redis, so only requests that already proved knowledge of the secret get to touch the nonce store. HMAC is microseconds — there is no cost to verifying first.
 
 All of these should be HTTP 401 with a stable machine-readable code in the body. Do **not** collapse them into one opaque message: "Signature is invalid" for what is actually a 3-minute clock drift is the top integration-support cost in every payment API. The distinction leaks nothing useful to an attacker — they already know whether they possess a valid secret.
 
@@ -245,7 +272,7 @@ The bones are right. Suggested additions, all additive:
 | Field | Purpose |
 |---|---|
 | `secretKeyRotatedAt DateTime?` | Bounds the `previousSecretKey` grace window (§8). Without it, the old key is valid forever. |
-| `algorithm String @default("HMAC-SHA256")` | Makes the scheme per-merchant data rather than a global constant. This is what lets you migrate merchants individually (§10) or offer asymmetric later without a second table. |
+| `algorithm String @default("HMAC-SHA256")` | **Optional.** Makes the scheme per-merchant data rather than a global constant. Its original justification (migrating merchants between body-hashing schemes) is moot now that raw-only ships from the start (§5.3); what remains is keeping the door open for per-merchant asymmetric signing later (§4). Safe to defer. |
 | `webhookSecret String?` | The PDF already promises merchants one (§9). It has no column today. Must be distinct from `secretKey` — different direction, different blast radius. |
 | `lastUsedAt DateTime?` | Cheap, high-value for ops: spot dormant credentials and confirm a rotation actually took effect. |
 
@@ -341,11 +368,11 @@ Ordered so that nothing merchant-visible breaks until the invisible fixes are al
 
 **Phase 2 — structural, still no contract change.** Move validation into a guard (§7). Switch the TCP payload to a body hash (§3.6). Add Redis caching. Add the schema columns (§6). At this point hash the raw body but keep canonicalizing as a fallback comparison, so nothing breaks yet.
 
-**Phase 3 — the one breaking change.** Move to raw-byte body hashing (§5.3). Run dual-accept: try raw-bytes first, fall back to canonical, and **log which path each merchant hits**. When a merchant's traffic is 100% raw-bytes, flip their `algorithm` column. Drop the fallback when the last merchant is migrated. The per-merchant `algorithm` field is what makes this a gradual migration instead of a flag day.
+**Phase 3 — webhooks.** Design and ship outbound signing (§9), then reuse the same primitive for inbound provider callbacks.
 
-**Phase 4 — webhooks.** Design and ship outbound signing (§9), then reuse the same primitive for inbound provider callbacks.
+*(Earlier drafts had a phase here for migrating merchants from canonical to raw-byte body hashing. With no live merchants, raw-only ships from the start and there is nothing to migrate — see §5.3.)*
 
-**Then reissue the merchant PDF** — after Phase 3, when the documented behavior and actual behavior finally agree. Add the empty-body hash constant, the error-code table from §5.4, and a worked end-to-end example (real secret, real canonical string, real resulting signature) that a merchant can paste into a test to check their implementation. That single example prevents more support tickets than the rest of the document combined.
+**Then reissue the merchant PDF** — once the documented behavior and actual behavior finally agree. Add the empty-body hash constant, the error-code table from §5.4, and a worked end-to-end example (real secret, real canonical string, real resulting signature) that a merchant can paste into a test to check their implementation. That single example prevents more support tickets than the rest of the document combined.
 
 ---
 
