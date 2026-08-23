@@ -18,6 +18,34 @@ Sources: legacy `C:\prelion\pg\auth-service` + `transaction-service`, the curren
 - **Without a shared nonce store, this subsystem is not complete** — 9 of 11 requirements land without Redis, but replay rejection isn't one of them (§11).
 - **Webhook signing is undesigned.** The PDF issues merchants a "Webhook Secret key" and then never specifies a signature anywhere. Outbound webhooks are currently unauthenticated in both directions (§9).
 
+### Terminology
+
+This document uses "hash", "MAC", and "signature" in specific senses. They get used loosely elsewhere, so:
+
+| Term | Who can produce it | Who can verify | What it proves |
+|---|---|---|---|
+| **Hash** — `sha256(msg)` | anyone | anyone | **Integrity only.** An attacker who edits the message just recomputes the hash. Useless for authentication on its own. |
+| **MAC** (Message Authentication Code) — `hmac(secret, msg)` | anyone holding the secret | anyone holding the secret | **Integrity + authenticity.** The message wasn't altered, and it came from someone with the secret. |
+| **Digital signature** — RSA / Ed25519 | private-key holder only | anyone with the public key | Integrity + authenticity + **non-repudiation** — the verifier could not have produced it. |
+
+**`X-Signature` in this design is a MAC, not a digital signature.** HMAC stands for *Hash-based Message Authentication Code*. Calling it a "signature" is a mild misnomer that Stripe, AWS, and most PSPs share, so the header name stays — but the distinction is exactly why symmetric signing gives no non-repudiation (§4): with a shared secret the verifier can produce the same tag, so "the merchant must have sent this" isn't provable.
+
+**Never hand-roll `sha256(secret + message)`.** SHA-256 is a Merkle–Damgård construction and is vulnerable to *length extension*: an attacker who sees `sha256(secret || msg)` and knows the secret's length can compute a valid tag for `msg || padding || anything` **without knowing the secret**. HMAC's nested double-hash with padded keys exists specifically to close that hole. Always use `crypto.createHmac`.
+
+**The two are nested here, deliberately:**
+
+```
+bodyHash        = sha256(raw request bytes)                 <- plain hash, no secret
+canonicalString = METHOD \n PATH \n TIMESTAMP \n NONCE \n bodyHash
+X-Signature     = HMAC-SHA256(secretKey, canonicalString)   <- the MAC
+```
+
+`bodyHash` isn't authenticated on its own — it inherits authenticity from sitting *inside* the MAC'd string. Standard pattern: hash the large payload, MAC a small fixed-size summary of the request. Same guarantee, without running HMAC over megabytes.
+
+("Canonical string" above means this 5-line signing string. Unrelated to RFC8785 *JSON canonicalization*, which this design does not use — see §5.3.)
+
+**SNAP's `tokenType` uses the term too**: `"Bearer"` means possession is authorization (steal the token, you're in), while `"Mac"` means the token ships with a MAC key that must sign every subsequent request (stealing the token alone gets you nothing). That distinction is why the `"Mac"` variant is the one genuinely interesting reason to consider a token layer — see §4.
+
 ---
 
 ## 2. Is the PDF still accurate?
