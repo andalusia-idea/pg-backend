@@ -9,6 +9,15 @@
 * 🟢 You can import this file directly.
 */
 
+export const MerchantSignatureStatusEnum = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  SUSPENDED: 'SUSPENDED'
+} as const
+
+export type MerchantSignatureStatusEnum = (typeof MerchantSignatureStatusEnum)[keyof typeof MerchantSignatureStatusEnum]
+
+
 export const TransactionTypeEnumConfig = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',

@@ -171,15 +171,18 @@ model MerchantDetail {
 }
 
 model MerchantSignature {
-  id                Int     @id @default(autoincrement()) @db.Integer
-  clientId          String  @unique
-  secretKey         String?
-  previousSecretKey String?
-  status            String
-  credentials       Json    @default("{}") @db.JsonB
+  id       Int    @id @default(autoincrement()) @db.Integer
+  clientId String @unique
 
-  payoutUrl String? @db.VarChar(512)
+  secretKey          String?
+  secretKeyPrevious  String?
+  secretKeyRotatedAt DateTime? @db.Timestamptz(6)
+
+  credentials Json                        @default("{}") @db.JsonB
+  status      MerchantSignatureStatusEnum
+
   payinUrl  String? @db.VarChar(512)
+  payoutUrl String? @db.VarChar(512)
 
   user   User @relation(fields: [userId], references: [id])
   userId Int  @unique @db.Integer
@@ -190,6 +193,14 @@ model MerchantSignature {
   updatedBy Int?      @db.Integer()
   deletedAt DateTime? @db.Timestamptz(6)
   deletedBy Int?      @db.Integer()
+
+  @@schema("auth")
+}
+
+enum MerchantSignatureStatusEnum {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 
   @@schema("auth")
 }
@@ -291,7 +302,7 @@ model Provider {
 // -- 2. Payment Method
 model PaymentMethod {
   // id        Int      @id @default(autoincrement())
-  name             String                      @id
+  name             String                @id
   explain          String
   transactionTypes TransactionTypeEnumConfig[]
 
@@ -309,8 +320,8 @@ model PaymentMethod {
 
 // -- 4. Base Fee Config (default: hanya fee provider)
 model BaseFee {
-  id                Int                       @id @default(autoincrement()) @db.Integer
-  code              String                    @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
+  id                Int                 @id @default(autoincrement()) @db.Integer
+  code              String              @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
   providerName      String
   paymentMethodName String
   transactionType   TransactionTypeEnumConfig
@@ -384,9 +395,9 @@ enum TransactionTypeEnumConfig {
   DISBURSEMENT
   PURCHASE
   SETTLEMENT_PURCHASE
-
   /// Renamed for this merged schema only; the Postgres type is unchanged.
   @@map("TransactionTypeEnum")
+
   @@schema("config")
 }
 

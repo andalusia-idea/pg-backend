@@ -20,8 +20,13 @@ export class MerchantSignatureService {
    *
    * The plaintext secret is returned exactly once, here - it is stored so the
    * signature check can recompute HMACs, and there is no other endpoint that
-   * reads it back. The outgoing secret moves to `previousSecretKey` so requests
+   * reads it back. The outgoing secret moves to `secretKeyPrevious` so requests
    * signed with it during the changeover can still be honoured.
+   *
+   * `secretKeyRotatedAt` is what bounds that changeover: signature validation
+   * only falls back to `secretKeyPrevious` while this timestamp is inside the
+   * grace window, so it must be stamped on every rotation or the fallback can
+   * never apply.
    *
    * Read-then-write in one transaction: without it, two concurrent rotations
    * could both read the same current secret and the older one would be lost.
@@ -41,7 +46,8 @@ export class MerchantSignatureService {
         where: { userId },
         data: {
           secretKey: sharedSecretKey,
-          previousSecretKey: signature.secretKey,
+          secretKeyPrevious: signature.secretKey,
+          secretKeyRotatedAt: new Date(),
         },
       });
     });
