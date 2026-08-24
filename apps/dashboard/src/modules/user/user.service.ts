@@ -1,7 +1,6 @@
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { PrismaClient } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import { ROLE } from '../../auth/auth.constant';
 import { AuthHelper } from '../../auth/auth.helper';
 import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
@@ -9,6 +8,7 @@ import { ApiError } from '../../shared/exception';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { MerchantSignatureStatusEnum } from '@app/microservice';
+import { generateClientId } from '@app/signature';
 
 const DEFAULT_SETTLEMENT_INTERVAL_MINUTES = 120;
 
@@ -79,7 +79,7 @@ export class UserService {
       await tx.merchantSignature.create({
         data: {
           userId: user.id,
-          clientId: `${user.id}-${randomUUID()}`,
+          clientId: generateClientId(),
           status: MerchantSignatureStatusEnum.ACTIVE,
         },
       });

@@ -149,6 +149,7 @@
       "^@app/microservice(|/.*)$": "<rootDir>/libs/microservice/src/$1",
       "^@app/prisma(|/.*)$": "<rootDir>/libs/prisma/src/$1",
       "^@app/redis(|/.*)$": "<rootDir>/libs/redis/src/$1",
+      "^@app/signature(|/.*)$": "<rootDir>/libs/signature/src/$1",
       "^@app/upstream(|/.*)$": "<rootDir>/libs/upstream/src/$1"
     }
   }

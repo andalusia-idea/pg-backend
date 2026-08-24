@@ -1,12 +1,10 @@
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { PrismaClient } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
 import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
 import { ApiError } from '../../shared/exception';
 import { RegisterWebhookUrlDto } from './dto/register-webhook-url.dto';
-
-const SHARED_SECRET_BYTES = 32;
+import { generateSecretKey } from '@app/signature';
 
 @Injectable()
 export class MerchantSignatureService {
@@ -31,9 +29,10 @@ export class MerchantSignatureService {
    * Read-then-write in one transaction: without it, two concurrent rotations
    * could both read the same current secret and the older one would be lost.
    */
-  async generateSecretKey(authInfo: AuthInfoDto): Promise<string> {
+  async generateSharedSecretKey(authInfo: AuthInfoDto): Promise<string> {
     const { userId } = authInfo;
-    const sharedSecretKey = randomBytes(SHARED_SECRET_BYTES).toString('base64');
+
+    const sharedSecretKey = generateSecretKey();
 
     await this.prismaMaster.$transaction(async (tx) => {
       const signature = await tx.merchantSignature.findFirst({

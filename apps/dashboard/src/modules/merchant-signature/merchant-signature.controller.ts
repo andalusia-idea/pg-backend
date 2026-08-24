@@ -30,8 +30,10 @@ export class MerchantSignatureController {
     summary: "Rotate and return the caller's shared secret (shown once)",
   })
   @ApiOkResponse({ type: String })
-  generateSecretKey(@CurrentAuthInfo() authInfo: AuthInfoDto): Promise<string> {
-    return this.merchantSignatureService.generateSecretKey(authInfo);
+  generateSharedSecretKey(
+    @CurrentAuthInfo() authInfo: AuthInfoDto,
+  ): Promise<string> {
+    return this.merchantSignatureService.generateSharedSecretKey(authInfo);
   }
 
   @Post('register-webhook-url')

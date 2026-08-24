@@ -1,8 +1,8 @@
 import { ROLE } from '@app/microservice';
 import { PrismaClient } from '@auth/prisma';
-import { randomUUID } from 'node:crypto';
 import { RoleIds } from './role-engine.seed';
 import { hashPassword, logSeeded, SEED_PASSWORD } from './seed.helper';
+import { generateClientId } from '@app/signature';
 
 const MERCHANT_SIGNATURE_STATUS_ACTIVE = 'ACTIVE';
 
@@ -193,7 +193,7 @@ export async function authDevSeed(
         where: { userId: merchant.id },
         create: {
           userId: merchant.id,
-          clientId: `${merchant.id}-${randomUUID()}`,
+          clientId: generateClientId(),
           status: MERCHANT_SIGNATURE_STATUS_ACTIVE,
           createdBy: system01Id,
         },

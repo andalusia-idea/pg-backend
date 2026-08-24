@@ -58,20 +58,26 @@
       "@app/redis/*": [
         "libs/redis/src/*"
       ],
+      "@app/signature": [
+        "libs/signature/src"
+      ],
+      "@app/signature/*": [
+        "libs/signature/src/*"
+      ],
       "@app/upstream": [
         "libs/upstream/src"
       ],
       "@app/upstream/*": [
         "libs/upstream/src/*"
       ],
-      "@dashboard/prisma": [
-        "apps/dashboard/src/generated/prisma/client"
-      ],
       "@auth/prisma": [
         "apps/auth/src/generated/prisma/client"
       ],
       "@config/prisma": [
         "apps/config/src/generated/prisma/client"
+      ],
+      "@dashboard/prisma": [
+        "apps/dashboard/src/generated/prisma/client"
       ],
       "@transaction/prisma": [
         "apps/transaction/src/generated/prisma/client"

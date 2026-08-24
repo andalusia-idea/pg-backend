@@ -100,13 +100,13 @@
         "tsConfigPath": "libs/redis/tsconfig.lib.json"
       }
     },
-    "upstream": {
+    "signature": {
       "type": "library",
-      "root": "libs/upstream",
+      "root": "libs/signature",
       "entryFile": "index",
-      "sourceRoot": "libs/upstream/src",
+      "sourceRoot": "libs/signature/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/upstream/tsconfig.lib.json"
+        "tsConfigPath": "libs/signature/tsconfig.lib.json"
       }
     },
     "transaction": {
@@ -116,6 +116,15 @@
       "sourceRoot": "apps/transaction/src",
       "compilerOptions": {
         "tsConfigPath": "apps/transaction/tsconfig.app.json"
+      }
+    },
+    "upstream": {
+      "type": "library",
+      "root": "libs/upstream",
+      "entryFile": "index",
+      "sourceRoot": "libs/upstream/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/upstream/tsconfig.lib.json"
       }
     }
   }
