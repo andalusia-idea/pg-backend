@@ -15,10 +15,13 @@ These are cheap to decide now and expensive to change once merchants are signing
 | Decision | Recommended | Notes |
 |---|---|---|
 | Timestamp tolerance | **±300s** (±60s if the nonce check is deferred — see §11 of the design doc) | Goes in `libs/configuration`, not a constant |
-| Nonce TTL | **600s** | Must be ≥ 2× tolerance, or a request becomes replayable once its nonce expires while its timestamp is still valid |
-| Rotation grace window | **24h** | How long `previousSecretKey` stays accepted |
+| Nonce TTL | **600s** | Must be ≥ the full accepted band, which is 2× tolerance since a clock can be fast or slow — otherwise a request becomes replayable once its nonce expires while its timestamp is still valid |
+| Rotation grace window | **24h** | How long `secretKeyPrevious` stays accepted |
 | Signed path includes global prefix? | **No** — strip it | See Step 7's gotcha; this is the highest-risk detail in the whole build |
 | Body hashing | **Raw bytes only** | Confirmed 23 Aug 2026 — see below |
+| Signature algorithm | **HMAC-SHA512** ✅ *decided* | SNAP's symmetric default. 128-char signature. `X-Sign-Alg: HMAC-SHA512` |
+| Secret format | **32 bytes as 64 hex chars, used as-is** ✅ *decided* | No base64, no decode step — the merchant passes the string straight to HMAC |
+| Canonical delimiter & order | **`METHOD:PATH:NONCE:BODYHASH:TIMESTAMP`** ✅ *decided* | SNAP's order with the nonce in the access-token slot. The `:` obliges the guard to format-validate the nonce (Step 8) |
 
 **On body hashing — decided, raw-only.** Earlier drafts of this guide specified dual-accept (verify against both a raw-byte hash and an RFC8785-canonicalized hash) so legacy merchants signing canonically wouldn't break at cutover. **There are no live merchants on the legacy API**, so there is nothing to migrate and that complexity is simply not built: no `canonicalize` dependency, one hash per request, one code path.
 
@@ -28,48 +31,70 @@ One consequence worth noting: the `algorithm` column (design doc §6) was partly
 
 ---
 
-## Step 1 — Schema
+## Step 1 — Schema ✅ rotation fields done
 
-`apps/auth/prisma/schema.prisma`, model `MerchantSignature`. All additive, no data migration needed:
+`apps/auth/prisma/schema.prisma`, model `MerchantSignature`. All additive, no data migration needed.
+
+**Landed** (migration `20260823130232_merchant_signature_secret_key_rotation`):
 
 ```prisma
+secretKeyPrevious  String?                        // renamed from previousSecretKey
 secretKeyRotatedAt DateTime? @db.Timestamptz(6)   // bounds the grace window
-algorithm          String    @default("HMAC-SHA256")
-webhookSecret      String?                        // distinct from secretKey — outbound only
-lastUsedAt         DateTime? @db.Timestamptz(6)
+```
+
+**Deferred, still available when needed:**
+
+```prisma
+algorithm     String    @default("HMAC-SHA512")   // optional — see Step 0
+webhookSecret String?                             // with Step 13
+lastUsedAt    DateTime? @db.Timestamptz(6)        // ops nicety
 ```
 
 Then `prisma migrate dev`, and regenerate the client.
 
-**Verify**: the generated `MerchantSignature` type in `apps/auth/src/generated/prisma/models/` carries the four new fields.
+> **🔴 The dashboard has its own generated schema over the same tables.** `apps/dashboard/prisma/schema.prisma` is produced by `merge-schema.js` from the auth/config/transaction schemas. Changing the auth schema without re-running the merge leaves dashboard code writing to columns that no longer exist — which is exactly what happened on the first attempt at this step:
+>
+> ```bash
+> npm run prisma:merge:dashboard && npm run prisma:generate:dashboard
+> ```
+>
+> Then check callers: `generateSharedSecretKey` had to be updated for the rename **and** to stamp `secretKeyRotatedAt: new Date()` — without that stamp the column is written by nothing and the grace window can never open.
+
+**Verify**: the generated `MerchantSignature` type in *both* `apps/auth/src/generated/prisma/models/` and `apps/dashboard/src/generated/prisma/models/` carries the new fields, and all four apps typecheck.
 
 **Note on `credentials Json`**: it's already on the model and gets returned through the legacy validation DTO, but nothing in the signature path obviously consumes it. Trace what reads it before designing around it — untyped JSONB on an auth-critical table is where undocumented coupling hides.
 
 ---
 
-## Step 2 — `libs/signature`
+## Step 2 — `libs/signature` ✅ done
 
-New lib, following the existing `libs/*` pattern (`nest g library signature`). Both apps need pieces of this, and outbound webhook signing (Step 13) will reuse it.
-
-Pure functions, no NestJS, no I/O — that's what makes it testable in isolation:
+Built at [`libs/signature/src/hmac-signature.ts`](../libs/signature/src/hmac-signature.ts), 61 tests in [`hmac-signature.spec.ts`](../libs/signature/src/hmac-signature.spec.ts). Pure functions, no NestJS, no I/O:
 
 ```ts
+generateClientId(): string                    // UUID v4 — no internal id embedded
+generateSecretKey(): string                   // 32 bytes as 64 hex chars, used as-is
+generateNonce(): string                       // UUID v4 — cannot contain ':'
 sha256Hex(input: string | Buffer): string
-buildCanonicalString(p: { method, path, timestamp, nonce, bodyHash }): string
-signHmacSha256(secretBase64: string, canonicalString: string): string
-verifyHmacSha256(secretBase64, canonicalString, receivedSignature): boolean
-isTimestampWithin(timestamp: string, toleranceSeconds: number): boolean
+EMPTY_BODY_SHA256: string                     // sha256('')
+buildCanonical({ httpMethod, endpoint, nonce, bodyHash, timestampIso }): string
+buildSignature({ secretKey, canonical }): string
+verifySignature({ secretKey, canonical, signatureReceived }): boolean
+isTimestampWithin({ timestampIso, toleranceSeconds, now? }): boolean
 ```
 
-("Canonical string" here means the 5-line signing string — unrelated to RFC8785 JSON canonicalization, which this build does not use.)
+("Canonical" here means the 5-field signing string — unrelated to RFC8785 JSON canonicalization, which this build does not use.)
 
-Three things that must be right, because each is a bug that exists in legacy today:
+What the tests lock down, each corresponding to a bug that exists in legacy or a trap found while building:
 
-1. **`verifyHmacSha256` must length-check before comparing.** `crypto.timingSafeEqual` throws `RangeError` on mismatched buffer lengths — verified against the legacy code, and it's what turns a bad signature into an HTTP 500. Require exactly 64 lowercase hex chars, return `false` otherwise, and only then `timingSafeEqual`.
-2. **Canonical string joins with `\n`**, five lines: `METHOD`, `PATH`, `TIMESTAMP`, `NONCE`, `BODY_HASH`. Keep the newline delimiter (design doc §4 explains why not SNAP's `:`).
-3. **Empty body hashes the empty string**, giving `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. Export it as a named constant and use it in tests — it's the single most common integration stumbling block, and merchants will ask.
+1. **`verifySignature` length-checks before comparing.** `crypto.timingSafeEqual` throws `RangeError` on mismatched buffer lengths — that is what turned a bad signature into an HTTP 500 in legacy. Nine malformed inputs (short, long, odd-length, empty, non-hex, SHA-256-length) each assert `false` **and** `not.toThrow()`.
+2. **`buildCanonical` takes a `bodyHash`, never a body object.** Four tests take real wire strings, re-serialize them, and assert the hash changes — integer-like keys reorder, `1.50` → `1.5`, `1e3` → `1000`, whitespace vanishes. If someone later "simplifies" the server back to `JSON.stringify(parsedBody)`, those fail with the reason attached.
+3. **`isTimestampWithin` requires an explicit UTC offset.** Without one, `new Date` resolves against the *server's* local zone, so the same string means different instants on a WIB host and a UTC host — a latent bug that only appears when a container moves. Rejected as malformed rather than as skew. The suite passes identically under `TZ=UTC`, `TZ=Asia/Jakarta`, and `TZ=America/New_York`, which is the property that matters.
+4. **`EMPTY_BODY_SHA256`** is exported rather than inlined — merchants will ask for it, and a GET simply passes `sha256Hex('')`.
+5. **Uppercase hex is accepted** by `verifySignature` (`Buffer.from(str,'hex')` is case-insensitive). A test documents this rather than endorsing it: if lowercase must be enforced, that's the guard's job, not the crypto layer's.
 
-**Verify**: unit tests covering a known-good signature round-trip, a 63/65/2-char signature returning `false` rather than throwing, uppercase-hex behavior (decide: accept or reject — just be explicit), and the empty-body hash matching the constant.
+Two things deliberately *not* in the lib: `.toLowerCase()` on digests (Node's `digest('hex')` is always lowercase — verified over 40,000 digests; the invariant is pinned by a regex assertion instead), and any falsy-body handling (there is no body parameter left to be falsy).
+
+**Still open from this step**: nothing. Note `isTimestampWithin` is date math, not a crypto primitive — it lives here because it's part of signature *validation*.
 
 ---
 
@@ -108,8 +133,8 @@ Then add the cmd to `libs/microservice/src/microservice.constant.ts` — `AUTH_C
 
 **Order matters. Use this order, not design-doc §5.4's** (which listed nonce before HMAC — corrected there too, but this is the authoritative sequence):
 
-1. `signAlg === 'HMAC-SHA256'` → else `UNSUPPORTED_ALG`
-2. Signature is 64 lowercase hex → else `MALFORMED_SIGNATURE`
+1. `signAlg === 'HMAC-SHA512'` → else `UNSUPPORTED_ALG`
+2. Signature is 128 lowercase hex → else `MALFORMED_SIGNATURE`
 3. Timestamp within tolerance → else `TIMESTAMP_SKEW`
 4. Look up `clientId` (slave replica is fine) → else `UNKNOWN_CLIENT`; status `ACTIVE` → else `CLIENT_SUSPENDED`
 5. HMAC verify against `secretKey`; if that fails and `secretKeyRotatedAt` is inside the grace window, retry with `secretKeyPrevious` → else `INVALID_SIGNATURE`
@@ -244,7 +269,7 @@ Decide the Redis-unavailable behavior explicitly: **fail closed** (reject) is th
 
 ## Step 11 — Secret cache (performance)
 
-Cache `clientId → { secretKey, previousSecretKey, secretKeyRotatedAt, status, userId, algorithm }` in Redis **inside `apps/auth`**, short TTL (30–60s), invalidated explicitly on rotate and on status change.
+Cache `clientId → { secretKey, secretKeyPrevious, secretKeyRotatedAt, status, userId, algorithm }` in Redis **inside `apps/auth`**, short TTL (30–60s), invalidated explicitly on rotate and on status change.
 
 **Cache in auth, not in transaction.** Copying merchant secrets into a second service doubles where they can leak and makes suspension eventually-consistent. Caching inside auth removes the per-request DB round-trip while leaving the secret in exactly one service — the remaining local TCP hop is ~1ms and buys that containment.
 
@@ -257,10 +282,10 @@ Cache `clientId → { secretKey, previousSecretKey, secretKeyRotatedAt, status, 
 Dashboard-side (`apps/dashboard`), since this is a merchant-facing dashboard action, not part of the transaction hot path:
 
 1. Generate 32 random bytes, base64.
-2. `previousSecretKey = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
+2. `secretKeyPrevious = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
 3. Invalidate the Step 11 cache entry.
 4. **Return the plaintext exactly once** — never readable again.
-5. Scheduled job nulls `previousSecretKey` past the grace window.
+5. Scheduled job nulls `secretKeyPrevious` past the grace window.
 
 **Verify**: the old key works inside the grace window and fails outside it; both paths are constant-time and indistinguishable in response shape and timing.
 

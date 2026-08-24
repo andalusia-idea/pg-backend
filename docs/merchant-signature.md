@@ -1,6 +1,6 @@
 # Merchant Signature — Design Guidance
 
-Status: **guidance only — no code changed.** Written 20 Aug 2026.
+Status: written 20 Aug 2026 as guidance; **updated 23 Aug 2026 to record decisions made and code landed.** Steps 1–2 of the [implementation guide](merchant-signature-implementation.md) are built — schema rotation fields and `libs/signature`. Sections marked *decided* are settled; the rest is still design.
 
 Scope: the `Authorization`-equivalent header signature that merchants use to authenticate against manapay's own Public API (`/open/v1/payin/*`). This is the **manapay ↔ merchant** boundary — per [snap-standardization.md §3.2](snap-standardization.md), that boundary is very likely *outside* SNAP's regulatory scope, so this is manapay's own design to make. That's a freedom, not a gap: this document is about designing it deliberately rather than inheriting it.
 
@@ -13,7 +13,7 @@ Sources: legacy `C:\prelion\pg\auth-service` + `transaction-service`, the curren
 - **The published PDF describes a security control that does not exist.** It tells merchants their nonce is checked for replay within a 10-minute window. In the code that check is a `// TODO`. Replay protection is currently **timestamp-only, with a 2-hour window** — not the "few minutes" the doc claims. This is the single most important finding here.
 - **Two verified crash/correctness bugs** (§3): a wrong-length signature throws `RangeError` → HTTP 500 instead of 401, and the PDF's documented `x-signature` length of "8 - 256" actively invites merchants to trigger it. Separately, hashing the *parsed DTO* instead of the raw body means any unknown field a merchant sends silently breaks their signature.
 - **Stay symmetric. You are not cutting a corner.** SNAP's own per-transaction signature is symmetric `HMAC_SHA512(clientSecret, ...)`. Its asymmetric RSA half exists *only* to authenticate the OAuth token request. No token endpoint → no reason for RSA. Your instinct here matches the standard's own design (§4).
-- **Keep the 5-line canonical string, fix what's under it.** The legacy scheme's *shape* is sound and arguably better-suited than SNAP's for this boundary (newline delimiter, real nonce, no token round-trip). The problems are in enforcement, not design.
+- **Keep the 5-field canonical string, fix what's under it.** The legacy scheme's *shape* is sound — a real nonce, no token round-trip. The problems are in enforcement, not design. *(Delimiter and algorithm were later aligned to SNAP — `:` and HMAC-SHA512; see §4 and §5.2.)*
 - **The biggest structural change to make: move validation out of business logic into a global guard, and hash raw bytes instead of the parsed DTO.** In legacy it's called by hand at 9+ call sites, each re-deriving the request path from route params — meaning query strings are silently dropped and a forgotten call site is an unauthenticated endpoint. Splitting the dashboard into its own app makes this much cleaner than it was: `apps/transaction` can carry one unconditional guard instead of an opt-in decorator (§7).
 - **Without a shared nonce store, this subsystem is not complete** — 9 of 11 requirements land without Redis, but replay rejection isn't one of them (§11).
 - **Webhook signing is undesigned.** The PDF issues merchants a "Webhook Secret key" and then never specifies a signature anywhere. Outbound webhooks are currently unauthenticated in both directions (§9).
@@ -36,13 +36,13 @@ This document uses "hash", "MAC", and "signature" in specific senses. They get u
 
 ```
 bodyHash        = sha256(raw request bytes)                 <- plain hash, no secret
-canonicalString = METHOD \n PATH \n TIMESTAMP \n NONCE \n bodyHash
-X-Signature     = HMAC-SHA256(secretKey, canonicalString)   <- the MAC
+canonicalString = METHOD : PATH : NONCE : bodyHash : TIMESTAMP
+X-Signature     = HMAC-SHA512(secretKey, canonicalString)   <- the MAC
 ```
 
 `bodyHash` isn't authenticated on its own — it inherits authenticity from sitting *inside* the MAC'd string. Standard pattern: hash the large payload, MAC a small fixed-size summary of the request. Same guarantee, without running HMAC over megabytes.
 
-("Canonical string" above means this 5-line signing string. Unrelated to RFC8785 *JSON canonicalization*, which this design does not use — see §5.3.)
+("Canonical string" above means this 5-field signing string. Unrelated to RFC8785 *JSON canonicalization*, which this design does not use — see §5.3.)
 
 **SNAP's `tokenType` uses the term too**: `"Bearer"` means possession is authorization (steal the token, you're in), while `"Mac"` means the token ships with a MAC key that must sign every subsequent request (stealing the token alone gets you nothing). That distinction is why the `"Mac"` variant is the one genuinely interesting reason to consider a token layer — see §4.
 
@@ -171,8 +171,8 @@ For an aggregator holding merchant funds, that's a genuine consideration. But it
 |---|---|---|
 | OAuth2 `client_credentials` token, 15-min TTL, re-fetched constantly | **Skip.** Keep direct per-request signing | Adds a mandatory network round-trip before every merchant's first call, plus token caching logic on *their* side. Pure integration friction for your merchant tier, and latency on the hot path. |
 | RSA keypair + `SHA256withRSA` for the token call | **Skip** | Only exists to protect the token endpoint you're not building. |
-| HMAC-**SHA512** | **Keep SHA256** | SHA512 offers no meaningful security margin here and produces a 128-char header. SHA256 is universally available in every language your merchants use. |
-| `:` as the `stringToSign` delimiter | **Keep `\n`** | `:` appears inside ISO-8601 timestamps *and* URLs, so SNAP's delimiter is ambiguous by construction. Newline can't appear in a header value or URL path — it's genuinely the better choice, and you already have it. |
+| HMAC-**SHA512** | ~~Keep SHA256~~ → **Adopted SHA512** *(23 Aug 2026)* | Original argument was that SHA512 adds no security margin here and doubles the header to 128 chars. Both still true, neither is a correctness issue — following SNAP's symmetric default was chosen instead. Decided. |
+| `:` as the `stringToSign` delimiter | ~~Keep `\n`~~ → **Adopted `:`** *(23 Aug 2026)*, conditional | `:` appears inside ISO-8601 timestamps and URLs, so field boundaries are ambiguous unless every other field excludes colons. **The condition: the guard must reject any nonce that isn't a UUID or hex string.** Without that, `endpoint=/a` + `nonce=b:c` and `endpoint=/a:b` + `nonce=c` produce one canonical string, so a signature for one authorises the other. With it, `:` is safe — method and body hash can't contain colons by construction and the timestamp is last. |
 | Replay defense via `X-EXTERNAL-ID` unique-per-day | **Keep the nonce** (once implemented) | Same storage cost, tighter window, simpler semantics. Your `orderId` already covers the business-idempotency role that `X-EXTERNAL-ID` doubles as. |
 
 ### Considered and rejected: a symmetric token layer
@@ -192,14 +192,14 @@ Two things worth recording so this isn't re-derived later:
 
 ### Where asymmetric would actually pay off (not now, but know why)
 
-Not crypto strength — HMAC-SHA256 is entirely adequate. The property is that **a verifier cannot forge**. Symmetric verification requires the same secret used for signing, which forces a choice in §7: either `transaction` calls `auth` on every request (contained, costs a hop) or merchant secrets get replicated into `transaction` (no hop, wider blast radius). Asymmetric escapes the dilemma — `transaction` holds public keys, verifies locally, and is structurally incapable of producing a valid merchant signature. It also gives genuine non-repudiation in a dispute.
+Not crypto strength — HMAC-SHA512 (or SHA-256) is entirely adequate. The property is that **a verifier cannot forge**. Symmetric verification requires the same secret used for signing, which forces a choice in §7: either `transaction` calls `auth` on every request (contained, costs a hop) or merchant secrets get replicated into `transaction` (no hop, wider blast radius). Asymmetric escapes the dilemma — `transaction` holds public keys, verifies locally, and is structurally incapable of producing a valid merchant signature. It also gives genuine non-repudiation in a dispute.
 
 That makes asymmetric a reasonable **per-merchant opt-in for large merchants later** (the `algorithm` column in §6 is what keeps that door open), and a poor default for the warung tier this product is built for.
 
 ### What IS worth borrowing
 
 - **Validate the algorithm header strictly** against a single allowed value, the way SNAP pins its scheme. Fixes §3.7.
-- **Key versioning.** SNAP's key-management requirements call for "clear master key versioning." You have the raw material (`previousSecretKey`) — §8 turns it into a real rotation story.
+- **Key versioning.** SNAP's key-management requirements call for "clear master key versioning." You have the raw material (`secretKeyPrevious`) — §8 turns it into a real rotation story.
 - **A machine-readable error vocabulary.** SNAP's `responseCode`/`responseMessage` convention is genuinely good for integrator experience. Merchants need to distinguish "clock skew" from "wrong secret" from "replayed nonce" — today they all surface as "Signature is invalid" (§5.4).
 
 ---
@@ -215,28 +215,31 @@ Deliberately close to what merchants already implement — this is a fix-and-tig
 | `Content-Type` | yes | `application/json` |
 | `X-Client-Id` | yes | opaque merchant client ID |
 | `X-Timestamp` | yes | ISO-8601 **with offset**, e.g. `2026-08-20T10:15:30+07:00` |
-| `X-Nonce` | yes | 16–32 byte hex, or UUID. Unique per request |
-| `X-Signature` | yes | **exactly 64** lowercase hex chars |
-| `X-Sign-Alg` | yes | **exactly** `HMAC-SHA256` — validated, rejected if anything else |
+| `X-Nonce` | yes | UUID v4 or hex. Unique per request. **Must be format-validated** — see §5.2 |
+| `X-Signature` | yes | **exactly 128** lowercase hex chars (HMAC-SHA512) |
+| `X-Sign-Alg` | yes | **exactly** `HMAC-SHA512` — validated, rejected if anything else |
 
-Header names are case-insensitive per HTTP, so existing lowercase senders keep working. Document one canonical casing and accept any.
+Header names are case-insensitive per HTTP. Document one canonical casing and accept any.
 
-### 5.2 Canonical string — unchanged shape, two fixes
+### 5.2 Canonical string
 
-```
-METHOD \n PATH_WITH_QUERY \n TIMESTAMP \n NONCE \n SHA256_HEX(raw_request_body_bytes)
-```
-
-1. **`PATH_WITH_QUERY` comes from the actual request**, not from reassembled route params — so query strings are included exactly as the doc always claimed.
-2. **The body hash covers raw bytes**, not a canonicalized reconstruction (§5.3).
-
-Empty body (GET/DELETE) → `SHA256("")` = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. State this constant explicitly in the merchant doc — it's the single most common integration stumbling block.
+Implemented in [`libs/signature`](../libs/signature/src/hmac-signature.ts). Field order follows SNAP's symmetric signature, with the nonce standing in for SNAP's access token since this API issues none:
 
 ```
-X-Signature = HMAC_SHA256(base64_decode(secretKey), canonicalString) → lowercase hex
+METHOD : PATH_WITH_QUERY : NONCE : SHA256_HEX(raw_request_body_bytes) : TIMESTAMP
 ```
 
-Unchanged, and worth keeping unchanged: existing merchants' signing code stays valid.
+1. **`PATH_WITH_QUERY` comes from the actual request**, not from reassembled route params — so query strings are included exactly as the merchant doc always claimed.
+2. **The body hash covers raw bytes**, not a re-serialization of the parsed body (§5.3).
+3. **The `:` delimiter obliges the guard to validate the nonce format.** A nonce containing a colon could shift a field boundary and make two different requests produce one canonical string. UUID or hex only — `generateNonce` emits UUID v4, and there's a test pinning that it contains no colon, but the *inbound* check is the guard's job.
+
+Empty body (GET) → `SHA256("")` = `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, exported as `EMPTY_BODY_SHA256`. State it explicitly in the merchant doc — it's the single most common integration stumbling block.
+
+```
+X-Signature = HMAC_SHA512(secretKey, canonicalString) → lowercase hex
+```
+
+**The secret is used as-is — there is no decoding step.** `generateSecretKey()` returns 32 bytes of entropy as 64 lowercase hex characters, and that string is handed to the merchant and passed straight to HMAC. Every HMAC API takes a string key directly (`hash_hmac` in PHP, `createHmac` in Node, `hmac.new` in Python), so requiring a decode first would add a step whose only failure mode is a silent "invalid signature". Legacy base64-encoded the secret and then base64-decoded it before signing; that round trip is gone.
 
 ### 5.3 Raw bytes vs. canonical JSON — decided: raw bytes
 
@@ -263,14 +266,17 @@ The trade it makes is worth stating plainly, since it's the one thing merchants 
 Fail fast, cheap checks first, and return a *distinguishable* reason:
 
 1. Headers present → `MISSING_HEADER` (name it)
-2. `X-Sign-Alg` == `HMAC-SHA256` → `UNSUPPORTED_ALG`
-3. `X-Signature` is 64 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*
-4. Timestamp parses and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift
-5. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
-6. HMAC matches current secret, else previous secret within grace window (§8) → `INVALID_SIGNATURE`
-7. **Last**: nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
+2. `X-Sign-Alg` == `HMAC-SHA512` → `UNSUPPORTED_ALG`
+3. `X-Signature` is 128 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*
+4. `X-Nonce` is a UUID or hex string → `MALFORMED_NONCE` *(required by the `:` delimiter — see §5.2)*
+5. Timestamp is ISO-8601 **with an explicit offset** and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift. `isTimestampWithin` rejects a missing offset as malformed rather than treating it as skew: without one, `new Date` resolves against the *server's* local zone, so the same request would mean different instants on a WIB host and a UTC host
+6. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
+7. HMAC matches `secretKey`, else `secretKeyPrevious` within the grace window (§8) → `INVALID_SIGNATURE`
+8. **Last**: nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
 
 **The nonce check goes last, after the signature verifies.** Consuming it earlier lets unauthenticated traffic write arbitrary keys into Redis, so only requests that already proved knowledge of the secret get to touch the nonce store. HMAC is microseconds — there is no cost to verifying first.
+
+Note steps 4 and 5 are *format* checks that reject cheaply and unambiguously, before any I/O. Both exist because a malformed input would otherwise surface as a confusing downstream failure: a colon-bearing nonce as a signature mismatch, an offset-less timestamp as clock skew.
 
 All of these should be HTTP 401 with a stable machine-readable code in the body. Do **not** collapse them into one opaque message: "Signature is invalid" for what is actually a 3-minute clock drift is the top integration-support cost in every payment API. The distinction leaks nothing useful to an attacker — they already know whether they possess a valid secret.
 
@@ -280,27 +286,30 @@ All of these should be HTTP 401 with a stable machine-readable code in the body.
 
 ## 6. Schema changes
 
-Current model, for reference:
+Current model as of 23 Aug 2026 — the rotation fields have landed:
 
 ```prisma
 model MerchantSignature {
-  clientId          String  @unique
-  secretKey         String?
-  previousSecretKey String?
-  credentials       Json    @default("{}") @db.JsonB
-  status            MerchantSignatureStatusEnum
-  payoutUrl         String? @db.VarChar(512)
-  payinUrl          String? @db.VarChar(512)
+  clientId           String    @unique
+  secretKey          String?
+  secretKeyPrevious  String?                       // renamed from previousSecretKey
+  secretKeyRotatedAt DateTime? @db.Timestamptz(6)  // added
+  credentials        Json      @default("{}") @db.JsonB
+  status             MerchantSignatureStatusEnum
+  payinUrl           String?   @db.VarChar(512)
+  payoutUrl          String?   @db.VarChar(512)
   ...
 }
 ```
 
-The bones are right. Suggested additions, all additive:
+Note the dashboard carries a *generated merged* schema (`apps/dashboard/prisma/schema.prisma`) covering the same physical tables — any change here needs `npm run prisma:merge:dashboard && npm run prisma:generate:dashboard`, or the dashboard writes to columns that no longer exist.
+
+Remaining suggested additions, all additive:
 
 | Field | Purpose |
 |---|---|
-| `secretKeyRotatedAt DateTime?` | Bounds the `previousSecretKey` grace window (§8). Without it, the old key is valid forever. |
-| `algorithm String @default("HMAC-SHA256")` | **Optional.** Makes the scheme per-merchant data rather than a global constant. Its original justification (migrating merchants between body-hashing schemes) is moot now that raw-only ships from the start (§5.3); what remains is keeping the door open for per-merchant asymmetric signing later (§4). Safe to defer. |
+| ~~`secretKeyRotatedAt DateTime?`~~ | ✅ **Added.** Bounds the `secretKeyPrevious` grace window (§8). Without it the old key would be valid forever — and note it must be *stamped on every rotation*, or the fallback can never apply. |
+| `algorithm String @default("HMAC-SHA512")` | **Optional.** Makes the scheme per-merchant data rather than a global constant. Its original justification (migrating merchants between body-hashing schemes) is moot now that raw-only ships from the start (§5.3); what remains is keeping the door open for per-merchant asymmetric signing later (§4). Safe to defer. |
 | `webhookSecret String?` | The PDF already promises merchants one (§9). It has no column today. Must be distinct from `secretKey` — different direction, different blast radius. |
 | `lastUsedAt DateTime?` | Cheap, high-value for ops: spot dormant credentials and confirm a rotation actually took effect. |
 
@@ -352,7 +361,7 @@ The secret should never leave the auth service. So the guard (running in `transa
 
 Small, fixed-size, no request bodies crossing a service boundary — which also eliminates §3.6's query-string leak by construction. `AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION` already exists in [microservice.constant.ts](../libs/microservice/src/microservice.constant.ts) marked `// TODO`; this is its contract.
 
-That leaves one TCP hop per merchant request. Given the performance priority, the instinct is to eliminate it by caching secrets in `transaction` — **don't**. Copying the secret into a second service doubles the places it can leak and makes suspension/rotation eventually-consistent. Instead cache *inside auth*: `clientId → {secretKey, previousSecretKey, secretKeyRotatedAt, status, userId}` in `libs/redis`, short TTL, explicitly invalidated on rotate/suspend. That removes the DB round-trip (§3.7) while keeping the secret in one service, and leaves a local TCP hop that's worth its cost.
+That leaves one TCP hop per merchant request. Given the performance priority, the instinct is to eliminate it by caching secrets in `transaction` — **don't**. Copying the secret into a second service doubles the places it can leak and makes suspension/rotation eventually-consistent. Instead cache *inside auth*: `clientId → {secretKey, secretKeyPrevious, secretKeyRotatedAt, status, userId}` in `libs/redis`, short TTL, explicitly invalidated on rotate/suspend. That removes the DB round-trip (§3.7) while keeping the secret in one service, and leaves a local TCP hop that's worth its cost.
 
 Redis then does double duty here — nonce store and secret cache — which is a good reason to stand it up properly for this subsystem rather than piecemeal.
 
@@ -360,12 +369,12 @@ Redis then does double duty here — nonce store and secret cache — which is a
 
 ## 8. Key rotation
 
-Make `previousSecretKey` real (§3.5):
+Make `secretKeyPrevious` real (§3.5):
 
-1. On rotate: `previousSecretKey = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
-2. On verify: try `secretKey`. On failure, if `secretKeyRotatedAt` is within the grace window, try `previousSecretKey`.
+1. On rotate: `secretKeyPrevious = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
+2. On verify: try `secretKey`. On failure, if `secretKeyRotatedAt` is within the grace window, try `secretKeyPrevious`.
 3. Grace window: **24 hours** is a reasonable default — long enough for a merchant to redeploy, short enough to bound exposure. Make it configurable.
-4. After the window, `previousSecretKey` is ignored (and ideally nulled by a scheduled job).
+4. After the window, `secretKeyPrevious` is ignored (and ideally nulled by a scheduled job).
 
 Two details worth getting right:
 
@@ -392,7 +401,7 @@ Note the symmetry with the *upstream* side: MotionPay's callback to manapay has 
 
 Ordered so that nothing merchant-visible breaks until the invisible fixes are already in.
 
-**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Wire up `previousSecretKey` (§8). The nonce check (§3.3) belongs here too and makes the published doc true rather than changing it — if it's deferred, see §11 for what has to compensate in the meantime.
+**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Wire up `secretKeyPrevious` (§8). The nonce check (§3.3) belongs here too and makes the published doc true rather than changing it — if it's deferred, see §11 for what has to compensate in the meantime.
 
 **Phase 2 — structural, still no contract change.** Move validation into a guard (§7). Switch the TCP payload to a body hash (§3.6). Add Redis caching. Add the schema columns (§6). At this point hash the raw body but keep canonicalizing as a fallback comparison, so nothing breaks yet.
 
@@ -410,14 +419,14 @@ Nothing is implemented in the monorepo yet, so this is the checklist to measure 
 
 | # | Requirement | Needs Redis? | Complete without it? |
 |---|---|---|---|
-| 1 | Canonical string + HMAC-SHA256 verification | no | ✅ |
+| 1 | Canonical string + HMAC-SHA512 verification ✅ *built, Step 2* | no | ✅ |
 | 2 | Signature length-checked before compare (§3.1) | no | ✅ |
 | 3 | `X-Sign-Alg` validated against an allowlist | no | ✅ |
 | 4 | Timestamp window enforced, server time echoed on skew | no | ✅ |
 | 5 | Raw-byte body hashing via Fastify parser (§7.3) | no | ✅ |
 | 6 | Global guard + opt-out decorator, non-HTTP contexts skipped (§7.2) | no | ✅ |
 | 7 | Distinguishable error codes (§5.4) | no | ✅ |
-| 8 | `previousSecretKey` rotation grace window (§8) | no | ✅ |
+| 8 | `secretKeyPrevious` rotation grace window (§8) | no | ✅ |
 | 9 | Body hash (not body) sent over TCP to auth (§3.6) | no | ✅ |
 | 10 | **Nonce replay rejection** | **yes** | ❌ **the gap** |
 | 11 | Secret cache to remove the per-request DB hit (§3.7) | yes | ⚠️ perf only, not correctness |
