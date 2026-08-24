@@ -19,7 +19,7 @@ These are cheap to decide now and expensive to change once merchants are signing
 | Rotation grace window | **24h** | How long `secretKeyPrevious` stays accepted |
 | Signed path includes global prefix? | **No** — strip it | See Step 7's gotcha; this is the highest-risk detail in the whole build |
 | Body hashing | **Raw bytes only** | Confirmed 23 Aug 2026 — see below |
-| Signature algorithm | **HMAC-SHA512** ✅ *decided* | SNAP's symmetric default. 128-char signature. `X-Sign-Alg: HMAC-SHA512` |
+| Signature algorithm | **HMAC-SHA512**, fixed server-side ✅ *decided* | SNAP's symmetric default. 128-char signature. **No algorithm header** — a client-declared algorithm is the JWT `alg` flaw, and signature length identifies it anyway |
 | Secret format | **32 bytes as 64 hex chars, used as-is** ✅ *decided* | No base64, no decode step — the merchant passes the string straight to HMAC |
 | Canonical delimiter & order | **`METHOD:PATH:NONCE:BODYHASH:TIMESTAMP`** ✅ *decided* | SNAP's order with the nonce in the access-token slot. The `:` obliges the guard to format-validate the nonce (Step 8) |
 
@@ -98,32 +98,40 @@ Two things deliberately *not* in the lib: `.toLowerCase()` on digests (Node's `d
 
 ---
 
-## Step 3 — TCP contract
+## Step 3 — TCP contract ✅ done
 
-`libs/microservice/src/dto/merchant-signature.dto.ts` — extend alongside the existing `FilterMerchantWebhookUrlSchema`, same TypeBox + `as const` idiom the file already uses.
+In [`libs/microservice/src/dto/merchant-signature.dto.ts`](../libs/microservice/src/dto/merchant-signature.dto.ts), alongside the existing `FilterMerchantWebhookUrlSchema`. 38 tests in [`merchant-signature.dto.spec.ts`](../libs/microservice/src/dto/merchant-signature.dto.spec.ts), compiled through the same Ajv options `AjvPipe` uses.
 
-Request (transaction → auth):
+Request (transaction → auth) — `FilterMerchantSignatureValidationSchema`:
 
 ```ts
-clientId, timestamp, nonce, signature, signAlg,
-method, path,      // path already prefix-stripped, query included
-bodyHash           // SHA256 of the raw request bytes
+clientId, timestamp, nonce, signature,   // from merchant headers
+method, path,      // read from the request by the guard; prefix stripped, query included
+bodyHash           // sha256 of the raw request bytes
 ```
 
-Response (auth → transaction):
+Response (auth → transaction) — `MerchantSignatureValidationSchema`:
 
 ```ts
 isValid: boolean
-userId: number
-reason: MerchantSignatureFailureReason | null   // discriminated failure code
-serverTime: string                              // ISO-8601, always — for skew diagnosis
+userId: number | null                       // null when no client resolved
+reason: MerchantSignatureFailureEnum | null // null on success
+serverTime: string                          // always — for skew diagnosis
 ```
 
 **Send hashes, never the body.** The legacy HTTP fallback did `axios.get(url, { params: filter })` with the full body in `filter`, putting merchant request bodies into URL query strings and every access log along the way. Hashes are fixed-size and make that mistake structurally impossible.
 
-Failure reasons as an `as const` object (per [[feedback-typebox-enum-style]]): `MISSING_HEADER`, `UNSUPPORTED_ALG`, `MALFORMED_SIGNATURE`, `TIMESTAMP_SKEW`, `REPLAYED_NONCE`, `UNKNOWN_CLIENT`, `CLIENT_SUSPENDED`, `INVALID_SIGNATURE`.
+**`userId` is nullable.** Legacy returned `0` when no client resolved — a value that is a real primary key in a different table and reads as "present" to careless code. Null forces the caller to handle it.
 
-Then add the cmd to `libs/microservice/src/microservice.constant.ts` — `AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION` already exists, just drop the `// TODO`.
+Also added to `libs/microservice/src/microservice.enum.ts`, as `as const` objects per the house idiom: `HttpMethodEnum` (`GET`/`POST`) and `MerchantSignatureFailureEnum` — eight codes, each with a comment naming the condition it reports. The `// TODO` markers on `AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION` and `..._WEBHOOK_URL` are gone.
+
+### The schema is strict, and that is a decision
+
+`signature` is pinned to exactly 128 hex characters and `bodyHash` to 64 lowercase hex — not loose bounds. That only works because **format validation moved into the guard** (design doc §5.4): by the time a payload reaches this schema, the guard has already rejected malformed input with a typed reason. Anything failing here is therefore a guard bug, and should fail loudly rather than be politely classified.
+
+Had auth owned the format checks instead, this schema would have to *accept* malformed input in order to classify it — the schema would protect nothing, and every garbage request would cost a TCP hop.
+
+**Verify**: `npx jest libs/` — covers each rejection path, both supported verbs, every failure code round-tripping, and that `removeAdditional` silently strips unknown properties rather than rejecting them (worth pinning, since a field quietly vanishing is harder to notice than one that throws).
 
 ---
 
@@ -131,20 +139,18 @@ Then add the cmd to `libs/microservice/src/microservice.constant.ts` — `AUTH_C
 
 `apps/auth/src/merchant-signature/merchant-signature.service.ts` — add `validateSignature()` next to the existing `findMerchantWebhookUrl`.
 
-**Order matters. Use this order, not design-doc §5.4's** (which listed nonce before HMAC — corrected there too, but this is the authoritative sequence):
+**This service handles only what needs the secret or shared state.** The format checks (`MISSING_HEADER`, `MALFORMED_SIGNATURE`, `MALFORMED_NONCE`, `TIMESTAMP_SKEW`) all happen in the guard and never reach here — see Step 3 and design doc §5.4 for why. So:
 
-1. `signAlg === 'HMAC-SHA512'` → else `UNSUPPORTED_ALG`
-2. Signature is 128 lowercase hex → else `MALFORMED_SIGNATURE`
-3. Timestamp within tolerance → else `TIMESTAMP_SKEW`
-4. Look up `clientId` (slave replica is fine) → else `UNKNOWN_CLIENT`; status `ACTIVE` → else `CLIENT_SUSPENDED`
-5. HMAC verify against `secretKey`; if that fails and `secretKeyRotatedAt` is inside the grace window, retry with `secretKeyPrevious` → else `INVALID_SIGNATURE`
-6. **Only now** consume the nonce (Step 10) → else `REPLAYED_NONCE`
+1. Rebuild the canonical string with `buildCanonical` from the supplied fields
+2. Look up `clientId` (slave replica is fine) → else `UNKNOWN_CLIENT`; status `ACTIVE` → else `CLIENT_SUSPENDED`
+3. `verifySignature` against `secretKey`; if that fails and `secretKeyRotatedAt` is inside the grace window, retry with `secretKeyPrevious` → else `INVALID_SIGNATURE`
+4. **Only now** consume the nonce (Step 10) → else `REPLAYED_NONCE`
 
 **Why nonce goes last**: consuming it before the signature verifies lets unauthenticated traffic write arbitrary keys into Redis. Verify first, and only authenticated requests touch the nonce store. HMAC is microseconds — there's no cost to doing it first.
 
 **Log which key matched.** A merchant still matching on `secretKeyPrevious` 20 hours into a 24-hour grace window is about to have an outage, and that's invisible without the log line.
 
-Header presence (`MISSING_HEADER`) is checked in the guard, not here — it never reaches this service.
+**Always populate `serverTime`**, success or failure — the guard echoes it on a skew rejection.
 
 **Verify**: unit tests per failure reason, plus the rotation grace window (old key accepted inside it, rejected outside).
 

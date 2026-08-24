@@ -143,7 +143,7 @@ Fixing §5's design removes this entirely: send a **body hash**, never a body.
 
 ### 3.7 🟡 Smaller items
 
-- **`x-sign-alg` is required but ignored.** Either validate it against an allowlist (and reject anything else) or drop the header. A required-but-unread field is worse than neither — it implies negotiation that doesn't exist.
+- **`x-sign-alg` is required but ignored.** A required-but-unread field is worse than neither — it implies a negotiation that doesn't exist. **Resolved 23 Aug 2026: the header is dropped**, not validated. Pinned to one constant it carries no information, and its presence invites a future `createHmac(request.signAlg, …)` — the flaw behind JWT's `alg` attacks. Signature length already identifies the algorithm (SHA-256 → 64 hex, SHA-512 → 128), so diagnosis is preserved. If per-merchant algorithms ever land, the authority is the server-side `algorithm` column, never a client claim.
 - **`secretKey` is stored in plaintext.** HMAC needs the plaintext at verify time so it can't be hashed like a password, but it can be encrypted at rest. Note legacy declared an `ENCRYPTION_KEY` env var that no code ever referenced — that's the gap it was presumably meant for.
 - **`clientId` leaks the internal user ID**: `generateClientId` returns `` `${userId}-${uuidv4}` ``. Minor, but it hands out an internal primary key and makes IDs enumerable-ish. Prefer an opaque random identifier.
 - **A DB round-trip per merchant request.** `findUnique({ where: { clientId } })` on every call. Indexed and cheap, but cacheable (§7) — relevant given the performance priority on this path.
@@ -217,7 +217,6 @@ Deliberately close to what merchants already implement — this is a fix-and-tig
 | `X-Timestamp` | yes | ISO-8601 **with offset**, e.g. `2026-08-20T10:15:30+07:00` |
 | `X-Nonce` | yes | UUID v4 or hex. Unique per request. **Must be format-validated** — see §5.2 |
 | `X-Signature` | yes | **exactly 128** lowercase hex chars (HMAC-SHA512) |
-| `X-Sign-Alg` | yes | **exactly** `HMAC-SHA512` — validated, rejected if anything else |
 
 Header names are case-insensitive per HTTP. Document one canonical casing and accept any.
 
@@ -265,18 +264,25 @@ The trade it makes is worth stating plainly, since it's the one thing merchants 
 
 Fail fast, cheap checks first, and return a *distinguishable* reason:
 
+**In the guard (`apps/transaction`)** — cheap, local, no I/O. Everything here is decidable without knowing the merchant's secret, so rejecting it locally means garbage never costs a network hop:
+
 1. Headers present → `MISSING_HEADER` (name it)
-2. `X-Sign-Alg` == `HMAC-SHA512` → `UNSUPPORTED_ALG`
-3. `X-Signature` is 128 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*
-4. `X-Nonce` is a UUID or hex string → `MALFORMED_NONCE` *(required by the `:` delimiter — see §5.2)*
-5. Timestamp is ISO-8601 **with an explicit offset** and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift. `isTimestampWithin` rejects a missing offset as malformed rather than treating it as skew: without one, `new Date` resolves against the *server's* local zone, so the same request would mean different instants on a WIB host and a UTC host
+2. `X-Signature` is 128 lowercase hex → `MALFORMED_SIGNATURE` *(this is §3.1's fix — must come before any comparison)*. Name the expected length **and** algorithm in the message: digest length identifies the algorithm, so this is also what a merchant who implemented SHA-256 sees
+3. `X-Nonce` is a UUID or hex string → `MALFORMED_NONCE` *(required by the `:` delimiter — see §5.2)*
+4. Timestamp is ISO-8601 **with an explicit offset** and within **±5 min** → `TIMESTAMP_SKEW`, and **echo server time in the response** so merchants can self-diagnose clock drift. `isTimestampWithin` rejects a missing offset as malformed rather than treating it as skew: without one, `new Date` resolves against the *server's* local zone, so the same request would mean different instants on a WIB host and a UTC host
+
+**In `apps/auth`** — everything that needs the secret or shared state:
 6. Client ID resolves, status `ACTIVE` → `UNKNOWN_CLIENT` / `CLIENT_SUSPENDED`
 7. HMAC matches `secretKey`, else `secretKeyPrevious` within the grace window (§8) → `INVALID_SIGNATURE`
 8. **Last**: nonce unseen (Redis `SET NX`, TTL 10 min) → `REPLAYED_NONCE`
 
 **The nonce check goes last, after the signature verifies.** Consuming it earlier lets unauthenticated traffic write arbitrary keys into Redis, so only requests that already proved knowledge of the secret get to touch the nonce store. HMAC is microseconds — there is no cost to verifying first.
 
-Note steps 4 and 5 are *format* checks that reject cheaply and unambiguously, before any I/O. Both exist because a malformed input would otherwise surface as a confusing downstream failure: a colon-bearing nonce as a signature mismatch, an offset-less timestamp as clock skew.
+**Why the split** (refined 23 Aug 2026 while building Step 3): steps 1–5 need nothing but the request itself, so putting them in the guard means a malformed or hostile request is rejected without a TCP hop — which matters under load, since an attacker can generate garbage far faster than valid signatures. It also lets the TCP contract be *strictly* typed: `signature` is pinned to exactly 128 hex and `bodyHash` to 64 lowercase hex, so anything failing that schema is a guard bug rather than a merchant error, and fails loudly instead of being classified politely. Had auth owned the format checks, the schema would have to accept malformed input in order to classify it.
+
+The rules themselves aren't duplicated — both sides call the same `libs/signature` primitives.
+
+Steps 4 and 5 exist because a malformed input would otherwise surface as a confusing downstream failure: a colon-bearing nonce as a signature mismatch, an offset-less timestamp as clock skew.
 
 All of these should be HTTP 401 with a stable machine-readable code in the body. Do **not** collapse them into one opaque message: "Signature is invalid" for what is actually a 3-minute clock drift is the top integration-support cost in every payment API. The distinction leaks nothing useful to an attacker — they already know whether they possess a valid secret.
 
@@ -356,7 +362,7 @@ Two things to get right while doing it: apply the parser **only** to the merchan
 The secret should never leave the auth service. So the guard (running in `transaction`) should **hash the body locally and send only the hash** over TCP:
 
 ```
-{ clientId, timestamp, nonce, signature, signAlg, method, pathWithQuery, bodyHash }
+{ clientId, timestamp, nonce, signature, method, pathWithQuery, bodyHash }
 ```
 
 Small, fixed-size, no request bodies crossing a service boundary — which also eliminates §3.6's query-string leak by construction. `AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION` already exists in [microservice.constant.ts](../libs/microservice/src/microservice.constant.ts) marked `// TODO`; this is its contract.
@@ -401,7 +407,7 @@ Note the symmetry with the *upstream* side: MotionPay's callback to manapay has 
 
 Ordered so that nothing merchant-visible breaks until the invisible fixes are already in.
 
-**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Validate `X-Sign-Alg` (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Wire up `secretKeyPrevious` (§8). The nonce check (§3.3) belongs here too and makes the published doc true rather than changing it — if it's deferred, see §11 for what has to compensate in the meantime.
+**Phase 1 — invisible, no merchant impact.** Fix the signature length check (§3.1). Drop `X-Sign-Alg` entirely (§3.7). Narrow the timestamp window 7200s → 300s *(technically merchant-visible if anyone's clock is badly off — announce it, and ship §5.4's server-time echo first so they can self-diagnose)*. Wire up `secretKeyPrevious` (§8). The nonce check (§3.3) belongs here too and makes the published doc true rather than changing it — if it's deferred, see §11 for what has to compensate in the meantime.
 
 **Phase 2 — structural, still no contract change.** Move validation into a guard (§7). Switch the TCP payload to a body hash (§3.6). Add Redis caching. Add the schema columns (§6). At this point hash the raw body but keep canonicalizing as a fallback comparison, so nothing breaks yet.
 
@@ -421,7 +427,7 @@ Nothing is implemented in the monorepo yet, so this is the checklist to measure 
 |---|---|---|---|
 | 1 | Canonical string + HMAC-SHA512 verification ✅ *built, Step 2* | no | ✅ |
 | 2 | Signature length-checked before compare (§3.1) | no | ✅ |
-| 3 | `X-Sign-Alg` validated against an allowlist | no | ✅ |
+| 3 | `X-Sign-Alg` removed; signature length identifies the algorithm | no | ✅ |
 | 4 | Timestamp window enforced, server time echoed on skew | no | ✅ |
 | 5 | Raw-byte body hashing via Fastify parser (§7.3) | no | ✅ |
 | 6 | Global guard + opt-out decorator, non-HTTP contexts skipped (§7.2) | no | ✅ |

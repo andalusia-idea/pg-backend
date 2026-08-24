@@ -129,14 +129,37 @@ export const isTimestampWithin = ({
   return Math.abs(now - requestedAt) <= toleranceSeconds * 1000;
 };
 
+/** Node's digest name for the MAC. */
+const HMAC_ALGORITHM = 'sha512';
+
+/**
+ * Human-readable algorithm name, for merchant-facing error messages.
+ *
+ * There is deliberately **no** algorithm header on the wire. Letting a client
+ * name the verification algorithm is the flaw behind JWT's `alg` attacks, and
+ * a header pinned to one constant carries no information anyway. If per-merchant
+ * algorithms are ever needed, the authority is the `algorithm` column on
+ * `MerchantSignature` - server-side, never client-declared.
+ */
+export const SIGNATURE_ALGORITHM_NAME = 'HMAC-SHA512';
+
+/**
+ * Length of a valid signature in hex characters. HMAC-SHA512 is 64 bytes.
+ *
+ * This is what makes the absent algorithm header harmless: digest length
+ * identifies the algorithm on its own (SHA-1 is 40, SHA-256 is 64), so a
+ * merchant who implemented the wrong one gets a precise length error rather
+ * than a baffling signature mismatch.
+ */
+export const SIGNATURE_HEX_LENGTH = 128;
+
 interface IBuildSignature {
   secretKey: string;
   canonical: string;
 }
 /// Message Authentication Code (MAC)
 export const buildSignature = ({ secretKey, canonical }: IBuildSignature) => {
-  /// Message authenticatio Code (MAC)
-  const signature = createHmac('sha512', secretKey)
+  const signature = createHmac(HMAC_ALGORITHM, secretKey)
     .update(canonical)
     .digest('hex');
   return signature;
