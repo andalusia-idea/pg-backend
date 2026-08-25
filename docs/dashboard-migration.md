@@ -37,73 +37,111 @@ The frontend calls 41 endpoints across 4 legacy services. Three (reconciliation)
 
 After migration all four collapse to a single dashboard base URL. **This is a frontend change**: the four `ky` instances in `src/utils/ky/` become one. Flagged for the frontend developer.
 
+> **Verification pass (2026-08-25).** Cross-checked every row below against the real controllers in `apps/dashboard/src/**/*.controller.ts` and the frontend's actual API layer at `C:\Users\USER\Documents\programming_folder\web dev\PG-Dashboard\src\api\*.api.ts` (the frontend source-of-truth path above, `C:\prelion\pg\PG-Dashboard`, is stale — that's not where the checked-out frontend lives). Two new columns were added: **Status** (does the backend route exist, and does it actually match what the frontend calls) and **Role** (which frontend-authenticated persona actually reaches this call, read from each page's `roles:` route metadata in `src/router/routes/modules/*.ts` — this is client-side menu/route gating only, **not** server enforcement; per D3 the backend enforces authentication only, so today any authenticated role can call any endpoint regardless of what's shown here).
+>
+> This pass also turned up **10 endpoints the frontend calls that were missing from this inventory entirely** — not "not yet ported," but never counted. They're appended to their category tables below, numbered 39–48, so the existing 1–38 numbering (referenced elsewhere in this doc) doesn't shift. Two path-level defects also turned up in the already-listed rows (15, 16) — see the note under §2.1.
+>
+> **Base-URL correction:** the `kyConfig → /config/api/v2` note above only holds for the checked-in `.env` fallback. Both `.env.development` and `.env.production` — the files that actually govern local dev and real builds — set `VITE_API_CONFIG` to `.../config/api/**v1**`, not v2. Whether v2 is reachable in practice depends on an untracked `.env.production.local` or a deploy-time override that this repo can't see; worth confirming with the frontend dev before assuming v2 is live anywhere.
+
 ### 2.1 From auth-service → `modules/`
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 1 | POST | `login` | `auth` | `postLogin` |
-| 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` |
-| 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` |
-| 4 | GET | `user/profile` | `users` | `getUserProfile` |
-| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` |
-| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` |
-| 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` |
-| 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` |
-| 9 | GET | `agent-detail/:userId` | `agent-detail` | `getAgentById` |
-| 10 | PATCH | `agent-detail/update/:userId` | `agent-detail` | `patchAgent` |
-| 11 | GET | `merchant-detail` (page/size/businessName) | `merchant-detail` | `getMerchantList` |
-| 12 | GET | `merchant-detail/dropdown` | `merchant-detail` | `getDropdownMerchant` |
-| 13 | GET | `merchant-detail/:userId` | `merchant-detail` | `getMerchantById` |
-| 14 | PATCH | `merchant-detail/update/:userId` | `merchant-detail` | `patchMerchant` |
-| 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` |
-| 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status |
+|---|---|---|---|---|---|---|
+| 1 | POST | `login` | `auth` | `postLogin` | Public | ✅ Matches |
+| 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` | Any authenticated (see D8) | ✅ Matches |
+| 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` | Any authenticated | ✅ Matches |
+| 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches |
+| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ✅ Matches |
+| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `ADMIN_SUPER`, `ADMIN_AGENT`. Frontend route `/acc-management/create-agent` only grants `ADMIN_SUPER` | ⚠️ Role mismatch — see note below |
+| 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` | `ADMIN_SUPER` | ✅ Matches |
+| 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` | `ADMIN_SUPER` | ✅ Matches |
+| 9 | GET | `agent-detail/:userId` | `agent-detail` | `getAgentById` | `ADMIN_SUPER` | ✅ Matches |
+| 10 | PATCH | `agent-detail/update/:userId` | `agent-detail` | `patchAgent` | `ADMIN_SUPER` | ✅ Matches |
+| 11 | GET | `merchant-detail` (page/size/businessName) | `merchant-detail` | `getMerchantList` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 12 | GET | `merchant-detail/dropdown` | `merchant-detail` | `getDropdownMerchant` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 13 | GET | `merchant-detail/:userId` | `merchant-detail` | `getMerchantById` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 14 | PATCH | `merchant-detail/update/:userId` | `merchant-detail` | `patchMerchant` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` (merchant-detail page) | ❌ Path mismatch — see note below |
+| 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ❌ Path mismatch — see note below |
+| 39 | GET | `merchant-signature/:merchantUserId/status` | *(none)* | `getMerchantSignatureStatus` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+
+> **Rows 15, 16, 39 — merchant-signature is scoped wrong for how the frontend actually uses it.** The ported controller (`apps/dashboard/src/modules/merchant-signature/merchant-signature.controller.ts`) deliberately takes no id — it acts on "the caller's own signature record, never an arbitrary merchant's," reading the merchant from the JWT via `@CurrentAuthInfo()`. But the frontend's `merchant-signature.api.ts` calls `merchant-signature/{merchantUserId}/generate-secret-key` and `merchant-signature/{merchantUserId}/register-webhook-url`, and the caller — `MerchantApiIntegration({ merchantUserId })` in `src/pages/merchant/components/merchant-detail-api-integrate.tsx` — is rendered on the **merchant detail page** and passes in *that merchant's* `userId`, not the signed-in user's own. An `ADMIN_SUPER` or `AGENT` viewing a merchant's detail page has no `MerchantSignature` row of their own to act on, so as ported these two calls 404 (path doesn't match any route) today, and would misbehave even if the path were fixed to match (the backend would act on the admin/agent's own — nonexistent — signature record, not the merchant being viewed). The backend needs an id-scoped variant, gated so only an authorized caller can rotate/register a webhook for a merchant other than themselves. `getMerchantSignatureStatus` (row 39, backing the "Has Generated Key On" / webhook-URL display on the same page) has no backend counterpart at all — confirmed against every `merchant-signature` route in the controller and against the frontend's own mock server (`fake/merchant-signature.fake.ts`), which stubs all three as `/merchant-signature/:merchantUserId/{generate-secret-key,register-webhook-url,status}`, i.e. the mock server already agrees with the frontend's real caller, not with the ported backend.
 
 ### 2.2 From config-service
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` |
-| 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` |
-| 19 | GET | `fee/config` | `fee` | `getBaseFee` |
-| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` |
-| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` |
-| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` |
-| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status |
+|---|---|---|---|---|---|---|
+| 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` | `ADMIN_SUPER` (agent detail page) | ✅ Matches |
+| 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` | Any authenticated — dropdown data (bank/provider/payment-method) reused across the create-agent, create-merchant, config-fee and provider pages | ✅ Matches |
+| 19 | GET | `fee/config` | `fee` | `getBaseFee` | `ADMIN_SUPER`, `MERCHANT` (provider page + config-fee) | ✅ Matches |
+| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` (merchant detail / create-merchant) | ✅ Matches |
+| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ Matches |
+| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
 
 ### 2.3 From transaction-service
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 24 | GET | `balance/aggregate/internal?providerName=` | `balance` | `getBalanceInternal` |
-| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` |
-| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` |
-| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` |
-| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` |
-| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` |
-| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` |
-| 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` |
-| 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` |
-| 33 | POST | `transactions/topup/reject` | `topup` | ⚠️ see D1 |
-| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` |
-| 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` |
-| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status |
+|---|---|---|---|---|---|---|
+| 24 | GET | `balance/aggregate/internal?providerName=` | `balance` | `getBalanceInternal` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` (home dashboard) | ✅ Matches |
+| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ Matches |
+| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `ADMIN_SUPER` (agent detail balance widget) | ✅ Matches |
+| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc dependency) |
+| 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / balance-ledger dependency) |
+| 33 | POST | `transactions/topup/reject` | `topup` | ⚠️ see D1 — frontend's `rejectTransactionTopUp` actually posts to `/approve` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🚧 Not ported. Backend will implement `/reject` correctly per D1; the frontend bug is separate and still live |
+| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc + balance-ledger dependency) |
+| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | ✅ Matches |
+| 40 | POST | `transactions/withdraw/approve` | *(none)* | `approveTransactionWithdrawal` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend.** Not in the original "38 in scope" count at all (see note below) |
+| 41 | POST | `transactions/withdraw/reject` | *(none)* | `rejectTransactionWithdrawal` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 42 | POST | `transactions/purchase/resend-callback` | *(none)* | `resendPurchaseCallback` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 43 | POST | `transactions/purchase/refresh-status` | *(none)* | `refreshPurchaseStatus` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 44 | POST | `transactions/purchase/notify-merchant` | *(none)* | `notifyPurchaseMerchant` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 45 | POST | `transactions/disbursement/resend-callback` | *(none)* | `resendDisbursementCallback` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 46 | POST | `transactions/disbursement/refresh-status` | *(none)* | `refreshDisbursementStatus` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+| 47 | POST | `transactions/disbursement/notify-merchant` | *(none)* | `notifyDisbursementMerchant` | `ADMIN_SUPER`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** |
+
+> **Rows 40–47.** All eight take a single id in the body (`{ withdrawalId }`, `{ purchaseId }`, `{ disbursementId }`) and read as per-row provider-callback actions on the transaction detail views — "approve"/"reject" the withdrawal, or resend/refresh/notify for a purchase or disbursement's provider callback. None have a route anywhere in `apps/dashboard`. Withdraw's approve/reject are the same shape as topup's (rows 32/33) and should probably land alongside them once the balance-ledger work from D17 is done. The purchase/disbursement resend-callback / refresh-status / notify-merchant trio look adjacent to the `:id/detail` endpoints already noted as out of scope in §2.5 below — worth scoping together rather than as six one-off additions.
 
 ### 2.4 From settlerecon-service
 
 Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay out of scope. But settlement reads the **same `transaction` Postgres schema** dashboard already maps (verified: settlerecon's legacy `schema.prisma` declares `schemas = ["transaction"]`), so it is portable without touching provider code.
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` |
-| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status |
+|---|---|---|---|---|---|---|
+| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `ADMIN_SUPER` (settlement page) | ✅ Matches |
+| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `ADMIN_SUPER` | ✅ Matches |
+| 48 | POST | `settlement/settle` | *(none)* | `settleUnsettledData` | `ADMIN_SUPER` | 🆕 **New — frontend calls it, not developed in backend.** The settlement page's "settle" action on an unsettled row — has no backend counterpart in either the legacy `settlement` module reference or `apps/dashboard` |
 
 ### 2.5 Not migrated
 
 - **Reconciliation** (`GET reconciliation`, `GET reconciliation/calculate`, `POST reconciliation/file-upload/csv`) — **out of dashboard scope**. The business requirement is still under discussion, and the intent is a separate dedicated app (NestJS or Go, chosen for concurrency and a small memory footprint) that will also own scheduled / background file generation. Revisited only after everything else lands. See D5.
 
+  > **Correction:** the frontend's actual calls (`reconciliation.api.ts`) are `GET reconciliation/recon`, `GET reconciliation/unrecon`, `GET reconciliation/calculate`, and `POST reconciliation/file-upload/csv` — four calls, not three, and the first one is `reconciliation/recon`, not bare `reconciliation`. `reconciliation/unrecon` was missing from this list entirely. Doesn't change the D5 scope decision — still deferred to the dedicated reconciliation app — but the path here was wrong and incomplete.
+
 - **Region lookup** (`getProvinces`/`getRegencies`/`getDistricts`/`getVillages`) — the frontend calls `emsifa.com/api-wilayah-indonesia` **directly** from the browser, no backend involvement. Nothing to port.
 - **CSV export endpoints** — legacy has `GET transactions/{purchase,topup,withdraw,disbursement}/csv`. The frontend doesn't call them yet. Not migrating now; noted here because they're an obvious near-future ask.
 - **`:id/detail` endpoints** — legacy has per-transaction detail routes the frontend doesn't call. Same treatment.
+
+### 2.6 Revised totals (2026-08-25 verification pass)
+
+The frontend calls **52 endpoints**, not 41: 48 in the dashboard's scope (38 originally tracked + 10 found by this pass, rows 39–48 above) plus the 4 out-of-scope reconciliation calls (§2.5, corrected from 3).
+
+| | Count |
+|---|---|
+| In scope, ported and working as the frontend calls it (includes row 6, whose only issue is a frontend-side menu role gap, not a backend defect) | 32 |
+| In scope, ported but with a real path-level defect (rows 15, 16 — see §2.1 note) | 2 |
+| In scope, not yet ported — pending D17 / fee-calculation (rows 31, 32, 33, 35; the frontend also has an independent bug on row 33/D1) | 4 |
+| In scope, not yet ported — newly found, no prior tracking (rows 39–48) | 10 |
+| **Total in scope** | **48** |
+| Out of scope — reconciliation (deferred per D5) | 4 |
+| Out of scope — region lookup (frontend calls a third party directly) | 4 |
+
+Section 7's progress checklist below still says "35 of 38 ported" — that line predates this pass and reflects the original 38-endpoint count, not the 48 found here. Left as-is since only §2 was in scope for this audit; whoever picks up rows 39–48 should update §7 alongside them.
 
 ---
 
