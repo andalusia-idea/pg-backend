@@ -17,7 +17,7 @@ These are cheap to decide now and expensive to change once merchants are signing
 | Timestamp tolerance | **±300s** (±60s if the nonce check is deferred — see §11 of the design doc) | Goes in `libs/configuration`, not a constant |
 | Nonce TTL | **600s** | Must be ≥ the full accepted band, which is 2× tolerance since a clock can be fast or slow — otherwise a request becomes replayable once its nonce expires while its timestamp is still valid |
 | Rotation grace window | **24h** | How long `secretKeyPrevious` stays accepted |
-| Signed path includes global prefix? | **No** — strip it | See Step 7's gotcha; this is the highest-risk detail in the whole build |
+| Global prefix | **Not used at all** ✅ *decided 26 Aug 2026* | `setGlobalPrefix` removed from auth, config and transaction; infra will realign the k8s ingress paths. The signed path is `request.url` verbatim — nothing to strip, so the class of bug this row used to warn about no longer exists. (`apps/dashboard` keeps its prefix; it is not merchant-facing.) |
 | Body hashing | **Raw bytes only** | Confirmed 23 Aug 2026 — see below |
 | Signature algorithm | **HMAC-SHA512**, fixed server-side ✅ *decided* | SNAP's symmetric default. 128-char signature. **No algorithm header** — a client-declared algorithm is the JWT `alg` flaw, and signature length identifies it anyway |
 | Secret format | **32 bytes as 64 hex chars, used as-is** ✅ *decided* | No base64, no decode step — the merchant passes the string straight to HMAC |
@@ -106,7 +106,7 @@ Request (transaction → auth) — `FilterMerchantSignatureValidationSchema`:
 
 ```ts
 clientId, timestamp, nonce, signature,   // from merchant headers
-method, path,      // read from the request by the guard; prefix stripped, query included
+method, path,      // read from the request by the guard; query string included
 bodyHash           // sha256 of the raw request bytes
 ```
 
@@ -174,32 +174,45 @@ Export from `libs/microservice/src/client/index.ts`.
 
 ---
 
-## Step 7 — Raw body capture (Fastify)
+## Step 7 — Raw body capture ✅ done
 
-`apps/transaction/src/main.ts`. Register the parser on the adapter **before** `NestFactory.create`:
+`apps/transaction/src/main.ts`. **Nest has this built in — no hand-rolled content-type parser needed:**
 
 ```ts
-const adapter = new FastifyAdapter({ bodyLimit: 1_000_000 });
-adapter.getInstance().addContentTypeParser(
-  'application/json',
-  { parseAs: 'string' },
-  (_req, body: string, done) => {
-    try {
-      done(null, body === '' ? {} : JSON.parse(body));
-    } catch (err) {
-      done(err as Error, undefined);
-    }
-  },
+const app = await NestFactory.create<NestFastifyApplication>(
+  AppModule,
+  new FastifyAdapter({ bodyLimit: 1_000_000 }),
+  { bufferLogs: true, rawBody: true },
 );
 ```
 
-Fastify exposes the raw string to the guard — attach it to the request in the parser (`(req as any).rawBody = body`) or read it via Fastify's own mechanism; either way the guard needs the exact bytes, not the parsed object.
+`rawBody: true` reaches the Fastify adapter via `registerParserMiddleware`, whose `useBodyParser` does `if (rawBody === true && Buffer.isBuffer(body)) req.rawBody = body`. Read it in the guard as `RawBodyRequest<FastifyRequest>` from `@nestjs/common`, which types `rawBody?: Buffer`.
 
-Three gotchas:
+Passing that Buffer straight to `sha256Hex` is safe — it accepts `string | Buffer`, and a test in `libs/signature` pins that a string and its UTF-8 buffer hash identically. An absent body (GET) is `sha256Hex('')`, i.e. `EMPTY_BODY_SHA256`.
 
-- **`JSON.parse('')` throws.** An empty POST body must become `{}` (or stay empty) rather than 500ing.
-- **Set `bodyLimit`.** You're now holding the raw string alongside the parsed object.
-- **🔴 The global prefix.** This is the one most likely to make every signature fail at once. `setGlobalPrefix` is currently commented out in `main.ts`, but the k8s/nginx rules expect `/api/v1/...`, and the merchant PDF tells merchants to sign the path *without* it (`/open/v1/payin/purchase`). So when the prefix is enabled, `request.url` is `/api/v1/open/v1/payin/purchase` while the merchant signed `/open/v1/payin/purchase`. **The guard must strip the prefix before building the canonical path**, and there must be a test pinning this with the prefix enabled. Decide it now (Step 0), write it down in the merchant doc, and never change it.
+An earlier draft of this step hand-rolled `addContentTypeParser` with `parseAs: 'string'`. That works, but it is more code, has to re-handle `JSON.parse('')` throwing on an empty body, and is easy to write without ever attaching the captured string to the request — which produces a parser that looks right and captures nothing.
+
+### Only `apps/transaction` gets this flag
+
+`rawBody: true` belongs wherever a signature covers a request body, and today that is transaction alone:
+
+| App | HTTP body surface | Raw body? |
+|---|---|---|
+| `transaction` | merchant Public API, plus upstream callbacks in Step 13 | **yes** |
+| `auth` | one `@Get('app')`; everything else is `@MessagePattern` | no |
+| `config` | one `@Get('app')`; everything else is `@MessagePattern` | no |
+| `dashboard` | full REST, but JWT-authenticated — no signature covers its bodies | no |
+
+Do not harmonise it across the apps. Its presence in `auth/main.ts` would imply something there verifies a body signature — nothing does, since auth receives a `bodyHash` over TCP and never sees a body at all (Step 3).
+
+**The flag is not, however, expensive.** `useBodyParser` sets `parseAs: 'buffer'` unconditionally, so Fastify reads the body into a Buffer whether or not `rawBody` is on; the flag only adds `req.rawBody = body`, a reference assignment. The difference is that the Buffer stays reachable for the request lifetime instead of becoming collectible right after `JSON.parse` — retained lifetime, not an extra copy.
+
+That also settles the obvious follow-up: **there is no per-route or per-controller form of this flag**, since Fastify keys content-type parsers by MIME type rather than by route. Hand-rolling a parser that inspects `req.url` to narrow it would trade a reference assignment for exactly the kind of bespoke parser that is easy to write without it capturing anything — and it would silently starve the Step 13 webhook receivers, which need raw bytes on paths outside the merchant API.
+
+Two notes:
+
+- **Set `bodyLimit`.** You are now holding the raw bytes alongside the parsed object.
+- **~~The global prefix~~ — resolved 26 Aug 2026 by removing it.** This used to be the highest-risk detail here: with `setGlobalPrefix('/api/v1')` enabled, `request.url` would be `/api/v1/open/v1/payin/purchase` while the merchant signed `/open/v1/payin/purchase`, and the guard would have had to strip it. The prefix is now gone from auth, config and transaction, so the guard signs `request.url` verbatim and there is nothing to get wrong. Infra realigns the k8s ingress paths to match. `apps/dashboard` still sets a prefix, which is fine — it is not merchant-facing and no signature covers its paths.
 
 **Verify**: temporary route echoing `rawBody` and `sha256(rawBody)`; confirm it matches a hash computed independently over the same bytes, including a body with unusual whitespace.
 
@@ -220,7 +233,7 @@ Guard logic:
 1. `ctx.getType() !== 'http'` → **return true**. A globally-registered guard also fires on TCP `@MessagePattern` handlers, which have no HTTP headers. Miss this and every internal microservice call breaks in a way that looks unrelated.
 2. `@NoMerchantSignature()` metadata present → return true.
 3. Extract the five headers; any missing → 401 `MISSING_HEADER` naming them.
-4. Compute `bodyHash` from the raw bytes, strip the global prefix from `request.url`, call auth.
+4. Compute `bodyHash` from the raw bytes, take `request.url` verbatim (query string included), call auth.
 5. Invalid → 401 with the reason code and `serverTime`. Valid → attach `{ userId, clientId }` to the request for handlers to consume.
 
 Name the decorator `@NoMerchantSignature()`, not `@PublicApi()` — those routes aren't public, they're differently authenticated, and the name should discourage casual reuse.

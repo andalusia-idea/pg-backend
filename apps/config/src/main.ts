@@ -32,10 +32,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('/swag-rwz', app, document);
 
-  app.setGlobalPrefix(appConfig.API_PREFIX, {
-    exclude: ['/metrics'],
-  });
-
   app.enableCors({
     origin: appConfig.IS_PRODUCTION ? appConfig.CORS_ORIGINS : true,
   });

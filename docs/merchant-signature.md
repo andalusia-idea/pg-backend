@@ -228,7 +228,7 @@ Implemented in [`libs/signature`](../libs/signature/src/hmac-signature.ts). Fiel
 METHOD : PATH_WITH_QUERY : NONCE : SHA256_HEX(raw_request_body_bytes) : TIMESTAMP
 ```
 
-1. **`PATH_WITH_QUERY` comes from the actual request**, not from reassembled route params — so query strings are included exactly as the merchant doc always claimed.
+1. **`PATH_WITH_QUERY` is `request.url` verbatim**, not reassembled from route params — so query strings are included exactly as the merchant doc always claimed. No prefix stripping: `setGlobalPrefix` was removed from the merchant-facing apps on 26 Aug 2026 precisely so this stays a straight read.
 2. **The body hash covers raw bytes**, not a re-serialization of the parsed body (§5.3).
 3. **The `:` delimiter obliges the guard to validate the nonce format.** A nonce containing a colon could shift a field boundary and make two different requests produce one canonical string. UUID or hex only — `generateNonce` emits UUID v4, and there's a test pinning that it contains no colon, but the *inbound* check is the guard's job.
 

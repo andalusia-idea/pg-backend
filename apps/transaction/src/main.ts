@@ -12,8 +12,25 @@ import { Logger } from 'nestjs-pino';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
-    { bufferLogs: true },
+    new FastifyAdapter({ bodyLimit: 1_000_000 }),
+    {
+      bufferLogs: true,
+      /**
+       * Keep the raw request bytes on `req.rawBody` for the merchant
+       * signature guard.
+       *
+       * The signature covers a SHA-256 of the bytes actually sent. Once
+       * Fastify has parsed the JSON those bytes are gone, and re-serialising
+       * the parsed object is not a round trip - integer-like keys reorder,
+       * `1.50` becomes `1.5`, whitespace vanishes - so it would hash
+       * something the merchant never sent.
+       *
+       * Nest registers its own body parser for this, so a hand-rolled
+       * `addContentTypeParser` is not needed. Read it in the guard with
+       * `RawBodyRequest<FastifyRequest>` from `@nestjs/common`.
+       */
+      rawBody: true,
+    },
   );
 
   const appConfig = app.get(AppConfig);
@@ -31,10 +48,6 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('/swag-rwz', app, document);
-
-  // app.setGlobalPrefix(appConfig.API_PREFIX, {
-  //   exclude: ['/metrics'],
-  // });
 
   app.enableCors({
     origin: appConfig.IS_PRODUCTION ? appConfig.CORS_ORIGINS : true,
