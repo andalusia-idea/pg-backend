@@ -7,6 +7,7 @@ import {
   mapFeeDetails,
   resolveDateRange,
 } from '../transaction-shared';
+import { StatusWithdrawalDto } from './dto/status-withdrawal.dto';
 import { WithdrawTransactionDto } from './dto/withdraw-transaction.dto';
 
 @Injectable()
@@ -62,5 +63,28 @@ export class WithdrawService {
     });
 
     return new Page<WithdrawTransactionDto>({ pageable, total, data });
+  }
+
+  /**
+   * STUB - approve is not implemented. Wired up so the frontend can integrate
+   * against the real request/response shape now; the actual balance-ledger
+   * write (advisory locks, transaction-scoping) is pending the D17 decision -
+   * see docs/dashboard-migration.md §2.3, row 40 and §5 (D17). Intentionally a
+   * no-op until that lands: no DB write happens here yet.
+   */
+  approve(dto: StatusWithdrawalDto): Promise<void> {
+    // TODO(backend): D17 balance-ledger write, per docs/dashboard-migration.md.
+    void dto;
+    return Promise.resolve();
+  }
+
+  /**
+   * STUB - reject is not implemented. Same status as `approve` above - see
+   * docs/dashboard-migration.md §2.3, row 41.
+   */
+  reject(dto: StatusWithdrawalDto): Promise<void> {
+    // TODO(backend): flip status to rejected, per docs/dashboard-migration.md.
+    void dto;
+    return Promise.resolve();
   }
 }
