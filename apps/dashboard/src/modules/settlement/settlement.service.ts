@@ -5,6 +5,7 @@ import { Page, Pageable, paging } from '../../shared/pagination';
 import { mapFeeDetails } from '../transaction-shared';
 import { PurchaseTransactionDto } from '../purchase/dto/purchase-transaction.dto';
 import { FilterSettlementDto } from './dto/filter-settlement.dto';
+import { SettleUnsettledDto } from './dto/settle-unsettled.dto';
 
 @Injectable()
 export class SettlementService {
@@ -79,5 +80,18 @@ export class SettlementService {
     });
 
     return new Page<PurchaseTransactionDto>({ pageable, total, data });
+  }
+
+  /**
+   * STUB - marking a batch of unsettled purchases as settled is not
+   * implemented yet. Wired up so the frontend can integrate against the real
+   * request/response shape now; the real settlement write (stamping
+   * `settlementAt` per row) is a separate scope. See
+   * docs/dashboard-migration.md §2.4, row 48.
+   */
+  settle(dto: SettleUnsettledDto): Promise<void> {
+    // TODO(backend): stamp settlementAt on the given ids, per docs/dashboard-migration.md.
+    void dto;
+    return Promise.resolve();
   }
 }

@@ -9,6 +9,7 @@ import {
 import { CheckPolicies, CurrentAuthInfo } from '../../auth/decorator';
 import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
 import { ResponseDto, ResponseStatus } from '../../shared/response.dto';
+import { MerchantSignatureStatusDto } from './dto/merchant-signature-status.dto';
 import { RegisterWebhookUrlDto } from './dto/register-webhook-url.dto';
 import { MerchantSignatureService } from './merchant-signature.service';
 
@@ -48,5 +49,20 @@ export class MerchantSignatureController {
     // rejection surfaced as an unhandled promise rejection instead of a response.
     await this.merchantSignatureService.registerWebhook(authInfo, dto);
     return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  /**
+   * Backs the merchant detail page's "Has Generated Key On" display and
+   * pre-fills the webhook form on reopen. Newly added - see
+   * docs/dashboard-migration.md §2.1, row 39 (no legacy equivalent).
+   */
+  @Get('status')
+  @CheckPolicies()
+  @ApiOperation({ summary: "The caller's own signature status" })
+  @ApiOkResponse({ type: MerchantSignatureStatusDto })
+  status(
+    @CurrentAuthInfo() authInfo: AuthInfoDto,
+  ): Promise<MerchantSignatureStatusDto> {
+    return this.merchantSignatureService.status(authInfo);
   }
 }
