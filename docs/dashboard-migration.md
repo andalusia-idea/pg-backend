@@ -37,73 +37,123 @@ The frontend calls 41 endpoints across 4 legacy services. Three (reconciliation)
 
 After migration all four collapse to a single dashboard base URL. **This is a frontend change**: the four `ky` instances in `src/utils/ky/` become one. Flagged for the frontend developer.
 
+> **Verification pass (2026-08-25, `dev` branch).** Cross-checked every row below against the real controllers in `apps/dashboard/src/**/*.controller.ts` and the frontend's actual API layer at `C:\Users\USER\Documents\programming_folder\web dev\PG-Dashboard\src\api\*.api.ts` (the frontend source-of-truth path above, `C:\prelion\pg\PG-Dashboard`, is stale — that's not where the checked-out frontend lives). Two new columns were added: **Status** (does the backend route exist, and does it actually match what the frontend calls) and **Role** (which frontend-authenticated persona actually reaches this call, read from each page's `roles:` route metadata in `src/router/routes/modules/*.ts` — client-side menu/route gating only, **not** server enforcement; per D3 the backend still enforces authentication only — `RolesGuard` is not registered as an `APP_GUARD` in `app.module.ts` — so today any authenticated role can call any endpoint regardless of what's shown here).
+>
+> This pass also turned up **10 endpoints the frontend calls that were missing from this inventory entirely** — not "not yet ported," but never counted. They're appended to their category tables below, numbered 39–48, so the existing 1–38 numbering (referenced elsewhere in this doc) doesn't shift.
+>
+> **Update (2026-08-26): the three issues flagged below on 2026-08-25 are now fixed on the frontend.** Re-verified by re-reading the current frontend source and its git log (`b9475b4`, `42e086a`, `0efd1b6`, `2df39fa`, plus a run of smaller fixes in between) — kept here for history rather than deleted, since all three were live bugs at the time this doc was written:
+>
+> - **Role rename, was 🔴 blocking every admin login.** `ROLE` (shared at `libs/microservice/src/microservice.enum.ts`) renamed `ADMIN_SUPER`→`SUPER_ADMIN` and collapsed `ADMIN_AGENT`/`ADMIN_MERCHANT`/`ADMIN_ROLE_PERMISSION` into one `ADMIN`, but the frontend's `AuthGuard` had `"ADMIN_SUPER"` hardcoded for its role re-check and every route file gated on it — no admin-type account could stay logged in. **Fixed** (commit `0efd1b6`): the guard (`src/router/guard/auth.guard.tsx`) now calls the previously-unused `POST auth-info` endpoint via a new `getAuthInfo()` (`src/api/auth.api.ts`) and compares the raw server-side role string directly, instead of guessing one from `/user/profile`'s shape — a more robust fix than a literal string swap, since it no longer hardcodes any role name at all. Every `roles: [...]` array under `src/router/routes/modules/*.ts` was also updated to `SUPER_ADMIN` (confirmed by grepping all of them). See the frontend's own findings doc, §0, for the fix write-up.
+> - **Config base URL, was disagreeing with itself.** `.env`/`.env.development`/`.env.production` disagreed on config-service's version (v1 vs v2) and its URL prefix generally. **Fixed** (commit `42e086a`): all four `VITE_API_*` vars now point at one identical collapsed base URL per environment (e.g. `https://api.manapay.id/api/v1` in `.env`/`.env.production`) — exactly the "four `ky` instances become one" change this doc asked for above.
+> - **Merchant-signature path mismatch (rows 15, 16, 39).** Fixed the same way — see the note under §2.1 rather than repeating it here.
+
 ### 2.1 From auth-service → `modules/`
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 1 | POST | `login` | `auth` | `postLogin` |
-| 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` |
-| 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` |
-| 4 | GET | `user/profile` | `users` | `getUserProfile` |
-| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` |
-| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` |
-| 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` |
-| 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` |
-| 9 | GET | `agent-detail/:userId` | `agent-detail` | `getAgentById` |
-| 10 | PATCH | `agent-detail/update/:userId` | `agent-detail` | `patchAgent` |
-| 11 | GET | `merchant-detail` (page/size/businessName) | `merchant-detail` | `getMerchantList` |
-| 12 | GET | `merchant-detail/dropdown` | `merchant-detail` | `getDropdownMerchant` |
-| 13 | GET | `merchant-detail/:userId` | `merchant-detail` | `getMerchantById` |
-| 14 | PATCH | `merchant-detail/update/:userId` | `merchant-detail` | `patchMerchant` |
-| 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` |
-| 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` |
+Two more columns since the last pass: **Issue & Responsible** (populated only where Status isn't a clean ✅ — states what's wrong and whether Frontend, Backend, or Both own the fix) and **Request Body / Requirement** (populated only for not-yet-built or mis-shaped endpoints — the request shape and behavior the backend needs to implement).
+
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 1 | POST | `login` | `auth` | `postLogin` | Public | ✅ Matches | — | — |
+| 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` | Any authenticated (see D8) | ✅ Matches | — | — |
+| 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` | Any authenticated | ✅ Matches | — | — |
+| 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches | — | — |
+| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ✅ Matches | — | — |
+| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `SUPER_ADMIN`, `ADMIN` (`AGENT_ADMIN_ROLES`). Frontend route `/acc-management/create-agent` grants only `SUPER_ADMIN` | ✅ Matches (route is reachable now — see the resolved role-rename note above) | **Frontend, minor residual gap.** The lockout that made this route unreachable is fixed. One narrower gap remains: `roles: ["SUPER_ADMIN"]` on this route doesn't include plain `ADMIN`, which backend's `AGENT_ADMIN_ROLES` does permit — low priority, since no `ADMIN`-role account exists in the test data yet (§7 only exercises `SUPER_ADMIN`/`AGENT`/`MERCHANT`) | — (body is `CreateAgentDto`, already correct — no backend change needed) |
+| 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 9 | GET | `agent-detail/:userId` | `agent-detail` | `getAgentById` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 10 | PATCH | `agent-detail/update/:userId` | `agent-detail` | `patchAgent` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 11 | GET | `merchant-detail` (page/size/businessName) | `merchant-detail` | `getMerchantList` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 12 | GET | `merchant-detail/dropdown` | `merchant-detail` | `getDropdownMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 13 | GET | `merchant-detail/:userId` | `merchant-detail` | `getMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 14 | PATCH | `merchant-detail/update/:userId` | `merchant-detail` | `patchMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` | `MERCHANT` (own record only — see note below) | ✅ Matches (fixed 2026-08-26 — see note below) | — | — |
+| 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` | `MERCHANT` (own record only) | ✅ Matches (fixed 2026-08-26) | — | — |
+| 39 | GET | `merchant-signature/status` | *(none)* | `getMerchantSignatureStatus` | `MERCHANT` (own record only) | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists at all; wasn't previously tracked anywhere in this doc | GET, no body, no path param — same id-less pattern as rows 15/16 (caller's own record via `@CurrentAuthInfo()`). Response needed: `{ secretKeyGeneratedAt: string \| null, payinUrl: string \| null, payoutUrl: string \| null }` (`MerchantSignatureStatusDto` on the frontend) — backs the "Has Generated Key On" display and pre-fills the webhook form on the merchant detail page |
+
+> **Rows 15, 16, 39 — merchant-signature, fixed 2026-08-26.** As of the 2026-08-25 pass, the frontend called `generate-secret-key` and `register-webhook-url` with a `:merchantUserId` path segment the ported (id-less) backend controller didn't accept, and `getMerchantSignatureStatus` didn't exist on the backend under any path. **The frontend fixed its side** (commit `b9475b4`, "refactor: remove merchantUserId"): `merchant-signature.api.ts` now calls all three with no path param at all — `generate-secret-key`, `register-webhook-url`, and `status` (was `:merchantUserId/status`) — matching the backend's "acts on the caller's own record via the bearer token" design exactly, not just patched to the same URL shape.
+>
+> The reason this is *correct* rather than a workaround: the calling component, `MerchantApiIntegration` (`src/pages/merchant/components/merchant-detail-api-integrate.tsx`), no longer takes a `merchantUserId` prop either, and its own doc comment now states it's "only ever rendered for a MERCHANT-role session viewing their own detail page." Confirmed against the caller — `merchant-detail/index.tsx` renders the "Api Integrasi" tab containing this component only inside `...(isMerchant ? [...] : [])`, where `isMerchant = hasAccessByRoles([AccessControlRoles.merchant])` checks the *signed-in user's own* role, not the role of the merchant record being viewed. So the `SUPER_ADMIN`/`AGENT`-views-another-merchant's-signature scenario this doc previously worried about doesn't exist in the UI — that tab simply isn't shown to those roles — which is why the Role column above is `MERCHANT` only, not the three-role set every other merchant-detail-page row carries.
+>
+> Rows 15 and 16 are now clean ✅ matches. Row 39 is unchanged in substance — the frontend calls `merchant-signature/status`, the backend has no `status` route — only its path got simpler (no id) along with the other two.
 
 ### 2.2 From config-service
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` |
-| 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` |
-| 19 | GET | `fee/config` | `fee` | `getBaseFee` |
-| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` |
-| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` |
-| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` |
-| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` | `SUPER_ADMIN` (agent detail page) | ✅ Matches | — | — |
+| 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` | Any authenticated — dropdown data (bank/provider/payment-method) reused across the create-agent, create-merchant, config-fee and provider pages | ✅ Matches | — | — |
+| 19 | GET | `fee/config` | `fee` | `getBaseFee` | `SUPER_ADMIN`, `MERCHANT` (provider page + config-fee) | ✅ Matches | — | — |
+| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail / create-merchant) | ✅ Matches | — | — |
+| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ Matches | — | — |
+| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 
 ### 2.3 From transaction-service
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 24 | GET | `balance/aggregate/internal?providerName=` | `balance` | `getBalanceInternal` |
-| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` |
-| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` |
-| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` |
-| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` |
-| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` |
-| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` |
-| 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` |
-| 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` |
-| 33 | POST | `transactions/topup/reject` | `topup` | ⚠️ see D1 |
-| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` |
-| 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` |
-| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 24 | GET | `balance/aggregate/internal?providerName=` | `balance` | `getBalanceInternal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (home dashboard) | ✅ Matches | — | — |
+| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ Matches | — | — |
+| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `SUPER_ADMIN` (agent detail balance widget) | ✅ Matches | — | — |
+| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc dependency) | **Backend.** Blocked on porting config's fee-calculation services (currently ~95%-duplicated across four legacy services) — see §7 | POST `transactions/topup`. Frontend sends `CreateTopUp = { userId: number, receiptImage: string, nominal: number }`. Requirement: split `nominal` into merchant/agent/provider/internal cuts via the fee calculator, write the pending top-up row |
+| 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / balance-ledger dependency) | **Backend.** Blocked on the balance-ledger rework (advisory locks + transaction-scoping) from D17 — needs your decision there first | POST `transactions/topup/approve`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: mark approved, write `MerchantBalanceLog`/`AgentBalanceLog`/`InternalBalanceLog` rows inside one transaction with advisory locks, per the corrected D17 pattern |
+| 33 | POST | `transactions/topup/reject` | `topup` | `rejectTransactionTopUp` — see D1, fixed 2026-08-26 | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (backend only, now — see note below) | **Backend.** Blocked on D17 like the other two topup write endpoints. The frontend's D1 bug (posting to `/approve` instead of `/reject`) is fixed — commit `2df39fa`, confirmed by re-reading `transaction-top-up.api.ts`, which now posts to `transactions/topup/reject` correctly. Once the backend ships `/reject`, this call will work with no further frontend change needed | POST `transactions/topup/reject`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: flip status to rejected only — no ledger write, unlike approve |
+| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc + balance-ledger dependency) | **Backend.** Blocked on both fee-calculation and the balance-ledger work — see §7 | POST `transactions/withdraw`. Frontend sends `CreateWithdrawal = { userId: number, nominal: number }`. Requirement: insufficient-balance check must be lock-guarded per D17 (not check-then-act), then write the pending withdrawal row |
+| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 40 | POST | `transactions/withdraw/approve` | *(none)* | `approveTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend.** Wired to a live "Approve" button, not dead code — see note below | **Backend.** No route exists; 404 once pointed at this backend | POST `transactions/withdraw/approve`. Frontend sends `StatusWithdrawal = { withdrawalId: string }` — note `withdrawalId` is typed `string` here vs. `topupId: number` on the topup side (row 32), worth reconciling. Requirement: same balance-ledger shape as topup approve, including the D17 fix for the `merchantId: withdraw.id` bug in the callback path |
+| 41 | POST | `transactions/withdraw/reject` | *(none)* | `rejectTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend.** Wired to a live "Reject" button | **Backend.** No route exists | POST `transactions/withdraw/reject`. Body: `StatusWithdrawal = { withdrawalId: string }`. Requirement: flip status only, no ledger write — same shape as topup reject (row 33) |
+| 42 | POST | `transactions/purchase/resend-callback` | *(none)* | `resendPurchaseCallback` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists; wired to a live button on the purchase page | POST `transactions/purchase/resend-callback`. Body: `PurchaseCallbackAction = { purchaseId: string }`. Requirement: re-fire the provider webhook callback for that purchase — needs the provider-integration layer this dashboard doesn't otherwise touch |
+| 43 | POST | `transactions/purchase/refresh-status` | *(none)* | `refreshPurchaseStatus` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists | POST `transactions/purchase/refresh-status`. Body: `{ purchaseId: string }`. Requirement: re-poll the provider for this purchase's current status and update the row |
+| 44 | POST | `transactions/purchase/notify-merchant` | *(none)* | `notifyPurchaseMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists | POST `transactions/purchase/notify-merchant`. Body: `{ purchaseId: string }`. Requirement: re-send this purchase's webhook to the merchant's registered `payinUrl` (see rows 16/39 for where that URL comes from) |
+| 45 | POST | `transactions/disbursement/resend-callback` | *(none)* | `resendDisbursementCallback` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists; wired to a live button on the disbursement page | POST `transactions/disbursement/resend-callback`. Body: `DisbursementCallbackAction = { disbursementId: string }`. Requirement: re-fire the provider webhook callback for that disbursement |
+| 46 | POST | `transactions/disbursement/refresh-status` | *(none)* | `refreshDisbursementStatus` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists | POST `transactions/disbursement/refresh-status`. Body: `{ disbursementId: string }`. Requirement: re-poll the provider for this disbursement's current status |
+| 47 | POST | `transactions/disbursement/notify-merchant` | *(none)* | `notifyDisbursementMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🆕 **New — frontend calls it, not developed in backend** | **Backend.** No route exists | POST `transactions/disbursement/notify-merchant`. Body: `{ disbursementId: string }`. Requirement: re-send this disbursement's webhook to the merchant's registered `payoutUrl` |
+
+> **Rows 40–47.** All eight take a single id in the body (`{ withdrawalId }`, `{ purchaseId }`, `{ disbursementId }`) and read as per-row provider-callback actions on the transaction detail views — "approve"/"reject" the withdrawal, or resend/refresh/notify for a purchase or disbursement's provider callback. None have a route anywhere in `apps/dashboard`. Rows 40/41 (withdraw approve/reject) are confirmed wired to real, distinct buttons in `src/pages/transaction/withdrawal/index.tsx` (`useApproveWithdrawal`/`useRejectWithdrawal`, lines ~214-246 and ~377-392) — same shape as topup's (rows 32/33) and should probably land alongside them once the balance-ledger work from D17 is done. The purchase/disbursement resend-callback / refresh-status / notify-merchant trio are similarly wired to live buttons on their respective pages, and look adjacent to the `:id/detail` endpoints already noted as out of scope in §2.5 below — worth scoping together rather than as six one-off additions.
 
 ### 2.4 From settlerecon-service
 
 Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay out of scope. But settlement reads the **same `transaction` Postgres schema** dashboard already maps (verified: settlerecon's legacy `schema.prisma` declares `schemas = ["transaction"]`), so it is portable without touching provider code.
 
-| # | Method | Path | Legacy module | Frontend caller |
-|---|---|---|---|---|
-| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` |
-| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` |
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `SUPER_ADMIN` (settlement page) | ✅ Matches | — | — |
+| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 48 | POST | `settlement/settle` | *(none)* | `settleUnsettledData` | `SUPER_ADMIN` | 🆕 **New — frontend calls it, not developed in backend.** Wired to a live "settle" action in `src/pages/transaction/settlement/components/unsettled-table.tsx` — has no counterpart in `apps/dashboard` | **Backend.** No route exists at all | POST `settlement/settle`. Frontend sends `SettleUnsettledBody = { ids: string[] }` — a batch of purchase/settlement ids. Requirement: mark each as settled (stamp `settlementAt`), moving it out of the `unsettled` listing and into `settled` |
 
 ### 2.5 Not migrated
 
 - **Reconciliation** (`GET reconciliation`, `GET reconciliation/calculate`, `POST reconciliation/file-upload/csv`) — **out of dashboard scope**. The business requirement is still under discussion, and the intent is a separate dedicated app (NestJS or Go, chosen for concurrency and a small memory footprint) that will also own scheduled / background file generation. Revisited only after everything else lands. See D5.
 
+  > **Correction:** the frontend's actual calls (`reconciliation.api.ts`) are `GET reconciliation/recon`, `GET reconciliation/unrecon`, `GET reconciliation/calculate`, and `POST reconciliation/file-upload/csv` — four calls, not three, and the first one is `reconciliation/recon`, not bare `reconciliation`. `reconciliation/unrecon` was missing from this list entirely. Doesn't change the D5 scope decision — still deferred to the dedicated reconciliation app — but the path here was wrong and incomplete. Separately: the standalone `apps/settlerecon` microservice referenced elsewhere in this doc (§2.4's intro) no longer exists in this repo on `dev` (removed per the "Remove SettleRecon Apps" commit) — doesn't affect the dashboard's own `settlement` module, which is self-contained, but the settlerecon `schema.prisma` this doc cites for verification is no longer available to re-check.
+
 - **Region lookup** (`getProvinces`/`getRegencies`/`getDistricts`/`getVillages`) — the frontend calls `emsifa.com/api-wilayah-indonesia` **directly** from the browser, no backend involvement. Nothing to port.
 - **CSV export endpoints** — legacy has `GET transactions/{purchase,topup,withdraw,disbursement}/csv`. The frontend doesn't call them yet. Not migrating now; noted here because they're an obvious near-future ask.
 - **`:id/detail` endpoints** — legacy has per-transaction detail routes the frontend doesn't call. Same treatment.
+
+### 2.6 Revised totals (2026-08-25 verification pass, `dev` branch)
+
+The frontend calls **52 endpoints**, not 41: 48 in the dashboard's scope (38 originally tracked + 10 found by this pass, rows 39–48 above) plus the 4 out-of-scope reconciliation calls (§2.5, corrected from 3).
+
+| | Count |
+|---|---|
+| In scope, ported and working as the frontend calls it (rows 15, 16 moved here 2026-08-26; row 6's only issue was ever a frontend role-scope gap, never a backend defect) | 34 |
+| In scope, ported but with a real path-level defect | 0 *(was 2 — rows 15, 16 — as of 2026-08-25; fixed on the frontend 2026-08-26, see §2.1 note)* |
+| In scope, not yet ported — pending D17 / fee-calculation (rows 31, 32, 33, 35) | 4 |
+| In scope, not yet ported — newly found, no prior tracking (rows 39–48) | 10 |
+| **Total in scope** | **48** |
+| Out of scope — reconciliation (deferred per D5) | 4 |
+| Out of scope — region lookup (frontend calls a third party directly) | 4 |
+
+The role-name drift, the config base-URL disagreement, the merchant-signature path mismatch (rows 15/16/39), and the D1 frontend bug on row 33 were all flagged as live problems on 2026-08-25 and confirmed fixed on the frontend as of 2026-08-26 (see the callout at the top of §2 and the notes on the affected rows). What's left in scope and not yet ported is now purely a backend gap: the 14 endpoints above (4 pending D17, 10 never built) — none of them are blocked by anything on the frontend anymore.
+
+Section 7's progress checklist below still says "35 of 38 ported" — that line predates this pass and reflects the original 38-endpoint count, not the 48 found here. Left as-is since only §2 was in scope for this audit; whoever picks up rows 39–48 should update §7 alongside them.
 
 ---
 
