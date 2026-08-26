@@ -4,6 +4,8 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
   AjvPipe,
   AUTH_CMD,
+  type FilterMerchantSignatureValidationDto,
+  FilterMerchantSignatureValidationSchema,
   FilterMerchantWebhookUrlSchema,
   type FilterMerchantWebhookUrlDto,
 } from '@app/microservice';
@@ -20,5 +22,15 @@ export class MerchantSignatureController {
   )
   findMerchantWebhookUrl(@Payload() payload: FilterMerchantWebhookUrlDto) {
     return this.merchantSignatureService.findMerchantWebhookUrl(payload);
+  }
+
+  @MessagePattern({ cmd: AUTH_CMD.MERCHANT_SIGNATURE_VALIDATION })
+  @UsePipes(
+    AjvPipe<FilterMerchantSignatureValidationDto>(
+      FilterMerchantSignatureValidationSchema,
+    ),
+  )
+  validateSignature(@Payload() payload: FilterMerchantSignatureValidationDto) {
+    return this.merchantSignatureService.validateSignature(payload);
   }
 }

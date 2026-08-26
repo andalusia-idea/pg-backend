@@ -157,6 +157,8 @@ export const MerchantSignatureFailureEnum = {
   INVALID_SIGNATURE: 'INVALID_SIGNATURE',
   /** This nonce was already used inside the replay window. */
   REPLAYED_NONCE: 'REPLAYED_NONCE',
+  /** Merchant has not yet generated Secret Key at Dashboard */
+  SECRET_KEY_NOT_GENERATED: 'SECRET_KEY_NOT_GENERATED',
 } as const;
 export type MerchantSignatureFailureEnum =
   (typeof MerchantSignatureFailureEnum)[keyof typeof MerchantSignatureFailureEnum];

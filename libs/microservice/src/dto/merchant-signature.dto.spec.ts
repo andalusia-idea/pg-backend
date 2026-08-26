@@ -24,11 +24,11 @@ const UUID = '3f2b8c1d-4e5a-4b6c-8d9e-0a1b2c3d4e5f';
 
 const validRequest = () => ({
   clientId: UUID,
-  timestamp: '2026-08-23T10:15:30+07:00',
+  timestampIso: '2026-08-23T10:15:30+07:00',
   nonce: UUID,
   signature: 'a'.repeat(128),
-  method: 'POST',
-  path: '/open/v1/payin/purchase',
+  httpMethod: 'POST',
+  endpoint: '/open/v1/payin/purchase',
   bodyHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
 });
 
@@ -44,8 +44,8 @@ describe('FilterMerchantSignatureValidationSchema', () => {
   });
 
   it('accepts both supported HTTP verbs', () => {
-    expect(withRequest((p) => (p.method = 'GET'))).toBe(true);
-    expect(withRequest((p) => (p.method = 'POST'))).toBe(true);
+    expect(withRequest((p) => (p.httpMethod = 'GET'))).toBe(true);
+    expect(withRequest((p) => (p.httpMethod = 'POST'))).toBe(true);
   });
 
   /**
@@ -82,7 +82,7 @@ describe('FilterMerchantSignatureValidationSchema', () => {
   it.each([['PUT'], ['DELETE'], ['PATCH'], ['post']])(
     'rejects the unsupported method %s',
     (method) => {
-      expect(withRequest((p) => (p.method = method))).toBe(false);
+      expect(withRequest((p) => (p.httpMethod = method))).toBe(false);
     },
   );
 
@@ -92,11 +92,11 @@ describe('FilterMerchantSignatureValidationSchema', () => {
 
   it.each([
     ['clientId'],
-    ['timestamp'],
+    ['timestampIso'],
     ['nonce'],
     ['signature'],
-    ['method'],
-    ['path'],
+    ['httpMethod'],
+    ['endpoint'],
     ['bodyHash'],
   ])('rejects a payload missing %s', (field) => {
     expect(withRequest((p) => delete p[field])).toBe(false);

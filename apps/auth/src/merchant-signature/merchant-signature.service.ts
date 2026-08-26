@@ -1,22 +1,34 @@
+import { MerchantSignatureConfig } from '@app/configuration';
 import {
+  FilterMerchantSignatureValidationDto,
   FilterMerchantWebhookUrlDto,
+  MerchantSignatureFailureEnum,
+  MerchantSignatureStatusEnum,
+  MerchantSignatureValidationDto,
   MerchantWebhookUrlDto,
 } from '@app/microservice';
 import {
   PRISMA_MASTER_PROVIDER_KEY,
   PRISMA_SLAVE_PROVIDER_KEY,
 } from '@app/prisma';
-import { PrismaClient } from '@auth/prisma';
-import { Inject, Injectable } from '@nestjs/common';
+import { MerchantSignatureRedis } from '@app/redis';
+import { buildCanonical, verifySignature } from '@app/signature';
+// Type-only: `PrismaClient` is never used as a value here, and erasing the
+// import keeps unit tests from having to load the whole generated ESM client.
+import type { PrismaClient } from '@auth/prisma';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-// TODO redis
 @Injectable()
 export class MerchantSignatureService {
+  private readonly logger = new Logger(MerchantSignatureService.name);
+
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+    private readonly merchantSignatureRedis: MerchantSignatureRedis,
+    private readonly merchantSignatureConfig: MerchantSignatureConfig,
   ) {}
 
   async findMerchantWebhookUrl(dto: FilterMerchantWebhookUrlDto) {
@@ -34,5 +46,175 @@ export class MerchantSignatureService {
       payinUrl: merchantSignature.payinUrl,
       payoutUrl: merchantSignature.payoutUrl,
     } as MerchantWebhookUrlDto;
+  }
+
+  /**
+   * Verify a merchant request signature.
+   *
+   * Handles only what needs the secret or shared state. Header presence and
+   * the format of the signature, nonce and timestamp are rejected by the
+   * guard in `apps/transaction` before this is called, so those failure codes
+   * never originate here.
+   *
+   * Errors are **not** swallowed into a rejection. If Redis or the database
+   * is unreachable that is an outage, not a bad signature - Prisma throws
+   * rather than returning null, and letting it propagate turns into a 503 at
+   * the edge. Answering 401 instead would be worse than unhelpful: it tells
+   * every merchant their credentials are wrong, sending them to debug their
+   * signing code mid-incident, and tells well-behaved clients to stop
+   * retrying transactions that would have succeeded.
+   *
+   * **Reads go to master, deliberately.** This is the one query where replica
+   * lag produces a false rejection of a valid merchant: a freshly onboarded
+   * row that has not replicated yet reads as UNKNOWN_CLIENT, and a stale row
+   * read straight after a key rotation matches neither the new secret nor the
+   * recorded previous one, giving INVALID_SIGNATURE. Both are merchant
+   * outages, which outranks spreading read load - and the Redis cache planned
+   * for this lookup removes the query from the hot path anyway.
+   */
+  async validateSignature(
+    dto: FilterMerchantSignatureValidationDto,
+  ): Promise<MerchantSignatureValidationDto> {
+    const merchantSignature =
+      await this.prismaMaster.merchantSignature.findUnique({
+        where: { clientId: dto.clientId, deletedAt: null },
+        select: {
+          userId: true,
+          status: true,
+          secretKey: true,
+          secretKeyPrevious: true,
+          secretKeyRotatedAt: true,
+        },
+      });
+
+    if (!merchantSignature) {
+      return this.reject(null, MerchantSignatureFailureEnum.UNKNOWN_CLIENT);
+    }
+
+    const { userId } = merchantSignature;
+
+    if (merchantSignature.status !== MerchantSignatureStatusEnum.ACTIVE) {
+      return this.reject(userId, MerchantSignatureFailureEnum.CLIENT_SUSPENDED);
+    }
+
+    if (!merchantSignature.secretKey) {
+      return this.reject(
+        userId,
+        MerchantSignatureFailureEnum.SECRET_KEY_NOT_GENERATED,
+      );
+    }
+
+    // Fields are passed explicitly rather than spread: `buildCanonical` takes
+    // a subset of this DTO, and a spread would silently pass `undefined` for
+    // any field later renamed on either side - producing a canonical string
+    // that fails to match for every merchant, with nothing to point at.
+    const canonical = buildCanonical({
+      httpMethod: dto.httpMethod,
+      endpoint: dto.endpoint,
+      nonce: dto.nonce,
+      bodyHash: dto.bodyHash,
+      timestampIso: dto.timestampIso,
+    });
+
+    const matchedKey = this.matchSecretKey(merchantSignature, canonical, dto);
+    if (!matchedKey) {
+      return this.reject(
+        userId,
+        MerchantSignatureFailureEnum.INVALID_SIGNATURE,
+      );
+    }
+
+    if (matchedKey === 'previous') {
+      // A merchant still signing with the retired key is heading for an
+      // outage when the grace window closes, and nothing else surfaces it.
+      this.logger.warn({
+        msg: 'Merchant signed with the previous secret key',
+        userId,
+        rotatedAt: merchantSignature.secretKeyRotatedAt?.toISOString(),
+      });
+    }
+
+    // Last, and only once the signature has proved knowledge of the secret:
+    // claiming earlier would let unauthenticated traffic populate the store.
+    const nonceClaimed = await this.merchantSignatureRedis.claimNonce(
+      dto.clientId,
+      dto.nonce,
+      this.merchantSignatureConfig.NONCE_TTL_SECONDS,
+    );
+    if (!nonceClaimed) {
+      return this.reject(userId, MerchantSignatureFailureEnum.REPLAYED_NONCE);
+    }
+
+    return {
+      isValid: true,
+      userId,
+      reason: null,
+      serverTime: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Try the current secret, then the previous one while the grace window from
+   * the last rotation is still open.
+   *
+   * Both branches run `verifySignature`, which compares in constant time; the
+   * result reveals which key matched but not any part of either key.
+   */
+  private matchSecretKey(
+    merchantSignature: {
+      secretKey: string | null;
+      secretKeyPrevious: string | null;
+      secretKeyRotatedAt: Date | null;
+    },
+    canonical: string,
+    dto: FilterMerchantSignatureValidationDto,
+  ): 'current' | 'previous' | null {
+    const signatureReceived = dto.signature;
+
+    if (
+      merchantSignature.secretKey &&
+      verifySignature({
+        secretKey: merchantSignature.secretKey,
+        canonical,
+        signatureReceived,
+      })
+    ) {
+      return 'current';
+    }
+
+    if (
+      merchantSignature.secretKeyPrevious &&
+      this.isWithinGraceWindow(merchantSignature.secretKeyRotatedAt) &&
+      verifySignature({
+        secretKey: merchantSignature.secretKeyPrevious,
+        canonical,
+        signatureReceived,
+      })
+    ) {
+      return 'previous';
+    }
+
+    return null;
+  }
+
+  private isWithinGraceWindow(rotatedAt: Date | null): boolean {
+    if (!rotatedAt) return false;
+
+    const graceMs =
+      this.merchantSignatureConfig.SECRET_KEY_GRACE_SECONDS * 1000;
+    return Date.now() - rotatedAt.getTime() <= graceMs;
+  }
+
+  /** Every rejection carries `serverTime` so the guard can echo it. */
+  private reject(
+    userId: number | null,
+    reason: MerchantSignatureFailureEnum,
+  ): MerchantSignatureValidationDto {
+    return {
+      isValid: false,
+      userId,
+      reason,
+      serverTime: new Date().toISOString(),
+    };
   }
 }

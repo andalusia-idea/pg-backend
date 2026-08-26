@@ -5,6 +5,7 @@ import { TCPConfig } from './tcp.config';
 import { DatabaseConfig } from './database.config';
 import { JwtConfig } from './jwt.config';
 import { MotionPayConfig } from './motionpay.config';
+import { MerchantSignatureConfig } from './merchant-signature.config';
 
 @Global()
 @Module({})
@@ -25,6 +26,7 @@ export class ConfigurationModule {
         DatabaseConfig,
         JwtConfig,
         MotionPayConfig,
+        MerchantSignatureConfig,
       ],
       exports: [
         ConfigModule,
@@ -33,6 +35,7 @@ export class ConfigurationModule {
         DatabaseConfig,
         JwtConfig,
         MotionPayConfig,
+        MerchantSignatureConfig,
       ],
     };
   }

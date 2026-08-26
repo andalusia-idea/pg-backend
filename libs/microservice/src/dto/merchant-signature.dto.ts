@@ -23,7 +23,7 @@ export const FilterMerchantSignatureValidationSchema = Type.Object(
     /** From `X-Client-Id`. */
     clientId: Type.String({ minLength: 1, maxLength: 64 }),
     /** From `X-Timestamp`. ISO-8601 with a mandatory UTC offset. */
-    timestamp: Type.String({ minLength: 1, maxLength: 64 }),
+    timestampIso: Type.String({ minLength: 1, maxLength: 64 }),
     /** From `X-Nonce`. Guard-checked to contain no colon - it is a canonical-string field. */
     nonce: Type.String({ minLength: 8, maxLength: 128 }),
     /**
@@ -36,9 +36,9 @@ export const FilterMerchantSignatureValidationSchema = Type.Object(
     signature: Type.String({ pattern: '^[0-9a-fA-F]{128}$' }),
 
     /** Read from the request by the guard, not supplied by the merchant. */
-    method: Type.Enum(HttpMethodEnum),
+    httpMethod: Type.Enum(HttpMethodEnum),
     /** Global prefix already stripped, query string included. */
-    path: Type.String({ minLength: 1, maxLength: 2048 }),
+    endpoint: Type.String({ minLength: 1, maxLength: 2048 }),
     /** Lowercase hex SHA-256 of the raw request bytes. */
     bodyHash: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   },
