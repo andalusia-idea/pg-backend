@@ -4,9 +4,10 @@ import { ConfigService } from '@nestjs/config';
 /**
  * Timing rules for merchant signature verification.
  *
- * All three values default, so nothing needs adding to `.env` to boot. They
- * are read by both `apps/auth` (verification) and `apps/transaction` (the
- * guard), which is why they live here rather than as constants in either.
+ * Every value defaults, so nothing needs adding to `.env` to boot. They are
+ * read by **two** apps - `apps/auth` verifies, `apps/transaction` runs the
+ * guard - which is why they live here rather than as constants inside either
+ * one.
  */
 @Injectable()
 export class MerchantSignatureConfig {
@@ -55,6 +56,18 @@ export class MerchantSignatureConfig {
       );
     }
     return ttl;
+  }
+
+  /**
+   * How long a merchant's signature row stays cached, in seconds.
+   *
+   * Short on purpose. The cache is invalidated explicitly whenever the row is
+   * written, so this only bounds the damage if an invalidation is ever missed
+   * - a suspended merchant would keep authenticating, and a rotated key would
+   * keep failing, for at most this long.
+   */
+  get CACHE_TTL_SECONDS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_CACHE_TTL_SECONDS', 60);
   }
 
   /**

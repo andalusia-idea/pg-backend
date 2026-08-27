@@ -9,6 +9,7 @@ import { ApiError } from '../../shared/exception';
 import { MerchantSignatureStatusDto } from './dto/merchant-signature-status.dto';
 import { RegisterWebhookUrlDto } from './dto/register-webhook-url.dto';
 import { generateSecretKey } from '@app/signature';
+import { MerchantSignatureRedis } from '@app/redis';
 
 @Injectable()
 export class MerchantSignatureService {
@@ -17,6 +18,7 @@ export class MerchantSignatureService {
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+    private readonly merchantSignatureRedis: MerchantSignatureRedis,
   ) {}
 
   /**
@@ -34,28 +36,40 @@ export class MerchantSignatureService {
    *
    * Read-then-write in one transaction: without it, two concurrent rotations
    * could both read the same current secret and the older one would be lost.
+   *
+   * The verifier's cache is invalidated afterwards. Skipping that would make
+   * the rotation invisible for a full cache TTL: the cached row still holds
+   * the pre-rotation secrets, so a merchant signing with the key they were
+   * just handed matches neither `secretKey` nor `secretKeyPrevious` and is
+   * rejected as INVALID_SIGNATURE - the opposite of the seamless changeover
+   * the grace window exists to provide.
    */
   async generateSharedSecretKey(authInfo: AuthInfoDto): Promise<string> {
     const { userId } = authInfo;
 
     const sharedSecretKey = generateSecretKey();
 
-    await this.prismaMaster.$transaction(async (tx) => {
+    const { clientId } = await this.prismaMaster.$transaction(async (tx) => {
       const signature = await tx.merchantSignature.findFirst({
         where: { userId, deletedAt: null },
         select: { secretKey: true },
       });
       if (!signature) throw ApiError.notFound('Merchant signature');
 
-      await tx.merchantSignature.update({
+      return tx.merchantSignature.update({
         where: { userId },
         data: {
           secretKey: sharedSecretKey,
           secretKeyPrevious: signature.secretKey,
           secretKeyRotatedAt: new Date(),
         },
+        select: { clientId: true },
       });
     });
+
+    // After the commit, never inside it: invalidating first would let a
+    // concurrent request re-populate the cache from the pre-rotation row.
+    await this.merchantSignatureRedis.deleteMerchantSignature(clientId);
 
     return sharedSecretKey;
   }

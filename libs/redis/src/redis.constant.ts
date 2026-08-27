@@ -15,3 +15,5 @@
  * which validates it against the timestamp tolerance it has to outlast.
  */
 export const NONCE_KEY_PREFIX = 'merchant-signature:nonce';
+
+export const MERCHANT_SIGNATURE_KEY_PREFIX = 'merchant-signature:db';

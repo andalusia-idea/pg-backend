@@ -19,6 +19,7 @@ const NONCE = 'b7c1e2d3-4f5a-4b6c-8d9e-0a1b2c3d4e5f';
 const TOLERANCE_SECONDS = 300;
 const NONCE_TTL_SECONDS = 600;
 const GRACE_SECONDS = 86_400;
+const CACHE_TTL_SECONDS = 60;
 
 const secretKey = generateSecretKey();
 const oldSecretKey = generateSecretKey();
@@ -63,25 +64,99 @@ const activeRow = (overrides: Record<string, unknown> = {}) => ({
 describe('MerchantSignatureService.validateSignature', () => {
   let findUnique: jest.Mock;
   let claimNonce: jest.Mock;
+  let getMerchantSignature: jest.Mock;
+  let setMerchantSignature: jest.Mock;
   let service: MerchantSignatureService;
 
   beforeEach(() => {
     findUnique = jest.fn();
     claimNonce = jest.fn(async () => true);
+    getMerchantSignature = jest.fn(async () => null);
+    setMerchantSignature = jest.fn(async () => undefined);
 
     const prismaMaster = { merchantSignature: { findUnique } };
     const config = {
       TIMESTAMP_TOLERANCE_SECONDS: TOLERANCE_SECONDS,
       NONCE_TTL_SECONDS,
       SECRET_KEY_GRACE_SECONDS: GRACE_SECONDS,
+      CACHE_TTL_SECONDS,
     };
 
     service = new MerchantSignatureService(
       prismaMaster as never,
       {} as never,
-      { claimNonce } as never,
+      {
+        claimNonce,
+        getMerchantSignature,
+        setMerchantSignature,
+      } as never,
       config as never,
     );
+  });
+
+  describe('caching', () => {
+    it('reads through to the database on a miss and caches the row', async () => {
+      findUnique.mockResolvedValue(activeRow() as never);
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(findUnique).toHaveBeenCalledTimes(1);
+      expect(setMerchantSignature).toHaveBeenCalledWith(
+        CLIENT_ID,
+        expect.objectContaining({ userId: USER_ID }),
+        CACHE_TTL_SECONDS,
+      );
+    });
+
+    it('skips the database entirely on a hit', async () => {
+      getMerchantSignature.mockResolvedValue(activeRow() as never);
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.isValid).toBe(true);
+      expect(findUnique).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Writing on a hit would refresh the TTL on every request, so a busy
+     * merchant's entry would never expire - removing the only backstop if an
+     * invalidation is ever missed.
+     */
+    it('does not rewrite the entry on a hit', async () => {
+      getMerchantSignature.mockResolvedValue(activeRow() as never);
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(setMerchantSignature).not.toHaveBeenCalled();
+    });
+
+    /** An unknown client must not be cached, or a just-onboarded merchant
+     * reads as unknown for a full TTL. */
+    it('does not cache an unknown client', async () => {
+      findUnique.mockResolvedValue(null as never);
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(setMerchantSignature).not.toHaveBeenCalled();
+    });
+
+    /**
+     * JSON has no Date, so a cached row arrives with `secretKeyRotatedAt`
+     * revived from epoch milliseconds. If that revive is ever dropped, the
+     * grace-window check calls `.getTime()` on a number and throws.
+     */
+    it('honours the rotation grace window on a cached row', async () => {
+      getMerchantSignature.mockResolvedValue(
+        activeRow({
+          secretKeyPrevious: oldSecretKey,
+          secretKeyRotatedAt: new Date(Date.now() - 60_000),
+        }) as never,
+      );
+
+      const result = await service.validateSignature(signedWith(oldSecretKey));
+
+      expect(result.isValid).toBe(true);
+    });
   });
 
   describe('client resolution', () => {

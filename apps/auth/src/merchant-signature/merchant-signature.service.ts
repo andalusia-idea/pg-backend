@@ -11,7 +11,7 @@ import {
   PRISMA_MASTER_PROVIDER_KEY,
   PRISMA_SLAVE_PROVIDER_KEY,
 } from '@app/prisma';
-import { MerchantSignatureRedis } from '@app/redis';
+import { MerchantSignatureRedis, MerchantSignatureRedisDto } from '@app/redis';
 import { buildCanonical, verifySignature } from '@app/signature';
 // Type-only: `PrismaClient` is never used as a value here, and erasing the
 // import keeps unit tests from having to load the whole generated ESM client.
@@ -75,17 +75,7 @@ export class MerchantSignatureService {
   async validateSignature(
     dto: FilterMerchantSignatureValidationDto,
   ): Promise<MerchantSignatureValidationDto> {
-    const merchantSignature =
-      await this.prismaMaster.merchantSignature.findUnique({
-        where: { clientId: dto.clientId, deletedAt: null },
-        select: {
-          userId: true,
-          status: true,
-          secretKey: true,
-          secretKeyPrevious: true,
-          secretKeyRotatedAt: true,
-        },
-      });
+    const merchantSignature = await this.findMerchantSignature(dto.clientId);
 
     if (!merchantSignature) {
       return this.reject(null, MerchantSignatureFailureEnum.UNKNOWN_CLIENT);
@@ -151,6 +141,49 @@ export class MerchantSignatureService {
       reason: null,
       serverTime: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Cache-aside read of the merchant's signature row.
+   *
+   * The write happens **only on a miss**. Writing on every request would
+   * refresh the TTL on each hit, so a busy merchant's entry would never
+   * expire - and expiry is the only backstop if an invalidation is ever
+   * missed.
+   *
+   * An unknown client is deliberately not cached. Negative caching would blunt
+   * a clientId-spraying attack, but it also means a merchant onboarded moments
+   * ago can read as unknown for a full TTL; the row is only written once the
+   * database has confirmed it exists.
+   */
+  private async findMerchantSignature(
+    clientId: string,
+  ): Promise<MerchantSignatureRedisDto | null> {
+    const cached =
+      await this.merchantSignatureRedis.getMerchantSignature(clientId);
+    if (cached) return cached;
+
+    const merchantSignature =
+      await this.prismaMaster.merchantSignature.findUnique({
+        where: { clientId, deletedAt: null },
+        select: {
+          userId: true,
+          status: true,
+          secretKey: true,
+          secretKeyPrevious: true,
+          secretKeyRotatedAt: true,
+        },
+      });
+
+    if (merchantSignature) {
+      await this.merchantSignatureRedis.setMerchantSignature(
+        clientId,
+        merchantSignature,
+        this.merchantSignatureConfig.CACHE_TTL_SECONDS,
+      );
+    }
+
+    return merchantSignature;
   }
 
   /**
