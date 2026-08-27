@@ -4,7 +4,7 @@ import {
   FilterMerchantSignatureValidationSchema,
   MerchantSignatureValidationSchema,
 } from './merchant-signature.dto';
-import { MerchantSignatureFailureEnum } from '../microservice.enum';
+import { MerchantSignatureFailureEnum } from '../merchant.enum';
 
 /**
  * Same options as {@link AjvPipe}, so these tests exercise the schemas the way

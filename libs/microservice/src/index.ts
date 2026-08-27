@@ -4,3 +4,5 @@ export * from './ajv-validation.pipe';
 export * from './client';
 export * from './dto';
 export * from './microservice.enum';
+export * from './merchant.exception';
+export * from './merchant.enum';

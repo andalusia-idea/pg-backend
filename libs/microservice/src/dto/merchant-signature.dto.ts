@@ -1,8 +1,6 @@
 import { Type, Static } from '@sinclair/typebox';
-import {
-  HttpMethodEnum,
-  MerchantSignatureFailureEnum,
-} from '../microservice.enum';
+import { HttpMethodEnum } from '../microservice.enum';
+import { MerchantSignatureFailureEnum } from '../merchant.enum';
 
 /// REQUEST
 /**

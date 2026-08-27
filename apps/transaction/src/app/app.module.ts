@@ -11,6 +11,8 @@ import { MicroserviceModule } from '@app/microservice';
 import { MotionPayModule } from '../upstream/motionpay';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ClsModule } from 'nestjs-cls';
+import { Apiv1Module } from '../api-v1/api.v1.module';
 
 @Module({
   controllers: [AppController],
@@ -29,8 +31,11 @@ import { AppService } from './app.service';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+    ClsModule.forRoot({ global: true, middleware: { mount: true } }),
 
-    /// Business Module
+    Apiv1Module,
+
+    /// Upstream Module
     MotionPayModule,
   ],
 })
