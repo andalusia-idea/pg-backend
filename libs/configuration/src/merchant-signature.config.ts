@@ -29,6 +29,11 @@ export class MerchantSignatureConfig {
    *
    * Applies in both directions - a merchant's clock can run fast as easily as
    * slow - so the accepted band is twice this wide in total.
+
+  # Merchant signature — verification timing
+  # TOLERANCE must be IDENTICAL in apps/auth and apps/transaction. The guard
+  # (transaction) enforces it; the nonce-TTL invariant below is validated against
+  # it here. If the two disagree, auth validates a window the guard never applies.
    */
   get TIMESTAMP_TOLERANCE_SECONDS(): number {
     return this.readInt('MERCHANT_SIGNATURE_TIMESTAMP_TOLERANCE_SECONDS', 300);
@@ -42,6 +47,10 @@ export class MerchantSignatureConfig {
    * is forgotten before that band closes, the request becomes replayable in
    * the gap. Enforced below rather than left as a comment, because the two
    * values are set independently and the failure is silent.
+   *
+  # Must be at least 2x TOLERANCE — a request stays acceptable for the whole
+  # ±tolerance band, so a nonce forgotten sooner leaves a replay gap. Enforced at
+  # startup: it throws rather than booting with a silent hole.
    */
   get NONCE_TTL_SECONDS(): number {
     const ttl = this.readInt('MERCHANT_SIGNATURE_NONCE_TTL_SECONDS', 600);
@@ -65,6 +74,8 @@ export class MerchantSignatureConfig {
    * written, so this only bounds the damage if an invalidation is ever missed
    * - a suspended merchant would keep authenticating, and a rotated key would
    * keep failing, for at most this long.
+  # Signature-row cache. Short on purpose: it only bounds the damage if an
+  # explicit invalidation is ever missed.
    */
   get CACHE_TTL_SECONDS(): number {
     return this.readInt('MERCHANT_SIGNATURE_CACHE_TTL_SECONDS', 60);
@@ -74,6 +85,7 @@ export class MerchantSignatureConfig {
    * How long after a rotation `secretKeyPrevious` keeps being accepted, in
    * seconds. Long enough for a merchant to redeploy, short enough to bound
    * exposure of a retired key.
+  # How long the retired key keeps working after a rotation.
    */
   get SECRET_KEY_GRACE_SECONDS(): number {
     return this.readInt('MERCHANT_SIGNATURE_SECRET_KEY_GRACE_SECONDS', 86_400);

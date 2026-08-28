@@ -1,3 +1,4 @@
+import { MerchantSignatureConfig } from '@app/configuration';
 import { MerchantSignatureStatusEnum } from '@app/microservice';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -34,6 +35,15 @@ export class MerchantSignatureRedis {
   constructor(
     @Inject(REDIS_KEY)
     private readonly redis: Redis,
+    /**
+     * The lifetimes live with the rest of the merchant-signature domain rather
+     * than in a config grouped by "things that are TTLs". `NONCE_TTL_SECONDS`
+     * is validated there against `TIMESTAMP_TOLERANCE_SECONDS`, which is not
+     * itself a TTL - separating them would have nowhere left to put that
+     * invariant, and it is the only thing standing between a
+     * misconfiguration and a silent replay window.
+     */
+    private readonly merchantSignatureConfig: MerchantSignatureConfig,
   ) {}
 
   private nonceKey(clientId: string, nonce: string): string {
@@ -62,16 +72,12 @@ export class MerchantSignatureRedis {
    * unreachable fails open, so the caller's fail-closed path must reject
    * instead. Contrast the cache methods below, which fail *open* on purpose.
    */
-  async claimNonce(
-    clientId: string,
-    nonce: string,
-    ttlSeconds: number,
-  ): Promise<boolean> {
+  async claimNonce(clientId: string, nonce: string): Promise<boolean> {
     const result = await this.redis.set(
       this.nonceKey(clientId, nonce),
       '1',
       'EX',
-      ttlSeconds,
+      this.merchantSignatureConfig.NONCE_TTL_SECONDS,
       'NX',
     );
     return result === 'OK';
@@ -90,7 +96,6 @@ export class MerchantSignatureRedis {
   async setMerchantSignature(
     clientId: string,
     value: MerchantSignatureRedisDto,
-    ttlSeconds: number,
   ): Promise<void> {
     const entry: MerchantSignatureCacheEntry = {
       ...value,
@@ -102,7 +107,7 @@ export class MerchantSignatureRedis {
     try {
       await this.redis.setex(
         this.merchantSignatureKey(clientId),
-        ttlSeconds,
+        this.merchantSignatureConfig.CACHE_TTL_SECONDS,
         JSON.stringify(entry),
       );
     } catch (error) {

@@ -1,11 +1,16 @@
 import { Type, Static } from '@sinclair/typebox';
-import { MoneyType, PercentageType } from '../microservice.enum';
+import {
+  MoneyType,
+  PaymentMethodNameEnum,
+  PercentageType,
+  ProviderNameEnum,
+} from '../microservice.enum';
 
 /// REQUEST
 const BaseFeeFilterSchema = Type.Object({
   merchantId: Type.Number(),
-  providerName: Type.String(),
-  paymentMethodName: Type.String(),
+  providerName: Type.Enum(ProviderNameEnum),
+  paymentMethodName: Type.Enum(PaymentMethodNameEnum),
   nominal: MoneyType,
 });
 

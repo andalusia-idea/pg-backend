@@ -22,6 +22,7 @@ import {
   UpsertMerchantAgentShareholderDto,
   UpsertMerchantFeeDto,
 } from './dto/upsert-merchant-fee.dto';
+import { FeeRedis } from '@app/redis';
 
 const ZERO = '0';
 
@@ -32,6 +33,8 @@ export class ConfigMerchantService {
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+
+    private readonly feeRedis: FeeRedis,
   ) {}
 
   async findMerchantIntervalById(
@@ -148,6 +151,8 @@ export class ConfigMerchantService {
           create: { merchantId, baseFeeId, ...values },
           update: values,
         });
+
+        await this.feeRedis.deleteMerchantFee(merchantId, baseFeeId);
       }
     });
   }
@@ -174,6 +179,8 @@ export class ConfigMerchantService {
           create: { merchantId, agentId, percentagePerAgent },
           update: { percentagePerAgent },
         });
+
+        await this.feeRedis.deleteAgentShareholder(merchantId);
       }
     });
   }

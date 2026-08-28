@@ -17,3 +17,9 @@
 export const NONCE_KEY_PREFIX = 'merchant-signature:nonce';
 
 export const MERCHANT_SIGNATURE_KEY_PREFIX = 'merchant-signature:db';
+
+export const BASE_FEE_KEY_PREFIX = 'base-fee';
+
+export const MERCHANT_FEE_KEY_PREFIX = 'merchant-fee';
+
+export const AGENT_SHAREHOLDER_KEY_PREFIX = 'agent-shareholder';

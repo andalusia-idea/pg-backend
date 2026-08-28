@@ -148,7 +148,6 @@ export class MerchantSignatureService {
     const nonceClaimed = await this.merchantSignatureRedis.claimNonce(
       dto.clientId,
       dto.nonce,
-      this.merchantSignatureConfig.NONCE_TTL_SECONDS,
     );
     if (!nonceClaimed) {
       return this.reject(userId, MerchantSignatureFailureEnum.REPLAYED_NONCE);
@@ -199,7 +198,6 @@ export class MerchantSignatureService {
       await this.merchantSignatureRedis.setMerchantSignature(
         clientId,
         merchantSignature,
-        this.merchantSignatureConfig.CACHE_TTL_SECONDS,
       );
     }
 

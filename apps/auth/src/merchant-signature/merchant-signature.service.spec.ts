@@ -16,10 +16,7 @@ const USER_ID = 42;
 const CLIENT_ID = '3f2b8c1d-4e5a-4b6c-8d9e-0a1b2c3d4e5f';
 const NONCE = 'b7c1e2d3-4f5a-4b6c-8d9e-0a1b2c3d4e5f';
 
-const TOLERANCE_SECONDS = 300;
-const NONCE_TTL_SECONDS = 600;
 const GRACE_SECONDS = 86_400;
-const CACHE_TTL_SECONDS = 60;
 
 const secretKey = generateSecretKey();
 const oldSecretKey = generateSecretKey();
@@ -77,12 +74,9 @@ describe('MerchantSignatureService.validateSignature', () => {
     setMerchantSignature = jest.fn(async () => undefined);
 
     const prismaMaster = { merchantSignature: { findUnique } };
-    const config = {
-      TIMESTAMP_TOLERANCE_SECONDS: TOLERANCE_SECONDS,
-      NONCE_TTL_SECONDS,
-      SECRET_KEY_GRACE_SECONDS: GRACE_SECONDS,
-      CACHE_TTL_SECONDS,
-    };
+    // The only value this service reads: the nonce and cache TTLs now belong
+    // to MerchantSignatureRedis, and the timestamp tolerance to the guard.
+    const config = { SECRET_KEY_GRACE_SECONDS: GRACE_SECONDS };
 
     service = new MerchantSignatureService(
       prismaMaster as never,
@@ -106,7 +100,6 @@ describe('MerchantSignatureService.validateSignature', () => {
       expect(setMerchantSignature).toHaveBeenCalledWith(
         CLIENT_ID,
         expect.objectContaining({ userId: USER_ID }),
-        CACHE_TTL_SECONDS,
       );
     });
 
@@ -402,16 +395,13 @@ describe('MerchantSignatureService.validateSignature', () => {
   });
 
   describe('nonce replay', () => {
-    it('claims the nonce with the configured TTL on success', async () => {
+    /** The TTL is the Redis class's own concern now, not a call-site argument. */
+    it('claims the nonce on success', async () => {
       findUnique.mockResolvedValue(activeRow() as never);
 
       await service.validateSignature(signedWith(secretKey));
 
-      expect(claimNonce).toHaveBeenCalledWith(
-        CLIENT_ID,
-        NONCE,
-        NONCE_TTL_SECONDS,
-      );
+      expect(claimNonce).toHaveBeenCalledWith(CLIENT_ID, NONCE);
     });
 
     it('rejects a nonce that was already claimed', async () => {
