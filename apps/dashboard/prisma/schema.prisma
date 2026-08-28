@@ -178,6 +178,12 @@ model MerchantSignature {
   secretKeyPrevious  String?
   secretKeyRotatedAt DateTime? @db.Timestamptz(6)
 
+  /// Opt-in IP allowlist. Empty means unrestricted, which is the default:
+  /// most merchants sit on dynamic consumer connections where pinning an
+  /// address would lock them out. Entries are bare addresses or CIDR ranges,
+  /// IPv4 or IPv6 - 45 chars covers the longest IPv6 form with a prefix.
+  allowedIps String[] @default([]) @db.VarChar(45)
+
   credentials Json                        @default("{}") @db.JsonB
   status      MerchantSignatureStatusEnum
 

@@ -77,6 +77,7 @@ All emitted by `MerchantSignatureGuard` or by auth's verification, service code 
 | `4010006` | 401 | `CLIENT_SUSPENDED` | Merchant credentials are not active | Contact manapay — this is an account state, not an integration bug. |
 | `4010007` | 401 | `SECRET_KEY_NOT_GENERATED` | No secret key has been generated for this merchant | Generate one in the dashboard. |
 | `4010008` | 401 | `INVALID_SIGNATURE` | Invalid X-Signature | The MAC did not match under the current or previous secret. Check the canonical string construction. |
+| `4010109` | 401 | `IP_NOT_ALLOWED` | Request origin is not in this merchant IP allowlist | The signature was **valid** — only the origin was wrong. Check the allowlist in the dashboard, or that the calling host's egress IP has not changed. |
 | `4090000` | **409** | `REPLAYED_NONCE` | X-Nonce already used, re-sign the request with a new nonce | **Not a credential problem.** Generate a fresh nonce and re-sign. |
 
 ### Two deliberate deviations from SNAP
@@ -84,6 +85,16 @@ All emitted by `MerchantSignatureGuard` or by auth's verification, service code 
 **Split codes where SNAP lumps.** SNAP puts "Unknown Client" and "Verify Client Secret Fail" together under a single `401 00 Unauthorized. [reason]`. We give them distinct codes because the support saving is large and the disclosure is nil: `clientId` is a UUIDv4, so it is not enumerable, and an attacker already knows whether they hold a valid secret.
 
 **`REPLAYED_NONCE` is 409, not 401.** This follows SNAP's own `409 00 Conflict` for a reused `X-EXTERNAL-ID`. A 401 would send the merchant to audit credentials that are fine; 409 tells them what actually happened — a duplicate — and that a fresh nonce fixes it.
+
+### On `IP_NOT_ALLOWED` and check ordering
+
+The allowlist is checked **after** the signature verifies, never before. That ordering is what gives the code its meaning: `4010109` can only be reached by a caller who *proved* they hold the merchant's secret, so it reads as "this key is being used from somewhere it should not be" — the highest-fidelity credential-compromise signal the system produces, and worth an alert. (`X-Client-Id` travels in every request and is not secret; `secretKey` is.)
+
+Checking origin first would reject the same request, but you would never learn a secret had leaked.
+
+The cost of that ordering, stated plainly: an attacker holding a stolen secret and calling from an unlisted address learns the secret is valid. That is a real disclosure, judged the lesser loss — an attacker who lifted a key from a config file generally assumes it works, whereas the detection signal exists in only one of the two orderings.
+
+IP allowlisting is **opt-in per merchant** and empty by default. Most merchants sit on dynamic connections where pinning an address would guarantee an outage.
 
 ---
 

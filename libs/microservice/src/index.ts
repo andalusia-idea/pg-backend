@@ -6,3 +6,4 @@ export * from './dto';
 export * from './microservice.enum';
 export * from './merchant.exception';
 export * from './merchant.enum';
+export * from './merchant-ip';

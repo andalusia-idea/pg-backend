@@ -30,6 +30,7 @@ const validRequest = () => ({
   httpMethod: 'POST',
   endpoint: '/open/v1/payin/purchase',
   bodyHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+  ipAddress: '203.0.113.5',
 });
 
 const withRequest = (mutate: (payload: Record<string, unknown>) => void) => {
@@ -98,6 +99,7 @@ describe('FilterMerchantSignatureValidationSchema', () => {
     ['httpMethod'],
     ['endpoint'],
     ['bodyHash'],
+    ['ipAddress'],
   ])('rejects a payload missing %s', (field) => {
     expect(withRequest((p) => delete p[field])).toBe(false);
   });

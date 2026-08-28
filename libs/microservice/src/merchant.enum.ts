@@ -34,6 +34,16 @@ export const MerchantSignatureFailureEnum = {
   REPLAYED_NONCE: 'REPLAYED_NONCE',
   /** Merchant has not yet generated Secret Key at Dashboard */
   SECRET_KEY_NOT_GENERATED: 'SECRET_KEY_NOT_GENERATED',
+  /**
+   * The signature was valid but the request came from an address outside the
+   * merchant's IP allowlist.
+   *
+   * Only reachable *after* the signature verifies, which is what makes it a
+   * high-fidelity alarm: it means someone holding the merchant's actual secret
+   * called from an unlisted address. Worth alerting on - `clientId` is not a
+   * secret, but `secretKey` is.
+   */
+  IP_NOT_ALLOWED: 'IP_NOT_ALLOWED',
 } as const;
 export type MerchantSignatureFailureEnum =
   (typeof MerchantSignatureFailureEnum)[keyof typeof MerchantSignatureFailureEnum];

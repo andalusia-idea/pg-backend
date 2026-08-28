@@ -39,6 +39,12 @@ export const FilterMerchantSignatureValidationSchema = Type.Object(
     endpoint: Type.String({ minLength: 1, maxLength: 2048 }),
     /** Lowercase hex SHA-256 of the raw request bytes. */
     bodyHash: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+    /**
+     * The caller's address as the guard resolved it, or null when it could not
+     * be determined. Only consulted for merchants that have an allowlist -
+     * null then rejects, since an unknown origin cannot be shown to be allowed.
+     */
+    ipAddress: Type.Union([Type.String({ maxLength: 45 }), Type.Null()]),
   },
   { additionalProperties: false },
 );

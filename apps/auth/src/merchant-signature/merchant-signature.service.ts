@@ -6,6 +6,7 @@ import {
   MerchantSignatureStatusEnum,
   MerchantSignatureValidationDto,
   MerchantWebhookUrlDto,
+  isIpAllowed,
 } from '@app/microservice';
 import {
   PRISMA_MASTER_PROVIDER_KEY,
@@ -124,6 +125,24 @@ export class MerchantSignatureService {
       });
     }
 
+    // After the signature, deliberately. Rejecting on origin first would mean
+    // never learning that a secret had leaked: this rejection is only
+    // reachable by a caller who *proved* they hold the merchant's key, which
+    // makes it the highest-fidelity credential-compromise signal available.
+    // `clientId` travels in a header and is not secret; `secretKey` is.
+    //
+    // Before the nonce claim, also deliberately: a request rejected on origin
+    // must not burn its nonce, or a merchant who fixes their allowlist and
+    // retries the same signed request gets REPLAYED_NONCE instead.
+    if (!isIpAllowed(dto.ipAddress, merchantSignature.allowedIps)) {
+      this.logger.warn({
+        msg: 'Valid signature from an address outside the merchant allowlist',
+        userId,
+        ipAddress: dto.ipAddress,
+      });
+      return this.reject(userId, MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
+    }
+
     // Last, and only once the signature has proved knowledge of the secret:
     // claiming earlier would let unauthenticated traffic populate the store.
     const nonceClaimed = await this.merchantSignatureRedis.claimNonce(
@@ -172,6 +191,7 @@ export class MerchantSignatureService {
           secretKey: true,
           secretKeyPrevious: true,
           secretKeyRotatedAt: true,
+          allowedIps: true,
         },
       });
 

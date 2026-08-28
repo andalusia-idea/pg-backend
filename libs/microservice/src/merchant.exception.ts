@@ -111,6 +111,11 @@ const MERCHANT_SIGNATURE_FAILURE: Record<
     '08',
     'Invalid X-Signature',
   ),
+  IP_NOT_ALLOWED: common(
+    HttpStatus.UNAUTHORIZED,
+    '09',
+    'Request origin is not in this merchant IP allowlist',
+  ),
   REPLAYED_NONCE: common(
     HttpStatus.CONFLICT,
     '00',

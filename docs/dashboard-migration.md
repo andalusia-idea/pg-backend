@@ -72,12 +72,49 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` | `MERCHANT` (own record only — see note below) | ✅ Matches (fixed 2026-08-26 — see note below) | — | — |
 | 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` | `MERCHANT` (own record only) | ✅ Matches (fixed 2026-08-26) | — | — |
 | 39 | GET | `merchant-signature/status` | *(none)* | `getMerchantSignatureStatus` | `MERCHANT` (own record only) | ✅ Matches (implemented 2026-08-26 — see note below) | — | — |
+| 53 | PUT | `merchant-signature/allowed-ips` | *(none)* | *(none yet — new)* | `MERCHANT` (own record only) | 🆕 **New backend-first endpoint, 2026-08-28** — see note below | — | — |
 
 > **Rows 15, 16, 39 — merchant-signature, fixed 2026-08-26.** As of the 2026-08-25 pass, the frontend called `generate-secret-key` and `register-webhook-url` with a `:merchantUserId` path segment the ported (id-less) backend controller didn't accept, and `getMerchantSignatureStatus` didn't exist on the backend under any path. **The frontend fixed its side** (commit `b9475b4`, "refactor: remove merchantUserId"): `merchant-signature.api.ts` now calls all three with no path param at all — `generate-secret-key`, `register-webhook-url`, and `status` (was `:merchantUserId/status`) — matching the backend's "acts on the caller's own record via the bearer token" design exactly, not just patched to the same URL shape.
 >
 > The reason this is *correct* rather than a workaround: the calling component, `MerchantApiIntegration` (`src/pages/merchant/components/merchant-detail-api-integrate.tsx`), no longer takes a `merchantUserId` prop either, and its own doc comment now states it's "only ever rendered for a MERCHANT-role session viewing their own detail page." Confirmed against the caller — `merchant-detail/index.tsx` renders the "Api Integrasi" tab containing this component only inside `...(isMerchant ? [...] : [])`, where `isMerchant = hasAccessByRoles([AccessControlRoles.merchant])` checks the *signed-in user's own* role, not the role of the merchant record being viewed. So the `SUPER_ADMIN`/`AGENT`-views-another-merchant's-signature scenario this doc previously worried about doesn't exist in the UI — that tab simply isn't shown to those roles — which is why the Role column above is `MERCHANT` only, not the three-role set every other merchant-detail-page row carries.
 >
 > Rows 15 and 16 are clean ✅ matches. Row 39's `GET status` route landed 2026-08-26 (`MerchantSignatureController.status()`, backed by `MerchantSignatureService.status()`) — a genuine implementation, not a stub: it's a plain read of the caller's own `MerchantSignature` row (`secretKeyRotatedAt` mapped onto the wire field `secretKeyGeneratedAt`, plus `payinUrl`/`payoutUrl`), no money or write path involved, so there was nothing left to "review later" about it.
+
+> ### 🆕 Row 53 — `PUT merchant-signature/allowed-ips`, added 2026-08-28
+>
+> **This is the first endpoint here that the frontend does not yet call.** Everything else in this inventory was reverse-engineered from existing frontend calls; this one went backend-first, so the UI has to be built for it. Flagged prominently for that reason.
+>
+> **What it does.** Opt-in IP allowlisting for the merchant Public API (`api.manapay.id`, *not* the dashboard). A merchant lists the addresses their server calls from, and a request carrying a valid signature from anywhere else is rejected — so a leaked secret key stops being sufficient on its own.
+>
+> **`GET merchant-signature/status` (row 39) gained a field** to back the same screen without a second call:
+>
+> ```ts
+> {
+>   secretKeyGeneratedAt: string | null,
+>   payinUrl: string | null,
+>   payoutUrl: string | null,
+>   allowedIps: string[],          // ← new, [] means unrestricted
+> }
+> ```
+>
+> **Request shape** — a full replace, not add/remove:
+>
+> ```ts
+> PUT /merchant-signature/allowed-ips
+> { "allowedIps": ["203.0.113.5", "198.51.100.0/24"] }   // max 20 entries
+> ```
+>
+> Bare IPv4/IPv6 addresses or CIDR ranges. A malformed entry is a 422 naming the offending value. **An empty array removes the restriction entirely** and must stay offerable in the UI — it is the only way back for a merchant who has locked themselves out.
+>
+> Note the verb is **`PUT`**, unlike `register-webhook-url`'s `POST`. It replaces a collection wholesale, so `PUT` is the accurate verb; the older `POST` is a legacy carry-over, not a convention worth propagating. Returns the standard envelope with `ResponseStatus.UPDATED`.
+>
+> **Three things the UI should get right**, none of which the backend can enforce:
+>
+> 1. **This is the merchant's *server* egress IP, not their browser's.** The person configuring it is usually a developer on a laptop, while the API calls come from a production host. A field pre-filled with "your current IP" would be wrong far more often than right — which is also why the backend deliberately does *not* warn when the saved list excludes the caller's address. Static guidance beats a spurious warning here.
+> 2. **Make the lockout consequence explicit.** Saving a wrong list does not break the dashboard — it is never IP-restricted — but it does break their live payment integration until corrected. Worth a confirmation step.
+> 3. **Position it as optional.** Most merchants (toko kelontong, warung) are on dynamic consumer connections where pinning an address guarantees an outage. This is for merchants with stable hosting; the default of "unrestricted" is correct for everyone else, and the UI should not imply they are less secure for leaving it empty.
+>
+> **What a rejected request looks like** to the merchant, on the Public API (not this dashboard): `401` with `responseCode` `4010109`, message *"Request origin is not in this merchant IP allowlist"* — see [merchant-api-response-codes.md](merchant-api-response-codes.md).
 
 ### 2.2 From config-service
 
@@ -139,9 +176,11 @@ Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay
 - **CSV export endpoints** — legacy has `GET transactions/{purchase,topup,withdraw,disbursement}/csv`. The frontend doesn't call them yet. Not migrating now; noted here because they're an obvious near-future ask.
 - **`:id/detail` endpoints** — legacy has per-transaction detail routes the frontend doesn't call. Same treatment.
 
-### 2.6 Revised totals (2026-08-25 verification pass, `dev` branch)
+### 2.6 Revised totals (2026-08-25 verification pass, `dev` branch; row 53 added 2026-08-28)
 
 The frontend calls **52 endpoints**, not 41: 48 in the dashboard's scope (38 originally tracked + 10 found by this pass, rows 39–48 above) plus the 4 out-of-scope reconciliation calls (§2.5, corrected from 3).
+
+**Row 53 is counted separately below** because it inverts the direction of this whole inventory: every other row started from a frontend call and asked whether the backend served it. Row 53 exists on the backend and has no caller yet.
 
 | | Count |
 |---|---|
@@ -150,12 +189,15 @@ The frontend calls **52 endpoints**, not 41: 48 in the dashboard's scope (38 ori
 | In scope, not yet ported — pending D17 / fee-calculation (rows 31, 32, 33, 35) | 4 |
 | In scope, stubbed 2026-08-26 — route/DTO real, handler is a deliberate no-op (rows 40–48) | 9 |
 | **Total in scope** | **48** |
+| Backend-first, awaiting a frontend caller (row 53 — IP allowlist, 2026-08-28) | 1 |
 | Out of scope — reconciliation (deferred per D5) | 4 |
 | Out of scope — region lookup (frontend calls a third party directly) | 4 |
 
 The role-name drift, the config base-URL disagreement, the merchant-signature path mismatch (rows 15/16/39), and the D1 frontend bug on row 33 were all flagged as live problems on 2026-08-25 and confirmed fixed on the frontend as of 2026-08-26. Separately, on 2026-08-26 rows 39–48 (the 10 previously-🆕 endpoints) got real controllers/DTOs added to `apps/dashboard` — row 39 for real, rows 40–48 as stubs pending real logic (see the callouts at the top of §2 and on the affected rows). What's left un-implemented is now purely rows 31/32/33/35, gated on the D17 decision — everything else the frontend calls has *a* route to hit, even where the business logic behind it still needs writing.
 
 Section 7's progress checklist below still says "35 of 38 ported" — that line predates this pass and reflects the original 38-endpoint count, not the 48 found here. Left as-is since only §2 was in scope for this audit; whoever picks up rows 39–48 should update §7 alongside them.
+
+**For the frontend team, 2026-08-28:** the only change requiring work on your side is **row 53** plus the new `allowedIps` field on row 39's response. Nothing existing broke — `status` gained a field, which is additive. See the row 53 callout in §2.1 for the request/response shapes and the three UI points that matter.
 
 ---
 

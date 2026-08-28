@@ -71,6 +71,12 @@ export class MerchantSignatureGuard implements CanActivate {
       // there is nothing to strip - see docs/merchant-signature.md §5.2.
       endpoint: req.url,
       bodyHash: req.rawBody ? sha256Hex(req.rawBody) : EMPTY_BODY_SHA256,
+      // Fastify resolves this from `X-Forwarded-For` only for proxies named in
+      // `trustProxy` (see main.ts); otherwise it is the socket address. Null
+      // when it cannot be determined at all, which auth treats as "not
+      // allowed" for any merchant that has an allowlist - a misconfigured
+      // trustProxy must not silently disable the control.
+      ipAddress: req.ip || null,
     };
 
     const result = await this.verify(payload);

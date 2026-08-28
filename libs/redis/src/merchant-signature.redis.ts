@@ -13,6 +13,12 @@ export interface MerchantSignatureRedisDto {
   secretKeyPrevious: string | null;
   secretKeyRotatedAt: Date | null;
   status: MerchantSignatureStatusEnum;
+  /**
+   * Rides the same cache entry as the secrets rather than living in its own.
+   * One lookup, one TTL, one invalidation path - and removing an address is a
+   * revocation, so it must take effect as fast as a suspension does.
+   */
+  allowedIps: string[];
 }
 
 /** What actually sits in Redis: JSON has no Date, so the instant is epoch ms. */

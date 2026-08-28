@@ -32,6 +32,7 @@ const request = (): FilterMerchantSignatureValidationDto => ({
   httpMethod: 'POST',
   endpoint: '/open/v1/payin/purchase',
   bodyHash: sha256Hex('{"amount":100000}'),
+  ipAddress: '203.0.113.5',
 });
 
 /** Sign a request the way a correctly-integrated merchant would. */
@@ -58,6 +59,7 @@ const activeRow = (overrides: Record<string, unknown> = {}) => ({
   secretKey,
   secretKeyPrevious: null,
   secretKeyRotatedAt: null,
+  allowedIps: [] as string[],
   ...overrides,
 });
 
@@ -314,6 +316,88 @@ describe('MerchantSignatureService.validateSignature', () => {
       const result = await service.validateSignature(signedWith(secretKey));
 
       expect(result.isValid).toBe(true);
+    });
+  });
+
+  describe('IP allowlist', () => {
+    it('allows any origin when no allowlist is configured', async () => {
+      findUnique.mockResolvedValue(activeRow({ allowedIps: [] }) as never);
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.isValid).toBe(true);
+    });
+
+    it('allows an origin inside the allowlist', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['203.0.113.0/24'] }) as never,
+      );
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.isValid).toBe(true);
+    });
+
+    it('rejects an origin outside the allowlist', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['198.51.100.0/24'] }) as never,
+      );
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.reason).toBe(MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
+      expect(result.userId).toBe(USER_ID);
+    });
+
+    /**
+     * The ordering that gives this control its value. IP_NOT_ALLOWED is only
+     * reachable once the signature has verified, so it means someone holding
+     * the merchant's actual secret called from an unlisted address - the
+     * highest-fidelity credential-compromise signal the system produces. If
+     * origin were checked first, a bad signature from a bad IP would report
+     * the IP, and a leaked secret would never announce itself.
+     */
+    it('reports an invalid signature rather than the origin when both are wrong', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['198.51.100.0/24'] }) as never,
+      );
+
+      const result = await service.validateSignature(
+        signedWith(generateSecretKey()),
+      );
+
+      expect(result.reason).toBe(
+        MerchantSignatureFailureEnum.INVALID_SIGNATURE,
+      );
+    });
+
+    /**
+     * A request rejected on origin must not burn its nonce, or a merchant who
+     * corrects their allowlist and retries the same signed request would get
+     * REPLAYED_NONCE instead of succeeding.
+     */
+    it('does not claim the nonce when the origin is rejected', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['198.51.100.0/24'] }) as never,
+      );
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(claimNonce).not.toHaveBeenCalled();
+    });
+
+    /** A misconfigured `trustProxy` must not silently disable the control. */
+    it('rejects when the origin could not be resolved', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['203.0.113.0/24'] }) as never,
+      );
+
+      const result = await service.validateSignature({
+        ...signedWith(secretKey),
+        ipAddress: null,
+      });
+
+      expect(result.reason).toBe(MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
     });
   });
 
