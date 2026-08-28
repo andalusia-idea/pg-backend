@@ -72,7 +72,7 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 15 | GET | `merchant-signature/generate-secret-key` | `merchant-signature` | `generateSecretKey` | `MERCHANT` (own record only — see note below) | ✅ Matches (fixed 2026-08-26 — see note below) | — | — |
 | 16 | POST | `merchant-signature/register-webhook-url` | `merchant-signature` | `registerWebhookUrl` | `MERCHANT` (own record only) | ✅ Matches (fixed 2026-08-26) | — | — |
 | 39 | GET | `merchant-signature/status` | *(none)* | `getMerchantSignatureStatus` | `MERCHANT` (own record only) | ✅ Matches (implemented 2026-08-26 — see note below) | — | — |
-| 53 | PUT | `merchant-signature/allowed-ips` | *(none)* | *(none yet — new)* | `MERCHANT` (own record only) | 🆕 **New backend-first endpoint, 2026-08-28** — see note below | — | — |
+| 53 | PUT | `merchant-signature/allowed-ips` | *(none)* | `updateAllowedIps` | `MERCHANT` (own record only) | ✅ Matches (frontend caller added 2026-08-28 — see note below) | — | — |
 
 > **Rows 15, 16, 39 — merchant-signature, fixed 2026-08-26.** As of the 2026-08-25 pass, the frontend called `generate-secret-key` and `register-webhook-url` with a `:merchantUserId` path segment the ported (id-less) backend controller didn't accept, and `getMerchantSignatureStatus` didn't exist on the backend under any path. **The frontend fixed its side** (commit `b9475b4`, "refactor: remove merchantUserId"): `merchant-signature.api.ts` now calls all three with no path param at all — `generate-secret-key`, `register-webhook-url`, and `status` (was `:merchantUserId/status`) — matching the backend's "acts on the caller's own record via the bearer token" design exactly, not just patched to the same URL shape.
 >
@@ -115,6 +115,16 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 > 3. **Position it as optional.** Most merchants (toko kelontong, warung) are on dynamic consumer connections where pinning an address guarantees an outage. This is for merchants with stable hosting; the default of "unrestricted" is correct for everyone else, and the UI should not imply they are less secure for leaving it empty.
 >
 > **What a rejected request looks like** to the merchant, on the Public API (not this dashboard): `401` with `responseCode` `4010109`, message *"Request origin is not in this merchant IP allowlist"* — see [merchant-api-response-codes.md](merchant-api-response-codes.md).
+>
+> **Update (2026-08-28): frontend caller added, all three UI points addressed.** Commit `9d749a8` ("feat: add IP whitelist management to merchant API integration page") adds a card to `merchant-detail-api-integrate.tsx` alongside the existing webhook-configuration card: a text field + "Add" button builds up a list of tags (each removable via its `×`), and a "Confirm IP Whitelist" / "Update IP Whitelist" button (label switches on whether the caller already has a saved list) does the `PUT`, disabled whenever the draft matches what's already saved. Verified against every point this callout raised:
+>
+> - **Own-server-IP note** — the card's description and the new "IP Whitelist" section under the page's API docs both say outright this is the server's outbound IP, not the browser's, with no dynamic "your IP is X" prefill.
+> - **Confirmation step** — saving opens a `Modal.confirm` spelling out that a wrong list breaks the live API integration, not the dashboard, before the request fires.
+> - **Positioned as optional** — card title is "IP Whitelist (Optional)"; the docs say most merchants should leave it empty and don't imply reduced security for doing so.
+> - **Empty stays offerable** — confirmed by driving it end-to-end (Playwright against the dev server): adding 2 entries → save → remove both → the button re-enables on the empty draft, the confirm dialog swaps to a "this removes all IP restrictions" message instead of the generic replace message, and the save round-trips to an empty `allowedIps` on refetch. This is the one hard requirement this callout called a "must," so it got the most scrutiny.
+> - **Max 20 entries, full replace** — the frontend mirrors the backend's `MAX_ALLOWED_IPS = 20` bound client-side (blocks further "Add" clicks past it with a message) and always sends the entire draft array on save, never a partial add/remove.
+>
+> **One gap found doing this check, not specific to row 53:** a malformed entry's 422 (`ApiError.validationFailed`) puts the per-field message that actually names the offending value under `error.fields["allowedIps.N"]`, but the frontend's global `handleErrorResponse()` (`src/utils/ky/error-response.ts`) only ever reads the top-level `message`/`errorMsg` — which for this error type is just the generic `"Request validation failed"`. So today, entering a malformed IP shows the merchant a toast that doesn't say *which* entry was wrong, contradicting this callout's "a malformed entry is a 422 naming the offending value" premise from the UI's side. This isn't new to row 53 — `handleErrorResponse` never reads `error.fields` for *any* endpoint, so every class-validator 422 across the dashboard has the same gap; row 53 is just the first place this doc's cross-check happened to exercise it. **Frontend.** Flagged here rather than fixed, since it's a change to the shared error handler, not this one feature.
 
 ### 2.2 From config-service
 
@@ -176,20 +186,20 @@ Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay
 - **CSV export endpoints** — legacy has `GET transactions/{purchase,topup,withdraw,disbursement}/csv`. The frontend doesn't call them yet. Not migrating now; noted here because they're an obvious near-future ask.
 - **`:id/detail` endpoints** — legacy has per-transaction detail routes the frontend doesn't call. Same treatment.
 
-### 2.6 Revised totals (2026-08-25 verification pass, `dev` branch; row 53 added 2026-08-28)
+### 2.6 Revised totals (2026-08-25 verification pass, `dev` branch; row 53 added 2026-08-28, frontend caller added same day)
 
-The frontend calls **52 endpoints**, not 41: 48 in the dashboard's scope (38 originally tracked + 10 found by this pass, rows 39–48 above) plus the 4 out-of-scope reconciliation calls (§2.5, corrected from 3).
+The frontend calls **53 endpoints**, not 41: 49 in the dashboard's scope (38 originally tracked + 10 found by the 2026-08-25 pass, rows 39–48, + row 53 once the frontend added its caller) plus the 4 out-of-scope reconciliation calls (§2.5, corrected from 3).
 
-**Row 53 is counted separately below** because it inverts the direction of this whole inventory: every other row started from a frontend call and asked whether the backend served it. Row 53 exists on the backend and has no caller yet.
+**Row 53 no longer inverts the direction of this inventory.** It used to be the one row that started from the backend rather than a frontend call, with no caller to check against; now that the frontend caller exists (`updateAllowedIps`, commit `9d749a8`), it folds into the same "ported and working" bucket as every other ✅ row below.
 
 | | Count |
 |---|---|
-| In scope, ported and working as the frontend calls it (rows 15, 16, 39 landed/moved here 2026-08-26; row 6's only issue was ever a frontend role-scope gap, never a backend defect) | 35 |
+| In scope, ported and working as the frontend calls it (rows 15, 16, 39 landed/moved here 2026-08-26; row 53 added 2026-08-28; row 6's only issue was ever a frontend role-scope gap, never a backend defect) | 36 |
 | In scope, ported but with a real path-level defect | 0 *(was 2 — rows 15, 16 — as of 2026-08-25; fixed on the frontend 2026-08-26, see §2.1 note)* |
 | In scope, not yet ported — pending D17 / fee-calculation (rows 31, 32, 33, 35) | 4 |
 | In scope, stubbed 2026-08-26 — route/DTO real, handler is a deliberate no-op (rows 40–48) | 9 |
-| **Total in scope** | **48** |
-| Backend-first, awaiting a frontend caller (row 53 — IP allowlist, 2026-08-28) | 1 |
+| **Total in scope** | **49** |
+| Backend-first, awaiting a frontend caller | 0 *(was 1 — row 53, IP allowlist — from 2026-08-28 until the frontend added `updateAllowedIps` the same day)* |
 | Out of scope — reconciliation (deferred per D5) | 4 |
 | Out of scope — region lookup (frontend calls a third party directly) | 4 |
 
@@ -198,6 +208,8 @@ The role-name drift, the config base-URL disagreement, the merchant-signature pa
 Section 7's progress checklist below still says "35 of 38 ported" — that line predates this pass and reflects the original 38-endpoint count, not the 48 found here. Left as-is since only §2 was in scope for this audit; whoever picks up rows 39–48 should update §7 alongside them.
 
 **For the frontend team, 2026-08-28:** the only change requiring work on your side is **row 53** plus the new `allowedIps` field on row 39's response. Nothing existing broke — `status` gained a field, which is additive. See the row 53 callout in §2.1 for the request/response shapes and the three UI points that matter.
+
+**Update (2026-08-28, later same day): row 53 done.** Commit `9d749a8` adds the IP whitelist card and its caller — see the "Update" note appended to the row 53 callout in §2.1 for what was verified and the one gap it turned up (generic validation-error messages hide which entry was malformed, dashboard-wide, not just here). Nothing in this doc's scope remains without at least a route to hit; what's left open is D17/D3 (§5) and the 🟡-stubbed handlers (rows 40–48), none of which are new to this pass.
 
 ---
 
