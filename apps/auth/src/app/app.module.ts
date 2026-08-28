@@ -8,6 +8,7 @@ import { PrismaModule } from '@app/prisma';
 import { PrismaClient } from '@auth/prisma';
 import { auditTrailExtension } from '../database/audit.extension';
 import { MicroserviceModule } from '@app/microservice';
+import { ScheduleModule } from '@nestjs/schedule';
 import { UserModule } from '../user/user.module';
 import { MerchantSignatureModule } from '../merchant-signature/merchant-signature.module';
 
@@ -26,6 +27,9 @@ import { MerchantSignatureModule } from '../merchant-signature/merchant-signatur
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+    // Registered here rather than per-module: `forRoot` sets up the single
+    // scheduler registry the whole app shares.
+    ScheduleModule.forRoot(),
 
     // Business Module
     UserModule,

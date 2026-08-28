@@ -286,27 +286,53 @@ Decide the Redis-unavailable behavior explicitly: **fail closed** (reject) is th
 
 ---
 
-## Step 11 — Secret cache (performance)
+## Step 11 — Secret cache ✅ done
 
-Cache `clientId → { secretKey, secretKeyPrevious, secretKeyRotatedAt, status, userId, algorithm }` in Redis **inside `apps/auth`**, short TTL (30–60s), invalidated explicitly on rotate and on status change.
+Cache-aside in [`libs/redis/src/merchant-signature.redis.ts`](../libs/redis/src/merchant-signature.redis.ts), read from `apps/auth`. TTL is `MerchantSignatureConfig.CACHE_TTL_SECONDS` (default 60s).
 
-**Cache in auth, not in transaction.** Copying merchant secrets into a second service doubles where they can leak and makes suspension eventually-consistent. Caching inside auth removes the per-request DB round-trip while leaving the secret in exactly one service — the remaining local TCP hop is ~1ms and buys that containment.
+**Cache in auth, not in transaction.** Copying merchant secrets into a second service doubles where they can leak and makes suspension eventually-consistent. Caching inside auth removes the per-request DB round-trip while leaving the secret in one service — the remaining local TCP hop is ~1ms and buys that containment.
 
-**Verify**: a suspended merchant is rejected within the TTL window; a rotated key works immediately (explicit invalidation, not TTL expiry).
+Four things this step got wrong on the first pass, each worth knowing before writing a similar cache:
+
+1. **Nothing invalidated it.** Rotation wrote to the database and left the cache holding the *pre-rotation* row, so for a full TTL a merchant signing with the key they had just been handed matched neither `secretKey` nor `secretKeyPrevious` — rejected as `INVALID_SIGNATURE`, the exact inverse of what the grace window exists for. Suspension had the same shape. `deleteMerchantSignature()` is now called from rotation (Step 12), **after** the transaction commits: invalidating first lets a concurrent request re-populate from the old row.
+2. **The write ran on cache hits too**, refreshing the TTL on every request. A busy merchant's entry would never expire — and expiry is the only backstop when an invalidation is missed, so combined with (1) a high-traffic merchant could stay broken indefinitely rather than for 60s. The write now happens only on a miss.
+3. **`Date` does not survive JSON.** `secretKeyRotatedAt` came back as a string, so `isWithinGraceWindow` called `.getTime()` on it and threw — a 503, and only on the rotation-grace path, which is the hardest one to notice missing. Stored as epoch milliseconds and revived on read, with a test that fails if the revive is dropped.
+4. **Cache failures must fail *open*.** The nonce store is a security control and rejects when Redis is unreachable; the cache is an optimisation and must fall through to the database instead. Before the split, a Redis blip 503'd every merchant despite a healthy database.
+
+**Not cached: unknown clients.** Negative caching would blunt clientId-spraying, but it also means a merchant onboarded moments ago reads as unknown for a full TTL. Rate limiting is the better answer if that traffic appears.
+
+> ⚠️ **Open item — secrets are cached in plaintext.** The blast radius of `secretKey` now includes Redis, which every app connects to and which has no per-key access control. Encrypting cache values (key from `libs/configuration` — the orphaned legacy `ENCRYPTION_KEY` would finally have a job) or caching only `userId`/`status` are the two options. **Decide before production.**
+
+**Verify**: `npx jest apps/auth` — covers hit, miss, no-rewrite-on-hit, unknown-client-not-cached, and grace window honoured on a cached row.
 
 ---
 
-## Step 12 — Rotation
+## Step 12 — Rotation ✅ done
 
-Dashboard-side (`apps/dashboard`), since this is a merchant-facing dashboard action, not part of the transaction hot path:
+Rotation is dashboard-side ([`apps/dashboard/src/modules/merchant-signature/merchant-signature.service.ts`](../apps/dashboard/src/modules/merchant-signature/merchant-signature.service.ts)) — a merchant action, not part of the transaction hot path. Cleanup is auth-side, since it is maintenance on auth-owned data with no user behind it.
 
-1. Generate 32 random bytes, base64.
-2. `secretKeyPrevious = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`.
-3. Invalidate the Step 11 cache entry.
-4. **Return the plaintext exactly once** — never readable again.
-5. Scheduled job nulls `secretKeyPrevious` past the grace window.
+1. **Generate 32 random bytes as hex** (`generateSecretKey`) — hex, not base64, so the merchant uses the string as-is with no decode step (Step 0).
+2. `secretKeyPrevious = secretKey`, `secretKey = <new>`, `secretKeyRotatedAt = now()`, inside one transaction. Read-then-write in a transaction matters: two concurrent rotations would otherwise both read the same current secret and lose one.
+3. **Invalidate the Step 11 cache entry**, after the commit.
+4. **Return the plaintext exactly once** — there is no endpoint that reads it back.
+5. **Hourly job nulls `secretKeyPrevious` past the grace window** — [`merchant-secret-cleanup.service.ts`](../apps/auth/src/merchant-signature/merchant-secret-cleanup.service.ts).
 
-**Verify**: the old key works inside the grace window and fails outside it; both paths are constant-time and indistinguishable in response shape and timing.
+### On the cleanup job
+
+It is **hygiene, not a control**. A retired secret is already unusable past the window — `isWithinGraceWindow` is checked before the key is ever tried — so leaving it would not let anyone authenticate. What it would do is keep a dead credential in the database indefinitely, which is one more secret than the row needs in a dump.
+
+**No distributed lock, deliberately.** It fires on both replicas (`maxReplicas: 2`), which is safe *only* because the statement is idempotent: an `updateMany` nulling an already-null column changes nothing. **Do not carry that reasoning to the settlement and reconciliation crons** being ported later — those move money, are not idempotent, and need real leader election.
+
+`secretKeyRotatedAt` is deliberately left in place: it records when the merchant last rotated, which stays useful for support long after the key it bounded is gone.
+
+### `@nestjs/schedule` is ESM-only
+
+v12 ships `"type": "module"` with no CJS export (there is no v11 — the package jumps 6.1.3 → 12.0.0). Two consequences:
+
+- **Runtime is fine.** Node 24 supports `require()` of ESM, verified directly against the installed package.
+- **Jest is not.** ts-jest runs in CJS and cannot parse it, so `transformIgnorePatterns: ["/node_modules/(?!@nestjs/schedule)"]` is now in the jest config. Any spec that transitively imports a scheduled service needs this — without it the suite fails to parse with a misleading "unexpected token".
+
+**Verify**: `npx jest apps/auth` — the old key works inside the grace window and fails outside it (Step 4's spec), and the cleanup job selects only expired rows, touches only `secretKeyPrevious`, is safe to run twice, and never throws (an unhandled rejection in a cron takes the process down).
 
 ---
 

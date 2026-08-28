@@ -63,6 +63,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-fastify": "^11.1.28",
+    "@nestjs/schedule": "^12.0.1",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/terminus": "^11.1.1",
     "@prisma/adapter-pg": "^7.8.0",
@@ -141,6 +142,9 @@
     "roots": [
       "<rootDir>/apps/",
       "<rootDir>/libs/"
+    ],
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@nestjs/schedule)"
     ],
     "moduleNameMapper": {
       "^@app/configuration(|/.*)$": "<rootDir>/libs/configuration/src/$1",
