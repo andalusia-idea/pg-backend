@@ -78,6 +78,7 @@ All emitted by `MerchantSignatureGuard` or by auth's verification, service code 
 | `4010007` | 401 | `SECRET_KEY_NOT_GENERATED` | No secret key has been generated for this merchant | Generate one in the dashboard. |
 | `4010008` | 401 | `INVALID_SIGNATURE` | Invalid X-Signature | The MAC did not match under the current or previous secret. Check the canonical string construction. |
 | `4010109` | 401 | `IP_NOT_ALLOWED` | Request origin is not in this merchant IP allowlist | The signature was **valid** — only the origin was wrong. Check the allowlist in the dashboard, or that the calling host's egress IP has not changed. |
+| `4290000` | **429** | `RATE_LIMITED` | Too many requests, slow down and retry after the window resets | Back off for the number of seconds in the `Retry-After` header, then retry with a fresh nonce and timestamp. |
 | `4090000` | **409** | `REPLAYED_NONCE` | X-Nonce already used, re-sign the request with a new nonce | **Not a credential problem.** Generate a fresh nonce and re-sign. |
 
 ### Two deliberate deviations from SNAP
@@ -95,6 +96,14 @@ Checking origin first would reject the same request, but you would never learn a
 The cost of that ordering, stated plainly: an attacker holding a stolen secret and calling from an unlisted address learns the secret is valid. That is a real disclosure, judged the lesser loss — an attacker who lifted a key from a config file generally assumes it works, whereas the detection signal exists in only one of the two orderings.
 
 IP allowlisting is **opt-in per merchant** and empty by default. Most merchants sit on dynamic connections where pinning an address would guarantee an outage.
+
+### On `RATE_LIMITED` and `Retry-After`
+
+Also checked **after** the signature verifies, and for the same class of reason: `X-Client-Id` is an unauthenticated header, so counting before verification would let a stranger exhaust a real merchant's budget by spoofing their id. The budget is spent only by callers who proved they hold the secret.
+
+A `429` always carries a **`Retry-After`** header giving the seconds until the window resets. Honour it — without backing off, a retry loop tightens under throttling and converts a temporary limit into a sustained outage for that merchant.
+
+Limits are **per merchant, per endpoint, per window**, so heavy status polling cannot consume the budget needed for payments. See [throttler.md](throttler.md).
 
 ---
 

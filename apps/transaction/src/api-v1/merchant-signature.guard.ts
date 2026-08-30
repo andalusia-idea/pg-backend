@@ -85,6 +85,8 @@ export class MerchantSignatureGuard implements CanActivate {
       throw MerchantException.fromMerchantSignature(
         result.reason ?? MerchantSignatureFailureEnum.INVALID_SIGNATURE,
         result.serverTime,
+        undefined,
+        result.retryAfterSeconds,
       );
     }
 

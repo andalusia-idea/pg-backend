@@ -63,6 +63,7 @@ const activeRow = (overrides: Record<string, unknown> = {}) => ({
 describe('MerchantSignatureService.validateSignature', () => {
   let findUnique: jest.Mock;
   let claimNonce: jest.Mock;
+  let consumeRateLimit: jest.Mock;
   let getMerchantSignature: jest.Mock;
   let setMerchantSignature: jest.Mock;
   let service: MerchantSignatureService;
@@ -70,6 +71,11 @@ describe('MerchantSignatureService.validateSignature', () => {
   beforeEach(() => {
     findUnique = jest.fn();
     claimNonce = jest.fn(async () => true);
+    consumeRateLimit = jest.fn(async () => ({
+      allowed: true,
+      totalHits: 1,
+      retryAfterSeconds: 60,
+    }));
     getMerchantSignature = jest.fn(async () => null);
     setMerchantSignature = jest.fn(async () => undefined);
 
@@ -83,6 +89,7 @@ describe('MerchantSignatureService.validateSignature', () => {
       {} as never,
       {
         claimNonce,
+        consumeRateLimit,
         getMerchantSignature,
         setMerchantSignature,
       } as never,
@@ -211,6 +218,7 @@ describe('MerchantSignatureService.validateSignature', () => {
         userId: USER_ID,
         reason: null,
         serverTime: expect.any(String),
+        retryAfterSeconds: null,
       });
     });
 
@@ -391,6 +399,76 @@ describe('MerchantSignatureService.validateSignature', () => {
       });
 
       expect(result.reason).toBe(MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('passes a request inside the budget through', async () => {
+      findUnique.mockResolvedValue(activeRow() as never);
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.isValid).toBe(true);
+      expect(consumeRateLimit).toHaveBeenCalledWith(
+        CLIENT_ID,
+        '/open/v1/payin/purchase',
+      );
+    });
+
+    it('rejects an over-budget request with the retry hint', async () => {
+      findUnique.mockResolvedValue(activeRow() as never);
+      consumeRateLimit.mockResolvedValue({
+        allowed: false,
+        totalHits: 121,
+        retryAfterSeconds: 17,
+      } as never);
+
+      const result = await service.validateSignature(signedWith(secretKey));
+
+      expect(result.reason).toBe(MerchantSignatureFailureEnum.RATE_LIMITED);
+      expect(result.retryAfterSeconds).toBe(17);
+      expect(result.userId).toBe(USER_ID);
+    });
+
+    /**
+     * A throttled request must not burn its nonce - otherwise the merchant's
+     * retry once the window resets returns REPLAYED_NONCE and reads as a
+     * completely different fault.
+     */
+    it('does not claim the nonce when throttled', async () => {
+      findUnique.mockResolvedValue(activeRow() as never);
+      consumeRateLimit.mockResolvedValue({
+        allowed: false,
+        totalHits: 121,
+        retryAfterSeconds: 17,
+      } as never);
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(claimNonce).not.toHaveBeenCalled();
+    });
+
+    /**
+     * The budget belongs to whoever holds the secret. Counting before the
+     * signature verified would let a stranger spoofing a client id exhaust a
+     * real merchant's quota.
+     */
+    it('does not spend budget on an invalid signature', async () => {
+      findUnique.mockResolvedValue(activeRow() as never);
+
+      await service.validateSignature(signedWith(generateSecretKey()));
+
+      expect(consumeRateLimit).not.toHaveBeenCalled();
+    });
+
+    it('does not spend budget on a rejected origin', async () => {
+      findUnique.mockResolvedValue(
+        activeRow({ allowedIps: ['198.51.100.0/24'] }) as never,
+      );
+
+      await service.validateSignature(signedWith(secretKey));
+
+      expect(consumeRateLimit).not.toHaveBeenCalled();
     });
   });
 

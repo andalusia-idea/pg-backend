@@ -70,6 +70,12 @@ export const MerchantSignatureValidationSchema = Type.Object(
      * instead of opening a support ticket.
      */
     serverTime: Type.String(),
+    /**
+     * Seconds until a rate-limited caller may retry. Null on every other
+     * outcome. The guard renders it as a `Retry-After` header - a throttle
+     * without one just invites a tighter retry loop.
+     */
+    retryAfterSeconds: Type.Union([Type.Number(), Type.Null()]),
   },
   { additionalProperties: false },
 );

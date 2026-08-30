@@ -59,6 +59,7 @@ describe('MerchantSignatureGuard', () => {
       userId: USER_ID,
       reason: null,
       serverTime: new Date().toISOString(),
+      retryAfterSeconds: null,
     }));
     clsSet = jest.fn();
 
@@ -272,6 +273,7 @@ describe('MerchantSignatureGuard', () => {
           userId: null,
           reason,
           serverTime: '2026-08-26T10:15:30+07:00',
+          retryAfterSeconds: null,
         } as never);
 
         await expectRejection(
@@ -289,6 +291,7 @@ describe('MerchantSignatureGuard', () => {
         userId: USER_ID,
         reason: MerchantSignatureFailureEnum.REPLAYED_NONCE,
         serverTime: '2026-08-26T10:15:30+07:00',
+        retryAfterSeconds: null,
       } as never);
 
       await expect(
@@ -303,6 +306,7 @@ describe('MerchantSignatureGuard', () => {
         userId: null,
         reason: MerchantSignatureFailureEnum.TIMESTAMP_SKEW,
         serverTime: '2026-08-26T10:15:30+07:00',
+        retryAfterSeconds: null,
       } as never);
 
       await expect(

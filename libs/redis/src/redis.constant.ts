@@ -23,3 +23,6 @@ export const BASE_FEE_KEY_PREFIX = 'base-fee';
 export const MERCHANT_FEE_KEY_PREFIX = 'merchant-fee';
 
 export const AGENT_SHAREHOLDER_KEY_PREFIX = 'agent-shareholder';
+
+/** Key namespace for per-merchant request budgets. */
+export const RATE_LIMIT_KEY_PREFIX = 'merchant-signature:rate';

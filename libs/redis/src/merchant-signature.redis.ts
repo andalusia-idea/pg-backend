@@ -5,8 +5,17 @@ import Redis from 'ioredis';
 import {
   MERCHANT_SIGNATURE_KEY_PREFIX,
   NONCE_KEY_PREFIX,
+  RATE_LIMIT_KEY_PREFIX,
 } from './redis.constant';
 import { REDIS_KEY } from './redis.provider';
+
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Requests already spent in the current window, this one included. */
+  totalHits: number;
+  /** Seconds until the window resets - rendered as `Retry-After`. */
+  retryAfterSeconds: number;
+}
 
 export interface MerchantSignatureRedisDto {
   userId: number;
@@ -55,6 +64,23 @@ export class MerchantSignatureRedis {
   }
 
   /**
+   * Per-merchant, per-endpoint, per-window.
+   *
+   * The window number is part of the key rather than tracked inside the value,
+   * so a new window is simply a new key and expiry does the cleanup. Endpoint
+   * is included so a burst of reads cannot consume the budget a merchant needs
+   * for payments.
+   */
+  private rateLimitKey(
+    clientId: string,
+    endpoint: string,
+    windowSeconds: number,
+  ): string {
+    const window = Math.floor(Date.now() / 1000 / windowSeconds);
+    return `${RATE_LIMIT_KEY_PREFIX}:${clientId}:${endpoint}:${window}`;
+  }
+
+  /**
    * Claim a nonce for the replay window. Returns true if it had not been seen.
    *
    * `SET NX` tests and sets in one atomic step, which is what makes this
@@ -81,6 +107,58 @@ export class MerchantSignatureRedis {
       'NX',
     );
     return result === 'OK';
+  }
+
+  /**
+   * Spend one request from a merchant's budget for the current window.
+   *
+   * `INCR` then `EXPIRE` must be one atomic step. Split across two round trips,
+   * a crash or a lost connection between them leaves a counter with **no TTL** -
+   * it never resets, and that merchant is rate-limited forever. A Lua script is
+   * evaluated atomically by Redis, which closes that gap; the `TTL` read in the
+   * same script is what lets the caller send an accurate `Retry-After`.
+   *
+   * Fixed window, deliberately: it is easy to reason about and cheap. The
+   * trade-off is a boundary burst - a merchant can spend a whole budget at the
+   * end of one window and another at the start of the next, briefly doubling
+   * the nominal rate. That is why limits should sit below any upstream cap
+   * rather than exactly at it.
+   *
+   * Fails **closed** on a Redis error, like the nonce claim: this exists to
+   * protect a shared upstream quota, and answering "under the limit" when the
+   * counter is unreachable would let a runaway merchant through precisely when
+   * the system is already unhealthy.
+   */
+  async consumeRateLimit(
+    clientId: string,
+    endpoint: string,
+  ): Promise<RateLimitResult> {
+    const limit = this.merchantSignatureConfig.RATE_LIMIT_MAX_REQUESTS;
+    const windowSeconds =
+      this.merchantSignatureConfig.RATE_LIMIT_WINDOW_SECONDS;
+
+    const script = `
+      local hits = redis.call('INCR', KEYS[1])
+      if hits == 1 then
+        redis.call('EXPIRE', KEYS[1], ARGV[1])
+      end
+      return { hits, redis.call('TTL', KEYS[1]) }
+    `;
+
+    const [totalHits, ttl] = (await this.redis.eval(
+      script,
+      1,
+      this.rateLimitKey(clientId, endpoint, windowSeconds),
+      windowSeconds,
+    )) as [number, number];
+
+    return {
+      allowed: totalHits <= limit,
+      totalHits,
+      // A -1 TTL means the key somehow has no expiry; fall back to the full
+      // window rather than reporting a nonsensical retry time.
+      retryAfterSeconds: ttl >= 0 ? ttl : windowSeconds,
+    };
   }
 
   /**

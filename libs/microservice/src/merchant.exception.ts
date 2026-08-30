@@ -116,6 +116,11 @@ const MERCHANT_SIGNATURE_FAILURE: Record<
     '09',
     'Request origin is not in this merchant IP allowlist',
   ),
+  RATE_LIMITED: common(
+    HttpStatus.TOO_MANY_REQUESTS,
+    '00',
+    'Too many requests, slow down and retry after the window resets',
+  ),
   REPLAYED_NONCE: common(
     HttpStatus.CONFLICT,
     '00',
@@ -161,6 +166,14 @@ export const MERCHANT_SUCCESS: MerchantResponseDto = {
 export class MerchantException extends Error {
   readonly httpStatus: HttpStatus;
   readonly response: MerchantResponseDto & { serverTime: string };
+  /**
+   * Seconds until the caller may retry, rendered as a `Retry-After` header.
+   *
+   * Only meaningful for a rate-limit rejection. Telling a client *when* to
+   * come back is the difference between backing off and hammering - without
+   * it a naive retry loop turns a throttle into an outage.
+   */
+  readonly retryAfterSeconds: number | null;
 
   constructor(
     failure: MerchantFailure,
@@ -172,6 +185,7 @@ export class MerchantException extends Error {
     serverTime: string = new Date().toISOString(),
     /** Appended to the message - e.g. which header was missing. */
     detail?: string,
+    retryAfterSeconds: number | null = null,
   ) {
     const responseMessage = detail
       ? `${failure.responseMessage}: ${detail}`
@@ -180,6 +194,7 @@ export class MerchantException extends Error {
     super(responseMessage);
     this.name = MerchantException.name;
     this.httpStatus = failure.httpStatus;
+    this.retryAfterSeconds = retryAfterSeconds;
     this.response = {
       responseCode: failure.responseCode,
       responseMessage: responseMessage.slice(0, RESPONSE_MESSAGE_MAX_LENGTH),
@@ -191,11 +206,13 @@ export class MerchantException extends Error {
     failure: MerchantSignatureFailureEnum,
     serverTime?: string,
     detail?: string,
+    retryAfterSeconds: number | null = null,
   ): MerchantException {
     return new MerchantException(
       MERCHANT_SIGNATURE_FAILURE[failure],
       serverTime,
       detail,
+      retryAfterSeconds,
     );
   }
 

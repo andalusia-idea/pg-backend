@@ -143,6 +143,31 @@ export class MerchantSignatureService {
       return this.reject(userId, MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
     }
 
+    // Budget is spent only by requests that proved they hold the secret, so a
+    // stranger cannot exhaust a merchant's quota by spoofing their client id -
+    // which is exactly what counting before verification would allow.
+    //
+    // Before the nonce claim: a throttled request must not burn its nonce, or
+    // the merchant's retry after the window resets returns REPLAYED_NONCE and
+    // looks like a different fault entirely.
+    const rateLimit = await this.merchantSignatureRedis.consumeRateLimit(
+      dto.clientId,
+      dto.endpoint,
+    );
+    if (!rateLimit.allowed) {
+      this.logger.warn({
+        msg: 'Merchant exceeded their request budget',
+        userId,
+        endpoint: dto.endpoint,
+        totalHits: rateLimit.totalHits,
+      });
+      return this.reject(
+        userId,
+        MerchantSignatureFailureEnum.RATE_LIMITED,
+        rateLimit.retryAfterSeconds,
+      );
+    }
+
     // Last, and only once the signature has proved knowledge of the secret:
     // claiming earlier would let unauthenticated traffic populate the store.
     const nonceClaimed = await this.merchantSignatureRedis.claimNonce(
@@ -158,6 +183,7 @@ export class MerchantSignatureService {
       userId,
       reason: null,
       serverTime: new Date().toISOString(),
+      retryAfterSeconds: null,
     };
   }
 
@@ -260,12 +286,14 @@ export class MerchantSignatureService {
   private reject(
     userId: number | null,
     reason: MerchantSignatureFailureEnum,
+    retryAfterSeconds: number | null = null,
   ): MerchantSignatureValidationDto {
     return {
       isValid: false,
       userId,
       reason,
       serverTime: new Date().toISOString(),
+      retryAfterSeconds,
     };
   }
 }

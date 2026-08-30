@@ -28,6 +28,13 @@ export class MerchantExceptionFilter implements ExceptionFilter<MerchantExceptio
       url: context.getRequest<{ url?: string }>().url,
     });
 
+    // Standard header, and the only machine-readable way to tell a client when
+    // to come back. Without it a naive retry loop turns a throttle into an
+    // outage for the merchant.
+    if (exception.retryAfterSeconds !== null) {
+      void reply.header('Retry-After', String(exception.retryAfterSeconds));
+    }
+
     void reply.status(exception.httpStatus).send(exception.response);
   }
 }

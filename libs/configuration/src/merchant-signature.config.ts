@@ -82,6 +82,29 @@ export class MerchantSignatureConfig {
   }
 
   /**
+   * Requests a single merchant may make per window.
+   *
+   * Counted only for requests whose signature already verified, so the budget
+   * belongs to whoever holds the secret and cannot be exhausted by a stranger
+   * spoofing the client id header.
+   */
+  get RATE_LIMIT_MAX_REQUESTS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_RATE_LIMIT_MAX_REQUESTS', 120);
+  }
+
+  /**
+   * Length of the rate-limit window, in seconds.
+   *
+   * This is a **fixed** window, so a merchant can spend a full budget at the
+   * very end of one window and another at the start of the next - briefly
+   * double the nominal rate. Set limits with headroom against whatever cap
+   * the upstream imposes, rather than exactly at it.
+   */
+  get RATE_LIMIT_WINDOW_SECONDS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_RATE_LIMIT_WINDOW_SECONDS', 60);
+  }
+
+  /**
    * How long after a rotation `secretKeyPrevious` keeps being accepted, in
    * seconds. Long enough for a merchant to redeploy, short enough to bound
    * exposure of a retired key.

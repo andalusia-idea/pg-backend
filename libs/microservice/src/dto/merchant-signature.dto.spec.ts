@@ -127,6 +127,7 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: 42,
         reason: null,
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(true);
   });
@@ -139,6 +140,7 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: null,
         reason: MerchantSignatureFailureEnum.UNKNOWN_CLIENT,
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(true);
   });
@@ -152,6 +154,7 @@ describe('MerchantSignatureValidationSchema', () => {
           userId: null,
           reason,
           serverTime: '2026-08-23T10:15:30+07:00',
+          retryAfterSeconds: null,
         }),
       ).toBe(true);
     },
@@ -164,14 +167,20 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: null,
         reason: 'SOMETHING_ELSE',
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(false);
   });
 
   /** Always populated so the guard can echo it on a skew rejection. */
   it('requires serverTime', () => {
-    expect(validateResponse({ isValid: true, userId: 42, reason: null })).toBe(
-      false,
-    );
+    expect(
+      validateResponse({
+        isValid: true,
+        userId: 42,
+        reason: null,
+        retryAfterSeconds: null,
+      }),
+    ).toBe(false);
   });
 });

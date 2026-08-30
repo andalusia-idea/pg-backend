@@ -35,6 +35,14 @@ export const MerchantSignatureFailureEnum = {
   /** Merchant has not yet generated Secret Key at Dashboard */
   SECRET_KEY_NOT_GENERATED: 'SECRET_KEY_NOT_GENERATED',
   /**
+   * The merchant exceeded their request budget for the current window.
+   *
+   * Counted only after the signature verifies, so the budget is spent by
+   * whoever holds the secret - a stranger cannot exhaust a merchant's quota by
+   * spoofing their client id.
+   */
+  RATE_LIMITED: 'RATE_LIMITED',
+  /**
    * The signature was valid but the request came from an address outside the
    * merchant's IP allowlist.
    *

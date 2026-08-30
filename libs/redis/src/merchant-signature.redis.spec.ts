@@ -10,6 +10,8 @@ const NONCE = 'b7c1e2d3-4f5a-4b6c-8d9e-0a1b2c3d4e5f';
 
 const NONCE_TTL_SECONDS = 600;
 const CACHE_TTL_SECONDS = 60;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 const NONCE_KEY = `merchant-signature:nonce:${CLIENT_ID}:${NONCE}`;
 const CACHE_KEY = `merchant-signature:db:${CLIENT_ID}`;
@@ -31,6 +33,7 @@ describe('MerchantSignatureRedis', () => {
   let setex: jest.Mock;
   let get: jest.Mock;
   let del: jest.Mock;
+  let evalScript: jest.Mock;
   let redis: MerchantSignatureRedis;
 
   beforeEach(() => {
@@ -38,12 +41,15 @@ describe('MerchantSignatureRedis', () => {
     setex = jest.fn(async () => 'OK');
     get = jest.fn(async () => null);
     del = jest.fn(async () => 1);
+    evalScript = jest.fn(async () => [1, RATE_LIMIT_WINDOW_SECONDS]);
 
     redis = new MerchantSignatureRedis(
-      { set, setex, get, del } as never,
+      { set, setex, get, del, eval: evalScript } as never,
       {
         NONCE_TTL_SECONDS,
         CACHE_TTL_SECONDS,
+        RATE_LIMIT_MAX_REQUESTS,
+        RATE_LIMIT_WINDOW_SECONDS,
       } as never,
     );
   });
@@ -213,6 +219,92 @@ describe('MerchantSignatureRedis', () => {
       await expect(
         redis.deleteMerchantSignature(CLIENT_ID),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('consumeRateLimit', () => {
+    const ENDPOINT = '/open/v1/payin/purchase';
+
+    it('allows a request inside the budget and reports the reset', async () => {
+      evalScript.mockResolvedValue([3, 42] as never);
+
+      await expect(
+        redis.consumeRateLimit(CLIENT_ID, ENDPOINT),
+      ).resolves.toEqual({
+        allowed: true,
+        totalHits: 3,
+        retryAfterSeconds: 42,
+      });
+    });
+
+    it('allows the request that exactly reaches the limit', async () => {
+      evalScript.mockResolvedValue([RATE_LIMIT_MAX_REQUESTS, 30] as never);
+
+      const result = await redis.consumeRateLimit(CLIENT_ID, ENDPOINT);
+
+      expect(result.allowed).toBe(true);
+    });
+
+    it('rejects the one after it', async () => {
+      evalScript.mockResolvedValue([RATE_LIMIT_MAX_REQUESTS + 1, 30] as never);
+
+      const result = await redis.consumeRateLimit(CLIENT_ID, ENDPOINT);
+
+      expect(result.allowed).toBe(false);
+      expect(result.retryAfterSeconds).toBe(30);
+    });
+
+    /**
+     * INCR and EXPIRE must be one atomic step. Split apart, a failure between
+     * them leaves a counter with no TTL - it never resets and the merchant is
+     * throttled permanently.
+     */
+    it('increments and expires inside a single Lua evaluation', async () => {
+      await redis.consumeRateLimit(CLIENT_ID, ENDPOINT);
+
+      const call = evalScript.mock.calls[0] as [string, number, string, number];
+      expect(call[0]).toContain('INCR');
+      expect(call[0]).toContain('EXPIRE');
+      expect(call[1]).toBe(1);
+      expect(call[3]).toBe(RATE_LIMIT_WINDOW_SECONDS);
+    });
+
+    /** Endpoint is part of the key so reads cannot spend a payment budget. */
+    it('budgets each endpoint separately', async () => {
+      await redis.consumeRateLimit(CLIENT_ID, '/open/v1/ping');
+      await redis.consumeRateLimit(CLIENT_ID, ENDPOINT);
+
+      const firstKey = (
+        evalScript.mock.calls[0] as [string, number, string]
+      )[2];
+      const secondKey = (
+        evalScript.mock.calls[1] as [string, number, string]
+      )[2];
+
+      expect(firstKey).not.toBe(secondKey);
+      expect(firstKey.startsWith('merchant-signature:rate:')).toBe(true);
+    });
+
+    /** A key with no expiry would otherwise report a nonsensical retry time. */
+    it('falls back to a full window when the TTL is unreadable', async () => {
+      evalScript.mockResolvedValue([1, -1] as never);
+
+      const result = await redis.consumeRateLimit(CLIENT_ID, ENDPOINT);
+
+      expect(result.retryAfterSeconds).toBe(RATE_LIMIT_WINDOW_SECONDS);
+    });
+
+    /**
+     * Fails **closed**, like the nonce claim. This protects a shared upstream
+     * quota, so answering "under the limit" when the counter is unreachable
+     * would let a runaway merchant through exactly when things are worst.
+     */
+    it('propagates a Redis failure instead of allowing the request', async () => {
+      evalScript.mockRejectedValue(new Error('redis unreachable') as never);
+
+      await expect(redis.consumeRateLimit(CLIENT_ID, ENDPOINT)).rejects.toThrow(
+        'redis unreachable',
+      );
     });
   });
 
