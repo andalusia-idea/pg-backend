@@ -1,7 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { MerchantEndpoint } from '../merchant-endpoint.decorator';
-import { MerchantUserId } from '../merchant-user-id.decorator';
+import { MerchantEndpoint, MerchantUserId } from '../signature';
 
 @Controller()
 @ApiTags('Merchant API v1')

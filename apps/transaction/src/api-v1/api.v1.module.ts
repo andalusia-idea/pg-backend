@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { MerchantExceptionFilter } from './merchant-exception.filter';
+import { MerchantExceptionFilter } from './signature';
 import { PingModule } from './ping';
 import { PurchaseModule } from './purchase';
 

@@ -8,11 +8,11 @@ import { auditTrailExtension } from '../database/audit.extension';
 import { RedisModule } from '@app/redis';
 import { LoggerModule } from '@app/logger';
 import { MicroserviceModule } from '@app/microservice';
-import { MotionPayModule } from '../upstream/motionpay';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ClsModule } from 'nestjs-cls';
 import { Apiv1Module } from '../api-v1/api.v1.module';
+import { UpstreamModule } from '../upstream/upstream.module';
 
 @Module({
   controllers: [AppController],
@@ -35,8 +35,7 @@ import { Apiv1Module } from '../api-v1/api.v1.module';
 
     Apiv1Module,
 
-    /// Upstream Module
-    MotionPayModule,
+    UpstreamModule,
   ],
 })
 export class AppModule {}
