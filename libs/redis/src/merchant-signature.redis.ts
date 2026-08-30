@@ -9,7 +9,7 @@ import {
 } from './redis.constant';
 import { REDIS_KEY } from './redis.provider';
 
-export interface RateLimitResult {
+export interface RateLimitRedisDto {
   allowed: boolean;
   /** Requests already spent in the current window, this one included. */
   totalHits: number;
@@ -23,19 +23,18 @@ export interface MerchantSignatureRedisDto {
   secretKeyPrevious: string | null;
   secretKeyRotatedAt: Date | null;
   status: MerchantSignatureStatusEnum;
-  /**
-   * Rides the same cache entry as the secrets rather than living in its own.
-   * One lookup, one TTL, one invalidation path - and removing an address is a
-   * revocation, so it must take effect as fast as a suspension does.
-   */
   allowedIps: string[];
 }
 
 /** What actually sits in Redis: JSON has no Date, so the instant is epoch ms. */
-type MerchantSignatureCacheEntry = Omit<
-  MerchantSignatureRedisDto,
-  'secretKeyRotatedAt'
-> & { secretKeyRotatedAt: number | null };
+type MerchantSignatureRedisEntry = {
+  userId: number;
+  secretKey: string | null;
+  secretKeyPrevious: string | null;
+  secretKeyRotatedAt: number | null;
+  status: MerchantSignatureStatusEnum;
+  allowedIps: string[];
+};
 
 @Injectable()
 export class MerchantSignatureRedis {
@@ -44,14 +43,7 @@ export class MerchantSignatureRedis {
   constructor(
     @Inject(REDIS_KEY)
     private readonly redis: Redis,
-    /**
-     * The lifetimes live with the rest of the merchant-signature domain rather
-     * than in a config grouped by "things that are TTLs". `NONCE_TTL_SECONDS`
-     * is validated there against `TIMESTAMP_TOLERANCE_SECONDS`, which is not
-     * itself a TTL - separating them would have nowhere left to put that
-     * invariant, and it is the only thing standing between a
-     * misconfiguration and a silent replay window.
-     */
+
     private readonly merchantSignatureConfig: MerchantSignatureConfig,
   ) {}
 
@@ -99,8 +91,9 @@ export class MerchantSignatureRedis {
    * instead. Contrast the cache methods below, which fail *open* on purpose.
    */
   async claimNonce(clientId: string, nonce: string): Promise<boolean> {
+    const key = this.nonceKey(clientId, nonce);
     const result = await this.redis.set(
-      this.nonceKey(clientId, nonce),
+      key,
       '1',
       'EX',
       this.merchantSignatureConfig.NONCE_TTL_SECONDS,
@@ -132,10 +125,12 @@ export class MerchantSignatureRedis {
   async consumeRateLimit(
     clientId: string,
     endpoint: string,
-  ): Promise<RateLimitResult> {
+  ): Promise<RateLimitRedisDto> {
     const limit = this.merchantSignatureConfig.RATE_LIMIT_MAX_REQUESTS;
     const windowSeconds =
       this.merchantSignatureConfig.RATE_LIMIT_WINDOW_SECONDS;
+
+    const key = this.rateLimitKey(clientId, endpoint, windowSeconds);
 
     const script = `
       local hits = redis.call('INCR', KEYS[1])
@@ -148,7 +143,7 @@ export class MerchantSignatureRedis {
     const [totalHits, ttl] = (await this.redis.eval(
       script,
       1,
-      this.rateLimitKey(clientId, endpoint, windowSeconds),
+      key,
       windowSeconds,
     )) as [number, number];
 
@@ -175,7 +170,8 @@ export class MerchantSignatureRedis {
     clientId: string,
     value: MerchantSignatureRedisDto,
   ): Promise<void> {
-    const entry: MerchantSignatureCacheEntry = {
+    const key = this.merchantSignatureKey(clientId);
+    const entry: MerchantSignatureRedisEntry = {
       ...value,
       // JSON has no Date type. Storing epoch milliseconds rather than an ISO
       // string keeps the revive below unambiguous.
@@ -184,12 +180,12 @@ export class MerchantSignatureRedis {
 
     try {
       await this.redis.setex(
-        this.merchantSignatureKey(clientId),
+        key,
         this.merchantSignatureConfig.CACHE_TTL_SECONDS,
         JSON.stringify(entry),
       );
     } catch (error) {
-      this.logger.warn({ msg: 'Merchant signature cache write failed', error });
+      this.logger.warn({ msg: `${key} write failed`, error });
     }
   }
 
@@ -203,17 +199,18 @@ export class MerchantSignatureRedis {
     clientId: string,
   ): Promise<MerchantSignatureRedisDto | null> {
     let raw: string | null;
+    const key = this.merchantSignatureKey(clientId);
     try {
-      raw = await this.redis.get(this.merchantSignatureKey(clientId));
+      raw = await this.redis.get(key);
     } catch (error) {
-      this.logger.warn({ msg: 'Merchant signature cache read failed', error });
+      this.logger.warn({ msg: `${key} read failed`, error });
       return null;
     }
 
     if (!raw) return null;
 
     try {
-      const entry = JSON.parse(raw) as MerchantSignatureCacheEntry;
+      const entry = JSON.parse(raw) as MerchantSignatureRedisEntry;
       return {
         ...entry,
         // Without this the field comes back as a number and every caller doing
@@ -226,7 +223,7 @@ export class MerchantSignatureRedis {
       };
     } catch (error) {
       this.logger.warn({
-        msg: 'Merchant signature cache entry unreadable',
+        msg: `${key} entry unreadable`,
         error,
       });
       return null;
@@ -244,13 +241,14 @@ export class MerchantSignatureRedis {
    * credentials keep working until the entry expires.
    */
   async deleteMerchantSignature(clientId: string): Promise<void> {
+    const key = this.merchantSignatureKey(clientId);
     try {
-      await this.redis.del(this.merchantSignatureKey(clientId));
+      await this.redis.del(key);
     } catch (error) {
       // Logged loudly: a failed invalidation means stale credentials stay live
       // until the TTL closes the window.
       this.logger.error({
-        msg: 'Merchant signature cache invalidation failed',
+        msg: `${key} invalidation failed`,
         clientId,
         error,
       });
