@@ -1,0 +1,20 @@
+Environment Sandbox
+Host API H2H: https://core-sandbox.teleanjarmitraglobal.co.id
+Username: karyaindahapi
+Password: Sandbox2026
+
+Host Monitoring: https://monitoring-sandbox.teleanjarmitraglobal.co.id
+Username: karyaindahmon
+Password: Sandbox2026
+
+-----------------
+-----------------
+
+Environment Production
+Host API H2H: https://core.teleanjarmitraglobal.co.id
+Username: apih2hkaryahi
+Password: Karyahi2026
+
+Host Monitoring: https://monitoring.teleanjarmitraglobal.co.id
+Username: karyaharapanindah
+Password: Karyahi2026
