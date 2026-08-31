@@ -1,5 +1,5 @@
 import { PRISMA_SLAVE_PROVIDER_KEY } from '@app/prisma';
-import { Prisma, PrismaClient, TransactionTypeEnum } from '@dashboard/prisma';
+import { PrismaClient, TransactionTypeEnum } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 import Decimal from 'decimal.js';
 import {
@@ -104,18 +104,20 @@ export class BalanceService {
    * Internal (house) balance. Unlike merchant/agent, this is a single running
    * balance rather than one per holder, so the newest row is the answer - no
    * per-holder dedupe needed.
+   *
+   * No provider filter: the column it read was dropped in the transaction v2
+   * schema, which made the three balance logs uniform. The filter was
+   * misleading regardless - every row carries the running *house* total, so
+   * narrowing to one provider and taking the newest match returned the whole
+   * internal balance as of that provider's last movement, never that
+   * provider's share of it. See D18.
    */
-  async aggregateBalanceInternal(
-    providerName?: string | null,
-  ): Promise<BalanceDto> {
-    const where: Prisma.InternalBalanceLogWhereInput = {
-      deletedAt: null,
-      transactionType: { in: AGGREGATE_TRANSACTION_TYPES },
-    };
-    if (providerName) where.providerName = providerName;
-
+  async aggregateBalanceInternal(): Promise<BalanceDto> {
     const latest = await this.prismaSlave.internalBalanceLog.findFirst({
-      where,
+      where: {
+        deletedAt: null,
+        transactionType: { in: AGGREGATE_TRANSACTION_TYPES },
+      },
       orderBy: [...LATEST_FIRST],
       select: { balanceActive: true, balancePending: true },
     });

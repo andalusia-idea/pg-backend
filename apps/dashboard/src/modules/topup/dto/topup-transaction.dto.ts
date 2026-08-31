@@ -51,9 +51,6 @@ export class TopupTransactionDto {
   @ApiProperty({ enum: TransactionStatusEnum })
   status: TransactionStatusEnum;
 
-  @ApiProperty({ type: Object, required: false, nullable: true })
-  metadata: Record<string, unknown> | null;
-
   @ApiDateProperty({ required: false, nullable: true })
   @ToJakartaISONullable()
   settlementAt: string | null;

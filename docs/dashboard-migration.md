@@ -142,13 +142,13 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 
 | # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
 |---|---|---|---|---|---|---|---|---|
-| 24 | GET | `balance/aggregate/internal?providerName=` | `balance` | `getBalanceInternal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (home dashboard) | ✅ Matches | — | — |
+| 24 | GET | `balance/aggregate/internal` | `balance` | `getBalanceInternal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (home dashboard) | ⚠️ **Changed 2026-09-01** — the `?providerName=` param is gone | **Frontend.** Stop sending `providerName`. Harmless if you don't — Nest ignores unknown query params — but the filter it fed never worked as named. See D18 | — |
 | 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 | 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 | 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ Matches | — | — |
 | 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `SUPER_ADMIN` (agent detail balance widget) | ✅ Matches | — | — |
 | 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
-| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — items no longer carry `metadata` | **Frontend.** Drop `metadata` from the topup row type. Purchase / withdraw / disbursement keep theirs. See D18 | — |
 | 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc dependency) | **Backend.** Blocked on porting config's fee-calculation services (currently ~95%-duplicated across four legacy services) — see §7 | POST `transactions/topup`. Frontend sends `CreateTopUp = { userId: number, receiptImage: string, nominal: number }`. Requirement: split `nominal` into merchant/agent/provider/internal cuts via the fee calculator, write the pending top-up row |
 | 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / balance-ledger dependency) | **Backend.** Blocked on the balance-ledger rework (advisory locks + transaction-scoping) from D17 — needs your decision there first | POST `transactions/topup/approve`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: mark approved, write `MerchantBalanceLog`/`AgentBalanceLog`/`InternalBalanceLog` rows inside one transaction with advisory locks, per the corrected D17 pattern |
 | 33 | POST | `transactions/topup/reject` | `topup` | `rejectTransactionTopUp` — see D1, fixed 2026-08-26 | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (backend only, now — see note below) | **Backend.** Blocked on D17 like the other two topup write endpoints. The frontend's D1 bug (posting to `/approve` instead of `/reject`) is fixed — commit `2df39fa`, confirmed by re-reading `transaction-top-up.api.ts`, which now posts to `transactions/topup/reject` correctly. Once the backend ships `/reject`, this call will work with no further frontend change needed | POST `transactions/topup/reject`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: flip status to rejected only — no ledger write, unlike approve |
@@ -208,6 +208,8 @@ The role-name drift, the config base-URL disagreement, the merchant-signature pa
 Section 7's progress checklist below still says "35 of 38 ported" — that line predates this pass and reflects the original 38-endpoint count, not the 48 found here. Left as-is since only §2 was in scope for this audit; whoever picks up rows 39–48 should update §7 alongside them.
 
 **For the frontend team, 2026-08-28:** the only change requiring work on your side is **row 53** plus the new `allowedIps` field on row 39's response. Nothing existing broke — `status` gained a field, which is additive. See the row 53 callout in §2.1 for the request/response shapes and the three UI points that matter.
+
+**For the frontend team, 2026-09-01:** two rows changed shape and both need a small edit on your side — rows **24** (`?providerName=` removed) and **30** (`metadata` gone from topup items). Neither is additive, so read D18 before the next release. Nothing else in this inventory moved.
 
 **Update (2026-08-28, later same day): row 53 done.** Commit `9d749a8` adds the IP whitelist card and its caller — see the "Update" note appended to the row 53 callout in §2.1 for what was verified and the one gap it turned up (generic validation-error messages hide which entry was malformed, dashboard-wide, not just here). Nothing in this doc's scope remains without at least a route to hit; what's left open is D17/D3 (§5) and the 🟡-stubbed handlers (rows 40–48), none of which are new to this pass.
 
@@ -343,7 +345,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Seventeen entries (D1–D17), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; six do. Sorted by number below — this table is the triage.
+Eighteen entries (D1–D18), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; seven do. Sorted by number below — this table is the triage.
 
 ### Open — needs a decision or action
 
@@ -355,6 +357,7 @@ Seventeen entries (D1–D17), each a real defect or ambiguity found while readin
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
 | **D15** | Aggregate balances filter out `PURCHASE`; per-holder balances don't | **You** — business question | The sum of individual balances won't always match the aggregate shown on the dashboard |
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
+| **D18** | Transaction v2 dropped `InternalBalanceLog.providerName` and `TopUpTransaction.metadata`, both exposed through the dashboard API | Frontend dev | Backend is fixed and compiling. Two response/param shapes changed — see the table at the end of D18 |
 
 > **D17 and D1 are not migration issues.** Both are defects in the code running in production right now, found while reading it. They're worth acting on independently of this port.
 
@@ -540,6 +543,8 @@ The dashboard's URL deliberately has **no** `schema` param — it never migrates
 
 > Worth knowing if a fourth app is ever added against this database: it needs its own `&schema=` too, or it will collide the same way.
 
+> **Regressed and re-fixed, 2026-09-01.** `apps/config/.env.local` and `.env.example` were found carrying `&schema=auth`, copied from the auth app - putting config's CLI back on `auth._prisma_migrations`. `prisma migrate status` for config duly reported auth's four migrations as foreign history and config's own `init` as unapplied; `migrate dev` would have offered to reset, dropping the auth schema. Both files corrected to `&schema=config`, verified by re-running status (*Database schema is up to date*) before applying `20260831153001_base_fee_natural_key`. Runtime was never affected, exactly as this entry predicts - `@@schema()` qualifies every table name - so only the CLI was misled, which is what makes it easy to miss. The hazard is not just a fourth app: **copying an env file between two existing apps re-creates the collision silently.**
+
 ### D11 — Legacy's agent/merchant update threw on `email` → **fixed**
 
 `UpdateAgentDetailDto extends PartialType(CreateAgentDto)`, so it carries `email` and `password` — but those columns live on `auth.User`, not `auth.AgentDetail`. Legacy spread the filtered DTO straight into `agentDetail.update({ data: {...dto} })`.
@@ -655,6 +660,37 @@ The create path passes `profileBank.profileId` correctly; the callback path pass
 **Recommendation**: port these endpoints with all three corrected — locks and transaction scoping applied per the pattern the codebase already uses in its purchase/disbursement paths, and the merchant id fixed. That is not a redesign; it is applying this project's own established pattern to the two places that missed it. Porting them as-is would knowingly reproduce a lost-update race and a rollback hole.
 
 **Not yet implemented**, pending that decision.
+
+---
+
+### D18 — Transaction v2 dropped two columns the dashboard exposed → **fixed, breaking for the frontend**
+
+The `transaction_v2` schema (commit `3d7e6cc`) removed two columns the dashboard was reading. Neither showed up as a compile error until `prisma:merge:dashboard` re-ran: the merged schema had gone stale, so the generated client still claimed both columns existed. Worth noting as a pattern — **a stale merged schema turns a breaking change into a silent one**, and the dashboard is the only app that can be wrong this way (§6.1).
+
+**1. `InternalBalanceLog.providerName` — dropped.**
+
+The three balance logs are now uniform: holder id, four nullable transaction FKs, amounts, `transactionType`, audit columns. `providerName` existed only on `InternalBalanceLog`.
+
+`GET balance/aggregate/internal` took a `providerName` query param that fed straight into that column's `where` clause. **The param is removed**, along with `FilterAggregateBalanceInternalDto`.
+
+Said plainly: that filter never did what its name implied. Every `InternalBalanceLog` row carries the running *house* total, so narrowing to one provider and taking the newest match returned the whole internal balance as of that provider's last movement — never that provider's share of it. Two providers could return the same figure, or different figures, purely from who moved last. Removing the param removes a misleading answer, not a working feature.
+
+A genuine per-provider house balance would need a different shape: either `providerName` reintroduced deliberately with per-provider running totals, or a sum over the transaction rows each log entry points at. Both are real work, not a query param.
+
+**2. `TopUpTransaction.metadata` — dropped.**
+
+`metadata` was *kept* on `PurchaseTransaction`, `WithdrawTransaction` and `DisbursementTransaction`, and upgraded there to `@db.JsonB` with the comment `// Store Response Upstream`. It was removed from `TopUpTransaction` alone, which is consistent rather than an oversight: a top-up is a manual bank transfer evidenced by `receiptImage`, with no upstream API call, so there is no provider response to store.
+
+`GET transactions/topup` **no longer returns `metadata`**. The other three listings are unchanged.
+
+**What the frontend has to do**
+
+| Endpoint | Change | Action |
+|---|---|---|
+| `GET balance/aggregate/internal` (row 24) | `?providerName=` removed | Stop sending it. A stale caller is not an error — Nest ignores unknown query params — so it degrades silently to the unfiltered balance, which is what the filter effectively returned anyway |
+| `GET transactions/topup` (row 30) | `metadata` gone from each item | Remove it from the topup row type only. Purchase / withdraw / disbursement keep theirs |
+
+Verified: `tsc` clean on all four apps, `eslint` clean on both touched modules, 237 tests passing.
 
 ---
 

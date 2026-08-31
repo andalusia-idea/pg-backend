@@ -53,7 +53,6 @@ export class TopupService {
 
       return new TopupTransactionDto({
         ...item,
-        metadata: item.metadata as Record<string, unknown> | null,
         totalFeeCut,
         feeDetails,
       } as unknown as TopupTransactionDto);
