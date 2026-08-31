@@ -7,6 +7,7 @@ import { JwtConfig } from './jwt.config';
 import { MotionPayConfig } from './motionpay.config';
 import { MerchantSignatureConfig } from './merchant-signature.config';
 import { FeeConfig } from './fee.config';
+import { ProfileConfig } from './profile.config';
 
 @Global()
 @Module({})
@@ -29,6 +30,7 @@ export class ConfigurationModule {
         MotionPayConfig,
         MerchantSignatureConfig,
         FeeConfig,
+        ProfileConfig,
       ],
       exports: [
         ConfigModule,
@@ -39,6 +41,7 @@ export class ConfigurationModule {
         MotionPayConfig,
         MerchantSignatureConfig,
         FeeConfig,
+        ProfileConfig,
       ],
     };
   }

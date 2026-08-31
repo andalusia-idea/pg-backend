@@ -1213,7 +1213,6 @@ export type PaymentMethodScalarFieldEnum = (typeof PaymentMethodScalarFieldEnum)
 
 export const BaseFeeScalarFieldEnum = {
   id: 'id',
-  code: 'code',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
   transactionType: 'transactionType',

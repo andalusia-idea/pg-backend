@@ -28,11 +28,11 @@ export type AggregateMerchantBalanceLog = {
 
 export type MerchantBalanceLogAvgAggregateOutputType = {
   id: number | null
+  merchantId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  merchantId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -43,11 +43,11 @@ export type MerchantBalanceLogAvgAggregateOutputType = {
 
 export type MerchantBalanceLogSumAggregateOutputType = {
   id: number | null
+  merchantId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  merchantId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -58,11 +58,11 @@ export type MerchantBalanceLogSumAggregateOutputType = {
 
 export type MerchantBalanceLogMinAggregateOutputType = {
   id: number | null
+  merchantId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  merchantId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -77,11 +77,11 @@ export type MerchantBalanceLogMinAggregateOutputType = {
 
 export type MerchantBalanceLogMaxAggregateOutputType = {
   id: number | null
+  merchantId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  merchantId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -96,11 +96,11 @@ export type MerchantBalanceLogMaxAggregateOutputType = {
 
 export type MerchantBalanceLogCountAggregateOutputType = {
   id: number
+  merchantId: number
   topupId: number
   purchaseId: number
   withdrawId: number
   disbursementId: number
-  merchantId: number
   changeAmount: number
   balanceActive: number
   balancePending: number
@@ -117,11 +117,11 @@ export type MerchantBalanceLogCountAggregateOutputType = {
 
 export type MerchantBalanceLogAvgAggregateInputType = {
   id?: true
+  merchantId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  merchantId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -132,11 +132,11 @@ export type MerchantBalanceLogAvgAggregateInputType = {
 
 export type MerchantBalanceLogSumAggregateInputType = {
   id?: true
+  merchantId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  merchantId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -147,11 +147,11 @@ export type MerchantBalanceLogSumAggregateInputType = {
 
 export type MerchantBalanceLogMinAggregateInputType = {
   id?: true
+  merchantId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  merchantId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -166,11 +166,11 @@ export type MerchantBalanceLogMinAggregateInputType = {
 
 export type MerchantBalanceLogMaxAggregateInputType = {
   id?: true
+  merchantId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  merchantId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -185,11 +185,11 @@ export type MerchantBalanceLogMaxAggregateInputType = {
 
 export type MerchantBalanceLogCountAggregateInputType = {
   id?: true
+  merchantId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  merchantId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -291,11 +291,11 @@ export type MerchantBalanceLogGroupByArgs<ExtArgs extends runtime.Types.Extensio
 
 export type MerchantBalanceLogGroupByOutputType = {
   id: number
+  merchantId: number
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  merchantId: number
   changeAmount: runtime.Decimal
   balanceActive: runtime.Decimal
   balancePending: runtime.Decimal
@@ -333,11 +333,11 @@ export type MerchantBalanceLogWhereInput = {
   OR?: Prisma.MerchantBalanceLogWhereInput[]
   NOT?: Prisma.MerchantBalanceLogWhereInput | Prisma.MerchantBalanceLogWhereInput[]
   id?: Prisma.IntFilter<"MerchantBalanceLog"> | number
+  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
   topupId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
   changeAmount?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -356,11 +356,11 @@ export type MerchantBalanceLogWhereInput = {
 
 export type MerchantBalanceLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrderInput | Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -382,11 +382,11 @@ export type MerchantBalanceLogWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MerchantBalanceLogWhereInput | Prisma.MerchantBalanceLogWhereInput[]
   OR?: Prisma.MerchantBalanceLogWhereInput[]
   NOT?: Prisma.MerchantBalanceLogWhereInput | Prisma.MerchantBalanceLogWhereInput[]
+  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
   topupId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
   changeAmount?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -405,11 +405,11 @@ export type MerchantBalanceLogWhereUniqueInput = Prisma.AtLeast<{
 
 export type MerchantBalanceLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrderInput | Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -432,11 +432,11 @@ export type MerchantBalanceLogScalarWhereWithAggregatesInput = {
   OR?: Prisma.MerchantBalanceLogScalarWhereWithAggregatesInput[]
   NOT?: Prisma.MerchantBalanceLogScalarWhereWithAggregatesInput | Prisma.MerchantBalanceLogScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"MerchantBalanceLog"> | number
+  merchantId?: Prisma.IntWithAggregatesFilter<"MerchantBalanceLog"> | number
   topupId?: Prisma.IntNullableWithAggregatesFilter<"MerchantBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableWithAggregatesFilter<"MerchantBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableWithAggregatesFilter<"MerchantBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableWithAggregatesFilter<"MerchantBalanceLog"> | number | null
-  merchantId?: Prisma.IntWithAggregatesFilter<"MerchantBalanceLog"> | number
   changeAmount?: Prisma.DecimalWithAggregatesFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalWithAggregatesFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalWithAggregatesFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -469,11 +469,11 @@ export type MerchantBalanceLogCreateInput = {
 
 export type MerchantBalanceLogUncheckedCreateInput = {
   id?: number
+  merchantId: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -506,11 +506,11 @@ export type MerchantBalanceLogUpdateInput = {
 
 export type MerchantBalanceLogUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -525,11 +525,11 @@ export type MerchantBalanceLogUncheckedUpdateInput = {
 
 export type MerchantBalanceLogCreateManyInput = {
   id?: number
+  merchantId: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -558,11 +558,11 @@ export type MerchantBalanceLogUpdateManyMutationInput = {
 
 export type MerchantBalanceLogUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -587,11 +587,11 @@ export type MerchantBalanceLogOrderByRelationAggregateInput = {
 
 export type MerchantBalanceLogCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -606,11 +606,11 @@ export type MerchantBalanceLogCountOrderByAggregateInput = {
 
 export type MerchantBalanceLogAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -621,11 +621,11 @@ export type MerchantBalanceLogAvgOrderByAggregateInput = {
 
 export type MerchantBalanceLogMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -640,11 +640,11 @@ export type MerchantBalanceLogMaxOrderByAggregateInput = {
 
 export type MerchantBalanceLogMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -659,17 +659,101 @@ export type MerchantBalanceLogMinOrderByAggregateInput = {
 
 export type MerchantBalanceLogSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  merchantId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  merchantId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
+}
+
+export type MerchantBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+}
+
+export type MerchantBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+}
+
+export type MerchantBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
+}
+
+export type MerchantBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
+}
+
+export type MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+}
+
+export type MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+}
+
+export type MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
+}
+
+export type MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
+  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
 }
 
 export type MerchantBalanceLogCreateNestedManyWithoutTopupTransactionInput = {
@@ -756,295 +840,6 @@ export type MerchantBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionNeste
   deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
 }
 
-export type MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-}
-
-export type MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-}
-
-export type MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-}
-
-export type MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-}
-
-export type MerchantBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-}
-
-export type MerchantBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-}
-
-export type MerchantBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-}
-
-export type MerchantBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.MerchantBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.MerchantBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  delete?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  connect?: Prisma.MerchantBalanceLogWhereUniqueInput | Prisma.MerchantBalanceLogWhereUniqueInput[]
-  update?: Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-}
-
-export type MerchantBalanceLogCreateWithoutTopupTransactionInput = {
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-}
-
-export type MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type MerchantBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type MerchantBalanceLogCreateManyTopupTransactionInputEnvelope = {
-  data: Prisma.MerchantBalanceLogCreateManyTopupTransactionInput | Prisma.MerchantBalanceLogCreateManyTopupTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type MerchantBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
-  where: Prisma.MerchantBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
-}
-
-export type MerchantBalanceLogScalarWhereInput = {
-  AND?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-  OR?: Prisma.MerchantBalanceLogScalarWhereInput[]
-  NOT?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
-  id?: Prisma.IntFilter<"MerchantBalanceLog"> | number
-  topupId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  purchaseId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  withdrawId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  disbursementId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
-  changeAmount?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"MerchantBalanceLog"> | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFilter<"MerchantBalanceLog"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  updatedAt?: Prisma.DateTimeNullableFilter<"MerchantBalanceLog"> | Date | string | null
-  updatedBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-  deletedAt?: Prisma.DateTimeNullableFilter<"MerchantBalanceLog"> | Date | string | null
-  deletedBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
-}
-
-export type MerchantBalanceLogCreateWithoutWithdrawTransactionInput = {
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-}
-
-export type MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type MerchantBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type MerchantBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
-  data: Prisma.MerchantBalanceLogCreateManyWithdrawTransactionInput | Prisma.MerchantBalanceLogCreateManyWithdrawTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type MerchantBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
-  where: Prisma.MerchantBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
-}
-
-export type MerchantBalanceLogCreateWithoutDisbursementTransactionInput = {
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutMerchantBalanceLogInput
-}
-
-export type MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  withdrawId?: number | null
-  merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
-  data: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.MerchantBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-}
-
-export type MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
-  where: Prisma.MerchantBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
-}
-
 export type MerchantBalanceLogCreateWithoutPurchaseTransactionInput = {
   merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1064,10 +859,10 @@ export type MerchantBalanceLogCreateWithoutPurchaseTransactionInput = {
 
 export type MerchantBalanceLogUncheckedCreateWithoutPurchaseTransactionInput = {
   id?: number
+  merchantId: number
   topupId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1106,11 +901,29 @@ export type MerchantBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput
   data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput>
 }
 
-export type MerchantBalanceLogCreateManyTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
+export type MerchantBalanceLogScalarWhereInput = {
+  AND?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
+  OR?: Prisma.MerchantBalanceLogScalarWhereInput[]
+  NOT?: Prisma.MerchantBalanceLogScalarWhereInput | Prisma.MerchantBalanceLogScalarWhereInput[]
+  id?: Prisma.IntFilter<"MerchantBalanceLog"> | number
+  merchantId?: Prisma.IntFilter<"MerchantBalanceLog"> | number
+  topupId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  purchaseId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  withdrawId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  disbursementId?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  changeAmount?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFilter<"MerchantBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"MerchantBalanceLog"> | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFilter<"MerchantBalanceLog"> | Date | string
+  createdBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  updatedAt?: Prisma.DateTimeNullableFilter<"MerchantBalanceLog"> | Date | string | null
+  updatedBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"MerchantBalanceLog"> | Date | string | null
+  deletedBy?: Prisma.IntNullableFilter<"MerchantBalanceLog"> | number | null
+}
+
+export type MerchantBalanceLogCreateWithoutDisbursementTransactionInput = {
   merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1122,138 +935,17 @@ export type MerchantBalanceLogCreateManyTopupTransactionInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutMerchantBalanceLogInput
 }
 
-export type MerchantBalanceLogUpdateWithoutTopupTransactionInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-}
-
-export type MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type MerchantBalanceLogCreateManyWithdrawTransactionInput = {
+export type MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
   id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
   merchantId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type MerchantBalanceLogUpdateWithoutWithdrawTransactionInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-}
-
-export type MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type MerchantBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type MerchantBalanceLogCreateManyDisbursementTransactionInput = {
-  id?: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
-  merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1266,65 +958,160 @@ export type MerchantBalanceLogCreateManyDisbursementTransactionInput = {
   deletedBy?: number | null
 }
 
-export type MerchantBalanceLogUpdateWithoutDisbursementTransactionInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+export type MerchantBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
 }
 
-export type MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type MerchantBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
+  data: Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInput | Prisma.MerchantBalanceLogCreateManyDisbursementTransactionInput[]
+  skipDuplicates?: boolean
 }
 
-export type MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type MerchantBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
+  where: Prisma.MerchantBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
+}
+
+export type MerchantBalanceLogCreateWithoutTopupTransactionInput = {
+  merchantId: number
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+}
+
+export type MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
+  id?: number
+  merchantId: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type MerchantBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type MerchantBalanceLogCreateManyTopupTransactionInputEnvelope = {
+  data: Prisma.MerchantBalanceLogCreateManyTopupTransactionInput | Prisma.MerchantBalanceLogCreateManyTopupTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type MerchantBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutTopupTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
+  where: Prisma.MerchantBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
+}
+
+export type MerchantBalanceLogCreateWithoutWithdrawTransactionInput = {
+  merchantId: number
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutMerchantBalanceLogInput
+}
+
+export type MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
+  id?: number
+  merchantId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type MerchantBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type MerchantBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
+  data: Prisma.MerchantBalanceLogCreateManyWithdrawTransactionInput | Prisma.MerchantBalanceLogCreateManyWithdrawTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type MerchantBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+  create: Prisma.XOR<Prisma.MerchantBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.MerchantBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+}
+
+export type MerchantBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
+  where: Prisma.MerchantBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.MerchantBalanceLogUpdateManyMutationInput, Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
 }
 
 export type MerchantBalanceLogCreateManyPurchaseTransactionInput = {
   id?: number
+  merchantId: number
   topupId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  merchantId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1356,10 +1143,10 @@ export type MerchantBalanceLogUpdateWithoutPurchaseTransactionInput = {
 
 export type MerchantBalanceLogUncheckedUpdateWithoutPurchaseTransactionInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1374,10 +1161,223 @@ export type MerchantBalanceLogUncheckedUpdateWithoutPurchaseTransactionInput = {
 
 export type MerchantBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogCreateManyDisbursementTransactionInput = {
+  id?: number
+  merchantId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  withdrawId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type MerchantBalanceLogUpdateWithoutDisbursementTransactionInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+}
+
+export type MerchantBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogCreateManyTopupTransactionInput = {
+  id?: number
+  merchantId: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type MerchantBalanceLogUpdateWithoutTopupTransactionInput = {
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+}
+
+export type MerchantBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogCreateManyWithdrawTransactionInput = {
+  id?: number
+  merchantId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type MerchantBalanceLogUpdateWithoutWithdrawTransactionInput = {
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutMerchantBalanceLogNestedInput
+}
+
+export type MerchantBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type MerchantBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1394,11 +1394,11 @@ export type MerchantBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput
 
 export type MerchantBalanceLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  merchantId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  merchantId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1417,11 +1417,11 @@ export type MerchantBalanceLogSelect<ExtArgs extends runtime.Types.Extensions.In
 
 export type MerchantBalanceLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  merchantId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  merchantId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1440,11 +1440,11 @@ export type MerchantBalanceLogSelectCreateManyAndReturn<ExtArgs extends runtime.
 
 export type MerchantBalanceLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  merchantId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  merchantId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1463,11 +1463,11 @@ export type MerchantBalanceLogSelectUpdateManyAndReturn<ExtArgs extends runtime.
 
 export type MerchantBalanceLogSelectScalar = {
   id?: boolean
+  merchantId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  merchantId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1480,7 +1480,7 @@ export type MerchantBalanceLogSelectScalar = {
   deletedBy?: boolean
 }
 
-export type MerchantBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "merchantId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantBalanceLog"]>
+export type MerchantBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "merchantId" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantBalanceLog"]>
 export type MerchantBalanceLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   topupTransaction?: boolean | Prisma.MerchantBalanceLog$topupTransactionArgs<ExtArgs>
   purchaseTransaction?: boolean | Prisma.MerchantBalanceLog$purchaseTransactionArgs<ExtArgs>
@@ -1510,11 +1510,11 @@ export type $MerchantBalanceLogPayload<ExtArgs extends runtime.Types.Extensions.
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    merchantId: number
     topupId: number | null
     purchaseId: number | null
     withdrawId: number | null
     disbursementId: number | null
-    merchantId: number
     changeAmount: runtime.Decimal
     balanceActive: runtime.Decimal
     balancePending: runtime.Decimal
@@ -1953,11 +1953,11 @@ export interface Prisma__MerchantBalanceLogClient<T, Null = never, ExtArgs exten
  */
 export interface MerchantBalanceLogFieldRefs {
   readonly id: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
+  readonly merchantId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
   readonly topupId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
   readonly purchaseId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
   readonly withdrawId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
   readonly disbursementId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
-  readonly merchantId: Prisma.FieldRef<"MerchantBalanceLog", 'Int'>
   readonly changeAmount: Prisma.FieldRef<"MerchantBalanceLog", 'Decimal'>
   readonly balanceActive: Prisma.FieldRef<"MerchantBalanceLog", 'Decimal'>
   readonly balancePending: Prisma.FieldRef<"MerchantBalanceLog", 'Decimal'>

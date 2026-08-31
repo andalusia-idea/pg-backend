@@ -13,7 +13,11 @@ export class ConfigFeeService {
   async findAllConfig(): Promise<BaseFeeDto[]> {
     const baseFees = await this.prismaSlave.baseFee.findMany({
       where: { deletedAt: null },
-      orderBy: { code: 'asc' },
+      orderBy: [
+        { providerName: 'asc' },
+        { paymentMethodName: 'asc' },
+        { transactionType: 'asc' },
+      ],
     });
 
     return baseFees.map((baseFee) => new BaseFeeDto(baseFee as never));

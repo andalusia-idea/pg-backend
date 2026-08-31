@@ -384,14 +384,14 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  PurchaseTransaction: 'PurchaseTransaction',
+  PurchaseFeeDetail: 'PurchaseFeeDetail',
+  DisbursementTransaction: 'DisbursementTransaction',
+  DisbursementFeeDetail: 'DisbursementFeeDetail',
   TopUpTransaction: 'TopUpTransaction',
   TopupFeeDetail: 'TopupFeeDetail',
   WithdrawTransaction: 'WithdrawTransaction',
   WithdrawFeeDetail: 'WithdrawFeeDetail',
-  DisbursementTransaction: 'DisbursementTransaction',
-  DisbursementFeeDetail: 'DisbursementFeeDetail',
-  PurchaseTransaction: 'PurchaseTransaction',
-  PurchaseFeeDetail: 'PurchaseFeeDetail',
   WebhookLog: 'WebhookLog',
   TransactionAudit: 'TransactionAudit',
   MerchantBalanceLog: 'MerchantBalanceLog',
@@ -412,10 +412,306 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "purchaseTransaction" | "purchaseFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog"
+    modelProps: "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    PurchaseTransaction: {
+      payload: Prisma.$PurchaseTransactionPayload<ExtArgs>
+      fields: Prisma.PurchaseTransactionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PurchaseTransactionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PurchaseTransactionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        findFirst: {
+          args: Prisma.PurchaseTransactionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PurchaseTransactionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        findMany: {
+          args: Prisma.PurchaseTransactionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
+        }
+        create: {
+          args: Prisma.PurchaseTransactionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        createMany: {
+          args: Prisma.PurchaseTransactionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PurchaseTransactionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
+        }
+        delete: {
+          args: Prisma.PurchaseTransactionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        update: {
+          args: Prisma.PurchaseTransactionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        deleteMany: {
+          args: Prisma.PurchaseTransactionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PurchaseTransactionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PurchaseTransactionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
+        }
+        upsert: {
+          args: Prisma.PurchaseTransactionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
+        }
+        aggregate: {
+          args: Prisma.PurchaseTransactionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePurchaseTransaction>
+        }
+        groupBy: {
+          args: Prisma.PurchaseTransactionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PurchaseTransactionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PurchaseTransactionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PurchaseTransactionCountAggregateOutputType> | number
+        }
+      }
+    }
+    PurchaseFeeDetail: {
+      payload: Prisma.$PurchaseFeeDetailPayload<ExtArgs>
+      fields: Prisma.PurchaseFeeDetailFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PurchaseFeeDetailFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PurchaseFeeDetailFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        findFirst: {
+          args: Prisma.PurchaseFeeDetailFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PurchaseFeeDetailFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        findMany: {
+          args: Prisma.PurchaseFeeDetailFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
+        }
+        create: {
+          args: Prisma.PurchaseFeeDetailCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        createMany: {
+          args: Prisma.PurchaseFeeDetailCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PurchaseFeeDetailCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
+        }
+        delete: {
+          args: Prisma.PurchaseFeeDetailDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        update: {
+          args: Prisma.PurchaseFeeDetailUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        deleteMany: {
+          args: Prisma.PurchaseFeeDetailDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PurchaseFeeDetailUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PurchaseFeeDetailUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
+        }
+        upsert: {
+          args: Prisma.PurchaseFeeDetailUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
+        }
+        aggregate: {
+          args: Prisma.PurchaseFeeDetailAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePurchaseFeeDetail>
+        }
+        groupBy: {
+          args: Prisma.PurchaseFeeDetailGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PurchaseFeeDetailGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PurchaseFeeDetailCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PurchaseFeeDetailCountAggregateOutputType> | number
+        }
+      }
+    }
+    DisbursementTransaction: {
+      payload: Prisma.$DisbursementTransactionPayload<ExtArgs>
+      fields: Prisma.DisbursementTransactionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DisbursementTransactionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DisbursementTransactionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        findFirst: {
+          args: Prisma.DisbursementTransactionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DisbursementTransactionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        findMany: {
+          args: Prisma.DisbursementTransactionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
+        }
+        create: {
+          args: Prisma.DisbursementTransactionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        createMany: {
+          args: Prisma.DisbursementTransactionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DisbursementTransactionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
+        }
+        delete: {
+          args: Prisma.DisbursementTransactionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        update: {
+          args: Prisma.DisbursementTransactionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        deleteMany: {
+          args: Prisma.DisbursementTransactionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DisbursementTransactionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DisbursementTransactionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
+        }
+        upsert: {
+          args: Prisma.DisbursementTransactionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
+        }
+        aggregate: {
+          args: Prisma.DisbursementTransactionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDisbursementTransaction>
+        }
+        groupBy: {
+          args: Prisma.DisbursementTransactionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DisbursementTransactionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DisbursementTransactionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DisbursementTransactionCountAggregateOutputType> | number
+        }
+      }
+    }
+    DisbursementFeeDetail: {
+      payload: Prisma.$DisbursementFeeDetailPayload<ExtArgs>
+      fields: Prisma.DisbursementFeeDetailFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DisbursementFeeDetailFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DisbursementFeeDetailFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        findFirst: {
+          args: Prisma.DisbursementFeeDetailFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DisbursementFeeDetailFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        findMany: {
+          args: Prisma.DisbursementFeeDetailFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
+        }
+        create: {
+          args: Prisma.DisbursementFeeDetailCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        createMany: {
+          args: Prisma.DisbursementFeeDetailCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DisbursementFeeDetailCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
+        }
+        delete: {
+          args: Prisma.DisbursementFeeDetailDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        update: {
+          args: Prisma.DisbursementFeeDetailUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        deleteMany: {
+          args: Prisma.DisbursementFeeDetailDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DisbursementFeeDetailUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DisbursementFeeDetailUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
+        }
+        upsert: {
+          args: Prisma.DisbursementFeeDetailUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
+        }
+        aggregate: {
+          args: Prisma.DisbursementFeeDetailAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDisbursementFeeDetail>
+        }
+        groupBy: {
+          args: Prisma.DisbursementFeeDetailGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DisbursementFeeDetailGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DisbursementFeeDetailCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DisbursementFeeDetailCountAggregateOutputType> | number
+        }
+      }
+    }
     TopUpTransaction: {
       payload: Prisma.$TopUpTransactionPayload<ExtArgs>
       fields: Prisma.TopUpTransactionFieldRefs
@@ -709,302 +1005,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.WithdrawFeeDetailCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.WithdrawFeeDetailCountAggregateOutputType> | number
-        }
-      }
-    }
-    DisbursementTransaction: {
-      payload: Prisma.$DisbursementTransactionPayload<ExtArgs>
-      fields: Prisma.DisbursementTransactionFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.DisbursementTransactionFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.DisbursementTransactionFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        findFirst: {
-          args: Prisma.DisbursementTransactionFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.DisbursementTransactionFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        findMany: {
-          args: Prisma.DisbursementTransactionFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
-        }
-        create: {
-          args: Prisma.DisbursementTransactionCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        createMany: {
-          args: Prisma.DisbursementTransactionCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.DisbursementTransactionCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
-        }
-        delete: {
-          args: Prisma.DisbursementTransactionDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        update: {
-          args: Prisma.DisbursementTransactionUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        deleteMany: {
-          args: Prisma.DisbursementTransactionDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.DisbursementTransactionUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.DisbursementTransactionUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>[]
-        }
-        upsert: {
-          args: Prisma.DisbursementTransactionUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementTransactionPayload>
-        }
-        aggregate: {
-          args: Prisma.DisbursementTransactionAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDisbursementTransaction>
-        }
-        groupBy: {
-          args: Prisma.DisbursementTransactionGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DisbursementTransactionGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.DisbursementTransactionCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DisbursementTransactionCountAggregateOutputType> | number
-        }
-      }
-    }
-    DisbursementFeeDetail: {
-      payload: Prisma.$DisbursementFeeDetailPayload<ExtArgs>
-      fields: Prisma.DisbursementFeeDetailFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.DisbursementFeeDetailFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.DisbursementFeeDetailFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        findFirst: {
-          args: Prisma.DisbursementFeeDetailFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.DisbursementFeeDetailFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        findMany: {
-          args: Prisma.DisbursementFeeDetailFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
-        }
-        create: {
-          args: Prisma.DisbursementFeeDetailCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        createMany: {
-          args: Prisma.DisbursementFeeDetailCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.DisbursementFeeDetailCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
-        }
-        delete: {
-          args: Prisma.DisbursementFeeDetailDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        update: {
-          args: Prisma.DisbursementFeeDetailUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        deleteMany: {
-          args: Prisma.DisbursementFeeDetailDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.DisbursementFeeDetailUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.DisbursementFeeDetailUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>[]
-        }
-        upsert: {
-          args: Prisma.DisbursementFeeDetailUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DisbursementFeeDetailPayload>
-        }
-        aggregate: {
-          args: Prisma.DisbursementFeeDetailAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDisbursementFeeDetail>
-        }
-        groupBy: {
-          args: Prisma.DisbursementFeeDetailGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DisbursementFeeDetailGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.DisbursementFeeDetailCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DisbursementFeeDetailCountAggregateOutputType> | number
-        }
-      }
-    }
-    PurchaseTransaction: {
-      payload: Prisma.$PurchaseTransactionPayload<ExtArgs>
-      fields: Prisma.PurchaseTransactionFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.PurchaseTransactionFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.PurchaseTransactionFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        findFirst: {
-          args: Prisma.PurchaseTransactionFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.PurchaseTransactionFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        findMany: {
-          args: Prisma.PurchaseTransactionFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
-        }
-        create: {
-          args: Prisma.PurchaseTransactionCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        createMany: {
-          args: Prisma.PurchaseTransactionCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.PurchaseTransactionCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
-        }
-        delete: {
-          args: Prisma.PurchaseTransactionDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        update: {
-          args: Prisma.PurchaseTransactionUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        deleteMany: {
-          args: Prisma.PurchaseTransactionDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.PurchaseTransactionUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.PurchaseTransactionUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>[]
-        }
-        upsert: {
-          args: Prisma.PurchaseTransactionUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseTransactionPayload>
-        }
-        aggregate: {
-          args: Prisma.PurchaseTransactionAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregatePurchaseTransaction>
-        }
-        groupBy: {
-          args: Prisma.PurchaseTransactionGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PurchaseTransactionGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.PurchaseTransactionCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PurchaseTransactionCountAggregateOutputType> | number
-        }
-      }
-    }
-    PurchaseFeeDetail: {
-      payload: Prisma.$PurchaseFeeDetailPayload<ExtArgs>
-      fields: Prisma.PurchaseFeeDetailFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.PurchaseFeeDetailFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.PurchaseFeeDetailFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        findFirst: {
-          args: Prisma.PurchaseFeeDetailFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.PurchaseFeeDetailFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        findMany: {
-          args: Prisma.PurchaseFeeDetailFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
-        }
-        create: {
-          args: Prisma.PurchaseFeeDetailCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        createMany: {
-          args: Prisma.PurchaseFeeDetailCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.PurchaseFeeDetailCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
-        }
-        delete: {
-          args: Prisma.PurchaseFeeDetailDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        update: {
-          args: Prisma.PurchaseFeeDetailUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        deleteMany: {
-          args: Prisma.PurchaseFeeDetailDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.PurchaseFeeDetailUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.PurchaseFeeDetailUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>[]
-        }
-        upsert: {
-          args: Prisma.PurchaseFeeDetailUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$PurchaseFeeDetailPayload>
-        }
-        aggregate: {
-          args: Prisma.PurchaseFeeDetailAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregatePurchaseFeeDetail>
-        }
-        groupBy: {
-          args: Prisma.PurchaseFeeDetailGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PurchaseFeeDetailGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.PurchaseFeeDetailCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.PurchaseFeeDetailCountAggregateOutputType> | number
         }
       }
     }
@@ -1421,22 +1421,121 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const TopUpTransactionScalarFieldEnum = {
+export const PurchaseTransactionScalarFieldEnum = {
   id: 'id',
-  code: 'code',
   merchantId: 'merchantId',
-  externalId: 'externalId',
-  referenceId: 'referenceId',
+  systemReference: 'systemReference',
+  merchantReference: 'merchantReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
   nominal: 'nominal',
   netNominal: 'netNominal',
   status: 'status',
+  paidAt: 'paidAt',
+  expiresAt: 'expiresAt',
+  batchSettlementId: 'batchSettlementId',
+  settlementAt: 'settlementAt',
+  batchReconciliationId: 'batchReconciliationId',
+  reconciliationAt: 'reconciliationAt',
+  additionalInfo: 'additionalInfo',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type PurchaseTransactionScalarFieldEnum = (typeof PurchaseTransactionScalarFieldEnum)[keyof typeof PurchaseTransactionScalarFieldEnum]
+
+
+export const PurchaseFeeDetailScalarFieldEnum = {
+  id: 'id',
+  purchaseId: 'purchaseId',
+  agentId: 'agentId',
+  type: 'type',
+  nominal: 'nominal',
+  feeFixed: 'feeFixed',
+  feePercentage: 'feePercentage',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type PurchaseFeeDetailScalarFieldEnum = (typeof PurchaseFeeDetailScalarFieldEnum)[keyof typeof PurchaseFeeDetailScalarFieldEnum]
+
+
+export const DisbursementTransactionScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  systemReference: 'systemReference',
+  merchantReference: 'merchantReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
+  recipientName: 'recipientName',
+  recipientAccount: 'recipientAccount',
+  recipientBankCode: 'recipientBankCode',
+  recipientBankName: 'recipientBankName',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
+  nominal: 'nominal',
+  netNominal: 'netNominal',
+  status: 'status',
+  paidAt: 'paidAt',
+  batchSettlementId: 'batchSettlementId',
+  settlementAt: 'settlementAt',
+  batchReconciliationId: 'batchReconciliationId',
+  reconciliationAt: 'reconciliationAt',
+  additionalInfo: 'additionalInfo',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type DisbursementTransactionScalarFieldEnum = (typeof DisbursementTransactionScalarFieldEnum)[keyof typeof DisbursementTransactionScalarFieldEnum]
+
+
+export const DisbursementFeeDetailScalarFieldEnum = {
+  id: 'id',
+  disbursementId: 'disbursementId',
+  agentId: 'agentId',
+  type: 'type',
+  nominal: 'nominal',
+  feeFixed: 'feeFixed',
+  feePercentage: 'feePercentage',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type DisbursementFeeDetailScalarFieldEnum = (typeof DisbursementFeeDetailScalarFieldEnum)[keyof typeof DisbursementFeeDetailScalarFieldEnum]
+
+
+export const TopUpTransactionScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  systemReference: 'systemReference',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
+  nominal: 'nominal',
+  netNominal: 'netNominal',
+  status: 'status',
   receiptImage: 'receiptImage',
   paidAt: 'paidAt',
-  metadata: 'metadata',
   settlementAt: 'settlementAt',
-  reconciliationAt: 'reconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -1450,8 +1549,8 @@ export type TopUpTransactionScalarFieldEnum = (typeof TopUpTransactionScalarFiel
 
 export const TopupFeeDetailScalarFieldEnum = {
   id: 'id',
-  agentId: 'agentId',
   topupId: 'topupId',
+  agentId: 'agentId',
   type: 'type',
   nominal: 'nominal',
   feeFixed: 'feeFixed',
@@ -1469,19 +1568,24 @@ export type TopupFeeDetailScalarFieldEnum = (typeof TopupFeeDetailScalarFieldEnu
 
 export const WithdrawTransactionScalarFieldEnum = {
   id: 'id',
-  code: 'code',
-  externalId: 'externalId',
   userId: 'userId',
   userRole: 'userRole',
-  referenceId: 'referenceId',
+  systemReference: 'systemReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
   nominal: 'nominal',
   netNominal: 'netNominal',
+  recipientName: 'recipientName',
+  recipientAccount: 'recipientAccount',
+  recipientBankCode: 'recipientBankCode',
+  recipientBankName: 'recipientBankName',
   status: 'status',
   paidAt: 'paidAt',
+  settlementAt: 'settlementAt',
+  additionalInfo: 'additionalInfo',
   metadata: 'metadata',
-  reconciliationAt: 'reconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -1495,8 +1599,8 @@ export type WithdrawTransactionScalarFieldEnum = (typeof WithdrawTransactionScal
 
 export const WithdrawFeeDetailScalarFieldEnum = {
   id: 'id',
-  agentId: 'agentId',
   withdrawId: 'withdrawId',
+  agentId: 'agentId',
   type: 'type',
   nominal: 'nominal',
   feeFixed: 'feeFixed',
@@ -1510,103 +1614,6 @@ export const WithdrawFeeDetailScalarFieldEnum = {
 } as const
 
 export type WithdrawFeeDetailScalarFieldEnum = (typeof WithdrawFeeDetailScalarFieldEnum)[keyof typeof WithdrawFeeDetailScalarFieldEnum]
-
-
-export const DisbursementTransactionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  orderId: 'orderId',
-  externalId: 'externalId',
-  referenceId: 'referenceId',
-  merchantId: 'merchantId',
-  providerName: 'providerName',
-  recipientName: 'recipientName',
-  recipientBankCode: 'recipientBankCode',
-  recipientBankName: 'recipientBankName',
-  recipientAccount: 'recipientAccount',
-  nominal: 'nominal',
-  netNominal: 'netNominal',
-  status: 'status',
-  paidAt: 'paidAt',
-  paymentMethodName: 'paymentMethodName',
-  metadata: 'metadata',
-  reconciliationAt: 'reconciliationAt',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type DisbursementTransactionScalarFieldEnum = (typeof DisbursementTransactionScalarFieldEnum)[keyof typeof DisbursementTransactionScalarFieldEnum]
-
-
-export const DisbursementFeeDetailScalarFieldEnum = {
-  id: 'id',
-  agentId: 'agentId',
-  disbursementId: 'disbursementId',
-  type: 'type',
-  nominal: 'nominal',
-  feeFixed: 'feeFixed',
-  feePercentage: 'feePercentage',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type DisbursementFeeDetailScalarFieldEnum = (typeof DisbursementFeeDetailScalarFieldEnum)[keyof typeof DisbursementFeeDetailScalarFieldEnum]
-
-
-export const PurchaseTransactionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  orderId: 'orderId',
-  referenceId: 'referenceId',
-  externalId: 'externalId',
-  merchantId: 'merchantId',
-  nmid: 'nmid',
-  providerName: 'providerName',
-  paymentMethodName: 'paymentMethodName',
-  nominal: 'nominal',
-  netNominal: 'netNominal',
-  status: 'status',
-  paidAt: 'paidAt',
-  expiresAt: 'expiresAt',
-  metadata: 'metadata',
-  settlementAt: 'settlementAt',
-  reconciliationAt: 'reconciliationAt',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type PurchaseTransactionScalarFieldEnum = (typeof PurchaseTransactionScalarFieldEnum)[keyof typeof PurchaseTransactionScalarFieldEnum]
-
-
-export const PurchaseFeeDetailScalarFieldEnum = {
-  id: 'id',
-  agentId: 'agentId',
-  purchaseId: 'purchaseId',
-  type: 'type',
-  nominal: 'nominal',
-  feeFixed: 'feeFixed',
-  feePercentage: 'feePercentage',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type PurchaseFeeDetailScalarFieldEnum = (typeof PurchaseFeeDetailScalarFieldEnum)[keyof typeof PurchaseFeeDetailScalarFieldEnum]
 
 
 export const WebhookLogScalarFieldEnum = {
@@ -1650,11 +1657,11 @@ export type TransactionAuditScalarFieldEnum = (typeof TransactionAuditScalarFiel
 
 export const MerchantBalanceLogScalarFieldEnum = {
   id: 'id',
+  merchantId: 'merchantId',
   topupId: 'topupId',
   purchaseId: 'purchaseId',
   withdrawId: 'withdrawId',
   disbursementId: 'disbursementId',
-  merchantId: 'merchantId',
   changeAmount: 'changeAmount',
   balanceActive: 'balanceActive',
   balancePending: 'balancePending',
@@ -1672,11 +1679,11 @@ export type MerchantBalanceLogScalarFieldEnum = (typeof MerchantBalanceLogScalar
 
 export const AgentBalanceLogScalarFieldEnum = {
   id: 'id',
+  agentId: 'agentId',
   topupId: 'topupId',
   purchaseId: 'purchaseId',
   withdrawId: 'withdrawId',
   disbursementId: 'disbursementId',
-  agentId: 'agentId',
   changeAmount: 'changeAmount',
   balanceActive: 'balanceActive',
   balancePending: 'balancePending',
@@ -1703,8 +1710,6 @@ export const InternalBalanceLogScalarFieldEnum = {
   balanceActive: 'balanceActive',
   balancePending: 'balancePending',
   transactionType: 'transactionType',
-  providerName: 'providerName',
-  paymentMethodName: 'paymentMethodName',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -2005,14 +2010,14 @@ export type PrismaClientOptions = ({
   queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
+  purchaseTransaction?: Prisma.PurchaseTransactionOmit
+  purchaseFeeDetail?: Prisma.PurchaseFeeDetailOmit
+  disbursementTransaction?: Prisma.DisbursementTransactionOmit
+  disbursementFeeDetail?: Prisma.DisbursementFeeDetailOmit
   topUpTransaction?: Prisma.TopUpTransactionOmit
   topupFeeDetail?: Prisma.TopupFeeDetailOmit
   withdrawTransaction?: Prisma.WithdrawTransactionOmit
   withdrawFeeDetail?: Prisma.WithdrawFeeDetailOmit
-  disbursementTransaction?: Prisma.DisbursementTransactionOmit
-  disbursementFeeDetail?: Prisma.DisbursementFeeDetailOmit
-  purchaseTransaction?: Prisma.PurchaseTransactionOmit
-  purchaseFeeDetail?: Prisma.PurchaseFeeDetailOmit
   webhookLog?: Prisma.WebhookLogOmit
   transactionAudit?: Prisma.TransactionAuditOmit
   merchantBalanceLog?: Prisma.MerchantBalanceLogOmit

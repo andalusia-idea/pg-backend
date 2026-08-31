@@ -122,8 +122,8 @@ model PaymentMethod {
 
 // -- 4. Base Fee Config (default: hanya fee provider)
 model BaseFee {
-  id                Int                 @id @default(autoincrement()) @db.Integer
-  code              String              @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
+  id Int @id @default(autoincrement()) @db.Integer
+
   providerName      String
   paymentMethodName String
   transactionType   TransactionTypeEnum
@@ -145,6 +145,7 @@ model BaseFee {
 
   merchantFees MerchantFee[]
 
+  @@unique([providerName, paymentMethodName, transactionType])
   @@schema("config")
 }
 

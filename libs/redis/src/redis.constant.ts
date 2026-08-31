@@ -26,3 +26,7 @@ export const AGENT_SHAREHOLDER_KEY_PREFIX = 'agent-shareholder';
 
 /** Key namespace for per-merchant request budgets. */
 export const RATE_LIMIT_KEY_PREFIX = 'merchant-signature:rate';
+
+export const PROFILE_PROVIDER_KEY_PREFIX = 'profile:provider';
+
+export const PROFILE_BANK_KEY_PREFIX = 'profile:bank';

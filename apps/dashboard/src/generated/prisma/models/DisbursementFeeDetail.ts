@@ -28,8 +28,8 @@ export type AggregateDisbursementFeeDetail = {
 
 export type DisbursementFeeDetailAvgAggregateOutputType = {
   id: number | null
-  agentId: number | null
   disbursementId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -40,8 +40,8 @@ export type DisbursementFeeDetailAvgAggregateOutputType = {
 
 export type DisbursementFeeDetailSumAggregateOutputType = {
   id: number | null
-  agentId: number | null
   disbursementId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -52,8 +52,8 @@ export type DisbursementFeeDetailSumAggregateOutputType = {
 
 export type DisbursementFeeDetailMinAggregateOutputType = {
   id: number | null
-  agentId: number | null
   disbursementId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -68,8 +68,8 @@ export type DisbursementFeeDetailMinAggregateOutputType = {
 
 export type DisbursementFeeDetailMaxAggregateOutputType = {
   id: number | null
-  agentId: number | null
   disbursementId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -84,8 +84,8 @@ export type DisbursementFeeDetailMaxAggregateOutputType = {
 
 export type DisbursementFeeDetailCountAggregateOutputType = {
   id: number
-  agentId: number
   disbursementId: number
+  agentId: number
   type: number
   nominal: number
   feeFixed: number
@@ -102,8 +102,8 @@ export type DisbursementFeeDetailCountAggregateOutputType = {
 
 export type DisbursementFeeDetailAvgAggregateInputType = {
   id?: true
-  agentId?: true
   disbursementId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -114,8 +114,8 @@ export type DisbursementFeeDetailAvgAggregateInputType = {
 
 export type DisbursementFeeDetailSumAggregateInputType = {
   id?: true
-  agentId?: true
   disbursementId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -126,8 +126,8 @@ export type DisbursementFeeDetailSumAggregateInputType = {
 
 export type DisbursementFeeDetailMinAggregateInputType = {
   id?: true
-  agentId?: true
   disbursementId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -142,8 +142,8 @@ export type DisbursementFeeDetailMinAggregateInputType = {
 
 export type DisbursementFeeDetailMaxAggregateInputType = {
   id?: true
-  agentId?: true
   disbursementId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -158,8 +158,8 @@ export type DisbursementFeeDetailMaxAggregateInputType = {
 
 export type DisbursementFeeDetailCountAggregateInputType = {
   id?: true
-  agentId?: true
   disbursementId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -261,8 +261,8 @@ export type DisbursementFeeDetailGroupByArgs<ExtArgs extends runtime.Types.Exten
 
 export type DisbursementFeeDetailGroupByOutputType = {
   id: number
-  agentId: number | null
   disbursementId: number
+  agentId: number | null
   type: $Enums.FeeTypeEnum
   nominal: runtime.Decimal
   feeFixed: runtime.Decimal
@@ -300,8 +300,8 @@ export type DisbursementFeeDetailWhereInput = {
   OR?: Prisma.DisbursementFeeDetailWhereInput[]
   NOT?: Prisma.DisbursementFeeDetailWhereInput | Prisma.DisbursementFeeDetailWhereInput[]
   id?: Prisma.IntFilter<"DisbursementFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   disbursementId?: Prisma.IntFilter<"DisbursementFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"DisbursementFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -317,8 +317,8 @@ export type DisbursementFeeDetailWhereInput = {
 
 export type DisbursementFeeDetailOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -337,8 +337,8 @@ export type DisbursementFeeDetailWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.DisbursementFeeDetailWhereInput | Prisma.DisbursementFeeDetailWhereInput[]
   OR?: Prisma.DisbursementFeeDetailWhereInput[]
   NOT?: Prisma.DisbursementFeeDetailWhereInput | Prisma.DisbursementFeeDetailWhereInput[]
-  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   disbursementId?: Prisma.IntFilter<"DisbursementFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"DisbursementFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -354,8 +354,8 @@ export type DisbursementFeeDetailWhereUniqueInput = Prisma.AtLeast<{
 
 export type DisbursementFeeDetailOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -378,8 +378,8 @@ export type DisbursementFeeDetailScalarWhereWithAggregatesInput = {
   OR?: Prisma.DisbursementFeeDetailScalarWhereWithAggregatesInput[]
   NOT?: Prisma.DisbursementFeeDetailScalarWhereWithAggregatesInput | Prisma.DisbursementFeeDetailScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"DisbursementFeeDetail"> | number
-  agentId?: Prisma.IntNullableWithAggregatesFilter<"DisbursementFeeDetail"> | number | null
   disbursementId?: Prisma.IntWithAggregatesFilter<"DisbursementFeeDetail"> | number
+  agentId?: Prisma.IntNullableWithAggregatesFilter<"DisbursementFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumWithAggregatesFilter<"DisbursementFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalWithAggregatesFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalWithAggregatesFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -409,8 +409,8 @@ export type DisbursementFeeDetailCreateInput = {
 
 export type DisbursementFeeDetailUncheckedCreateInput = {
   id?: number
-  agentId?: number | null
   disbursementId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -440,8 +440,8 @@ export type DisbursementFeeDetailUpdateInput = {
 
 export type DisbursementFeeDetailUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -456,8 +456,8 @@ export type DisbursementFeeDetailUncheckedUpdateInput = {
 
 export type DisbursementFeeDetailCreateManyInput = {
   id?: number
-  agentId?: number | null
   disbursementId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -486,8 +486,8 @@ export type DisbursementFeeDetailUpdateManyMutationInput = {
 
 export type DisbursementFeeDetailUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -512,8 +512,8 @@ export type DisbursementFeeDetailOrderByRelationAggregateInput = {
 
 export type DisbursementFeeDetailCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -528,8 +528,8 @@ export type DisbursementFeeDetailCountOrderByAggregateInput = {
 
 export type DisbursementFeeDetailAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -540,8 +540,8 @@ export type DisbursementFeeDetailAvgOrderByAggregateInput = {
 
 export type DisbursementFeeDetailMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -556,8 +556,8 @@ export type DisbursementFeeDetailMaxOrderByAggregateInput = {
 
 export type DisbursementFeeDetailMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -572,8 +572,8 @@ export type DisbursementFeeDetailMinOrderByAggregateInput = {
 
 export type DisbursementFeeDetailSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -684,8 +684,8 @@ export type DisbursementFeeDetailScalarWhereInput = {
   OR?: Prisma.DisbursementFeeDetailScalarWhereInput[]
   NOT?: Prisma.DisbursementFeeDetailScalarWhereInput | Prisma.DisbursementFeeDetailScalarWhereInput[]
   id?: Prisma.IntFilter<"DisbursementFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   disbursementId?: Prisma.IntFilter<"DisbursementFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"DisbursementFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"DisbursementFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"DisbursementFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -761,8 +761,8 @@ export type DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransacti
 
 export type DisbursementFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   disbursementId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -778,8 +778,8 @@ export type DisbursementFeeDetailSelect<ExtArgs extends runtime.Types.Extensions
 
 export type DisbursementFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   disbursementId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -795,8 +795,8 @@ export type DisbursementFeeDetailSelectCreateManyAndReturn<ExtArgs extends runti
 
 export type DisbursementFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   disbursementId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -812,8 +812,8 @@ export type DisbursementFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runti
 
 export type DisbursementFeeDetailSelectScalar = {
   id?: boolean
-  agentId?: boolean
   disbursementId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -826,7 +826,7 @@ export type DisbursementFeeDetailSelectScalar = {
   deletedBy?: boolean
 }
 
-export type DisbursementFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "disbursementId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementFeeDetail"]>
+export type DisbursementFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "disbursementId" | "agentId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementFeeDetail"]>
 export type DisbursementFeeDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   disbursementTransaction?: boolean | Prisma.DisbursementTransactionDefaultArgs<ExtArgs>
 }
@@ -844,8 +844,8 @@ export type $DisbursementFeeDetailPayload<ExtArgs extends runtime.Types.Extensio
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    agentId: number | null
     disbursementId: number
+    agentId: number | null
     type: $Enums.FeeTypeEnum
     nominal: runtime.Decimal
     feeFixed: runtime.Decimal
@@ -1281,8 +1281,8 @@ export interface Prisma__DisbursementFeeDetailClient<T, Null = never, ExtArgs ex
  */
 export interface DisbursementFeeDetailFieldRefs {
   readonly id: Prisma.FieldRef<"DisbursementFeeDetail", 'Int'>
-  readonly agentId: Prisma.FieldRef<"DisbursementFeeDetail", 'Int'>
   readonly disbursementId: Prisma.FieldRef<"DisbursementFeeDetail", 'Int'>
+  readonly agentId: Prisma.FieldRef<"DisbursementFeeDetail", 'Int'>
   readonly type: Prisma.FieldRef<"DisbursementFeeDetail", 'FeeTypeEnum'>
   readonly nominal: Prisma.FieldRef<"DisbursementFeeDetail", 'Decimal'>
   readonly feeFixed: Prisma.FieldRef<"DisbursementFeeDetail", 'Decimal'>

@@ -75,7 +75,11 @@ export class ConfigMerchantService {
       // merchantId+baseFeeId pair is unique, so at most one override per row.
       this.prismaSlave.baseFee.findMany({
         where: { isActive: true, deletedAt: null },
-        orderBy: { code: 'asc' },
+        orderBy: [
+          { providerName: 'asc' },
+          { paymentMethodName: 'asc' },
+          { transactionType: 'asc' },
+        ],
         include: {
           merchantFees: {
             where: { merchantId, deletedAt: null },

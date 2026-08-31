@@ -67,8 +67,6 @@ export type InternalBalanceLogMinAggregateOutputType = {
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
   transactionType: $Enums.TransactionTypeEnum | null
-  providerName: string | null
-  paymentMethodName: string | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -88,8 +86,6 @@ export type InternalBalanceLogMaxAggregateOutputType = {
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
   transactionType: $Enums.TransactionTypeEnum | null
-  providerName: string | null
-  paymentMethodName: string | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -109,8 +105,6 @@ export type InternalBalanceLogCountAggregateOutputType = {
   balanceActive: number
   balancePending: number
   transactionType: number
-  providerName: number
-  paymentMethodName: number
   createdAt: number
   createdBy: number
   updatedAt: number
@@ -162,8 +156,6 @@ export type InternalBalanceLogMinAggregateInputType = {
   balanceActive?: true
   balancePending?: true
   transactionType?: true
-  providerName?: true
-  paymentMethodName?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -183,8 +175,6 @@ export type InternalBalanceLogMaxAggregateInputType = {
   balanceActive?: true
   balancePending?: true
   transactionType?: true
-  providerName?: true
-  paymentMethodName?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -204,8 +194,6 @@ export type InternalBalanceLogCountAggregateInputType = {
   balanceActive?: true
   balancePending?: true
   transactionType?: true
-  providerName?: true
-  paymentMethodName?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -312,8 +300,6 @@ export type InternalBalanceLogGroupByOutputType = {
   balanceActive: runtime.Decimal
   balancePending: runtime.Decimal
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt: Date
   createdBy: number | null
   updatedAt: Date | null
@@ -356,8 +342,6 @@ export type InternalBalanceLogWhereInput = {
   balanceActive?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFilter<"InternalBalanceLog"> | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFilter<"InternalBalanceLog"> | string
-  paymentMethodName?: Prisma.StringFilter<"InternalBalanceLog"> | string
   createdAt?: Prisma.DateTimeFilter<"InternalBalanceLog"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
@@ -381,8 +365,6 @@ export type InternalBalanceLogOrderByWithRelationInput = {
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
-  providerName?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -409,8 +391,6 @@ export type InternalBalanceLogWhereUniqueInput = Prisma.AtLeast<{
   balanceActive?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFilter<"InternalBalanceLog"> | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFilter<"InternalBalanceLog"> | string
-  paymentMethodName?: Prisma.StringFilter<"InternalBalanceLog"> | string
   createdAt?: Prisma.DateTimeFilter<"InternalBalanceLog"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
@@ -434,8 +414,6 @@ export type InternalBalanceLogOrderByWithAggregationInput = {
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
-  providerName?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -463,8 +441,6 @@ export type InternalBalanceLogScalarWhereWithAggregatesInput = {
   balanceActive?: Prisma.DecimalWithAggregatesFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalWithAggregatesFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumWithAggregatesFilter<"InternalBalanceLog"> | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringWithAggregatesFilter<"InternalBalanceLog"> | string
-  paymentMethodName?: Prisma.StringWithAggregatesFilter<"InternalBalanceLog"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"InternalBalanceLog"> | Date | string
   createdBy?: Prisma.IntNullableWithAggregatesFilter<"InternalBalanceLog"> | number | null
   updatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"InternalBalanceLog"> | Date | string | null
@@ -479,8 +455,6 @@ export type InternalBalanceLogCreateInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -504,8 +478,6 @@ export type InternalBalanceLogUncheckedCreateInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -520,8 +492,6 @@ export type InternalBalanceLogUpdateInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -545,8 +515,6 @@ export type InternalBalanceLogUncheckedUpdateInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -566,8 +534,6 @@ export type InternalBalanceLogCreateManyInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -582,8 +548,6 @@ export type InternalBalanceLogUpdateManyMutationInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -603,8 +567,6 @@ export type InternalBalanceLogUncheckedUpdateManyInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -634,8 +596,6 @@ export type InternalBalanceLogCountOrderByAggregateInput = {
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
-  providerName?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -670,8 +630,6 @@ export type InternalBalanceLogMaxOrderByAggregateInput = {
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
-  providerName?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -691,8 +649,6 @@ export type InternalBalanceLogMinOrderByAggregateInput = {
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
-  providerName?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -714,6 +670,90 @@ export type InternalBalanceLogSumOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
+}
+
+export type InternalBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+}
+
+export type InternalBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+}
+
+export type InternalBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
+}
+
+export type InternalBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
+}
+
+export type InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+}
+
+export type InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+}
+
+export type InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
+}
+
+export type InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
+  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
 }
 
 export type InternalBalanceLogCreateNestedManyWithoutTopupTransactionInput = {
@@ -800,317 +840,12 @@ export type InternalBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionNeste
   deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
 }
 
-export type InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-}
-
-export type InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-}
-
-export type InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-}
-
-export type InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-}
-
-export type InternalBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-}
-
-export type InternalBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-}
-
-export type InternalBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-}
-
-export type InternalBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.InternalBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.InternalBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  delete?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  connect?: Prisma.InternalBalanceLogWhereUniqueInput | Prisma.InternalBalanceLogWhereUniqueInput[]
-  update?: Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-}
-
-export type InternalBalanceLogCreateWithoutTopupTransactionInput = {
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutInternalBalanceLogInput
-}
-
-export type InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type InternalBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type InternalBalanceLogCreateManyTopupTransactionInputEnvelope = {
-  data: Prisma.InternalBalanceLogCreateManyTopupTransactionInput | Prisma.InternalBalanceLogCreateManyTopupTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type InternalBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type InternalBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-}
-
-export type InternalBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
-  where: Prisma.InternalBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
-}
-
-export type InternalBalanceLogScalarWhereInput = {
-  AND?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-  OR?: Prisma.InternalBalanceLogScalarWhereInput[]
-  NOT?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
-  id?: Prisma.IntFilter<"InternalBalanceLog"> | number
-  topupId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  purchaseId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  withdrawId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  disbursementId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  merchantId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  changeAmount?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"InternalBalanceLog"> | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFilter<"InternalBalanceLog"> | string
-  paymentMethodName?: Prisma.StringFilter<"InternalBalanceLog"> | string
-  createdAt?: Prisma.DateTimeFilter<"InternalBalanceLog"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  updatedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
-  updatedBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-  deletedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
-  deletedBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
-}
-
-export type InternalBalanceLogCreateWithoutWithdrawTransactionInput = {
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutInternalBalanceLogInput
-}
-
-export type InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type InternalBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type InternalBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
-  data: Prisma.InternalBalanceLogCreateManyWithdrawTransactionInput | Prisma.InternalBalanceLogCreateManyWithdrawTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type InternalBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type InternalBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-}
-
-export type InternalBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
-  where: Prisma.InternalBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
-}
-
-export type InternalBalanceLogCreateWithoutDisbursementTransactionInput = {
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutInternalBalanceLogInput
-}
-
-export type InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  withdrawId?: number | null
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
-  data: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInput | Prisma.InternalBalanceLogCreateManyDisbursementTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.InternalBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-}
-
-export type InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
-  where: Prisma.InternalBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
-}
-
 export type InternalBalanceLogCreateWithoutPurchaseTransactionInput = {
   merchantId?: number | null
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -1132,8 +867,6 @@ export type InternalBalanceLogUncheckedCreateWithoutPurchaseTransactionInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -1168,165 +901,46 @@ export type InternalBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput
   data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput>
 }
 
-export type InternalBalanceLogCreateManyTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
+export type InternalBalanceLogScalarWhereInput = {
+  AND?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
+  OR?: Prisma.InternalBalanceLogScalarWhereInput[]
+  NOT?: Prisma.InternalBalanceLogScalarWhereInput | Prisma.InternalBalanceLogScalarWhereInput[]
+  id?: Prisma.IntFilter<"InternalBalanceLog"> | number
+  topupId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  purchaseId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  withdrawId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  disbursementId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  merchantId?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  changeAmount?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFilter<"InternalBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"InternalBalanceLog"> | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFilter<"InternalBalanceLog"> | Date | string
+  createdBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  updatedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
+  updatedBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"InternalBalanceLog"> | Date | string | null
+  deletedBy?: Prisma.IntNullableFilter<"InternalBalanceLog"> | number | null
+}
+
+export type InternalBalanceLogCreateWithoutDisbursementTransactionInput = {
   merchantId?: number | null
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutInternalBalanceLogInput
 }
 
-export type InternalBalanceLogUpdateWithoutTopupTransactionInput = {
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-}
-
-export type InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type InternalBalanceLogCreateManyWithdrawTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
-  merchantId?: number | null
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type InternalBalanceLogUpdateWithoutWithdrawTransactionInput = {
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-}
-
-export type InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type InternalBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type InternalBalanceLogCreateManyDisbursementTransactionInput = {
+export type InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
   id?: number
   topupId?: number | null
   purchaseId?: number | null
@@ -1336,8 +950,6 @@ export type InternalBalanceLogCreateManyDisbursementTransactionInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -1346,63 +958,152 @@ export type InternalBalanceLogCreateManyDisbursementTransactionInput = {
   deletedBy?: number | null
 }
 
-export type InternalBalanceLogUpdateWithoutDisbursementTransactionInput = {
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+export type InternalBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
 }
 
-export type InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type InternalBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
+  data: Prisma.InternalBalanceLogCreateManyDisbursementTransactionInput | Prisma.InternalBalanceLogCreateManyDisbursementTransactionInput[]
+  skipDuplicates?: boolean
 }
 
-export type InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type InternalBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
+}
+
+export type InternalBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+}
+
+export type InternalBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
+  where: Prisma.InternalBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
+}
+
+export type InternalBalanceLogCreateWithoutTopupTransactionInput = {
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutInternalBalanceLogInput
+}
+
+export type InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
+  id?: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type InternalBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type InternalBalanceLogCreateManyTopupTransactionInputEnvelope = {
+  data: Prisma.InternalBalanceLogCreateManyTopupTransactionInput | Prisma.InternalBalanceLogCreateManyTopupTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type InternalBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type InternalBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutTopupTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+}
+
+export type InternalBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
+  where: Prisma.InternalBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
+}
+
+export type InternalBalanceLogCreateWithoutWithdrawTransactionInput = {
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutInternalBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutInternalBalanceLogInput
+}
+
+export type InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
+  id?: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type InternalBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type InternalBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
+  data: Prisma.InternalBalanceLogCreateManyWithdrawTransactionInput | Prisma.InternalBalanceLogCreateManyWithdrawTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type InternalBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+  create: Prisma.XOR<Prisma.InternalBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type InternalBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.InternalBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+}
+
+export type InternalBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
+  where: Prisma.InternalBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.InternalBalanceLogUpdateManyMutationInput, Prisma.InternalBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
 }
 
 export type InternalBalanceLogCreateManyPurchaseTransactionInput = {
@@ -1415,8 +1116,6 @@ export type InternalBalanceLogCreateManyPurchaseTransactionInput = {
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType: $Enums.TransactionTypeEnum
-  providerName: string
-  paymentMethodName: string
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -1431,8 +1130,6 @@ export type InternalBalanceLogUpdateWithoutPurchaseTransactionInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1454,8 +1151,6 @@ export type InternalBalanceLogUncheckedUpdateWithoutPurchaseTransactionInput = {
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1474,8 +1169,219 @@ export type InternalBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogCreateManyDisbursementTransactionInput = {
+  id?: number
+  topupId?: number | null
+  purchaseId?: number | null
+  withdrawId?: number | null
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type InternalBalanceLogUpdateWithoutDisbursementTransactionInput = {
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+}
+
+export type InternalBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogCreateManyTopupTransactionInput = {
+  id?: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type InternalBalanceLogUpdateWithoutTopupTransactionInput = {
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+}
+
+export type InternalBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogCreateManyWithdrawTransactionInput = {
+  id?: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  merchantId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type InternalBalanceLogUpdateWithoutWithdrawTransactionInput = {
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutInternalBalanceLogNestedInput
+}
+
+export type InternalBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type InternalBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  merchantId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1497,8 +1403,6 @@ export type InternalBalanceLogSelect<ExtArgs extends runtime.Types.Extensions.In
   balanceActive?: boolean
   balancePending?: boolean
   transactionType?: boolean
-  providerName?: boolean
-  paymentMethodName?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1522,8 +1426,6 @@ export type InternalBalanceLogSelectCreateManyAndReturn<ExtArgs extends runtime.
   balanceActive?: boolean
   balancePending?: boolean
   transactionType?: boolean
-  providerName?: boolean
-  paymentMethodName?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1547,8 +1449,6 @@ export type InternalBalanceLogSelectUpdateManyAndReturn<ExtArgs extends runtime.
   balanceActive?: boolean
   balancePending?: boolean
   transactionType?: boolean
-  providerName?: boolean
-  paymentMethodName?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1572,8 +1472,6 @@ export type InternalBalanceLogSelectScalar = {
   balanceActive?: boolean
   balancePending?: boolean
   transactionType?: boolean
-  providerName?: boolean
-  paymentMethodName?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1582,7 +1480,7 @@ export type InternalBalanceLogSelectScalar = {
   deletedBy?: boolean
 }
 
-export type InternalBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "merchantId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "providerName" | "paymentMethodName" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["internalBalanceLog"]>
+export type InternalBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "merchantId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["internalBalanceLog"]>
 export type InternalBalanceLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   topupTransaction?: boolean | Prisma.InternalBalanceLog$topupTransactionArgs<ExtArgs>
   purchaseTransaction?: boolean | Prisma.InternalBalanceLog$purchaseTransactionArgs<ExtArgs>
@@ -1621,8 +1519,6 @@ export type $InternalBalanceLogPayload<ExtArgs extends runtime.Types.Extensions.
     balanceActive: runtime.Decimal
     balancePending: runtime.Decimal
     transactionType: $Enums.TransactionTypeEnum
-    providerName: string
-    paymentMethodName: string
     createdAt: Date
     createdBy: number | null
     updatedAt: Date | null
@@ -2066,8 +1962,6 @@ export interface InternalBalanceLogFieldRefs {
   readonly balanceActive: Prisma.FieldRef<"InternalBalanceLog", 'Decimal'>
   readonly balancePending: Prisma.FieldRef<"InternalBalanceLog", 'Decimal'>
   readonly transactionType: Prisma.FieldRef<"InternalBalanceLog", 'TransactionTypeEnum'>
-  readonly providerName: Prisma.FieldRef<"InternalBalanceLog", 'String'>
-  readonly paymentMethodName: Prisma.FieldRef<"InternalBalanceLog", 'String'>
   readonly createdAt: Prisma.FieldRef<"InternalBalanceLog", 'DateTime'>
   readonly createdBy: Prisma.FieldRef<"InternalBalanceLog", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"InternalBalanceLog", 'DateTime'>

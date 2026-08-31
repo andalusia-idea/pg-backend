@@ -28,11 +28,11 @@ export type AggregateAgentBalanceLog = {
 
 export type AgentBalanceLogAvgAggregateOutputType = {
   id: number | null
+  agentId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  agentId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -43,11 +43,11 @@ export type AgentBalanceLogAvgAggregateOutputType = {
 
 export type AgentBalanceLogSumAggregateOutputType = {
   id: number | null
+  agentId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  agentId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -58,11 +58,11 @@ export type AgentBalanceLogSumAggregateOutputType = {
 
 export type AgentBalanceLogMinAggregateOutputType = {
   id: number | null
+  agentId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  agentId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -77,11 +77,11 @@ export type AgentBalanceLogMinAggregateOutputType = {
 
 export type AgentBalanceLogMaxAggregateOutputType = {
   id: number | null
+  agentId: number | null
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  agentId: number | null
   changeAmount: runtime.Decimal | null
   balanceActive: runtime.Decimal | null
   balancePending: runtime.Decimal | null
@@ -96,11 +96,11 @@ export type AgentBalanceLogMaxAggregateOutputType = {
 
 export type AgentBalanceLogCountAggregateOutputType = {
   id: number
+  agentId: number
   topupId: number
   purchaseId: number
   withdrawId: number
   disbursementId: number
-  agentId: number
   changeAmount: number
   balanceActive: number
   balancePending: number
@@ -117,11 +117,11 @@ export type AgentBalanceLogCountAggregateOutputType = {
 
 export type AgentBalanceLogAvgAggregateInputType = {
   id?: true
+  agentId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  agentId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -132,11 +132,11 @@ export type AgentBalanceLogAvgAggregateInputType = {
 
 export type AgentBalanceLogSumAggregateInputType = {
   id?: true
+  agentId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  agentId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -147,11 +147,11 @@ export type AgentBalanceLogSumAggregateInputType = {
 
 export type AgentBalanceLogMinAggregateInputType = {
   id?: true
+  agentId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  agentId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -166,11 +166,11 @@ export type AgentBalanceLogMinAggregateInputType = {
 
 export type AgentBalanceLogMaxAggregateInputType = {
   id?: true
+  agentId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  agentId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -185,11 +185,11 @@ export type AgentBalanceLogMaxAggregateInputType = {
 
 export type AgentBalanceLogCountAggregateInputType = {
   id?: true
+  agentId?: true
   topupId?: true
   purchaseId?: true
   withdrawId?: true
   disbursementId?: true
-  agentId?: true
   changeAmount?: true
   balanceActive?: true
   balancePending?: true
@@ -291,11 +291,11 @@ export type AgentBalanceLogGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 
 export type AgentBalanceLogGroupByOutputType = {
   id: number
+  agentId: number
   topupId: number | null
   purchaseId: number | null
   withdrawId: number | null
   disbursementId: number | null
-  agentId: number
   changeAmount: runtime.Decimal
   balanceActive: runtime.Decimal
   balancePending: runtime.Decimal
@@ -333,11 +333,11 @@ export type AgentBalanceLogWhereInput = {
   OR?: Prisma.AgentBalanceLogWhereInput[]
   NOT?: Prisma.AgentBalanceLogWhereInput | Prisma.AgentBalanceLogWhereInput[]
   id?: Prisma.IntFilter<"AgentBalanceLog"> | number
+  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
   topupId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
   changeAmount?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -356,11 +356,11 @@ export type AgentBalanceLogWhereInput = {
 
 export type AgentBalanceLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrderInput | Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -382,11 +382,11 @@ export type AgentBalanceLogWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.AgentBalanceLogWhereInput | Prisma.AgentBalanceLogWhereInput[]
   OR?: Prisma.AgentBalanceLogWhereInput[]
   NOT?: Prisma.AgentBalanceLogWhereInput | Prisma.AgentBalanceLogWhereInput[]
+  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
   topupId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
   changeAmount?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -405,11 +405,11 @@ export type AgentBalanceLogWhereUniqueInput = Prisma.AtLeast<{
 
 export type AgentBalanceLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrderInput | Prisma.SortOrder
   disbursementId?: Prisma.SortOrderInput | Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -432,11 +432,11 @@ export type AgentBalanceLogScalarWhereWithAggregatesInput = {
   OR?: Prisma.AgentBalanceLogScalarWhereWithAggregatesInput[]
   NOT?: Prisma.AgentBalanceLogScalarWhereWithAggregatesInput | Prisma.AgentBalanceLogScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"AgentBalanceLog"> | number
+  agentId?: Prisma.IntWithAggregatesFilter<"AgentBalanceLog"> | number
   topupId?: Prisma.IntNullableWithAggregatesFilter<"AgentBalanceLog"> | number | null
   purchaseId?: Prisma.IntNullableWithAggregatesFilter<"AgentBalanceLog"> | number | null
   withdrawId?: Prisma.IntNullableWithAggregatesFilter<"AgentBalanceLog"> | number | null
   disbursementId?: Prisma.IntNullableWithAggregatesFilter<"AgentBalanceLog"> | number | null
-  agentId?: Prisma.IntWithAggregatesFilter<"AgentBalanceLog"> | number
   changeAmount?: Prisma.DecimalWithAggregatesFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalWithAggregatesFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalWithAggregatesFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -469,11 +469,11 @@ export type AgentBalanceLogCreateInput = {
 
 export type AgentBalanceLogUncheckedCreateInput = {
   id?: number
+  agentId: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -506,11 +506,11 @@ export type AgentBalanceLogUpdateInput = {
 
 export type AgentBalanceLogUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -525,11 +525,11 @@ export type AgentBalanceLogUncheckedUpdateInput = {
 
 export type AgentBalanceLogCreateManyInput = {
   id?: number
+  agentId: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -558,11 +558,11 @@ export type AgentBalanceLogUpdateManyMutationInput = {
 
 export type AgentBalanceLogUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -587,11 +587,11 @@ export type AgentBalanceLogOrderByRelationAggregateInput = {
 
 export type AgentBalanceLogCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -606,11 +606,11 @@ export type AgentBalanceLogCountOrderByAggregateInput = {
 
 export type AgentBalanceLogAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -621,11 +621,11 @@ export type AgentBalanceLogAvgOrderByAggregateInput = {
 
 export type AgentBalanceLogMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -640,11 +640,11 @@ export type AgentBalanceLogMaxOrderByAggregateInput = {
 
 export type AgentBalanceLogMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
@@ -659,17 +659,101 @@ export type AgentBalanceLogMinOrderByAggregateInput = {
 
 export type AgentBalanceLogSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
   disbursementId?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   changeAmount?: Prisma.SortOrder
   balanceActive?: Prisma.SortOrder
   balancePending?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
+}
+
+export type AgentBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+}
+
+export type AgentBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+}
+
+export type AgentBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
+}
+
+export type AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
+  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
+  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
+  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
+  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
+}
+
+export type AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+}
+
+export type AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+}
+
+export type AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
+}
+
+export type AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
+  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
+  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
+  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
+  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
+  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
+  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
+  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
+  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
 }
 
 export type AgentBalanceLogCreateNestedManyWithoutTopupTransactionInput = {
@@ -756,295 +840,6 @@ export type AgentBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionNestedIn
   deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
 }
 
-export type AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-}
-
-export type AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-}
-
-export type AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-}
-
-export type AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput> | Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput[]
-  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope
-  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput[]
-  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput[]
-  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-}
-
-export type AgentBalanceLogCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-}
-
-export type AgentBalanceLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-}
-
-export type AgentBalanceLogUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-}
-
-export type AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.AgentBalanceLogCreateWithoutPurchaseTransactionInput[] | Prisma.AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.AgentBalanceLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  disconnect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  delete?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  connect?: Prisma.AgentBalanceLogWhereUniqueInput | Prisma.AgentBalanceLogWhereUniqueInput[]
-  update?: Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-}
-
-export type AgentBalanceLogCreateWithoutTopupTransactionInput = {
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutAgentBalanceLogInput
-}
-
-export type AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type AgentBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type AgentBalanceLogCreateManyTopupTransactionInputEnvelope = {
-  data: Prisma.AgentBalanceLogCreateManyTopupTransactionInput | Prisma.AgentBalanceLogCreateManyTopupTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type AgentBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput>
-}
-
-export type AgentBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
-}
-
-export type AgentBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
-  where: Prisma.AgentBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
-}
-
-export type AgentBalanceLogScalarWhereInput = {
-  AND?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-  OR?: Prisma.AgentBalanceLogScalarWhereInput[]
-  NOT?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
-  id?: Prisma.IntFilter<"AgentBalanceLog"> | number
-  topupId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  purchaseId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  withdrawId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  disbursementId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
-  changeAmount?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"AgentBalanceLog"> | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFilter<"AgentBalanceLog"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  updatedAt?: Prisma.DateTimeNullableFilter<"AgentBalanceLog"> | Date | string | null
-  updatedBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-  deletedAt?: Prisma.DateTimeNullableFilter<"AgentBalanceLog"> | Date | string | null
-  deletedBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
-}
-
-export type AgentBalanceLogCreateWithoutWithdrawTransactionInput = {
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutAgentBalanceLogInput
-}
-
-export type AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type AgentBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type AgentBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
-  data: Prisma.AgentBalanceLogCreateManyWithdrawTransactionInput | Prisma.AgentBalanceLogCreateManyWithdrawTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type AgentBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
-}
-
-export type AgentBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
-}
-
-export type AgentBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
-  where: Prisma.AgentBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
-}
-
-export type AgentBalanceLogCreateWithoutDisbursementTransactionInput = {
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
-  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutAgentBalanceLogInput
-}
-
-export type AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
-  id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  withdrawId?: number | null
-  agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
-  data: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInput | Prisma.AgentBalanceLogCreateManyDisbursementTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
-}
-
-export type AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
-  where: Prisma.AgentBalanceLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
-}
-
-export type AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
-  where: Prisma.AgentBalanceLogScalarWhereInput
-  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
-}
-
 export type AgentBalanceLogCreateWithoutPurchaseTransactionInput = {
   agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1064,10 +859,10 @@ export type AgentBalanceLogCreateWithoutPurchaseTransactionInput = {
 
 export type AgentBalanceLogUncheckedCreateWithoutPurchaseTransactionInput = {
   id?: number
+  agentId: number
   topupId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1106,11 +901,29 @@ export type AgentBalanceLogUpdateManyWithWhereWithoutPurchaseTransactionInput = 
   data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput>
 }
 
-export type AgentBalanceLogCreateManyTopupTransactionInput = {
-  id?: number
-  purchaseId?: number | null
-  withdrawId?: number | null
-  disbursementId?: number | null
+export type AgentBalanceLogScalarWhereInput = {
+  AND?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
+  OR?: Prisma.AgentBalanceLogScalarWhereInput[]
+  NOT?: Prisma.AgentBalanceLogScalarWhereInput | Prisma.AgentBalanceLogScalarWhereInput[]
+  id?: Prisma.IntFilter<"AgentBalanceLog"> | number
+  agentId?: Prisma.IntFilter<"AgentBalanceLog"> | number
+  topupId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  purchaseId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  withdrawId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  disbursementId?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  changeAmount?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFilter<"AgentBalanceLog"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"AgentBalanceLog"> | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFilter<"AgentBalanceLog"> | Date | string
+  createdBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  updatedAt?: Prisma.DateTimeNullableFilter<"AgentBalanceLog"> | Date | string | null
+  updatedBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+  deletedAt?: Prisma.DateTimeNullableFilter<"AgentBalanceLog"> | Date | string | null
+  deletedBy?: Prisma.IntNullableFilter<"AgentBalanceLog"> | number | null
+}
+
+export type AgentBalanceLogCreateWithoutDisbursementTransactionInput = {
   agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1122,138 +935,17 @@ export type AgentBalanceLogCreateManyTopupTransactionInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutAgentBalanceLogInput
 }
 
-export type AgentBalanceLogUpdateWithoutTopupTransactionInput = {
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-}
-
-export type AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type AgentBalanceLogCreateManyWithdrawTransactionInput = {
+export type AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput = {
   id?: number
-  topupId?: number | null
-  purchaseId?: number | null
-  disbursementId?: number | null
   agentId: number
-  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type AgentBalanceLogUpdateWithoutWithdrawTransactionInput = {
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-}
-
-export type AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type AgentBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type AgentBalanceLogCreateManyDisbursementTransactionInput = {
-  id?: number
   topupId?: number | null
   purchaseId?: number | null
   withdrawId?: number | null
-  agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1266,65 +958,160 @@ export type AgentBalanceLogCreateManyDisbursementTransactionInput = {
   deletedBy?: number | null
 }
 
-export type AgentBalanceLogUpdateWithoutDisbursementTransactionInput = {
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
-  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+export type AgentBalanceLogCreateOrConnectWithoutDisbursementTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
 }
 
-export type AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type AgentBalanceLogCreateManyDisbursementTransactionInputEnvelope = {
+  data: Prisma.AgentBalanceLogCreateManyDisbursementTransactionInput | Prisma.AgentBalanceLogCreateManyDisbursementTransactionInput[]
+  skipDuplicates?: boolean
 }
 
-export type AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
-  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+export type AgentBalanceLogUpsertWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutDisbursementTransactionInput>
+}
+
+export type AgentBalanceLogUpdateWithWhereUniqueWithoutDisbursementTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutDisbursementTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput>
+}
+
+export type AgentBalanceLogUpdateManyWithWhereWithoutDisbursementTransactionInput = {
+  where: Prisma.AgentBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput>
+}
+
+export type AgentBalanceLogCreateWithoutTopupTransactionInput = {
+  agentId: number
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  withdrawTransaction?: Prisma.WithdrawTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutAgentBalanceLogInput
+}
+
+export type AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput = {
+  id?: number
+  agentId: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type AgentBalanceLogCreateOrConnectWithoutTopupTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type AgentBalanceLogCreateManyTopupTransactionInputEnvelope = {
+  data: Prisma.AgentBalanceLogCreateManyTopupTransactionInput | Prisma.AgentBalanceLogCreateManyTopupTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type AgentBalanceLogUpsertWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutTopupTransactionInput>
+}
+
+export type AgentBalanceLogUpdateWithWhereUniqueWithoutTopupTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutTopupTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput>
+}
+
+export type AgentBalanceLogUpdateManyWithWhereWithoutTopupTransactionInput = {
+  where: Prisma.AgentBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput>
+}
+
+export type AgentBalanceLogCreateWithoutWithdrawTransactionInput = {
+  agentId: number
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+  topupTransaction?: Prisma.TopUpTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  purchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutAgentBalanceLogInput
+  disbursementTransaction?: Prisma.DisbursementTransactionCreateNestedOneWithoutAgentBalanceLogInput
+}
+
+export type AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput = {
+  id?: number
+  agentId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type AgentBalanceLogCreateOrConnectWithoutWithdrawTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type AgentBalanceLogCreateManyWithdrawTransactionInputEnvelope = {
+  data: Prisma.AgentBalanceLogCreateManyWithdrawTransactionInput | Prisma.AgentBalanceLogCreateManyWithdrawTransactionInput[]
+  skipDuplicates?: boolean
+}
+
+export type AgentBalanceLogUpsertWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  update: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+  create: Prisma.XOR<Prisma.AgentBalanceLogCreateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedCreateWithoutWithdrawTransactionInput>
+}
+
+export type AgentBalanceLogUpdateWithWhereUniqueWithoutWithdrawTransactionInput = {
+  where: Prisma.AgentBalanceLogWhereUniqueInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateWithoutWithdrawTransactionInput, Prisma.AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput>
+}
+
+export type AgentBalanceLogUpdateManyWithWhereWithoutWithdrawTransactionInput = {
+  where: Prisma.AgentBalanceLogScalarWhereInput
+  data: Prisma.XOR<Prisma.AgentBalanceLogUpdateManyMutationInput, Prisma.AgentBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput>
 }
 
 export type AgentBalanceLogCreateManyPurchaseTransactionInput = {
   id?: number
+  agentId: number
   topupId?: number | null
   withdrawId?: number | null
   disbursementId?: number | null
-  agentId: number
   changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1356,10 +1143,10 @@ export type AgentBalanceLogUpdateWithoutPurchaseTransactionInput = {
 
 export type AgentBalanceLogUncheckedUpdateWithoutPurchaseTransactionInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1374,10 +1161,223 @@ export type AgentBalanceLogUncheckedUpdateWithoutPurchaseTransactionInput = {
 
 export type AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
   topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogCreateManyDisbursementTransactionInput = {
+  id?: number
+  agentId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  withdrawId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type AgentBalanceLogUpdateWithoutDisbursementTransactionInput = {
   agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+}
+
+export type AgentBalanceLogUncheckedUpdateWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogCreateManyTopupTransactionInput = {
+  id?: number
+  agentId: number
+  purchaseId?: number | null
+  withdrawId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type AgentBalanceLogUpdateWithoutTopupTransactionInput = {
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  withdrawTransaction?: Prisma.WithdrawTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+}
+
+export type AgentBalanceLogUncheckedUpdateWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  withdrawId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogCreateManyWithdrawTransactionInput = {
+  id?: number
+  agentId: number
+  topupId?: number | null
+  purchaseId?: number | null
+  disbursementId?: number | null
+  changeAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType: $Enums.TransactionTypeEnum
+  createdAt?: Date | string
+  createdBy?: number | null
+  updatedAt?: Date | string | null
+  updatedBy?: number | null
+  deletedAt?: Date | string | null
+  deletedBy?: number | null
+}
+
+export type AgentBalanceLogUpdateWithoutWithdrawTransactionInput = {
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  topupTransaction?: Prisma.TopUpTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  purchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+  disbursementTransaction?: Prisma.DisbursementTransactionUpdateOneWithoutAgentBalanceLogNestedInput
+}
+
+export type AgentBalanceLogUncheckedUpdateWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type AgentBalanceLogUncheckedUpdateManyWithoutWithdrawTransactionInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.IntFieldUpdateOperationsInput | number
+  topupId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  purchaseId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  disbursementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   changeAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balanceActive?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balancePending?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1394,11 +1394,11 @@ export type AgentBalanceLogUncheckedUpdateManyWithoutPurchaseTransactionInput = 
 
 export type AgentBalanceLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  agentId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  agentId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1417,11 +1417,11 @@ export type AgentBalanceLogSelect<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type AgentBalanceLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  agentId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  agentId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1440,11 +1440,11 @@ export type AgentBalanceLogSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
 
 export type AgentBalanceLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  agentId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  agentId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1463,11 +1463,11 @@ export type AgentBalanceLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
 
 export type AgentBalanceLogSelectScalar = {
   id?: boolean
+  agentId?: boolean
   topupId?: boolean
   purchaseId?: boolean
   withdrawId?: boolean
   disbursementId?: boolean
-  agentId?: boolean
   changeAmount?: boolean
   balanceActive?: boolean
   balancePending?: boolean
@@ -1480,7 +1480,7 @@ export type AgentBalanceLogSelectScalar = {
   deletedBy?: boolean
 }
 
-export type AgentBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "agentId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["agentBalanceLog"]>
+export type AgentBalanceLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "topupId" | "purchaseId" | "withdrawId" | "disbursementId" | "changeAmount" | "balanceActive" | "balancePending" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["agentBalanceLog"]>
 export type AgentBalanceLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   topupTransaction?: boolean | Prisma.AgentBalanceLog$topupTransactionArgs<ExtArgs>
   purchaseTransaction?: boolean | Prisma.AgentBalanceLog$purchaseTransactionArgs<ExtArgs>
@@ -1510,11 +1510,11 @@ export type $AgentBalanceLogPayload<ExtArgs extends runtime.Types.Extensions.Int
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    agentId: number
     topupId: number | null
     purchaseId: number | null
     withdrawId: number | null
     disbursementId: number | null
-    agentId: number
     changeAmount: runtime.Decimal
     balanceActive: runtime.Decimal
     balancePending: runtime.Decimal
@@ -1953,11 +1953,11 @@ export interface Prisma__AgentBalanceLogClient<T, Null = never, ExtArgs extends 
  */
 export interface AgentBalanceLogFieldRefs {
   readonly id: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
+  readonly agentId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
   readonly topupId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
   readonly purchaseId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
   readonly withdrawId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
   readonly disbursementId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
-  readonly agentId: Prisma.FieldRef<"AgentBalanceLog", 'Int'>
   readonly changeAmount: Prisma.FieldRef<"AgentBalanceLog", 'Decimal'>
   readonly balanceActive: Prisma.FieldRef<"AgentBalanceLog", 'Decimal'>
   readonly balancePending: Prisma.FieldRef<"AgentBalanceLog", 'Decimal'>

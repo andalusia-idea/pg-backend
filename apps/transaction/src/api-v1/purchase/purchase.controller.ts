@@ -13,4 +13,9 @@ export class PurchaseController {
   test(@MerchantUserId() merchantUserId: number) {
     return { merchantUserId };
   }
+
+  @Post('v1/qr/qr-mpm-generate')
+  @MerchantEndpoint()
+  @ApiOperation({ summary: 'Generate QR MPM' })
+  createQris() {}
 }

@@ -11,206 +11,32 @@ datasource db {
   schemas  = ["transaction"]
 }
 
-model TopUpTransaction {
-  id                Int                   @id @default(autoincrement())
-  code              String                @unique @default(uuid())
-  merchantId        Int
-  externalId        String?
-  referenceId       String                @unique //reff id from bank
-  nominal           Decimal               @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal               @default(0.0) @db.Decimal(15, 2) // Money
-  status            TransactionStatusEnum @default(PENDING)
-  providerName      String
-  paymentMethodName String //transfer_bank, virtual_account
-  receiptImage      String
-
-  paidAt           DateTime?
-  metadata         Json?
-  settlementAt     DateTime?
-  reconciliationAt DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  merchantBalanceLog MerchantBalanceLog[]
-  agentBalanceLog    AgentBalanceLog[]
-  internalBalanceLog InternalBalanceLog[]
-  feeDetails         TopupFeeDetail[]
-
-  @@index([referenceId])
-  @@index([merchantId])
-  @@schema("transaction")
-}
-
-model TopupFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  topupId       Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topUpTransation TopUpTransaction @relation(fields: [topupId], references: [id], onDelete: Cascade)
-
-  @@index([topupId])
-  @@schema("transaction")
-}
-
-model WithdrawTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique @default(uuid())
-  externalId  String?
-  userId      Int
-  userRole    String
-  referenceId String  @unique //reff id from bank
-
-  providerName      String
-  paymentMethodName String // transfer_bank, virtual_account, dll
-  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal setelah dikenakan fee
-
-  status TransactionStatusEnum @default(PENDING)
-
-  paidAt           DateTime?
-  metadata         Json?
-  reconciliationAt DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  // Relasi
-  feeDetails         WithdrawFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
-
-  @@index([userId])
-  @@index([status])
-  @@schema("transaction")
-}
-
-model WithdrawFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  withdrawId    Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  withdrawTransaction WithdrawTransaction @relation(fields: [withdrawId], references: [id], onDelete: Cascade)
-
-  @@index([withdrawId])
-  @@schema("transaction")
-}
-
-model DisbursementTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique @default(uuid())
-  orderId     String  @unique
-  externalId  String?
-  referenceId String?
-  merchantId  Int
-
-  providerName      String
-  recipientName     String // bisa merchant, agent, atau pihak ketiga
-  recipientBankCode String
-  recipientBankName String?
-  recipientAccount  String
-  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  status TransactionStatusEnum @default(PENDING)
-
-  paidAt            DateTime?
-  paymentMethodName String
-  metadata          Json?
-  reconciliationAt  DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  // Relasi
-  feeDetails         DisbursementFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
-
-  @@index([providerName])
-  @@index([status])
-  @@schema("transaction")
-}
-
-model DisbursementFeeDetail {
-  id             Int         @id @default(autoincrement())
-  agentId        Int?
-  disbursementId Int
-  type           FeeTypeEnum
-  nominal        Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage  Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  disbursementTransaction DisbursementTransaction @relation(fields: [disbursementId], references: [id], onDelete: Cascade)
-
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
 model PurchaseTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique
-  orderId     String  @unique
-  referenceId String?
-  externalId  String
-  merchantId  Int
-  nmid        String?
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  systemReference   String  @unique // Our System Reference No
+  merchantReference String  @unique // partnerReferenceNo (SNAP) - Transaction identifier on service provider system.
+  providerReference String  @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  bankReference     String? //reff id from bank
 
   providerName      String
   paymentMethodName String
   nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
   netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
-  status TransactionStatusEnum @default(PENDING)
+  status TransactionStatusEnum
 
-  paidAt           DateTime?
-  expiresAt        DateTime
-  metadata         Json?
-  settlementAt     DateTime?
-  reconciliationAt DateTime?
+  paidAt    DateTime? @db.Timestamptz(6)
+  expiresAt DateTime  @db.Timestamptz(6)
+
+  batchSettlementId     Int?
+  settlementAt          DateTime? @db.Timestamptz(6)
+  batchReconciliationId Int?
+  reconciliationAt      DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -233,13 +59,14 @@ model PurchaseTransaction {
 }
 
 model PurchaseFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  purchaseId    Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
+  id         Int         @id @default(autoincrement())
+  purchaseId Int
+  agentId    Int?
+  type       FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -252,6 +79,235 @@ model PurchaseFeeDetail {
   transaction PurchaseTransaction @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
   @@index([purchaseId])
+  @@schema("transaction")
+}
+
+model DisbursementTransaction {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  systemReference   String  @unique // Our System Reference No
+  merchantReference String  @unique // partnerReferenceNo (SNAP) - Transaction identifier on service provider system.
+  providerReference String  @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  bankReference     String? //reff id from bank
+
+  recipientName     String // bisa merchant, agent, atau pihak ketiga
+  recipientAccount  String
+  recipientBankCode String
+  recipientBankName String?
+
+  providerName      String
+  paymentMethodName String
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  status TransactionStatusEnum
+
+  paidAt DateTime? @db.Timestamptz(6)
+
+  batchSettlementId     Int?
+  settlementAt          DateTime? @db.Timestamptz(6)
+  batchReconciliationId Int?
+  reconciliationAt      DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails         DisbursementFeeDetail[]
+  MerchantBalanceLog MerchantBalanceLog[]
+  AgentBalanceLog    AgentBalanceLog[]
+  InternalBalanceLog InternalBalanceLog[]
+
+  @@index([providerName])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model DisbursementFeeDetail {
+  id             Int         @id @default(autoincrement())
+  disbursementId Int
+  agentId        Int?
+  type           FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  disbursementTransaction DisbursementTransaction @relation(fields: [disbursementId], references: [id], onDelete: Cascade)
+
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+model TopUpTransaction {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  systemReference String @unique // Our System Reference No
+
+  providerName      String
+  paymentMethodName String
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  status       TransactionStatusEnum
+  receiptImage String
+
+  paidAt DateTime?
+
+  settlementAt DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  merchantBalanceLog MerchantBalanceLog[]
+  agentBalanceLog    AgentBalanceLog[]
+  internalBalanceLog InternalBalanceLog[]
+  feeDetails         TopupFeeDetail[]
+
+  @@index([merchantId])
+  @@schema("transaction")
+}
+
+model TopupFeeDetail {
+  id      Int         @id @default(autoincrement())
+  topupId Int
+  agentId Int?
+  type    FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topUpTransation TopUpTransaction @relation(fields: [topupId], references: [id], onDelete: Cascade)
+
+  @@index([topupId])
+  @@schema("transaction")
+}
+
+/**
+ * TRANSFER_BANK:
+ * - Can transfered into bank account at profile
+ * - Customize bank account number
+ * TRANSFER_BANK Local Manual:
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - Transfer manually by admin thorugh Bank Account operational into recipient bank account
+ * - Auto Settlement by the time admin approved
+ * TRANSFER_BANK Local API
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - System hit Upstream API
+ * - Auto settlement after waiting for webhook
+ * ################################
+ * USDT:
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - Admin must purchase USDT through Vendor
+ * - Vendor send USDT to destination account USDT
+ * - Auto Settlement by the time admin approved
+ * USDT Manual
+ * - Admin have the money to purchase USDT
+ * USDT API
+ * - Admin does not have money
+ * - So must withdraw from upstream balance
+ * - System hit Upstream Disbursement channel
+ */
+model WithdrawTransaction {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  userRole String
+
+  systemReference   String  @unique // Our System Reference No
+  providerReference String? @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  bankReference     String? //reff id from bank
+
+  providerName      String
+  paymentMethodName String // TRANSFER_BANK or USDT
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  recipientName     String? // bisa merchant, agent, atau pihak ketiga
+  recipientAccount  String?
+  recipientBankCode String?
+  recipientBankName String?
+
+  status TransactionStatusEnum
+
+  paidAt DateTime?
+
+  settlementAt DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails         WithdrawFeeDetail[]
+  MerchantBalanceLog MerchantBalanceLog[]
+  AgentBalanceLog    AgentBalanceLog[]
+  InternalBalanceLog InternalBalanceLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model WithdrawFeeDetail {
+  id         Int         @id @default(autoincrement())
+  withdrawId Int
+  agentId    Int?
+  type       FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  withdrawTransaction WithdrawTransaction @relation(fields: [withdrawId], references: [id], onDelete: Cascade)
+
+  @@index([withdrawId])
   @@schema("transaction")
 }
 
@@ -299,12 +355,14 @@ model TransactionAudit {
 }
 
 model MerchantBalanceLog {
-  id             Int     @id @default(autoincrement())
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
   topupId        Int?
   purchaseId     Int?
   withdrawId     Int?
   disbursementId Int?
-  merchantId     Int
+
   changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
   balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
   balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
@@ -332,12 +390,14 @@ model MerchantBalanceLog {
 }
 
 model AgentBalanceLog {
-  id             Int     @id @default(autoincrement())
+  id      Int @id @default(autoincrement())
+  agentId Int
+
   topupId        Int?
   purchaseId     Int?
   withdrawId     Int?
   disbursementId Int?
-  agentId        Int
+
   changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
   balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
   balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
@@ -365,19 +425,19 @@ model AgentBalanceLog {
 }
 
 model InternalBalanceLog {
-  id             Int     @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   topupId        Int?
   purchaseId     Int?
   withdrawId     Int?
   disbursementId Int?
   merchantId     Int?
+
   changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
   balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
   balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
-  transactionType   TransactionTypeEnum
-  providerName      String
-  paymentMethodName String
+  transactionType TransactionTypeEnum
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()

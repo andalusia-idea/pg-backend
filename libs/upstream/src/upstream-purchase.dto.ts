@@ -1,5 +1,8 @@
 import Decimal from 'decimal.js';
-import { TransactionStatusEnum } from './upstream.enum';
+// Type-only: the enum is used purely in type position here, and erasing the
+// import keeps this lib from taking a runtime dependency on the whole
+// `@app/microservice` barrel.
+import type { TransactionStatusEnum } from '@app/microservice';
 
 /**
  * Normalized result of creating a pay-in (purchase) at any upstream provider.

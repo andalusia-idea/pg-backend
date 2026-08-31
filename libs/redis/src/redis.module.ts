@@ -4,28 +4,18 @@ import { RedisProvider } from './redis.provider';
 import { MerchantSignatureRedis } from './merchant-signature.redis';
 import { FeeRedis } from './fee.redis';
 import { ConfigModule } from '@nestjs/config';
+import { ProfileRedis } from './profile.redis';
 
 @Global()
 @Module({
-  providers: [RedisClient, RedisProvider, MerchantSignatureRedis, FeeRedis],
-  exports: [RedisProvider, MerchantSignatureRedis, FeeRedis],
+  providers: [
+    RedisClient,
+    RedisProvider,
+    MerchantSignatureRedis,
+    FeeRedis,
+    ProfileRedis,
+  ],
+  exports: [RedisProvider, MerchantSignatureRedis, FeeRedis, ProfileRedis],
   imports: [ConfigModule],
 })
 export class RedisModule {}
-
-// │   ├── src/
-// │   │   ├── module/
-// │   │   │   redis.module.ts
-// │   │   │
-// │   │   ├── client/
-// │   │   │   redis.client.ts
-// │   │   │
-// │   │   ├── services/
-// │   │   │   cache.service.ts
-// │   │   │   session.service.ts
-// │   │   │   rate-limit.service.ts
-// │   │   │   idempotency.service.ts
-// │   │   │
-// │   │   ├── constants/
-// │   │   ├── interfaces/
-// │   │   └── index.ts

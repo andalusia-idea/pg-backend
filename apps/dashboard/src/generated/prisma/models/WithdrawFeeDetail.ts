@@ -28,8 +28,8 @@ export type AggregateWithdrawFeeDetail = {
 
 export type WithdrawFeeDetailAvgAggregateOutputType = {
   id: number | null
-  agentId: number | null
   withdrawId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -40,8 +40,8 @@ export type WithdrawFeeDetailAvgAggregateOutputType = {
 
 export type WithdrawFeeDetailSumAggregateOutputType = {
   id: number | null
-  agentId: number | null
   withdrawId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -52,8 +52,8 @@ export type WithdrawFeeDetailSumAggregateOutputType = {
 
 export type WithdrawFeeDetailMinAggregateOutputType = {
   id: number | null
-  agentId: number | null
   withdrawId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -68,8 +68,8 @@ export type WithdrawFeeDetailMinAggregateOutputType = {
 
 export type WithdrawFeeDetailMaxAggregateOutputType = {
   id: number | null
-  agentId: number | null
   withdrawId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -84,8 +84,8 @@ export type WithdrawFeeDetailMaxAggregateOutputType = {
 
 export type WithdrawFeeDetailCountAggregateOutputType = {
   id: number
-  agentId: number
   withdrawId: number
+  agentId: number
   type: number
   nominal: number
   feeFixed: number
@@ -102,8 +102,8 @@ export type WithdrawFeeDetailCountAggregateOutputType = {
 
 export type WithdrawFeeDetailAvgAggregateInputType = {
   id?: true
-  agentId?: true
   withdrawId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -114,8 +114,8 @@ export type WithdrawFeeDetailAvgAggregateInputType = {
 
 export type WithdrawFeeDetailSumAggregateInputType = {
   id?: true
-  agentId?: true
   withdrawId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -126,8 +126,8 @@ export type WithdrawFeeDetailSumAggregateInputType = {
 
 export type WithdrawFeeDetailMinAggregateInputType = {
   id?: true
-  agentId?: true
   withdrawId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -142,8 +142,8 @@ export type WithdrawFeeDetailMinAggregateInputType = {
 
 export type WithdrawFeeDetailMaxAggregateInputType = {
   id?: true
-  agentId?: true
   withdrawId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -158,8 +158,8 @@ export type WithdrawFeeDetailMaxAggregateInputType = {
 
 export type WithdrawFeeDetailCountAggregateInputType = {
   id?: true
-  agentId?: true
   withdrawId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -261,8 +261,8 @@ export type WithdrawFeeDetailGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type WithdrawFeeDetailGroupByOutputType = {
   id: number
-  agentId: number | null
   withdrawId: number
+  agentId: number | null
   type: $Enums.FeeTypeEnum
   nominal: runtime.Decimal
   feeFixed: runtime.Decimal
@@ -300,8 +300,8 @@ export type WithdrawFeeDetailWhereInput = {
   OR?: Prisma.WithdrawFeeDetailWhereInput[]
   NOT?: Prisma.WithdrawFeeDetailWhereInput | Prisma.WithdrawFeeDetailWhereInput[]
   id?: Prisma.IntFilter<"WithdrawFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   withdrawId?: Prisma.IntFilter<"WithdrawFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"WithdrawFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -317,8 +317,8 @@ export type WithdrawFeeDetailWhereInput = {
 
 export type WithdrawFeeDetailOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -337,8 +337,8 @@ export type WithdrawFeeDetailWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.WithdrawFeeDetailWhereInput | Prisma.WithdrawFeeDetailWhereInput[]
   OR?: Prisma.WithdrawFeeDetailWhereInput[]
   NOT?: Prisma.WithdrawFeeDetailWhereInput | Prisma.WithdrawFeeDetailWhereInput[]
-  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   withdrawId?: Prisma.IntFilter<"WithdrawFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"WithdrawFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -354,8 +354,8 @@ export type WithdrawFeeDetailWhereUniqueInput = Prisma.AtLeast<{
 
 export type WithdrawFeeDetailOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -378,8 +378,8 @@ export type WithdrawFeeDetailScalarWhereWithAggregatesInput = {
   OR?: Prisma.WithdrawFeeDetailScalarWhereWithAggregatesInput[]
   NOT?: Prisma.WithdrawFeeDetailScalarWhereWithAggregatesInput | Prisma.WithdrawFeeDetailScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"WithdrawFeeDetail"> | number
-  agentId?: Prisma.IntNullableWithAggregatesFilter<"WithdrawFeeDetail"> | number | null
   withdrawId?: Prisma.IntWithAggregatesFilter<"WithdrawFeeDetail"> | number
+  agentId?: Prisma.IntNullableWithAggregatesFilter<"WithdrawFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumWithAggregatesFilter<"WithdrawFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalWithAggregatesFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalWithAggregatesFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -409,8 +409,8 @@ export type WithdrawFeeDetailCreateInput = {
 
 export type WithdrawFeeDetailUncheckedCreateInput = {
   id?: number
-  agentId?: number | null
   withdrawId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -440,8 +440,8 @@ export type WithdrawFeeDetailUpdateInput = {
 
 export type WithdrawFeeDetailUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -456,8 +456,8 @@ export type WithdrawFeeDetailUncheckedUpdateInput = {
 
 export type WithdrawFeeDetailCreateManyInput = {
   id?: number
-  agentId?: number | null
   withdrawId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -486,8 +486,8 @@ export type WithdrawFeeDetailUpdateManyMutationInput = {
 
 export type WithdrawFeeDetailUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   withdrawId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -512,8 +512,8 @@ export type WithdrawFeeDetailOrderByRelationAggregateInput = {
 
 export type WithdrawFeeDetailCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -528,8 +528,8 @@ export type WithdrawFeeDetailCountOrderByAggregateInput = {
 
 export type WithdrawFeeDetailAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -540,8 +540,8 @@ export type WithdrawFeeDetailAvgOrderByAggregateInput = {
 
 export type WithdrawFeeDetailMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -556,8 +556,8 @@ export type WithdrawFeeDetailMaxOrderByAggregateInput = {
 
 export type WithdrawFeeDetailMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -572,8 +572,8 @@ export type WithdrawFeeDetailMinOrderByAggregateInput = {
 
 export type WithdrawFeeDetailSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   withdrawId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -684,8 +684,8 @@ export type WithdrawFeeDetailScalarWhereInput = {
   OR?: Prisma.WithdrawFeeDetailScalarWhereInput[]
   NOT?: Prisma.WithdrawFeeDetailScalarWhereInput | Prisma.WithdrawFeeDetailScalarWhereInput[]
   id?: Prisma.IntFilter<"WithdrawFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   withdrawId?: Prisma.IntFilter<"WithdrawFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"WithdrawFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"WithdrawFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"WithdrawFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -761,8 +761,8 @@ export type WithdrawFeeDetailUncheckedUpdateManyWithoutWithdrawTransactionInput 
 
 export type WithdrawFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   withdrawId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -778,8 +778,8 @@ export type WithdrawFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.Int
 
 export type WithdrawFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   withdrawId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -795,8 +795,8 @@ export type WithdrawFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.T
 
 export type WithdrawFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   withdrawId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -812,8 +812,8 @@ export type WithdrawFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.T
 
 export type WithdrawFeeDetailSelectScalar = {
   id?: boolean
-  agentId?: boolean
   withdrawId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -826,7 +826,7 @@ export type WithdrawFeeDetailSelectScalar = {
   deletedBy?: boolean
 }
 
-export type WithdrawFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "withdrawId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["withdrawFeeDetail"]>
+export type WithdrawFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "withdrawId" | "agentId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["withdrawFeeDetail"]>
 export type WithdrawFeeDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   withdrawTransaction?: boolean | Prisma.WithdrawTransactionDefaultArgs<ExtArgs>
 }
@@ -844,8 +844,8 @@ export type $WithdrawFeeDetailPayload<ExtArgs extends runtime.Types.Extensions.I
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    agentId: number | null
     withdrawId: number
+    agentId: number | null
     type: $Enums.FeeTypeEnum
     nominal: runtime.Decimal
     feeFixed: runtime.Decimal
@@ -1281,8 +1281,8 @@ export interface Prisma__WithdrawFeeDetailClient<T, Null = never, ExtArgs extend
  */
 export interface WithdrawFeeDetailFieldRefs {
   readonly id: Prisma.FieldRef<"WithdrawFeeDetail", 'Int'>
-  readonly agentId: Prisma.FieldRef<"WithdrawFeeDetail", 'Int'>
   readonly withdrawId: Prisma.FieldRef<"WithdrawFeeDetail", 'Int'>
+  readonly agentId: Prisma.FieldRef<"WithdrawFeeDetail", 'Int'>
   readonly type: Prisma.FieldRef<"WithdrawFeeDetail", 'FeeTypeEnum'>
   readonly nominal: Prisma.FieldRef<"WithdrawFeeDetail", 'Decimal'>
   readonly feeFixed: Prisma.FieldRef<"WithdrawFeeDetail", 'Decimal'>

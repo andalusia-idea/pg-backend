@@ -50,7 +50,6 @@ const DEV_PROVIDERS = Object.values(ProviderNameEnum).filter(
  */
 const DEV_BASE_FEES = [
   {
-    code: 'MOTIONPAY_QRIS_PURCHASE',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.QRIS,
     transactionType: TransactionTypeEnum.PURCHASE,
@@ -58,7 +57,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0.8',
   },
   {
-    code: 'MOTIONPAY_QRIS_TOPUP',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.QRIS,
     transactionType: TransactionTypeEnum.TOPUP,
@@ -66,7 +64,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0.8',
   },
   {
-    code: 'MOTIONPAY_TRANSFERBANK_DISBURSEMENT',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.DISBURSEMENT,
@@ -74,7 +71,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0',
   },
   {
-    code: 'MOTIONPAY_TRANSFERBANK_WITHDRAW',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.WITHDRAW,
@@ -82,7 +78,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0',
   },
   {
-    code: 'INTERNAL_TRANSFERBANK_TOPUP',
     providerName: ProviderNameEnum.INTERNAL,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.TOPUP,
@@ -90,6 +85,23 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0',
   },
 ];
+
+/**
+ * A base fee's identity, mirroring `@@unique([providerName, paymentMethodName,
+ * transactionType])`.
+ *
+ * This replaces the old `code` column, which stored the same triple as one
+ * pre-joined string. The column only ever *looked* like a constraint: nothing
+ * checked that `code` agreed with the three fields it was built from, so a
+ * single typo would have created a second row for a triple that is supposed to
+ * be unique. The database now enforces the triple directly, and this rebuilds
+ * the string locally where a map key is genuinely needed.
+ */
+const baseFeeKey = (fee: {
+  providerName: string;
+  paymentMethodName: string;
+  transactionType: string;
+}) => `${fee.providerName}:${fee.paymentMethodName}:${fee.transactionType}`;
 
 /**
  * DEVELOPMENT ONLY - never run against production.
@@ -172,21 +184,32 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
   const baseFees = await prisma.$transaction(
     DEV_BASE_FEES.map((fee) =>
       prisma.baseFee.upsert({
-        where: { code: fee.code },
+        where: {
+          providerName_paymentMethodName_transactionType: {
+            providerName: fee.providerName,
+            paymentMethodName: fee.paymentMethodName,
+            transactionType: fee.transactionType,
+          },
+        },
         create: fee,
         update: {},
-        select: { id: true, code: true },
+        select: {
+          id: true,
+          providerName: true,
+          paymentMethodName: true,
+          transactionType: true,
+        },
       }),
     ),
   );
-  const baseFeeIdByCode = new Map(baseFees.map((f) => [f.code, f.id]));
+  const baseFeeIdByKey = new Map(baseFees.map((f) => [baseFeeKey(f), f.id]));
 
   // Fee overrides for the first two merchants only, mirroring legacy: merchant1
   // is internal-only (no agent cut), merchant2 pays an agent share as well.
   const merchantFees = [
     ...DEV_BASE_FEES.map((fee) => ({
       merchantId: merchantIds[0],
-      baseFeeId: baseFeeIdByCode.get(fee.code)!,
+      baseFeeId: baseFeeIdByKey.get(baseFeeKey(fee))!,
       feeInternalFixed: fee.feeProviderFixed === '0' ? '0' : '600',
       feeInternalPercentage: fee.feeProviderPercentage === '0' ? '0' : '0.4',
       feeAgentFixed: '0',
@@ -194,7 +217,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     })),
     ...DEV_BASE_FEES.map((fee) => ({
       merchantId: merchantIds[1],
-      baseFeeId: baseFeeIdByCode.get(fee.code)!,
+      baseFeeId: baseFeeIdByKey.get(baseFeeKey(fee))!,
       feeInternalFixed: fee.feeProviderFixed === '0' ? '0' : '600',
       feeInternalPercentage: fee.feeProviderPercentage === '0' ? '0' : '0.4',
       feeAgentFixed: fee.feeProviderFixed === '0' ? '0' : '100',

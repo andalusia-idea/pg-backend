@@ -28,8 +28,8 @@ export type AggregateTopupFeeDetail = {
 
 export type TopupFeeDetailAvgAggregateOutputType = {
   id: number | null
-  agentId: number | null
   topupId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -40,8 +40,8 @@ export type TopupFeeDetailAvgAggregateOutputType = {
 
 export type TopupFeeDetailSumAggregateOutputType = {
   id: number | null
-  agentId: number | null
   topupId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -52,8 +52,8 @@ export type TopupFeeDetailSumAggregateOutputType = {
 
 export type TopupFeeDetailMinAggregateOutputType = {
   id: number | null
-  agentId: number | null
   topupId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -68,8 +68,8 @@ export type TopupFeeDetailMinAggregateOutputType = {
 
 export type TopupFeeDetailMaxAggregateOutputType = {
   id: number | null
-  agentId: number | null
   topupId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -84,8 +84,8 @@ export type TopupFeeDetailMaxAggregateOutputType = {
 
 export type TopupFeeDetailCountAggregateOutputType = {
   id: number
-  agentId: number
   topupId: number
+  agentId: number
   type: number
   nominal: number
   feeFixed: number
@@ -102,8 +102,8 @@ export type TopupFeeDetailCountAggregateOutputType = {
 
 export type TopupFeeDetailAvgAggregateInputType = {
   id?: true
-  agentId?: true
   topupId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -114,8 +114,8 @@ export type TopupFeeDetailAvgAggregateInputType = {
 
 export type TopupFeeDetailSumAggregateInputType = {
   id?: true
-  agentId?: true
   topupId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -126,8 +126,8 @@ export type TopupFeeDetailSumAggregateInputType = {
 
 export type TopupFeeDetailMinAggregateInputType = {
   id?: true
-  agentId?: true
   topupId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -142,8 +142,8 @@ export type TopupFeeDetailMinAggregateInputType = {
 
 export type TopupFeeDetailMaxAggregateInputType = {
   id?: true
-  agentId?: true
   topupId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -158,8 +158,8 @@ export type TopupFeeDetailMaxAggregateInputType = {
 
 export type TopupFeeDetailCountAggregateInputType = {
   id?: true
-  agentId?: true
   topupId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -261,8 +261,8 @@ export type TopupFeeDetailGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 
 export type TopupFeeDetailGroupByOutputType = {
   id: number
-  agentId: number | null
   topupId: number
+  agentId: number | null
   type: $Enums.FeeTypeEnum
   nominal: runtime.Decimal
   feeFixed: runtime.Decimal
@@ -300,8 +300,8 @@ export type TopupFeeDetailWhereInput = {
   OR?: Prisma.TopupFeeDetailWhereInput[]
   NOT?: Prisma.TopupFeeDetailWhereInput | Prisma.TopupFeeDetailWhereInput[]
   id?: Prisma.IntFilter<"TopupFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   topupId?: Prisma.IntFilter<"TopupFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"TopupFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -317,8 +317,8 @@ export type TopupFeeDetailWhereInput = {
 
 export type TopupFeeDetailOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -337,8 +337,8 @@ export type TopupFeeDetailWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.TopupFeeDetailWhereInput | Prisma.TopupFeeDetailWhereInput[]
   OR?: Prisma.TopupFeeDetailWhereInput[]
   NOT?: Prisma.TopupFeeDetailWhereInput | Prisma.TopupFeeDetailWhereInput[]
-  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   topupId?: Prisma.IntFilter<"TopupFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"TopupFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -354,8 +354,8 @@ export type TopupFeeDetailWhereUniqueInput = Prisma.AtLeast<{
 
 export type TopupFeeDetailOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -378,8 +378,8 @@ export type TopupFeeDetailScalarWhereWithAggregatesInput = {
   OR?: Prisma.TopupFeeDetailScalarWhereWithAggregatesInput[]
   NOT?: Prisma.TopupFeeDetailScalarWhereWithAggregatesInput | Prisma.TopupFeeDetailScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"TopupFeeDetail"> | number
-  agentId?: Prisma.IntNullableWithAggregatesFilter<"TopupFeeDetail"> | number | null
   topupId?: Prisma.IntWithAggregatesFilter<"TopupFeeDetail"> | number
+  agentId?: Prisma.IntNullableWithAggregatesFilter<"TopupFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumWithAggregatesFilter<"TopupFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalWithAggregatesFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalWithAggregatesFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -409,8 +409,8 @@ export type TopupFeeDetailCreateInput = {
 
 export type TopupFeeDetailUncheckedCreateInput = {
   id?: number
-  agentId?: number | null
   topupId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -440,8 +440,8 @@ export type TopupFeeDetailUpdateInput = {
 
 export type TopupFeeDetailUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   topupId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -456,8 +456,8 @@ export type TopupFeeDetailUncheckedUpdateInput = {
 
 export type TopupFeeDetailCreateManyInput = {
   id?: number
-  agentId?: number | null
   topupId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -486,8 +486,8 @@ export type TopupFeeDetailUpdateManyMutationInput = {
 
 export type TopupFeeDetailUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   topupId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -512,8 +512,8 @@ export type TopupFeeDetailOrderByRelationAggregateInput = {
 
 export type TopupFeeDetailCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -528,8 +528,8 @@ export type TopupFeeDetailCountOrderByAggregateInput = {
 
 export type TopupFeeDetailAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -540,8 +540,8 @@ export type TopupFeeDetailAvgOrderByAggregateInput = {
 
 export type TopupFeeDetailMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -556,8 +556,8 @@ export type TopupFeeDetailMaxOrderByAggregateInput = {
 
 export type TopupFeeDetailMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -572,8 +572,8 @@ export type TopupFeeDetailMinOrderByAggregateInput = {
 
 export type TopupFeeDetailSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   topupId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -622,10 +622,6 @@ export type TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationNestedInput =
   update?: Prisma.TopupFeeDetailUpdateWithWhereUniqueWithoutTopUpTransationInput | Prisma.TopupFeeDetailUpdateWithWhereUniqueWithoutTopUpTransationInput[]
   updateMany?: Prisma.TopupFeeDetailUpdateManyWithWhereWithoutTopUpTransationInput | Prisma.TopupFeeDetailUpdateManyWithWhereWithoutTopUpTransationInput[]
   deleteMany?: Prisma.TopupFeeDetailScalarWhereInput | Prisma.TopupFeeDetailScalarWhereInput[]
-}
-
-export type EnumFeeTypeEnumFieldUpdateOperationsInput = {
-  set?: $Enums.FeeTypeEnum
 }
 
 export type TopupFeeDetailCreateWithoutTopUpTransationInput = {
@@ -688,8 +684,8 @@ export type TopupFeeDetailScalarWhereInput = {
   OR?: Prisma.TopupFeeDetailScalarWhereInput[]
   NOT?: Prisma.TopupFeeDetailScalarWhereInput | Prisma.TopupFeeDetailScalarWhereInput[]
   id?: Prisma.IntFilter<"TopupFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   topupId?: Prisma.IntFilter<"TopupFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"TopupFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"TopupFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"TopupFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -765,8 +761,8 @@ export type TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationInput = {
 
 export type TopupFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   topupId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -782,8 +778,8 @@ export type TopupFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.Intern
 
 export type TopupFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   topupId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -799,8 +795,8 @@ export type TopupFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Type
 
 export type TopupFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   topupId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -816,8 +812,8 @@ export type TopupFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
 
 export type TopupFeeDetailSelectScalar = {
   id?: boolean
-  agentId?: boolean
   topupId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -830,7 +826,7 @@ export type TopupFeeDetailSelectScalar = {
   deletedBy?: boolean
 }
 
-export type TopupFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "topupId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["topupFeeDetail"]>
+export type TopupFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "topupId" | "agentId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["topupFeeDetail"]>
 export type TopupFeeDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   topUpTransation?: boolean | Prisma.TopUpTransactionDefaultArgs<ExtArgs>
 }
@@ -848,8 +844,8 @@ export type $TopupFeeDetailPayload<ExtArgs extends runtime.Types.Extensions.Inte
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    agentId: number | null
     topupId: number
+    agentId: number | null
     type: $Enums.FeeTypeEnum
     nominal: runtime.Decimal
     feeFixed: runtime.Decimal
@@ -1285,8 +1281,8 @@ export interface Prisma__TopupFeeDetailClient<T, Null = never, ExtArgs extends r
  */
 export interface TopupFeeDetailFieldRefs {
   readonly id: Prisma.FieldRef<"TopupFeeDetail", 'Int'>
-  readonly agentId: Prisma.FieldRef<"TopupFeeDetail", 'Int'>
   readonly topupId: Prisma.FieldRef<"TopupFeeDetail", 'Int'>
+  readonly agentId: Prisma.FieldRef<"TopupFeeDetail", 'Int'>
   readonly type: Prisma.FieldRef<"TopupFeeDetail", 'FeeTypeEnum'>
   readonly nominal: Prisma.FieldRef<"TopupFeeDetail", 'Decimal'>
   readonly feeFixed: Prisma.FieldRef<"TopupFeeDetail", 'Decimal'>

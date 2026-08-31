@@ -102,6 +102,13 @@ export const PaymentMethodNameEnum = {
 export type PaymentMethodNameEnum =
   (typeof PaymentMethodNameEnum)[keyof typeof PaymentMethodNameEnum];
 
+export const WithdrawPaymentMethodNameEnum = {
+  TRANSFERBANK: 'TRANSFERBANK',
+  USDT: 'USDT',
+};
+export type WithdrawPaymentMethodNameEnum =
+  (typeof WithdrawPaymentMethodNameEnum)[keyof typeof WithdrawPaymentMethodNameEnum];
+
 export const TransactionTypeEnum = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',
@@ -140,10 +147,3 @@ export const TransactionStatusEnum = {
 } as const;
 export type TransactionStatusEnum =
   (typeof TransactionStatusEnum)[keyof typeof TransactionStatusEnum];
-
-export const WithdrawProviderNameEnum = {
-  TRANSFERBANK: 'TRANSFERBANK',
-  USDT: 'USDT',
-};
-export type WithdrawProviderNameEnum =
-  (typeof WithdrawProviderNameEnum)[keyof typeof WithdrawProviderNameEnum];

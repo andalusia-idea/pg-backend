@@ -12,6 +12,7 @@ export const FilterProfileProviderSchema = Type.Object(
     userId: Type.Number(),
     userRole: Type.Enum(UserRoleEnum),
     transactionType: Type.Enum(TransactionTypeEnum),
+    paymentMethodName: Type.Enum(PaymentMethodNameEnum),
   },
   { additionalProperties: false },
 );
@@ -33,7 +34,6 @@ export const ProfileProviderSchema = Type.Object(
     userId: Type.Number(),
     userRole: Type.Enum(UserRoleEnum),
     providerName: Type.Enum(ProviderNameEnum),
-    paymentMethodName: Type.Enum(PaymentMethodNameEnum),
   },
   { additionalProperties: false },
 );

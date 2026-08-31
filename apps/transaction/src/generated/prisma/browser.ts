@@ -18,25 +18,15 @@ export { Prisma }
 export * as $Enums from './enums.ts'
 export * from './enums.ts';
 /**
- * Model TopUpTransaction
+ * Model PurchaseTransaction
  * 
  */
-export type TopUpTransaction = Prisma.TopUpTransactionModel
+export type PurchaseTransaction = Prisma.PurchaseTransactionModel
 /**
- * Model TopupFeeDetail
+ * Model PurchaseFeeDetail
  * 
  */
-export type TopupFeeDetail = Prisma.TopupFeeDetailModel
-/**
- * Model WithdrawTransaction
- * 
- */
-export type WithdrawTransaction = Prisma.WithdrawTransactionModel
-/**
- * Model WithdrawFeeDetail
- * 
- */
-export type WithdrawFeeDetail = Prisma.WithdrawFeeDetailModel
+export type PurchaseFeeDetail = Prisma.PurchaseFeeDetailModel
 /**
  * Model DisbursementTransaction
  * 
@@ -48,15 +38,54 @@ export type DisbursementTransaction = Prisma.DisbursementTransactionModel
  */
 export type DisbursementFeeDetail = Prisma.DisbursementFeeDetailModel
 /**
- * Model PurchaseTransaction
+ * Model TopUpTransaction
  * 
  */
-export type PurchaseTransaction = Prisma.PurchaseTransactionModel
+export type TopUpTransaction = Prisma.TopUpTransactionModel
 /**
- * Model PurchaseFeeDetail
+ * Model TopupFeeDetail
  * 
  */
-export type PurchaseFeeDetail = Prisma.PurchaseFeeDetailModel
+export type TopupFeeDetail = Prisma.TopupFeeDetailModel
+/**
+ * Model WithdrawTransaction
+ * *
+ *  * TRANSFER_BANK:
+ *  * - Can transfered into bank account at profile
+ *  * - Customize bank account number
+ *  * TRANSFER_BANK Local Manual:
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - Transfer manually by admin thorugh Bank Account operational into recipient bank account
+ *  * - Auto Settlement by the time admin approved
+ *  * TRANSFER_BANK Local API
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - System hit Upstream API
+ *  * - Auto settlement after waiting for webhook
+ *  * ################################
+ *  * USDT:
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - Admin must purchase USDT through Vendor
+ *  * - Vendor send USDT to destination account USDT
+ *  * - Auto Settlement by the time admin approved
+ *  * USDT Manual
+ *  * - Admin have the money to purchase USDT
+ *  * USDT API
+ *  * - Admin does not have money
+ *  * - So must withdraw from upstream balance
+ *  * - System hit Upstream Disbursement channel
+ */
+export type WithdrawTransaction = Prisma.WithdrawTransactionModel
+/**
+ * Model WithdrawFeeDetail
+ * 
+ */
+export type WithdrawFeeDetail = Prisma.WithdrawFeeDetailModel
 /**
  * Model WebhookLog
  * 

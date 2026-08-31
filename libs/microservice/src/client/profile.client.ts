@@ -25,14 +25,6 @@ export class ProfileClient {
     private readonly configClient: ClientProxy,
   ) {}
 
-  findProfileBank(payload: FilterProfileBankDto) {
-    return firstValueFrom(
-      this.authClient
-        .send<ProfileBankDto>({ cmd: AUTH_CMD.FIND_PROFILE_BANK }, payload)
-        .pipe(timeout(MICROSERVICE_CALL_TIMEOUT_MS)),
-    );
-  }
-
   findProfileProvider(payload: FilterProfileProviderDto) {
     return firstValueFrom(
       this.configClient
@@ -42,6 +34,14 @@ export class ProfileClient {
           },
           payload,
         )
+        .pipe(timeout(MICROSERVICE_CALL_TIMEOUT_MS)),
+    );
+  }
+
+  findProfileBank(payload: FilterProfileBankDto) {
+    return firstValueFrom(
+      this.authClient
+        .send<ProfileBankDto>({ cmd: AUTH_CMD.FIND_PROFILE_BANK }, payload)
         .pipe(timeout(MICROSERVICE_CALL_TIMEOUT_MS)),
     );
   }
