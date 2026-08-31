@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  assertUpstreamSchema,
-  UpstreamException,
-  UpstreamTransactionStatusEnum,
-} from '@app/upstream';
-import { ProviderNameEnum } from '@app/microservice';
+import { assertUpstreamSchema, UpstreamException } from '@app/upstream';
+import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 import Decimal from 'decimal.js';
 import { AxiosError } from 'axios';
 import { MotionPayTransferAuthService } from './motionpay-transfer.auth.service';
@@ -60,7 +56,7 @@ export interface FundTransferResult {
   code: string;
   /** MotionPay's transaction identifier. */
   externalId: string;
-  status: UpstreamTransactionStatusEnum;
+  status: TransactionStatusEnum;
   nominal: Decimal;
   message: string;
   metadata: Record<string, unknown>;
@@ -69,7 +65,7 @@ export interface FundTransferResult {
 export interface TransferStatusResult {
   code: string;
   externalId: string;
-  status: UpstreamTransactionStatusEnum;
+  status: TransactionStatusEnum;
   message: string;
   metadata: Record<string, unknown>;
 }
@@ -182,7 +178,7 @@ export class MotionPayTransferService {
     const status = this.mapStatusCode(parsed.status.code);
 
     // Only an outright rejection is an exception. PENDING is the normal result.
-    if (status === UpstreamTransactionStatusEnum.FAILED) {
+    if (status === TransactionStatusEnum.FAILED) {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `fundTransfer rejected: ${parsed.status.message}`,
@@ -316,20 +312,20 @@ export class MotionPayTransferService {
    * guessing "failed" risks a double-send while guessing "success" risks
    * releasing funds that never moved.
    */
-  private mapStatusCode(code: string): UpstreamTransactionStatusEnum {
+  private mapStatusCode(code: string): TransactionStatusEnum {
     switch (code) {
       case MOTIONPAY_TRANSFER_STATUS_CODE.SUCCESS:
-        return UpstreamTransactionStatusEnum.SUCCESS;
+        return TransactionStatusEnum.SUCCESS;
       case MOTIONPAY_TRANSFER_STATUS_CODE.FAILED:
-        return UpstreamTransactionStatusEnum.FAILED;
+        return TransactionStatusEnum.FAILED;
       case MOTIONPAY_TRANSFER_STATUS_CODE.PENDING:
-        return UpstreamTransactionStatusEnum.PENDING;
+        return TransactionStatusEnum.PENDING;
       default:
         this.logger.warn({
           msg: 'Unrecognized MotionPay transfer status code; holding as PENDING',
           code,
         });
-        return UpstreamTransactionStatusEnum.PENDING;
+        return TransactionStatusEnum.PENDING;
     }
   }
 

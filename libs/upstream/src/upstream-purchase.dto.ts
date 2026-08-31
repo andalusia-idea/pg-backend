@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import { UpstreamTransactionStatusEnum } from './upstream.enum';
+import { TransactionStatusEnum } from './upstream.enum';
 
 /**
  * Normalized result of creating a pay-in (purchase) at any upstream provider.
@@ -18,7 +18,7 @@ export interface UpstreamPurchaseResult {
   code: string;
   /** The provider's identifier for this transaction; needed for status lookups. */
   externalId: string;
-  status: UpstreamTransactionStatusEnum;
+  status: TransactionStatusEnum;
   nominal: Decimal;
   /** Payload to render for the customer — for QRIS, the QR string. */
   content: string;
@@ -38,7 +38,7 @@ export interface UpstreamPurchaseResult {
 export interface UpstreamPurchaseStatusResult {
   code: string;
   externalId: string;
-  status: UpstreamTransactionStatusEnum;
+  status: TransactionStatusEnum;
   nominal: Decimal;
   message: string;
   /** Retrieval Reference Number — only present once paid. */

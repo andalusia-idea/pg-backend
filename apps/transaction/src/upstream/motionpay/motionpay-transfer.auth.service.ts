@@ -96,9 +96,7 @@ export class MotionPayTransferAuthService {
       url: request.url,
     });
 
-    const response = await firstValueFrom(
-      this.httpService.request<T>(request),
-    );
+    const response = await firstValueFrom(this.httpService.request<T>(request));
     return response.data;
   }
 

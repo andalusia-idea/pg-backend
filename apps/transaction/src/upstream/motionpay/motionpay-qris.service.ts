@@ -4,7 +4,6 @@ import {
   UpstreamException,
   UpstreamPurchaseResult,
   UpstreamPurchaseStatusResult,
-  UpstreamTransactionStatusEnum,
 } from '@app/upstream';
 import Decimal from 'decimal.js';
 import { AxiosError } from 'axios';
@@ -23,7 +22,7 @@ import {
   MotionPayQrisStatusResponseDto,
   MotionPayQrisStatusResponseSchema,
 } from './dto';
-import { ProviderNameEnum } from '@app/microservice';
+import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 
 export interface CreateQrisPaymentParams {
   /** Our transaction correlation code. Also used as `external_id`. */
@@ -247,19 +246,19 @@ export class MotionPayQRISService {
    * has to be derived from `expired_date` by the caller once the provider's
    * real behaviour on expiry is confirmed.
    */
-  private mapStatus(status: string): UpstreamTransactionStatusEnum {
+  private mapStatus(status: string): TransactionStatusEnum {
     switch (status?.toUpperCase()) {
       case MOTIONPAY_TRANSACTION_STATUS.SUCCESS:
-        return UpstreamTransactionStatusEnum.SUCCESS;
+        return TransactionStatusEnum.SUCCESS;
       case MOTIONPAY_TRANSACTION_STATUS.FAILED:
-        return UpstreamTransactionStatusEnum.FAILED;
+        return TransactionStatusEnum.FAILED;
       case MOTIONPAY_TRANSACTION_STATUS.PENDING:
-        return UpstreamTransactionStatusEnum.PENDING;
+        return TransactionStatusEnum.PENDING;
       default:
         this.logger.warn(
           `Unrecognized MotionPay status [${status}]; holding as PENDING`,
         );
-        return UpstreamTransactionStatusEnum.PENDING;
+        return TransactionStatusEnum.PENDING;
     }
   }
 

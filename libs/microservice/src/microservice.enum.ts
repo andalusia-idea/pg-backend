@@ -6,6 +6,11 @@ export const MoneyType = Type.String({
   maxLength: 32,
 });
 
+export const AmountType = Type.Object({
+  value: MoneyType,
+  currency: Type.Enum({ IDR: 'IDR' }),
+});
+
 export const PercentageType = Type.String({
   pattern: `^(100(\\.0{1,2})?|[0-9]{1,2}(\\.\\d{1,2})?)$`,
   minLength: 1,
@@ -125,3 +130,20 @@ export type HttpMethodEnum =
 export const isHttpMethodEnum = (method: string): method is HttpMethodEnum => {
   return Object.values(HttpMethodEnum).includes(method as HttpMethodEnum);
 };
+
+export const TransactionStatusEnum = {
+  PENDING: 'PENDING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type TransactionStatusEnum =
+  (typeof TransactionStatusEnum)[keyof typeof TransactionStatusEnum];
+
+export const WithdrawProviderNameEnum = {
+  TRANSFERBANK: 'TRANSFERBANK',
+  USDT: 'USDT',
+};
+export type WithdrawProviderNameEnum =
+  (typeof WithdrawProviderNameEnum)[keyof typeof WithdrawProviderNameEnum];
