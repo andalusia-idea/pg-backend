@@ -27,10 +27,20 @@ spec:
     - type: NamedAddress
       value: andapay-sandbox-lb-ip
   listeners:
+    # Hostname merchant.
     - name: https
       protocol: HTTPS
       port: 443
       hostname: api-sandbox.andapay.id
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # Hostname admin internal. Terpisah dari hostname merchant supaya bisa
+    # dibatasi sendiri lewat Cloud Armor tanpa menyentuh trafik merchant.
+    - name: https-dashboard
+      protocol: HTTPS
+      port: 443
+      hostname: dashboard-sandbox.andapay.id
       allowedRoutes:
         namespaces:
           from: Same
@@ -216,3 +226,29 @@ spec:
   targetRef: { group: "", kind: Service, name: dashboard-service }
   default:
     securityPolicy: andapay-sandbox-armor
+
+---
+# Rute hostname admin. Dipisah dari andapay-routes supaya kebijakan kedua
+# hostname bisa berbeda tanpa saling mengganggu.
+#
+# Frontend nantinya dilayani di `/` pada hostname yang sama, sehingga SPA dan
+# API satu origin — tidak ada CORS, tidak ada preflight, dan tidak ada daftar
+# origin yang harus dipelihara tiap kali environment bertambah.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: andapay-dashboard-routes
+  namespace: andapay
+spec:
+  parentRefs:
+    - name: andapay-gateway
+      sectionName: https-dashboard
+  hostnames:
+    - dashboard-sandbox.andapay.id
+  rules:
+    # Dashboard memakai setGlobalPrefix('/api/v1'), jadi tidak dipotong.
+    - matches:
+        - path: { type: PathPrefix, value: /api/v1 }
+      backendRefs:
+        - name: dashboard-service
+          port: 80
