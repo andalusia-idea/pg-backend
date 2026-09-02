@@ -1,5 +1,6 @@
 import Ajv, { Schema, ValidateFunction } from 'ajv';
 import { UpstreamException } from './upstream.exception';
+import { ProviderNameEnum } from '@app/microservice';
 
 /**
  * Validator for responses coming *in* from an upstream provider.
@@ -40,10 +41,10 @@ function compile<T>(schema: Schema): ValidateFunction<T> {
  * reported to our own API consumers as a 400.
  */
 export function assertUpstreamSchema<T>(
-  provider: string,
+  context: string,
+  provider: ProviderNameEnum,
   schema: Schema,
   value: unknown,
-  context: string,
 ): T {
   const validate = compile<T>(schema);
   if (!validate(value)) {

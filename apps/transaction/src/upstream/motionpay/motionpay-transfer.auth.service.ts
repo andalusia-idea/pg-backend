@@ -155,10 +155,10 @@ export class MotionPayTransferAuthService {
     }
 
     const parsed = assertUpstreamSchema<MotionPayTransferTokenResponseDto>(
+      'transfer token',
       ProviderNameEnum.MOTIONPAY,
       MotionPayTransferTokenResponseSchema,
       raw,
-      'transfer token',
     );
 
     if (parsed.status !== TRANSFER_TOKEN_OK || !parsed.data) {

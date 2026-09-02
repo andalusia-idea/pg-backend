@@ -97,6 +97,53 @@ The cost of that ordering, stated plainly: an attacker holding a stolen secret a
 
 IP allowlisting is **opt-in per merchant** and empty by default. Most merchants sit on dynamic connections where pinning an address would guarantee an outage.
 
+---
+
+## Purchase (service code `90`)
+
+The first of the `90`+ manapay business services. These come from
+`TransactionException` and describe *one transaction attempt*, unlike the `00`
+codes above, which describe whether you may call at all.
+
+| Code | HTTP | Failure | What it means | What to do |
+|---|---|---|---|---|
+| `4009001` | **400** | `INVALID_FIELD_FORMAT` | A field is present but wrong - bad type, pattern, or out of range | Fix the field named in `responseMessage`. Do not retry unchanged |
+| `4009002` | **400** | `INVALID_MANDATORY_FIELD` | A required field is absent | Add the field named in `responseMessage` |
+| `4039000` | **403** | `TRANSACTION_NOT_PERMITTED` | Your credentials are valid, but this payment method is not enabled for your account | Contact support. Retrying will not help - this is a configuration gap on our side |
+| `4099000` | **409** | `DUPLICATE_MERCHANT_REFERENCE` | This `merchantReference` has already been used | Usually means your earlier request **succeeded**. Query that transaction before creating a new one; use a fresh reference for a genuinely new order |
+| `5029000` | **502** | `UPSTREAM_REJECTED` | The payment provider answered and refused | Safe to retry with a new `merchantReference`. If it persists, contact support with your `merchantReference` |
+| `5049000` | **504** | `UPSTREAM_TIMEOUT` | The provider did not answer in time | **Do not blindly retry.** We do not know whether the QR was created; the transaction is held as PENDING. Query its status first |
+| `5039000` | **503** | `SERVICE_UNAVAILABLE` | A dependency of ours is unreachable | Retry with backoff. Your request was not processed |
+| `5009000` | **500** | `INTERNAL_ERROR` | Our bug | Contact support with your `merchantReference` |
+
+### Why `409` on a duplicate reference
+
+A duplicate is far more often a **retry of a request that already worked** than
+a malformed one - a network blip on your side, a client that retried without
+knowing the first attempt landed. `400` would tell you the payload is wrong,
+which sends you looking for a bug that is not there. `409` says "we already
+have this one", which is both true and actionable.
+
+`merchantReference` is unique **per merchant**, not globally, so another
+merchant using the same order number never affects you.
+
+### Why `504` is the one code never to retry blindly
+
+Every other 5xx here means the request did not take effect. `5049000` means we
+genuinely do not know. The provider may have created the QR and only the reply
+was lost - so a blind retry with a new reference can leave a customer holding
+two payable QR codes for one order. Query the original transaction first.
+
+The transaction is deliberately left `PENDING` rather than marked failed for
+exactly this reason: reporting `FAILED` would assert something we cannot know,
+and a customer paying a QR we called failed is the worst outcome available.
+
+### Success
+
+A successful purchase call returns `2009000`.
+
+---
+
 ### On `RATE_LIMITED` and `Retry-After`
 
 Also checked **after** the signature verifies, and for the same class of reason: `X-Client-Id` is an unauthenticated header, so counting before verification would let a stranger exhaust a real merchant's budget by spoofing their id. The budget is spent only by callers who proved they hold the secret.

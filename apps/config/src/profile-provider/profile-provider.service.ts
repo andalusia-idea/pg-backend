@@ -67,10 +67,9 @@ export class ProfileProviderService {
       },
     });
 
-    return {
-      userId,
-      userRole,
-      providerName: fee.baseFee.providerName,
-    } as ProfileProviderDto;
+    const res: ProfileProviderDto = {
+      providerName: fee.baseFee.providerName as ProviderNameEnum,
+    };
+    return res;
   }
 }

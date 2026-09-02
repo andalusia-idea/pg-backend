@@ -119,10 +119,10 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayAccountInquiryResponseDto>(
+      'accountInquiry',
       ProviderNameEnum.MOTIONPAY,
       MotionPayAccountInquiryResponseSchema,
       raw,
-      'accountInquiry',
     );
 
     const valid =
@@ -169,10 +169,10 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayFundTransferResponseDto>(
+      'fundTransfer',
       ProviderNameEnum.MOTIONPAY,
       MotionPayFundTransferResponseSchema,
       raw,
-      'fundTransfer',
     );
 
     const status = this.mapStatusCode(parsed.status.code);
@@ -213,10 +213,10 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayTransferStatusResponseDto>(
+      'checkTransferStatus',
       ProviderNameEnum.MOTIONPAY,
       MotionPayTransferStatusResponseSchema,
       raw,
-      'checkTransferStatus',
     );
 
     return {
@@ -238,10 +238,10 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayBalanceResponseDto>(
+      'checkBalance',
       ProviderNameEnum.MOTIONPAY,
       MotionPayBalanceResponseSchema,
       raw,
-      'checkBalance',
     );
 
     if (!parsed.status.success || parsed.data?.deposit === undefined) {

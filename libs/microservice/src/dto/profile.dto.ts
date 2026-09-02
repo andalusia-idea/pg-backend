@@ -31,8 +31,6 @@ export type FilterProfileBankDto = Static<typeof FilterProfileBankSchema>;
 /// RESPONSE
 export const ProfileProviderSchema = Type.Object(
   {
-    userId: Type.Number(),
-    userRole: Type.Enum(UserRoleEnum),
     providerName: Type.Enum(ProviderNameEnum),
   },
   { additionalProperties: false },

@@ -1,3 +1,4 @@
+export * from './merchant-body.pipe';
 export * from './merchant-endpoint.decorator';
 export * from './merchant-exception.filter';
 export * from './merchant-response.interceptor';

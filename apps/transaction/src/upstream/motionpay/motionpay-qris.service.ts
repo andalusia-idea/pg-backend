@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   assertUpstreamSchema,
   UpstreamException,
-  UpstreamPurchaseResult,
   UpstreamPurchaseStatusResult,
+  PurchaseUpstreamRequestDto,
+  PurchaseUpstreamResponseDto,
 } from '@app/upstream';
 import Decimal from 'decimal.js';
 import { AxiosError } from 'axios';
@@ -22,7 +23,13 @@ import {
   MotionPayQrisStatusResponseDto,
   MotionPayQrisStatusResponseSchema,
 } from './dto';
-import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
+import {
+  HttpMethodEnum,
+  ProviderNameEnum,
+  TransactionStatusEnum,
+} from '@app/microservice';
+
+const SECONDS_PER_MINUTE = 60;
 
 export interface CreateQrisPaymentParams {
   /** Our transaction correlation code. Also used as `external_id`. */
@@ -45,48 +52,60 @@ export class MotionPayQRISService {
 
   constructor(private readonly authService: MotionPayAuthService) {}
 
-  /**
-   * Create a dynamic QRIS payment.
-   *
-   * Returns the normalized upstream shape, never MotionPay's wire format — the
-   * business layer should not need to know which provider handled a purchase.
-   */
-  async createQrisPayment(
-    params: CreateQrisPaymentParams,
-  ): Promise<UpstreamPurchaseResult> {
-    const body: MotionPayCreateQrisRequestDto = {
-      terminal_id: this.assertExternalIdLength(
-        params.terminalId ?? params.code,
-        'terminal_id',
-      ),
-      external_id: this.assertExternalIdLength(params.code, 'external_id'),
-      amount: this.toWholeRupiah(params.nominal),
-      session_time: params.sessionTimeMinutes,
-      // Required keys, but the provider allows empty values.
-      fullname: params.customer?.fullname ?? '',
-      email: params.customer?.email ?? '',
-      phone_number: params.customer?.phoneNumber ?? '',
-      ...(params.description ? { description: params.description } : {}),
-    };
+  async createQRIS(
+    dto: PurchaseUpstreamRequestDto,
+  ): Promise<PurchaseUpstreamResponseDto> {
+    const context = this.createQRIS.name;
 
-    const raw = await this.request(
-      {
-        method: 'POST',
-        url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
-        data: body,
-      },
-      'createQrisPayment',
+    // Was `.slice(0, 16)`. Truncating silently is the one thing that must not
+    // happen here: `external_id` is how a callback and the next day's
+    // reconciliation file find their way back to this transaction, so a
+    // shortened value does not fail - it quietly stops matching. Fails loudly
+    // instead, per assertExternalIdLength's own note.
+    const externalId = this.assertExternalIdLength(
+      dto.merchantReference,
+      'merchantReference',
     );
 
+    // Whole minutes, floored: `session_time` is documented in minutes, and the
+    // previous `% 60` was a modulo rather than a division - it turned the
+    // minimum 600s into `session_time: 0`, i.e. every QR asked for zero
+    // minutes of validity.
+    const sessionTimeMinutes = Math.floor(
+      dto.expireSeconds / SECONDS_PER_MINUTE,
+    );
+
+    // Computed before the request goes out, from the floored minutes rather
+    // than the seconds asked for, so what we tell the merchant matches what the
+    // provider actually enforces. The create response carries no expiry field -
+    // only `created_date`, whose format differs between their own samples - so
+    // deriving it from our own clock is the only honest option.
+    const expiresAt = new Date(
+      Date.now() + sessionTimeMinutes * SECONDS_PER_MINUTE * 1000,
+    ).toISOString();
+
+    const body: MotionPayCreateQrisRequestDto = {
+      terminal_id: externalId,
+      external_id: externalId,
+      amount: this.toWholeRupiah(new Decimal(dto.amount.value)),
+      description: dto.merchantReference,
+      session_time: sessionTimeMinutes,
+      fullname: '',
+      email: '',
+      phone_number: '',
+    };
+
+    const raw = await this.request(context, {
+      method: 'POST',
+      url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
+      data: body,
+    });
     const parsed = assertUpstreamSchema<MotionPayCreateQrisResponseDto>(
+      context,
       ProviderNameEnum.MOTIONPAY,
       MotionPayCreateQrisResponseSchema,
       raw,
-      'createQrisPayment',
     );
-
-    // The envelope code is authoritative, not the HTTP status: a Krakend
-    // gateway fronts this API and returns logical failures inside HTTP 200.
     if (
       parsed.status.code !== MOTIONPAY_STATUS_CODE.PAYMENT_OK ||
       !parsed.data
@@ -94,21 +113,21 @@ export class MotionPayQRISService {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `createQrisPayment rejected: ${parsed.status.message}`,
-        { status: parsed.status, code: params.code },
+        { status: parsed.status, systemReference: dto.systemReference },
       );
     }
 
     const data = parsed.data;
-
-    return {
-      code: params.code,
-      externalId: data.transaction_id,
+    const res: PurchaseUpstreamResponseDto = {
+      providerReference: data.transaction_id,
+      qrString: data.qr_string,
+      nominal: new Decimal(data.amount).toFixed(2),
+      expiresAt,
       status: this.mapStatus(data.status),
-      nominal: new Decimal(data.amount),
-      content: data.qr_string,
-      message: data.description ?? parsed.status.message,
+      message: data.description ?? null,
       metadata: { ...parsed } as Record<string, unknown>,
     };
+    return res;
   }
 
   /**
@@ -153,14 +172,11 @@ export class MotionPayQRISService {
     // email: 'test@Transaction.com',
     // phone_number: '0816122025',
     // };
-    return this.request(
-      {
-        method: 'POST',
-        url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
-        data: body,
-      },
-      'createQrisPaymentRaw',
-    );
+    return this.request('createQrisPaymentRaw', {
+      method: 'POST',
+      url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
+      data: body,
+    });
   }
 
   /**
@@ -170,19 +186,16 @@ export class MotionPayQRISService {
   async getQrisStatus(
     transactionId: string,
   ): Promise<UpstreamPurchaseStatusResult> {
-    const raw = await this.request(
-      {
-        method: 'GET',
-        url: `${MOTIONPAY_ENDPOINT.QRIS_PAYMENT_STATUS}/${encodeURIComponent(transactionId)}`,
-      },
-      'getQrisStatus',
-    );
+    const raw = await this.request('getQrisStatus', {
+      method: 'GET',
+      url: `${MOTIONPAY_ENDPOINT.QRIS_PAYMENT_STATUS}/${encodeURIComponent(transactionId)}`,
+    });
 
     const parsed = assertUpstreamSchema<MotionPayQrisStatusResponseDto>(
+      'getQrisStatus',
       ProviderNameEnum.MOTIONPAY,
       MotionPayQrisStatusResponseSchema,
       raw,
-      'getQrisStatus',
     );
 
     if (
@@ -214,8 +227,8 @@ export class MotionPayQRISService {
   }
 
   private async request(
-    config: { method: 'GET' | 'POST'; url: string; data?: unknown },
     context: string,
+    config: { method: HttpMethodEnum; url: string; data?: unknown },
   ): Promise<unknown> {
     try {
       return await this.authService.authorizedRequest<unknown>(config);

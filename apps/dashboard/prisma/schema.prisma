@@ -417,8 +417,14 @@ model PurchaseTransaction {
   merchantId Int
 
   systemReference   String  @unique // Our System Reference No
-  merchantReference String  @unique // partnerReferenceNo (SNAP) - Transaction identifier on service provider system.
-  providerReference String  @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  // partnerReferenceNo (SNAP). Unique PER MERCHANT, not globally: merchants
+  // number their own orders, so a global unique would let the first merchant to
+  // use "ORDER-001" permanently block every other merchant from that string.
+  merchantReference String
+  // referenceNo (SNAP). Nullable because we do not have it until the provider
+  // answers, and the row is written *before* the provider is called - see the
+  // ordering note in PurchaseService.createQRIS.
+  providerReference String? @unique
   bankReference     String? //reff id from bank
 
   providerName      String
@@ -428,8 +434,10 @@ model PurchaseTransaction {
 
   status TransactionStatusEnum
 
-  paidAt    DateTime? @db.Timestamptz(6)
-  expiresAt DateTime  @db.Timestamptz(6)
+  paidAt DateTime? @db.Timestamptz(6)
+  // Nullable for the same reason as providerReference: the row exists before
+  // the QR does, and a fabricated expiry would be a lie we then serve back.
+  expiresAt DateTime? @db.Timestamptz(6)
 
   batchSettlementId     Int?
   settlementAt          DateTime? @db.Timestamptz(6)
@@ -453,6 +461,7 @@ model PurchaseTransaction {
   AgentBalanceLog    AgentBalanceLog[]
   InternalBalanceLog InternalBalanceLog[]
 
+  @@unique([merchantId, merchantReference])
   @@index([merchantId])
   @@index([providerName])
   @@index([status])

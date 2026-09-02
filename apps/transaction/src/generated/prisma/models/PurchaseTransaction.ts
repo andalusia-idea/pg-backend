@@ -328,7 +328,7 @@ export type PurchaseTransactionGroupByOutputType = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference: string | null
   bankReference: string | null
   providerName: string
   paymentMethodName: string
@@ -336,7 +336,7 @@ export type PurchaseTransactionGroupByOutputType = {
   netNominal: runtime.Decimal
   status: $Enums.TransactionStatusEnum
   paidAt: Date | null
-  expiresAt: Date
+  expiresAt: Date | null
   batchSettlementId: number | null
   settlementAt: Date | null
   batchReconciliationId: number | null
@@ -379,7 +379,7 @@ export type PurchaseTransactionWhereInput = {
   merchantId?: Prisma.IntFilter<"PurchaseTransaction"> | number
   systemReference?: Prisma.StringFilter<"PurchaseTransaction"> | string
   merchantReference?: Prisma.StringFilter<"PurchaseTransaction"> | string
-  providerReference?: Prisma.StringFilter<"PurchaseTransaction"> | string
+  providerReference?: Prisma.StringNullableFilter<"PurchaseTransaction"> | string | null
   bankReference?: Prisma.StringNullableFilter<"PurchaseTransaction"> | string | null
   providerName?: Prisma.StringFilter<"PurchaseTransaction"> | string
   paymentMethodName?: Prisma.StringFilter<"PurchaseTransaction"> | string
@@ -387,7 +387,7 @@ export type PurchaseTransactionWhereInput = {
   netNominal?: Prisma.DecimalFilter<"PurchaseTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFilter<"PurchaseTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
-  expiresAt?: Prisma.DateTimeFilter<"PurchaseTransaction"> | Date | string
+  expiresAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
   batchSettlementId?: Prisma.IntNullableFilter<"PurchaseTransaction"> | number | null
   settlementAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
   batchReconciliationId?: Prisma.IntNullableFilter<"PurchaseTransaction"> | number | null
@@ -412,7 +412,7 @@ export type PurchaseTransactionOrderByWithRelationInput = {
   merchantId?: Prisma.SortOrder
   systemReference?: Prisma.SortOrder
   merchantReference?: Prisma.SortOrder
-  providerReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
@@ -420,7 +420,7 @@ export type PurchaseTransactionOrderByWithRelationInput = {
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  expiresAt?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   batchSettlementId?: Prisma.SortOrderInput | Prisma.SortOrder
   settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
   batchReconciliationId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -443,12 +443,13 @@ export type PurchaseTransactionOrderByWithRelationInput = {
 export type PurchaseTransactionWhereUniqueInput = Prisma.AtLeast<{
   id?: number
   systemReference?: string
-  merchantReference?: string
   providerReference?: string
+  merchantId_merchantReference?: Prisma.PurchaseTransactionMerchantIdMerchantReferenceCompoundUniqueInput
   AND?: Prisma.PurchaseTransactionWhereInput | Prisma.PurchaseTransactionWhereInput[]
   OR?: Prisma.PurchaseTransactionWhereInput[]
   NOT?: Prisma.PurchaseTransactionWhereInput | Prisma.PurchaseTransactionWhereInput[]
   merchantId?: Prisma.IntFilter<"PurchaseTransaction"> | number
+  merchantReference?: Prisma.StringFilter<"PurchaseTransaction"> | string
   bankReference?: Prisma.StringNullableFilter<"PurchaseTransaction"> | string | null
   providerName?: Prisma.StringFilter<"PurchaseTransaction"> | string
   paymentMethodName?: Prisma.StringFilter<"PurchaseTransaction"> | string
@@ -456,7 +457,7 @@ export type PurchaseTransactionWhereUniqueInput = Prisma.AtLeast<{
   netNominal?: Prisma.DecimalFilter<"PurchaseTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFilter<"PurchaseTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
-  expiresAt?: Prisma.DateTimeFilter<"PurchaseTransaction"> | Date | string
+  expiresAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
   batchSettlementId?: Prisma.IntNullableFilter<"PurchaseTransaction"> | number | null
   settlementAt?: Prisma.DateTimeNullableFilter<"PurchaseTransaction"> | Date | string | null
   batchReconciliationId?: Prisma.IntNullableFilter<"PurchaseTransaction"> | number | null
@@ -474,14 +475,14 @@ export type PurchaseTransactionWhereUniqueInput = Prisma.AtLeast<{
   MerchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
   AgentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
   InternalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
-}, "id" | "systemReference" | "merchantReference" | "providerReference">
+}, "id" | "systemReference" | "providerReference" | "merchantId_merchantReference">
 
 export type PurchaseTransactionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   merchantId?: Prisma.SortOrder
   systemReference?: Prisma.SortOrder
   merchantReference?: Prisma.SortOrder
-  providerReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
@@ -489,7 +490,7 @@ export type PurchaseTransactionOrderByWithAggregationInput = {
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  expiresAt?: Prisma.SortOrder
+  expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   batchSettlementId?: Prisma.SortOrderInput | Prisma.SortOrder
   settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
   batchReconciliationId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -517,7 +518,7 @@ export type PurchaseTransactionScalarWhereWithAggregatesInput = {
   merchantId?: Prisma.IntWithAggregatesFilter<"PurchaseTransaction"> | number
   systemReference?: Prisma.StringWithAggregatesFilter<"PurchaseTransaction"> | string
   merchantReference?: Prisma.StringWithAggregatesFilter<"PurchaseTransaction"> | string
-  providerReference?: Prisma.StringWithAggregatesFilter<"PurchaseTransaction"> | string
+  providerReference?: Prisma.StringNullableWithAggregatesFilter<"PurchaseTransaction"> | string | null
   bankReference?: Prisma.StringNullableWithAggregatesFilter<"PurchaseTransaction"> | string | null
   providerName?: Prisma.StringWithAggregatesFilter<"PurchaseTransaction"> | string
   paymentMethodName?: Prisma.StringWithAggregatesFilter<"PurchaseTransaction"> | string
@@ -525,7 +526,7 @@ export type PurchaseTransactionScalarWhereWithAggregatesInput = {
   netNominal?: Prisma.DecimalWithAggregatesFilter<"PurchaseTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumWithAggregatesFilter<"PurchaseTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseTransaction"> | Date | string | null
-  expiresAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseTransaction"> | Date | string
+  expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseTransaction"> | Date | string | null
   batchSettlementId?: Prisma.IntNullableWithAggregatesFilter<"PurchaseTransaction"> | number | null
   settlementAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PurchaseTransaction"> | Date | string | null
   batchReconciliationId?: Prisma.IntNullableWithAggregatesFilter<"PurchaseTransaction"> | number | null
@@ -544,7 +545,7 @@ export type PurchaseTransactionCreateInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -552,7 +553,7 @@ export type PurchaseTransactionCreateInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -577,7 +578,7 @@ export type PurchaseTransactionUncheckedCreateInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -585,7 +586,7 @@ export type PurchaseTransactionUncheckedCreateInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -609,7 +610,7 @@ export type PurchaseTransactionUpdateInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -617,7 +618,7 @@ export type PurchaseTransactionUpdateInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -642,7 +643,7 @@ export type PurchaseTransactionUncheckedUpdateInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -650,7 +651,7 @@ export type PurchaseTransactionUncheckedUpdateInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -675,7 +676,7 @@ export type PurchaseTransactionCreateManyInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -683,7 +684,7 @@ export type PurchaseTransactionCreateManyInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -702,7 +703,7 @@ export type PurchaseTransactionUpdateManyMutationInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -710,7 +711,7 @@ export type PurchaseTransactionUpdateManyMutationInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -730,7 +731,7 @@ export type PurchaseTransactionUncheckedUpdateManyInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -738,7 +739,7 @@ export type PurchaseTransactionUncheckedUpdateManyInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -751,6 +752,11 @@ export type PurchaseTransactionUncheckedUpdateManyInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type PurchaseTransactionMerchantIdMerchantReferenceCompoundUniqueInput = {
+  merchantId: number
+  merchantReference: string
 }
 
 export type PurchaseTransactionCountOrderByAggregateInput = {
@@ -899,16 +905,16 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
 }
 
 export type PurchaseTransactionCreateNestedOneWithoutFeeDetailsInput = {
@@ -993,7 +999,7 @@ export type PurchaseTransactionCreateWithoutFeeDetailsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1001,7 +1007,7 @@ export type PurchaseTransactionCreateWithoutFeeDetailsInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1025,7 +1031,7 @@ export type PurchaseTransactionUncheckedCreateWithoutFeeDetailsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1033,7 +1039,7 @@ export type PurchaseTransactionUncheckedCreateWithoutFeeDetailsInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1072,7 +1078,7 @@ export type PurchaseTransactionUpdateWithoutFeeDetailsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1080,7 +1086,7 @@ export type PurchaseTransactionUpdateWithoutFeeDetailsInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1104,7 +1110,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1112,7 +1118,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1135,7 +1141,7 @@ export type PurchaseTransactionCreateWithoutWebhookLogsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1143,7 +1149,7 @@ export type PurchaseTransactionCreateWithoutWebhookLogsInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1167,7 +1173,7 @@ export type PurchaseTransactionUncheckedCreateWithoutWebhookLogsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1175,7 +1181,7 @@ export type PurchaseTransactionUncheckedCreateWithoutWebhookLogsInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1214,7 +1220,7 @@ export type PurchaseTransactionUpdateWithoutWebhookLogsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1222,7 +1228,7 @@ export type PurchaseTransactionUpdateWithoutWebhookLogsInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1246,7 +1252,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutWebhookLogsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1254,7 +1260,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutWebhookLogsInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1277,7 +1283,7 @@ export type PurchaseTransactionCreateWithoutMerchantBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1285,7 +1291,7 @@ export type PurchaseTransactionCreateWithoutMerchantBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1309,7 +1315,7 @@ export type PurchaseTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1317,7 +1323,7 @@ export type PurchaseTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1356,7 +1362,7 @@ export type PurchaseTransactionUpdateWithoutMerchantBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1364,7 +1370,7 @@ export type PurchaseTransactionUpdateWithoutMerchantBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1388,7 +1394,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutMerchantBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1396,7 +1402,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutMerchantBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1419,7 +1425,7 @@ export type PurchaseTransactionCreateWithoutAgentBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1427,7 +1433,7 @@ export type PurchaseTransactionCreateWithoutAgentBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1451,7 +1457,7 @@ export type PurchaseTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1459,7 +1465,7 @@ export type PurchaseTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1498,7 +1504,7 @@ export type PurchaseTransactionUpdateWithoutAgentBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1506,7 +1512,7 @@ export type PurchaseTransactionUpdateWithoutAgentBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1530,7 +1536,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutAgentBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1538,7 +1544,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutAgentBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1561,7 +1567,7 @@ export type PurchaseTransactionCreateWithoutInternalBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1569,7 +1575,7 @@ export type PurchaseTransactionCreateWithoutInternalBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1593,7 +1599,7 @@ export type PurchaseTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   providerName: string
   paymentMethodName: string
@@ -1601,7 +1607,7 @@ export type PurchaseTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  expiresAt: Date | string
+  expiresAt?: Date | string | null
   batchSettlementId?: number | null
   settlementAt?: Date | string | null
   batchReconciliationId?: number | null
@@ -1640,7 +1646,7 @@ export type PurchaseTransactionUpdateWithoutInternalBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1648,7 +1654,7 @@ export type PurchaseTransactionUpdateWithoutInternalBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1672,7 +1678,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1680,7 +1686,7 @@ export type PurchaseTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   batchReconciliationId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1910,7 +1916,7 @@ export type $PurchaseTransactionPayload<ExtArgs extends runtime.Types.Extensions
     merchantId: number
     systemReference: string
     merchantReference: string
-    providerReference: string
+    providerReference: string | null
     bankReference: string | null
     providerName: string
     paymentMethodName: string
@@ -1918,7 +1924,7 @@ export type $PurchaseTransactionPayload<ExtArgs extends runtime.Types.Extensions
     netNominal: runtime.Decimal
     status: $Enums.TransactionStatusEnum
     paidAt: Date | null
-    expiresAt: Date
+    expiresAt: Date | null
     batchSettlementId: number | null
     settlementAt: Date | null
     batchReconciliationId: number | null

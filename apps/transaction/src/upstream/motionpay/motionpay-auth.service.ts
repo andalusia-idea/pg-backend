@@ -143,10 +143,10 @@ export class MotionPayAuthService {
     }
 
     const parsed = assertUpstreamSchema<MotionPayTokenResponseDto>(
+      'token',
       ProviderNameEnum.MOTIONPAY,
       MotionPayTokenResponseSchema,
       raw,
-      'token',
     );
 
     // The token endpoint signals success with 200, not 0 — see motionpay.constant.ts.

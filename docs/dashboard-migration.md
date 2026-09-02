@@ -147,14 +147,14 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 | 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ Matches | — | — |
 | 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `SUPER_ADMIN` (agent detail balance widget) | ✅ Matches | — | — |
-| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
-| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — items no longer carry `metadata` | **Frontend.** Drop `metadata` from the topup row type. Purchase / withdraw / disbursement keep theirs. See D18 | — |
+| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — `externalId` and `referenceId` no longer returned | **Backend + frontend.** Columns renamed in transaction v2; the DTO was never updated, so both render blank. See D19 | — |
+| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — `metadata` (D18) plus `externalId`, `referenceId`, `reconciliationAt` (D19) no longer returned | **Backend + frontend.** Four blank columns on the top-up page — the worst-hit listing. See D18 and D19 | — |
 | 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc dependency) | **Backend.** Blocked on porting config's fee-calculation services (currently ~95%-duplicated across four legacy services) — see §7 | POST `transactions/topup`. Frontend sends `CreateTopUp = { userId: number, receiptImage: string, nominal: number }`. Requirement: split `nominal` into merchant/agent/provider/internal cuts via the fee calculator, write the pending top-up row |
 | 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / balance-ledger dependency) | **Backend.** Blocked on the balance-ledger rework (advisory locks + transaction-scoping) from D17 — needs your decision there first | POST `transactions/topup/approve`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: mark approved, write `MerchantBalanceLog`/`AgentBalanceLog`/`InternalBalanceLog` rows inside one transaction with advisory locks, per the corrected D17 pattern |
 | 33 | POST | `transactions/topup/reject` | `topup` | `rejectTransactionTopUp` — see D1, fixed 2026-08-26 | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (backend only, now — see note below) | **Backend.** Blocked on D17 like the other two topup write endpoints. The frontend's D1 bug (posting to `/approve` instead of `/reject`) is fixed — commit `2df39fa`, confirmed by re-reading `transaction-top-up.api.ts`, which now posts to `transactions/topup/reject` correctly. Once the backend ships `/reject`, this call will work with no further frontend change needed | POST `transactions/topup/reject`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: flip status to rejected only — no ledger write, unlike approve |
-| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — `externalId`, `referenceId`, `reconciliationAt` no longer returned | **Backend + frontend.** See D19 | — |
 | 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (D17 / fee-calc + balance-ledger dependency) | **Backend.** Blocked on both fee-calculation and the balance-ledger work — see §7 | POST `transactions/withdraw`. Frontend sends `CreateWithdrawal = { userId: number, nominal: number }`. Requirement: insufficient-balance check must be lock-guarded per D17 (not check-then-act), then write the pending withdrawal row |
-| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Changed 2026-09-01** — `externalId` and `referenceId` no longer returned | **Backend + frontend.** See D19 | — |
 | 40 | POST | `transactions/withdraw/approve` | *(none)* | `approveTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26** — see note below | **Backend.** Route/DTO/response shape are real; the handler is a no-op pending D17 | POST `transactions/withdraw/approve`. Frontend sends `StatusWithdrawal = { withdrawalId: string }` — note `withdrawalId` is typed `string` here vs. `topupId: number` on the topup side (row 32), worth reconciling. Requirement: same balance-ledger shape as topup approve, including the D17 fix for the `merchantId: withdraw.id` bug in the callback path |
 | 41 | POST | `transactions/withdraw/reject` | *(none)* | `rejectTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26** | **Backend.** Same as row 40 | POST `transactions/withdraw/reject`. Body: `StatusWithdrawal = { withdrawalId: string }`. Requirement: flip status only, no ledger write — same shape as topup reject (row 33) |
 | 42 | POST | `transactions/purchase/resend-callback` | *(none)* | `resendPurchaseCallback` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26** | **Backend.** Route/DTO/response shape are real; the handler is a no-op pending the provider-integration work | POST `transactions/purchase/resend-callback`. Body: `PurchaseCallbackAction = { purchaseId: string }`. Requirement: re-fire the provider webhook callback for that purchase — needs the provider-integration layer this dashboard doesn't otherwise touch |
@@ -172,8 +172,8 @@ Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay
 
 | # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
 |---|---|---|---|---|---|---|---|---|
-| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `SUPER_ADMIN` (settlement page) | ✅ Matches | — | — |
-| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `SUPER_ADMIN` | ✅ Matches | — | — |
+| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `SUPER_ADMIN` (settlement page) | ⚠️ **Changed 2026-09-01** — `externalId` and `referenceId` no longer returned | **Backend + frontend.** Reads `PurchaseTransaction`, so it inherits row 29's breakage. See D19 | — |
+| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `SUPER_ADMIN` | ⚠️ **Changed 2026-09-01** — same as row 37 | **Backend + frontend.** See D19 | — |
 | 48 | POST | `settlement/settle` | *(none)* | `settleUnsettledData` | `SUPER_ADMIN` | 🟡 **Stubbed 2026-08-26** — wired to a live "settle" action in `src/pages/transaction/settlement/components/unsettled-table.tsx`, now gets a success response instead of a 404 | **Backend.** Route/DTO/response shape are real (`SettlementController.settle()` / `SettlementService.settle()`); the handler is a no-op — no row is actually stamped `settlementAt` yet | POST `settlement/settle`. Frontend sends `SettleUnsettledBody = { ids: string[] }` — a batch of purchase/settlement ids. Requirement: mark each as settled (stamp `settlementAt`), moving it out of the `unsettled` listing and into `settled` |
 
 ### 2.5 Not migrated
@@ -209,7 +209,7 @@ Section 7's progress checklist below still says "35 of 38 ported" — that line 
 
 **For the frontend team, 2026-08-28:** the only change requiring work on your side is **row 53** plus the new `allowedIps` field on row 39's response. Nothing existing broke — `status` gained a field, which is additive. See the row 53 callout in §2.1 for the request/response shapes and the three UI points that matter.
 
-**For the frontend team, 2026-09-01:** two rows changed shape and both need a small edit on your side — rows **24** (`?providerName=` removed) and **30** (`metadata` gone from topup items). Neither is additive, so read D18 before the next release. Nothing else in this inventory moved.
+**For the frontend team, 2026-09-01 — read D19 first.** Six rows changed shape: **24** (`?providerName=` removed, harmless), **29, 30, 34, 36, 37, 38** (`externalId` and `referenceId` absent from every item; `reconciliationAt` too on 30 and 34; `metadata` too on 30). None of it is additive and none of it errors — the fields simply stop arriving, so the affected table columns render blank rather than throwing. **Do not start renaming yet:** one old→new column mapping is still open (D19), and the backend DTOs change once it is settled. D18 covers row 24.
 
 **Update (2026-08-28, later same day): row 53 done.** Commit `9d749a8` adds the IP whitelist card and its caller — see the "Update" note appended to the row 53 callout in §2.1 for what was verified and the one gap it turned up (generic validation-error messages hide which entry was malformed, dashboard-wide, not just here). Nothing in this doc's scope remains without at least a route to hit; what's left open is D17/D3 (§5) and the 🟡-stubbed handlers (rows 40–48), none of which are new to this pass.
 
@@ -345,7 +345,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Eighteen entries (D1–D18), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; seven do. Sorted by number below — this table is the triage.
+Twenty entries (D1–D20), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; eight do. Sorted by number below — this table is the triage.
 
 ### Open — needs a decision or action
 
@@ -357,6 +357,7 @@ Eighteen entries (D1–D18), each a real defect or ambiguity found while reading
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
 | **D15** | Aggregate balances filter out `PURCHASE`; per-holder balances don't | **You** — business question | The sum of individual balances won't always match the aggregate shown on the dashboard |
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
+| **D19** | Transaction v2 renamed every reference column; the four listing DTOs still declare the old names, so `externalId` / `referenceId` are silently absent from every response | **You**, then backend + frontend | **Live now.** 21 table columns across 5 pages render blank. Needs your call on one old→new mapping before the DTOs can be fixed |
 | **D18** | Transaction v2 dropped `InternalBalanceLog.providerName` and `TopUpTransaction.metadata`, both exposed through the dashboard API | Frontend dev | Backend is fixed and compiling. Two response/param shapes changed — see the table at the end of D18 |
 
 > **D17 and D1 are not migration issues.** Both are defects in the code running in production right now, found while reading it. They're worth acting on independently of this port.
@@ -376,6 +377,7 @@ Eighteen entries (D1–D18), each a real defect or ambiguity found while reading
 | D13 | Array-body endpoints had a different error shape | Fixed — `ParseDtoArrayPipe` |
 | D14 | `registerWebhook` was fire-and-forget | Fixed — awaited |
 | D16 | Ordering had no tiebreak | Fixed — `createdAt DESC, id DESC` |
+| D20 | `BaseFee.code` dropped from the config schema | Fixed — `BaseFeeDto.code` derived from the three columns, so the response is unchanged |
 
 ---
 
@@ -691,6 +693,83 @@ A genuine per-provider house balance would need a different shape: either `provi
 | `GET transactions/topup` (row 30) | `metadata` gone from each item | Remove it from the topup row type only. Purchase / withdraw / disbursement keep theirs |
 
 Verified: `tsc` clean on all four apps, `eslint` clean on both touched modules, 237 tests passing.
+
+---
+
+### D19 — Transaction v2 renamed every reference column; the dashboard DTOs still expose the old names → **needs a decision, then a backend fix**
+
+Found on 2026-09-01 while auditing this doc against the code. **This is the one to read first.**
+
+`transaction_v2` (commit `3d7e6cc`) replaced the reference-identifier scheme on all four transaction models. The dashboard's response DTOs were never updated, and **nothing failed** — not the compiler, not the tests, not eslint.
+
+**Why it stayed invisible.** The listing services build their DTO with `new XDto({ ...item } as unknown as XDto)`. That cast is there to bridge Prisma `Decimal`/`Date` against the DTO's `string`, but it also erases any check that the row still *has* the fields the DTO declares. `DtoHelper.assign` copies only keys present on the source, so a dropped column leaves the property `undefined` — and `JSON.stringify` omits undefined properties entirely. The field does not arrive as `null`. It does not arrive at all.
+
+Confirmed by constructing `TopupTransactionDto` from a real v2-shaped row:
+
+```
+own keys : id, externalId, referenceId, merchantId, ... reconciliationAt, ...
+externalId       = undefined
+referenceId      = undefined
+reconciliationAt = undefined
+
+JSON: {"id":1,"merchantId":27,"providerName":"MOTIONPAY", ... }   <- all three absent
+```
+
+**What the frontend loses**
+
+| Endpoint | Row | Fields missing from every item |
+|---|---|---|
+| `GET transactions/purchase` | 29 | `externalId`, `referenceId` |
+| `GET transactions/topup` | 30 | `externalId`, `referenceId`, `reconciliationAt`, `metadata` (last one is D18) |
+| `GET transactions/withdraw` | 34 | `externalId`, `referenceId`, `reconciliationAt` |
+| `GET transactions/disbursement` | 36 | `externalId`, `referenceId` |
+| `GET settlement/settled` / `unsettled` | 37, 38 | `externalId`, `referenceId` |
+
+These are **rendered table columns**, not incidental type fields. In `PG-Dashboard` they appear as `dataIndex` entries titled "External ID" and "Reference ID" — several wrapped in `CopyableEllipsisText`, i.e. values operators copy out to trace a transaction with the provider or the bank. 21 column definitions across the purchase, top-up, withdrawal, disbursement and settlement pages render blank. (The reconciliation page reads the same field names but is out of scope per D5, so it is unaffected by this backend.)
+
+`reconciliationAt` survives on `PurchaseTransaction` and `DisbursementTransaction` and was dropped only from `TopUpTransaction` and `WithdrawTransaction`, so rows 29/36/37/38 keep that column.
+
+**The rename**
+
+The new scheme is SNAP-aligned, which is the point of it — see `docs/snap-standardization.md`:
+
+| v2 column | Comment in schema | Was |
+|---|---|---|
+| `systemReference` | *Our System Reference No* | `code` / `orderId` |
+| `merchantReference` | *partnerReferenceNo (SNAP)* | ? |
+| `providerReference` | *referenceNo (SNAP)* | `externalId` |
+| `bankReference` | *reff id from bank* | — (new) |
+| `additionalInfo` `JsonB` | *Store NMID, RequestID, anything bank/upstream* | absorbs `nmid` |
+
+`externalId` → `providerReference` is unambiguous: both mean "the provider's identifier for this transaction."
+
+**`referenceId` is not.** The old column was `referenceId String?` with no comment, and v2 offers two plausible homes — `merchantReference` (SNAP `partnerReferenceNo`) or `bankReference`. **This needs your answer before the DTO is changed.** Publishing the wrong column under a heading operators use to trace money is worse than publishing a blank one, so the DTOs are deliberately left untouched pending that call.
+
+**Then, backend**: expose the new columns on all four DTOs. Several are genuinely new information the frontend has no way to show today — `bankReference`, `additionalInfo`, `merchantReference`, and on withdraw the whole recipient block (`recipientName`, `recipientAccount`, `recipientBankCode`, `recipientBankName`) plus `settlementAt`.
+
+**Then, frontend**: rename the `dataIndex` values and the fields in `src/api/transaction-*.type.ts` and `settlement.type.ts` to match whatever mapping is settled.
+
+**Also worth fixing, separately**: the `as unknown as XDto` cast is what let a schema change reach production shape unnoticed. Mapping the fields explicitly — or typing the DTO constructor against the Prisma row — would have turned all of this into compile errors, which is how the two in D18 were caught. Those two were caught *only* because they were used in a `where` clause or a typed property access, not in the DTO.
+
+---
+
+### D20 — `BaseFee.code` dropped from the config schema → **fixed; response unchanged, nothing for the frontend**
+
+Recorded because the DTO now declares a field the schema does not have, and that looks like the D19 bug rather than a deliberate choice.
+
+`config.BaseFee.code` held `PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE` as one pre-joined `@unique` string. It was dropped (migration `20260831153001_base_fee_natural_key`) and replaced by a real constraint on the three columns it was built from:
+
+```prisma
+@@unique([providerName, paymentMethodName, transactionType])
+```
+
+The column only ever *looked* like a constraint. Nothing checked that `code` agreed with those three fields, so one typo would have created a second row for a triple that is supposed to be unique — and `ProfileProviderService` resolves a merchant's provider through exactly that triple.
+
+**`BaseFeeDto.code` is preserved**, derived in the constructor from the three fields. `GET fee/config` (row 19) and `GET config/merchant/:id` (rows 20–23) return the same shape as before, and `config-merchant`'s "configured first, then by code" sort still works. Nothing to do on the frontend.
+
+The two `orderBy: { code: 'asc' }` clauses became `[{ providerName }, { paymentMethodName }, { transactionType }]` — the same ordering, since the string was built in that order.
+
+> Do not "tidy up" the derivation by deleting `code` from the DTO. It is what keeps rows 19–23 non-breaking; the column is gone, the response field is not.
 
 ---
 

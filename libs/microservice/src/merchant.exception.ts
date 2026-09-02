@@ -31,6 +31,8 @@ import { MerchantSignatureFailureEnum } from './merchant.enum';
 export const MERCHANT_SERVICE_CODE = {
   /** Authentication, signature verification, transport. SNAP's `any`. */
   COMMON: '00',
+  /** Pay-in. First of the `90`+ manapay business codes. */
+  PURCHASE: '90',
 } as const;
 
 /** SNAP caps `responseMessage` at 150 characters. */
@@ -42,17 +44,38 @@ export type MerchantResponseDto = {
 };
 
 /** What the merchant receives, plus the status it is sent with. */
-type MerchantFailure = MerchantResponseDto & { httpStatus: HttpStatus };
+export type MerchantFailure = MerchantResponseDto & { httpStatus: HttpStatus };
+
+/**
+ * Assemble a SNAP-shaped failure: HTTP status (3) + service (2) + case (2).
+ *
+ * Exported so every registry - this file's signature failures, the transaction
+ * failures next door - builds codes by the same rule rather than writing the
+ * 7-character strings out by hand, where a typo produces a code that looks
+ * plausible and decodes to the wrong thing.
+ */
+export const merchantFailure = (
+  httpStatus: HttpStatus,
+  serviceCode: string,
+  caseCode: string,
+  responseMessage: string,
+): MerchantFailure => ({
+  httpStatus,
+  responseCode: `${httpStatus}${serviceCode}${caseCode}`,
+  responseMessage,
+});
 
 const common = (
   httpStatus: HttpStatus,
   caseCode: string,
   responseMessage: string,
-): MerchantFailure => ({
-  httpStatus,
-  responseCode: `${httpStatus}${MERCHANT_SERVICE_CODE.COMMON}${caseCode}`,
-  responseMessage,
-});
+): MerchantFailure =>
+  merchantFailure(
+    httpStatus,
+    MERCHANT_SERVICE_CODE.COMMON,
+    caseCode,
+    responseMessage,
+  );
 
 /**
  * Every signature rejection, mapped to what the merchant sees.
