@@ -1,54 +1,172 @@
-name: CI/CD Pipeline Single Node (Direct Deploy)
+# Build dan deploy ke GCP.
+#
+# Menggantikan pipeline lama yang SSH ke satu node k3s lalu menjalankan
+# `kubectl set image`. Perbedaan pokoknya:
+#   - tanpa kunci berumur panjang: autentikasi lewat Workload Identity Federation
+#   - image ke Artifact Registry, ditag SHA commit, tidak ada :latest
+#   - migrasi berjalan sebagai Job bergerbang, bukan saat aplikasi boot
+#   - deploy lewat `kubectl apply -k`, jadi manifest di repo yang jadi acuan
+#
+# Rahasia yang perlu diisi di GitHub — semuanya identitas, bukan kredensial:
+#   GCP_WIF_PROVIDER  projects/1023750760280/locations/global/workloadIdentityPools/github/providers/github-provider
+#   GCP_DEPLOY_SA     github-deployer@andapay-shared.iam.gserviceaccount.com
+
+name: CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, dev]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write   # wajib untuk WIF; tanpa ini autentikasi gagal
+
+env:
+  SHARED_PROJECT: andapay-shared
+  TARGET_PROJECT: andapay-sandbox
+  REGION: asia-southeast2
+  CLUSTER: andapay-sandbox-gke
+  NAMESPACE: andapay
+  REGISTRY: asia-southeast2-docker.pkg.dev/andapay-shared/andapay
+  SOURCE_BUCKET: gs://andapay-shared-cloudbuild-asia-southeast2/source
 
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [auth, transaction, config]
-
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - id: meta
+        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: google-github-actions/auth@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
 
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          build-args: SERVICE_NAME=${{ matrix.service }}
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}-service:latest
-            ghcr.io/${{ github.repository_owner }}/${{ matrix.service }}-service:${{ github.sha }}
+      - uses: google-github-actions/setup-gcloud@v2
 
-  deploy-to-server:
-    needs: build-and-push
+      # Kelima image (empat aplikasi + migrator) dibangun paralel oleh
+      # cloudbuild.yaml. Bucket sumber harus seregion dengan build, kalau tidak
+      # Cloud Build menolak dengan 403 yang menyesatkan.
+      - name: Build dan push
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project="$SHARED_PROJECT" \
+            --region="$REGION" \
+            --gcs-source-staging-dir="$SOURCE_BUCKET" \
+            --substitutions=_TAG=${{ steps.meta.outputs.tag }} \
+            .
+
+  migrate:
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Execute Remote Deployment via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Memperbarui image ke tag terbaru (commit SHA) di Kubernetes klaster lokal (K3s)
-            kubectl set image deployment/auth-deployment auth-service=ghcr.io/${{ github.repository_owner }}/auth-service:${{ github.sha }} -n production
-            kubectl set image deployment/transaction-deployment transaction-service=ghcr.io/${{ github.repository_owner }}/transaction-service:${{ github.sha }} -n production
-            kubectl set image deployment/config-deployment config-service=ghcr.io/${{ github.repository_owner }}/config-service:${{ github.sha }} -n production
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Ambil kredensial klaster
+        run: |
+          gcloud container clusters get-credentials "$CLUSTER" \
+            --region="$REGION" --project="$TARGET_PROJECT"
+
+      # Gerbang: kalau migrasi gagal, deploy tidak berjalan. Dashboard sengaja
+      # tidak ikut — schema-nya hasil merge ketiga app lain dan tidak punya
+      # folder migrations sendiri.
+      - name: Migrasi basis data
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          INSTANCE="${TARGET_PROJECT}:${REGION}:andapay-sandbox-pg"
+          kubectl delete job -n "$NAMESPACE" \
+            migrate-auth migrate-config migrate-transaction --ignore-not-found
+
+          for app in auth config transaction; do
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata: { name: migrate-${app}, namespace: ${NAMESPACE} }
+          spec:
+            backoffLimit: 1
+            template:
+              spec:
+                serviceAccountName: andapay-app
+                restartPolicy: Never
+                initContainers:
+                  - name: cloud-sql-proxy
+                    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+                    restartPolicy: Always
+                    args: ["--private-ip", "--port=5432", "${INSTANCE}"]
+                containers:
+                  - name: migrate
+                    image: ${REGISTRY}/migrator:${TAG}
+                    args: ["migrate", "deploy", "--config", "apps/${app}/prisma.config.ts"]
+                    env:
+                      - name: POSTGRESQL_URL_MASTER
+                        valueFrom:
+                          secretKeyRef: { name: andapay-db, key: ${app}-master }
+          EOF
+            kubectl wait --for=condition=complete --timeout=300s \
+              job/migrate-${app} -n "$NAMESPACE" || {
+                echo "::error::Migrasi ${app} gagal"
+                kubectl logs -n "$NAMESPACE" job/migrate-${app} -c migrate --tail=50
+                exit 1
+              }
+          done
+
+  deploy:
+    needs: [build, migrate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Ambil kredensial klaster
+        run: |
+          gcloud container clusters get-credentials "$CLUSTER" \
+            --region="$REGION" --project="$TARGET_PROJECT"
+
+      - name: Pasang tag image
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          cd k8s
+          for app in auth config transaction dashboard; do
+            kubectl kustomize --help >/dev/null
+            sed -i "/name: andapay\/${app}$/,/newTag:/ s|newTag: .*|newTag: ${TAG}|" kustomization.yaml
+          done
+          grep -A2 "name: andapay/" kustomization.yaml
+
+      - name: Deploy
+        run: kubectl apply -k k8s/
+
+      - name: Tunggu rollout
+        run: |
+          for app in auth config transaction dashboard; do
+            kubectl rollout status "deploy/${app}-deployment" \
+              -n "$NAMESPACE" --timeout=300s
+          done
+
+      - name: Ringkasan
+        if: always()
+        run: kubectl get deploy,pods -n "$NAMESPACE"

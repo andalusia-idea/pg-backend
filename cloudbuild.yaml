@@ -1,0 +1,80 @@
+# Membangun keempat image aplikasi dalam satu submit.
+#
+# Dockerfile memakai `ARG SERVICE_NAME` untuk memilih app mana yang di-build,
+# dan `gcloud builds submit --tag` tidak meneruskan build arg — karena itu
+# file ini ada.
+#
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --project=andapay-shared --region=asia-southeast2 \
+#     --substitutions=_TAG=$(git rev-parse --short HEAD) .
+#
+# Keempat langkah memakai `waitFor: ['-']` supaya jalan paralel, bukan berurutan.
+
+substitutions:
+  _REGISTRY: asia-southeast2-docker.pkg.dev/andapay-shared/andapay
+  _TAG: dev
+
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s
+
+steps:
+  - id: auth
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args:
+      - build
+      - --target=runner
+      - --build-arg=SERVICE_NAME=auth
+      - -t=${_REGISTRY}/auth:${_TAG}
+      - .
+
+  - id: config
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args:
+      - build
+      - --target=runner
+      - --build-arg=SERVICE_NAME=config
+      - -t=${_REGISTRY}/config:${_TAG}
+      - .
+
+  - id: transaction
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args:
+      - build
+      - --target=runner
+      - --build-arg=SERVICE_NAME=transaction
+      - -t=${_REGISTRY}/transaction:${_TAG}
+      - .
+
+  - id: dashboard
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args:
+      - build
+      - --target=runner
+      - --build-arg=SERVICE_NAME=dashboard
+      - -t=${_REGISTRY}/dashboard:${_TAG}
+      - .
+
+  # Image terpisah untuk Job migrasi dan seed. Dockerfile sendiri, bukan stage —
+  # lihat komentar di Dockerfile.migrator.
+  - id: migrator
+    name: gcr.io/cloud-builders/docker
+    waitFor: ['-']
+    args:
+      - build
+      - -f=Dockerfile.migrator
+      - -t=${_REGISTRY}/migrator:${_TAG}
+      - .
+
+images:
+  - ${_REGISTRY}/auth:${_TAG}
+  - ${_REGISTRY}/config:${_TAG}
+  - ${_REGISTRY}/transaction:${_TAG}
+  - ${_REGISTRY}/dashboard:${_TAG}
+  - ${_REGISTRY}/migrator:${_TAG}

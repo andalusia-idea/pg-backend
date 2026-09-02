@@ -1,0 +1,34 @@
+# Sandbox. Produksi nanti menjadi overlay yang menimpa namespace, replika,
+# hostname Gateway, dan certmap.
+#
+#   kubectl apply -k k8s/
+#
+# CI mengisi tag image dengan SHA commit sebelum apply:
+#   kustomize edit set image andapay/auth=<registry>/auth:<sha>
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: andapay
+
+resources:
+  - apps.yaml
+  - gateway.yaml
+  - hpa.yaml
+
+# Placeholder tanpa tag. Jangan pernah menuliskan :latest di sini — pod yang
+# restart bisa mendapat versi berbeda dari tetangganya, dan pada sistem uang
+# itu tidak boleh mungkin terjadi.
+images:
+  - name: andapay/auth
+    newName: asia-southeast2-docker.pkg.dev/andapay-shared/andapay/auth
+    newTag: f047f77
+  - name: andapay/config
+    newName: asia-southeast2-docker.pkg.dev/andapay-shared/andapay/config
+    newTag: f047f77
+  - name: andapay/transaction
+    newName: asia-southeast2-docker.pkg.dev/andapay-shared/andapay/transaction
+    newTag: f047f77
+  - name: andapay/dashboard
+    newName: asia-southeast2-docker.pkg.dev/andapay-shared/andapay/dashboard
+    newTag: f047f77

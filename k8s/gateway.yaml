@@ -1,0 +1,218 @@
+# Gateway API untuk sandbox andapay.
+#
+# Menggantikan k8s/ingress.yaml (class nginx) yang tidak dipakai di GKE.
+# Alasan memakai Gateway, bukan Ingress: GCE Ingress tidak bisa memotong path,
+# sementara auth/config/transaction tidak memakai setGlobalPrefix — jadi
+# `/auth/user/profile` harus sampai ke aplikasi sebagai `/user/profile`.
+#
+#   kubectl apply -f k8s/gateway.yaml
+#
+# Peta rute publik:
+#   /open/*        -> transaction  (TANPA dipotong — URL merchant, biarkan bersih)
+#   /auth/*        -> auth         (dipotong)
+#   /config/*      -> config       (dipotong)
+#   /transaction/* -> transaction  (dipotong)
+#   /api/v1/*      -> dashboard    (TANPA dipotong — dashboard memakai prefix ini)
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: andapay-gateway
+  namespace: andapay
+  annotations:
+    networking.gke.io/certmap: andapay-sandbox-certmap
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  addresses:
+    - type: NamedAddress
+      value: andapay-sandbox-lb-ip
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: api-sandbox.andapay.id
+      allowedRoutes:
+        namespaces:
+          from: Same
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: andapay-routes
+  namespace: andapay
+spec:
+  parentRefs:
+    - name: andapay-gateway
+  hostnames:
+    - api-sandbox.andapay.id
+  rules:
+    # Prefix terpanjang menang, jadi urutan di file ini tidak menentukan.
+
+    # API merchant. Sengaja tidak dipotong: URL yang dilihat merchant harus
+    # sama dengan yang dilayani aplikasi, supaya dokumentasi tidak bercabang.
+    - matches:
+        - path: { type: PathPrefix, value: /open }
+      backendRefs:
+        - name: transaction-service
+          port: 80
+
+    - matches:
+        - path: { type: PathPrefix, value: /auth }
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: { type: ReplacePrefixMatch, replacePrefixMatch: / }
+      backendRefs:
+        - name: auth-service
+          port: 80
+
+    - matches:
+        - path: { type: PathPrefix, value: /config }
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: { type: ReplacePrefixMatch, replacePrefixMatch: / }
+      backendRefs:
+        - name: config-service
+          port: 80
+
+    - matches:
+        - path: { type: PathPrefix, value: /transaction }
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: { type: ReplacePrefixMatch, replacePrefixMatch: / }
+      backendRefs:
+        - name: transaction-service
+          port: 80
+
+    # Dashboard SENGAJA TIDAK dirutekan ke publik.
+    #
+    # Ia adalah API admin internal dan satu-satunya yang mengekspos POST /login.
+    # Seed engine membuat superadmin@pg.id berperan SUPER_ADMIN dengan password
+    # yang tertulis di repo (seed.helper.ts). Selama kredensial itu belum
+    # dirotasi, mengeksposnya ke internet berarti menyerahkan akun SUPER_ADMIN
+    # kepada siapa pun yang membaca repo.
+    #
+    # Untuk mengaksesnya: kubectl port-forward -n andapay deploy/dashboard-deployment 8080:3000
+    # Kalau nanti perlu publik, pakai hostname terpisah + allowlist IP Cloud Armor,
+    # bukan hostname merchant ini.
+
+---
+# Pod belum punya readinessProbe, jadi GKE akan menebak health check `/` pada
+# port kontainer — dan itu 404 di keempat aplikasi, sehingga backend ditandai
+# unhealthy. HealthCheckPolicy di bawah menyatakannya secara eksplisit.
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: auth-hc
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: auth-service }
+  default:
+    config:
+      # TCP, bukan HTTP. /health milik aplikasi memanggil https://docs.nestjs.com
+      # dan mengembalikan 503 begitu situs itu membatasi laju IP NAT kita —
+      # yang justru dipicu oleh health check ini sendiri. Satu dependensi pihak
+      # ketiga menjatuhkan seluruh API. Kembalikan ke HTTP /health/ready setelah
+      # tim aplikasi memisahkan liveness/readiness dan membuang ping eksternal.
+      type: TCP
+      tcpHealthCheck: { port: 3000 }
+
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: config-hc
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: config-service }
+  default:
+    config:
+      # TCP, bukan HTTP. /health milik aplikasi memanggil https://docs.nestjs.com
+      # dan mengembalikan 503 begitu situs itu membatasi laju IP NAT kita —
+      # yang justru dipicu oleh health check ini sendiri. Satu dependensi pihak
+      # ketiga menjatuhkan seluruh API. Kembalikan ke HTTP /health/ready setelah
+      # tim aplikasi memisahkan liveness/readiness dan membuang ping eksternal.
+      type: TCP
+      tcpHealthCheck: { port: 3000 }
+
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: transaction-hc
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: transaction-service }
+  default:
+    config:
+      # TCP, bukan HTTP. /health milik aplikasi memanggil https://docs.nestjs.com
+      # dan mengembalikan 503 begitu situs itu membatasi laju IP NAT kita —
+      # yang justru dipicu oleh health check ini sendiri. Satu dependensi pihak
+      # ketiga menjatuhkan seluruh API. Kembalikan ke HTTP /health/ready setelah
+      # tim aplikasi memisahkan liveness/readiness dan membuang ping eksternal.
+      type: TCP
+      tcpHealthCheck: { port: 3000 }
+
+---
+# Dashboard memakai TCP, bukan HTTP: /api/v1/health miliknya mengembalikan 401
+# karena tertutup JwtAuthGuard dan tidak ditandai @PublicApi. Health check GCLB
+# hanya menerima 200. TCP membuktikan proses hidup, bukan aplikasi sehat —
+# ganti ke HTTP begitu tim aplikasi membuka endpoint health-nya.
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: dashboard-hc
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: dashboard-service }
+  default:
+    config:
+      type: TCP
+      tcpHealthCheck: { port: 3000 }
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: auth-armor
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: auth-service }
+  default:
+    securityPolicy: andapay-sandbox-armor
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: config-armor
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: config-service }
+  default:
+    securityPolicy: andapay-sandbox-armor
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: transaction-armor
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: transaction-service }
+  default:
+    securityPolicy: andapay-sandbox-armor
+
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: dashboard-armor
+  namespace: andapay
+spec:
+  targetRef: { group: "", kind: Service, name: dashboard-service }
+  default:
+    securityPolicy: andapay-sandbox-armor

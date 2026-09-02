@@ -1,0 +1,99 @@
+# Horizontal Pod Autoscaler untuk sandbox.
+#
+# Ukuran sandbox, bukan ukuran 40 TPS: min 1, max 4. Produksi memakai angka di
+# dokumen rencana (transaction 4→12, auth/config 3→8).
+#
+# CATATAN PENTING — HPA ini perlu, tapi tidak cukup.
+#
+# Kontainer dibatasi `--max-old-space-size=150` (Dockerfile). Di bawah beban,
+# proses Node mencapai batas heap dan mati SEBELUM CPU sempat naik cukup lama
+# untuk memicu penskalaan. Terbukti: 750 request pada 25 koneksi paralel
+# mematikan pod auth, dan Kubernetes menggantinya — bukan menskalakannya.
+#
+# Jadi urutan yang benar: naikkan batas heap dulu (item tim aplikasi), baru
+# autoscaling punya arti. Sampai itu terjadi, HPA hanya menambah replika setelah
+# yang lama tumbang.
+#
+#   kubectl apply -f k8s/hpa.yaml
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-hpa
+  namespace: andapay
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: auth-deployment }
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 65 }
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: config-hpa
+  namespace: andapay
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: config-deployment }
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 65 }
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: transaction-hpa
+  namespace: andapay
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: transaction-deployment }
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 65 }
+
+---
+# PodDisruptionBudget: pemeliharaan node Autopilot tidak boleh mengosongkan
+# sebuah service. Baru berarti setelah replika lebih dari satu.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-pdb
+  namespace: andapay
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: auth-service }
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: config-pdb
+  namespace: andapay
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: config-service }
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: transaction-pdb
+  namespace: andapay
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: transaction-service }
