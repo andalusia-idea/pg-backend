@@ -295,31 +295,98 @@ So an unrecognized code must **not** be mapped to failure. Our status mapper ret
 
 ---
 
+## 6.5 QRIS Service v2.7 — what changed (received 2026-09-01)
+
+The current spec is `[API] QRIS Service v2.7.pdf`, dated 18 May 2026. It answers several open questions below and introduces one landmine that is worth more attention than everything else in this document.
+
+### 🟡 Timestamps: the spec and the API disagree
+
+§Important Notes claims:
+
+> All timestamps ... are in **WIB (UTC+7)**. Although the timestamp string displays a `+00:00` offset, the time values are native WIB and do not require any conversion.
+
+**This is not what the sandbox does.** Measured 2026-09-02 by creating transactions and comparing `created_date` against our own clock at the instant of the request:
+
+```
+created_date=2026-09-02T09:16:26+00:00  ourUTC=2026-09-02T09:16:25.966Z
+   skew if offset TRUSTED (UTC): 0s   |  skew if treated as WIB: -7.0h
+created_date=2026-09-02T09:16:27+00:00  ourUTC=2026-09-02T09:16:27.598Z
+   skew if offset TRUSTED (UTC): -1s  |  skew if treated as WIB: -7.0h
+created_date=2026-09-02T09:16:29+00:00  ourUTC=2026-09-02T09:16:29.212Z
+   skew if offset TRUSTED (UTC): -0s  |  skew if treated as WIB: -7.0h
+```
+
+Sub-second every time when the offset is trusted; exactly seven hours out when it is not. **The offset is truthful and the spec's note is wrong**, at least on sandbox.
+
+So `parseMotionPayTimestamp` defaults to `offset` mode — ordinary ISO-8601 parsing. A `wib` mode is kept because production may yet behave as documented, and a seven-hour error in `paid_date` corrupts settlement windows and reconciliation *silently*: every value still looks like a plausible timestamp.
+
+**The assumption is checked continuously rather than trusted.** `created_date` on a create response describes a transaction made moments ago, so our own clock is ground truth. `assertTimestampMode` compares them on every create and logs an error if the skew exceeds an hour. If MotionPay ever switches to the documented behaviour we learn it that day, from a log line, instead of from a reconciliation that will not balance weeks later.
+
+**Ask MotionPay to correct §Important Notes, or confirm production differs from sandbox.** As written, the note would lead any integrator to introduce a seven-hour error.
+
+### 🔴 The callback has no signature
+
+From §Security Recommendation:
+
+> FLASH does not provide a callback signature for verification. Merchants are strongly advised to validate the received `transaction_id` against their internal database before processing any status change.
+
+Their suggested mitigation is not a security control. A `transaction_id` is not a secret; anyone who obtains one can POST a forged `SUCCESS`, and a `SUCCESS` credits a merchant balance. That is a direct path to taking money.
+
+**Our mitigation is to not trust the callback body at all.** It is treated as a trigger, not as data:
+
+1. record the payload to `WebhookLog` as evidence, whatever it claims;
+2. look up our own transaction by `transaction_id`;
+3. call **Get Payment Status** ourselves, authenticated with our own token;
+4. act only on that answer.
+
+That converts an unauthenticated push into an authenticated pull, at a cost of one GET per callback. An IP allowlist (`MOTIONPAY_CALLBACK_ALLOWED_IPS`) sits in front as defence in depth — **ask Flash for their egress ranges**, it is currently empty, which means unrestricted, and the handler warns on every request while it stays that way.
+
+### Callback contract
+
+| | |
+|---|---|
+| Trigger | Payment received (`SUCCESS`), or QR expired with no payment (`FAILED`, description `"Order expired"`) |
+| Registration | Flash merchant dashboard → Product Configuration → QRIS. **Not** an API |
+| Retry | Non-200 retried **3 times at 5-minute intervals**, then dropped permanently |
+| Fallback | Polling Get Payment Status is required, not optional — a dropped callback is silent |
+| Auth | None. See above |
+
+Delivery is therefore at-least-once with a hard ceiling: the handler must be idempotent, and anything not settled within ~15 minutes has to be recovered by the settlement sweep.
+
+### No EXPIRED status
+
+MotionPay has only `PENDING` / `SUCCESS` / `FAILED`. An expiry arrives as `FAILED` with `description: "Order expired"`.
+
+Matching on that prose alone would be fragile, so `mapMotionPayStatus` requires **both** signals: the description says expired *and* the expiry instant has passed with no `paid_date`. A payment that failed for any other reason keeps `FAILED`. This resolves open question #4.
+
+### Field corrections
+
+| Field | v2.7 says | We had |
+|---|---|---|
+| `external_id` | String, **max 21** | 16 — now corrected to 21 |
+| `terminal_id` | String, max 21. *"Option 1: ID Merchant from Flash (e.g. `00022654`). Option 2: your POS identifier (e.g. `KASIR001`)"* | Was the per-transaction `external_id` — **fixed**, now `MotionPayConfig.TERMINAL_ID`. It is **embedded in the QR payload** (a probe returned `...0708KASIR001...` inside `qr_string`), so a per-transaction value wrote a different "terminal" into every QR and made their terminal-level reporting meaningless. Not the cause of the 400, but wrong regardless |
+| `amount` | Integer, 1,000–10,000,000 | matches |
+| `session_time` | Integer minutes, min 1 | matches |
+| Token | Valid **7 days**, may expire early on their deploy; handle 401 by regenerating and retrying | already implemented |
+| `customer_pan` | **Always empty** in Get Payment Status; present only in the callback | not used; captured in `metadata` regardless |
+
+### The PTEN theory, resolved
+
+§Status Code assigns **422** to *"Failed to generate QR string. Ensure merchant is registered at PTEN"*, while our blocker returned **400**. That distinction suggested the PTEN diagnosis was wrong.
+
+In the event, the re-probe simply succeeded — so the question is moot. Either the merchant was provisioned in the interim, or the sandbox was repaired. `qr_string` now returns populated, which per their own documentation only happens for a PTEN-registered merchant, so PTEN was very likely the underlying issue after all — just not one that surfaced as the documented 422.
+
+---
+
 ## 7. Open questions / integration risks
 
 Ordered by how much they can hurt.
 
-0. **🔴 BLOCKER — Create QRIS Payment returns `400 "Invalid request data"` for every payload, including MotionPay's own documented sample.** Verified against the sandbox on 13 Aug 2026 with merchant **ANDAPAY** (`merchant_id` 59240, `merchant_uuid` 00059102).
+0. ~~**🔴 BLOCKER — Create QRIS Payment returns `400` for every payload.**~~ — **RESOLVED 2026-09-02.** Re-probed against the v2.7 spec and create now succeeds: `status.code = 0`, `Transaction Successfully Created`, with a real `qr_string`.
 
-   What was tested and what it proves:
+   Five `terminal_id` variants were tried (merchant uuid `00059102`, merchant id `59240`, `KASIR001`, `TERMINAL01`, and the old per-transaction value) — **all five succeeded**, so `terminal_id` was never the cause. Nothing on our side changed the outcome; the fix was on MotionPay's, most likely the PTEN provisioning finally landing. Confirmed end-to-end through our own client, including `payment-status`.
 
-   | Probe | Result | What it rules out |
-   |---|---|---|
-   | `POST /priv/v1/pg/token` | ✅ token issued | Credentials and base URL are correct |
-   | `GET payment-status/FM-doesnotexist` **with** token | `400 "Invalid transaction id value"` | The QRIS API is reachable, the path is right, **and our token is accepted** — it returns that endpoint's own distinct error |
-   | `POST payment` with **no** token | `401 "Header Authorization is missing"` | The auth layer differentiates correctly |
-   | `POST payment` with **garbage** token | `401 "Invalid token: …"` | Our real token is genuinely being validated, not ignored |
-   | `POST payment`, documented sample body | `400 "Invalid request data"` | — |
-   | `POST payment`, body `{}` | `400 "Invalid request data"` | — |
-   | `POST payment`, body `zzz` (**not even JSON**) | `400 "Invalid request data"` | **Conclusive: the body is never evaluated.** Valid JSON, empty JSON, and non-JSON all produce a byte-identical error |
-   | Path variants (`/api/v1/qris/payment`, `/payment/v1/…`) | `404 page not found` | Our path is the only one that exists |
-   | Extra fields (`type`, `qr_type`, `currency`, `callback_url`, `merchant_id`), `amount`/`session_time` as strings, amounts 1 000–10 000 000 | all `400`, unchanged | Not a missing or mistyped field |
-
-   **This is not a payload problem and not a client bug** — a validation error that is identical for a valid body, an empty body, and a non-JSON body is not validation.
-
-   **Most likely cause:** the sandbox merchant is not provisioned for QRIS on the **PTEN switch**. The docs state twice that this endpoint is "only available for merchants already registered in the PTEN switch" and that `qr_string` "will only be generated if merchant is PTEN" — a merchant-entitlement rejection surfacing as a generic 400 fits every observation above. Cannot be confirmed from our side.
-
-   **Action: ask MotionPay/Flash support** whether merchant `59240` / `00059102` (ANDAPAY) is PTEN-registered and enabled for QRIS dynamic payment in sandbox. The table above is the evidence to send them. Nothing in our code changes until they answer.
+   Worth keeping the probe table below on file: it is what the diagnosis was built on, and it is the evidence to reuse if this recurs.
 
 1. **`external_id` is documented as String(16), but our transaction code does not fit.** The monorepo's correlation key is `{timestampMs}{type}{method}{provider}-{userId}[-random]` — the millisecond timestamp alone is 13 characters, so the full code is far over 16. Compounding it, MotionPay's *own* samples violate their stated limit (`"20c67336-dcea-42d8-a"` is 20 characters, and `"PSTMN{{uuid}}"` expands well past 16). **Needs confirmation: is 16 the real limit, or stale documentation?** If it is real, we need a separate short reference for MotionPay and a mapping back to our transaction code — which changes what gets persisted. Until this is settled, our client does not silently truncate; it validates and fails loudly.
 2. ~~**Base URL `.id` vs `.co.id`**~~ — **resolved 13 Aug 2026**: `.id` is correct, `.co.id` does not resolve. See §1.

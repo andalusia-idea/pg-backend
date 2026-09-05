@@ -13,12 +13,12 @@ import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AppConfig } from '@app/configuration';
 import { AjvPipe, ProviderNameEnum } from '@app/microservice';
 import { UpstreamException } from '@app/upstream';
-import { MotionPayQRISService } from './motionpay-qris.service';
-import { MotionPayAuthService } from './motionpay-auth.service';
+import { MotionPayQrisService } from './motionpay-qris.service';
 import {
   type MotionPayCreateQrisRequestDto,
   MotionPayCreateQrisRequestSchema,
-} from './dto';
+} from '../dto';
+import { MotionPayQrisAuthService } from './motionpay-qris.auth.service';
 
 /**
  * Manual test surface for the MotionPay QRIS integration.
@@ -34,11 +34,11 @@ import {
  */
 @ApiTags('Upstream · MotionPay (manual test)')
 @Controller('upstream/motionpay')
-export class MotionPayQrisController {
-  private readonly logger = new Logger(MotionPayQrisController.name);
+export class MotionPayQrisManualController {
+  private readonly logger = new Logger(MotionPayQrisManualController.name);
   constructor(
-    private readonly motionPayService: MotionPayQRISService,
-    private readonly motionPayAuthService: MotionPayAuthService,
+    private readonly motionPayService: MotionPayQrisService,
+    private readonly motionPayAuthService: MotionPayQrisAuthService,
     private readonly appConfig: AppConfig,
   ) {}
 
@@ -103,7 +103,10 @@ export class MotionPayQrisController {
     this.assertNotProduction();
 
     return this.surfaceUpstreamErrors(() =>
-      this.motionPayService.getQrisStatus(transactionId),
+      this.motionPayService.getQrisStatus({
+        providerReference: transactionId,
+        systemReference: null,
+      }),
     );
   }
 

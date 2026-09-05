@@ -56,3 +56,15 @@ export const CreateQrisResponseSchema = Type.Object({
   // }),
 });
 export type CreateQrisResponseDto = Static<typeof CreateQrisResponseSchema>;
+
+export const WebhookPayinSchema = Type.Object({
+  transactionId: Type.String(), // systemReference
+  merchantReference: Type.String(),
+  amount: AmountType,
+  netAmount: AmountType,
+  fee: AmountType,
+  status: Type.Enum(TransactionStatusEnum),
+  /** ISO 8601 UTC. Null when the transaction was not paid. */
+  paidAt: Type.Union([Type.String(), Type.Null()]),
+});
+export type WebhookPayinDto = Static<typeof WebhookPayinSchema>;

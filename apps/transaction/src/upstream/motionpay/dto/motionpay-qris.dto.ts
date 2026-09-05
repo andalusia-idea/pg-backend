@@ -3,7 +3,7 @@ import {
   MOTIONPAY_AMOUNT,
   MOTIONPAY_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_MIN_SESSION_TIME_MINUTES,
-} from '../motionpay.constant';
+} from '../helper';
 
 /// REQUEST
 export const MotionPayCreateQrisRequestSchema = Type.Object(
@@ -110,4 +110,55 @@ export const MotionPayQrisStatusResponseSchema = Type.Object({
 });
 export type MotionPayQrisStatusResponseDto = Static<
   typeof MotionPayQrisStatusResponseSchema
+>;
+
+/**
+ * Payment Notification / Callback payload — QRIS Service v2.7 §Callback.
+ *
+ * Almost every field is optional here, and that is deliberate. This body
+ * arrives **unauthenticated** (MotionPay publishes no callback signature), so
+ * it is treated as an untrusted trigger rather than as data: we log it, use
+ * `transaction_id` to find our own record, and then confirm the real state with
+ * an authenticated Get Payment Status call. Rejecting a callback because a
+ * field we never read was missing would only cost us a retry we did not need.
+ *
+ * `transaction_id` and `status` are the two required fields, because without
+ * them there is nothing to look up and nothing to act on.
+ */
+export const MotionPayQrisCallbackSchema = Type.Object(
+  {
+    transaction_id: Type.String({ minLength: 1 }),
+    external_id: Type.Optional(Type.String()),
+    amount: Type.Optional(Type.Number()),
+    qr_string: Type.Optional(Type.String()),
+    /** `QRIS_DYNAMIC` or `QRIS_STATIC`. We only issue dynamic. */
+    qris_type: Type.Optional(Type.String()),
+    status: Type.String({ minLength: 1 }),
+    /** `Payment Received` on success, `Order expired` on an expiry. */
+    description: Type.Optional(Type.String()),
+    // WIB despite the offset these carry - never parse with `new Date()`,
+    // use parseMotionPayTimestamp. See motionpay.helper.ts.
+    created_at: Type.Optional(Type.String()),
+    updated_at: Type.Optional(Type.String()),
+    expired_date: Type.Optional(Type.String()),
+    paid_date: Type.Optional(Type.String()),
+    mp_mid: Type.Optional(Type.String()),
+    fm_mid: Type.Optional(Type.String()),
+    merchant_pan: Type.Optional(Type.String()),
+    customer_pan: Type.Optional(Type.String()),
+    rrn: Type.Optional(Type.String()),
+    from_info: Type.Optional(Type.String()),
+    acquirer_name: Type.Optional(Type.String()),
+    terminal_id: Type.Optional(Type.String()),
+    merchant_name: Type.Optional(Type.String()),
+    issuer_customer_name: Type.Optional(Type.String()),
+    issuer_customer_id: Type.Optional(Type.String()),
+  },
+  // Unknown fields are kept, not stripped: the whole payload is persisted as
+  // evidence, and a field MotionPay adds tomorrow is exactly what we would want
+  // to have on file when reconciling a disputed payment.
+  { additionalProperties: true },
+);
+export type MotionPayQrisCallbackDto = Static<
+  typeof MotionPayQrisCallbackSchema
 >;

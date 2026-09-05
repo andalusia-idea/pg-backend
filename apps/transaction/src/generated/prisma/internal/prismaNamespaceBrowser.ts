@@ -280,6 +280,7 @@ export type WithdrawFeeDetailScalarFieldEnum = (typeof WithdrawFeeDetailScalarFi
 export const WebhookLogScalarFieldEnum = {
   id: 'id',
   transactionId: 'transactionId',
+  providerReference: 'providerReference',
   source: 'source',
   payload: 'payload',
   rawSignature: 'rawSignature',
@@ -290,8 +291,7 @@ export const WebhookLogScalarFieldEnum = {
   updatedAt: 'updatedAt',
   updatedBy: 'updatedBy',
   deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy',
-  purchaseTransactionId: 'purchaseTransactionId'
+  deletedBy: 'deletedBy'
 } as const
 
 export type WebhookLogScalarFieldEnum = (typeof WebhookLogScalarFieldEnum)[keyof typeof WebhookLogScalarFieldEnum]

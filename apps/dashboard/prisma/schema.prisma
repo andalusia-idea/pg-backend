@@ -578,7 +578,7 @@ model TopUpTransaction {
   status       TransactionStatusEnum
   receiptImage String
 
-  paidAt DateTime?
+  paidAt DateTime? @db.Timestamptz(6)
 
   settlementAt DateTime? @db.Timestamptz(6)
 
@@ -673,7 +673,7 @@ model WithdrawTransaction {
 
   status TransactionStatusEnum
 
-  paidAt DateTime?
+  paidAt DateTime? @db.Timestamptz(6)
 
   settlementAt DateTime? @db.Timestamptz(6)
 
@@ -722,12 +722,21 @@ model WithdrawFeeDetail {
 }
 
 model WebhookLog {
-  id              Int                 @id @default(autoincrement())
-  transactionId   Int
-  source          String // e.g. midtrans, xendit
+  id Int @id @default(autoincrement())
+
+  // Nullable: a callback we cannot match to a transaction is exactly the one
+  // most worth keeping - a spoofing attempt, or a provider referencing an id we
+  // never issued. Requiring a transaction here would mean the only callbacks we
+  // could record are the ones that were already fine.
+  transactionId Int?
+  // The provider's own id from the payload, so an unmatched callback is still
+  // searchable without parsing the JSON.
+  providerReference String?
+
+  source          String // e.g. motionpay, midtrans, xendit
   payload         Json
   rawSignature    String?
-  receivedAt      DateTime            @default(now())
+  receivedAt      DateTime            @default(now()) @db.Timestamptz(6)
   transactionType TransactionTypeEnum
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
@@ -741,6 +750,7 @@ model WebhookLog {
   purchaseTransactionId Int?
 
   @@index([source])
+  @@index([providerReference])
   @@schema("transaction")
 }
 
@@ -750,7 +760,7 @@ model TransactionAudit {
   oldStatus       TransactionStatusEnum
   newStatus       TransactionStatusEnum
   source          String // "webhook", "admin", etc
-  changedAt       DateTime              @default(now())
+  changedAt       DateTime              @default(now()) @db.Timestamptz(6)
   transactionType TransactionTypeEnum
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)

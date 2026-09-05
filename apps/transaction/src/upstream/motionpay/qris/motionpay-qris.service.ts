@@ -1,60 +1,48 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   assertUpstreamSchema,
+  UpstreamQrisRequestDto,
+  UpstreamQrisResponseDto,
   UpstreamException,
-  UpstreamPurchaseStatusResult,
-  PurchaseUpstreamRequestDto,
-  PurchaseUpstreamResponseDto,
+  UpstreamQrisStatusResponseDto,
+  UpstreamQrisStatusRequestDto,
 } from '@app/upstream';
 import Decimal from 'decimal.js';
 import { AxiosError } from 'axios';
-import { MotionPayAuthService } from './motionpay-auth.service';
+import { MotionPayConfig } from '@app/configuration';
+import { MotionPayQrisAuthService } from './motionpay-qris.auth.service';
 import {
   MOTIONPAY_AMOUNT,
-  MOTIONPAY_ENDPOINT,
+  MOTIONPAY_QRIS_ENDPOINT,
   MOTIONPAY_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_STATUS_CODE,
-  MOTIONPAY_TRANSACTION_STATUS,
-} from './motionpay.constant';
+  MOTIONPAY_METADATA_KEY,
+  getMotionPayTimestampSkewHours,
+  mapMotionPayStatus,
+} from '../helper';
 import {
   MotionPayCreateQrisRequestDto,
   MotionPayCreateQrisResponseDto,
   MotionPayCreateQrisResponseSchema,
   MotionPayQrisStatusResponseDto,
   MotionPayQrisStatusResponseSchema,
-} from './dto';
-import {
-  HttpMethodEnum,
-  ProviderNameEnum,
-  TransactionStatusEnum,
-} from '@app/microservice';
+} from '../dto';
+import { HttpMethodEnum, ProviderNameEnum } from '@app/microservice';
 
 const SECONDS_PER_MINUTE = 60;
 
-export interface CreateQrisPaymentParams {
-  /** Our transaction correlation code. Also used as `external_id`. */
-  code: string;
-  nominal: Decimal;
-  /** QR validity in minutes. */
-  sessionTimeMinutes: number;
-  description?: string;
-  terminalId?: string;
-  customer?: {
-    fullname?: string;
-    email?: string;
-    phoneNumber?: string;
-  };
-}
-
 @Injectable()
-export class MotionPayQRISService {
-  private readonly logger = new Logger(MotionPayQRISService.name);
+export class MotionPayQrisService {
+  private readonly logger = new Logger(MotionPayQrisService.name);
 
-  constructor(private readonly authService: MotionPayAuthService) {}
+  constructor(
+    private readonly authService: MotionPayQrisAuthService,
+    private readonly motionPayConfig: MotionPayConfig,
+  ) {}
 
   async createQRIS(
-    dto: PurchaseUpstreamRequestDto,
-  ): Promise<PurchaseUpstreamResponseDto> {
+    dto: UpstreamQrisRequestDto,
+  ): Promise<UpstreamQrisResponseDto> {
     const context = this.createQRIS.name;
 
     // Was `.slice(0, 16)`. Truncating silently is the one thing that must not
@@ -85,7 +73,10 @@ export class MotionPayQRISService {
     ).toISOString();
 
     const body: MotionPayCreateQrisRequestDto = {
-      terminal_id: externalId,
+      // A terminal identifier, not a transaction one - it is embedded in the QR
+      // payload. Was `externalId`, which wrote a distinct "terminal" into every
+      // single QR. See MotionPayConfig.TERMINAL_ID.
+      terminal_id: this.motionPayConfig.MERCHANT_ID,
       external_id: externalId,
       amount: this.toWholeRupiah(new Decimal(dto.amount.value)),
       description: dto.merchantReference,
@@ -95,9 +86,10 @@ export class MotionPayQRISService {
       phone_number: '',
     };
 
+    const requestSentAt = new Date();
     const raw = await this.request(context, {
       method: 'POST',
-      url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
+      url: MOTIONPAY_QRIS_ENDPOINT.CREATE_QRIS_PAYMENT,
       data: body,
     });
     const parsed = assertUpstreamSchema<MotionPayCreateQrisResponseDto>(
@@ -118,14 +110,17 @@ export class MotionPayQRISService {
     }
 
     const data = parsed.data;
-    const res: PurchaseUpstreamResponseDto = {
+    this.assertTimestampMode(data.created_date, requestSentAt);
+    const res: UpstreamQrisResponseDto = {
       providerReference: data.transaction_id,
       qrString: data.qr_string,
       nominal: new Decimal(data.amount).toFixed(2),
       expiresAt,
-      status: this.mapStatus(data.status),
+      status: mapMotionPayStatus({ status: data.status }),
       message: data.description ?? null,
-      metadata: { ...parsed } as Record<string, unknown>,
+      metadata: {
+        [MOTIONPAY_METADATA_KEY.CREATE_QRIS]: parsed,
+      } as Record<string, unknown>,
     };
     return res;
   }
@@ -174,7 +169,7 @@ export class MotionPayQRISService {
     // };
     return this.request('createQrisPaymentRaw', {
       method: 'POST',
-      url: MOTIONPAY_ENDPOINT.CREATE_QRIS_PAYMENT,
+      url: MOTIONPAY_QRIS_ENDPOINT.CREATE_QRIS_PAYMENT,
       data: body,
     });
   }
@@ -184,11 +179,11 @@ export class MotionPayQRISService {
    * returned at creation) — there is no documented lookup by our own code.
    */
   async getQrisStatus(
-    transactionId: string,
-  ): Promise<UpstreamPurchaseStatusResult> {
+    dto: UpstreamQrisStatusRequestDto,
+  ): Promise<UpstreamQrisStatusResponseDto> {
     const raw = await this.request('getQrisStatus', {
       method: 'GET',
-      url: `${MOTIONPAY_ENDPOINT.QRIS_PAYMENT_STATUS}/${encodeURIComponent(transactionId)}`,
+      url: `${MOTIONPAY_QRIS_ENDPOINT.QRIS_PAYMENT_STATUS}/${encodeURIComponent(dto.providerReference)}`,
     });
 
     const parsed = assertUpstreamSchema<MotionPayQrisStatusResponseDto>(
@@ -205,24 +200,30 @@ export class MotionPayQRISService {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `getQrisStatus rejected: ${parsed.status.message}`,
-        { status: parsed.status, transactionId },
+        { status: parsed.status, transactionId: dto.providerReference },
       );
     }
 
     const data = parsed.data;
 
     return {
-      code: data.external_id,
-      externalId: data.transaction_id,
-      status: this.mapStatus(data.status),
-      nominal: new Decimal(data.amount),
-      message: data.description ?? parsed.status.message,
-      // Empty strings are how this provider represents "not settled yet";
-      // normalize them away so callers can rely on presence checks.
-      rrn: this.emptyToUndefined(data.rrn),
-      paidAt: this.emptyToUndefined(data.paid_date),
-      expiresAt: this.emptyToUndefined(data.expired_date),
-      metadata: { ...parsed } as Record<string, unknown>,
+      merchantReference: data.external_id,
+      providerReference: data.transaction_id,
+      // The full mapper, not a bare status lookup: MotionPay has no EXPIRED
+      // state, so an expiry only becomes visible by combining the status with
+      // the description and the expiry/paid timestamps.
+      status: mapMotionPayStatus({
+        status: data.status,
+        description: data.description,
+        expiredDate: data.expired_date,
+        paidDate: data.paid_date,
+      }),
+      nominal: new Decimal(data.amount).toFixed(2),
+      paidAt: data.paid_date ?? null,
+      expiresAt: data.expired_date ?? null,
+      metadata: {
+        [MOTIONPAY_METADATA_KEY.STATUS_QRIS]: parsed,
+      } as Record<string, unknown>,
     };
   }
 
@@ -244,34 +245,6 @@ export class MotionPayQRISService {
           response: axiosError.response?.data,
         },
       );
-    }
-  }
-
-  /**
-   * Map MotionPay's status to ours.
-   *
-   * Anything unrecognized maps to PENDING, which is both what MotionPay's docs
-   * mandate for undefined response codes (hold as Pending until next-day
-   * reconciliation resolves it) and the safe direction for a payment system —
-   * never assert paid or failed on a status we do not understand.
-   *
-   * MotionPay has no EXPIRED state, so EXPIRED is never produced here; expiry
-   * has to be derived from `expired_date` by the caller once the provider's
-   * real behaviour on expiry is confirmed.
-   */
-  private mapStatus(status: string): TransactionStatusEnum {
-    switch (status?.toUpperCase()) {
-      case MOTIONPAY_TRANSACTION_STATUS.SUCCESS:
-        return TransactionStatusEnum.SUCCESS;
-      case MOTIONPAY_TRANSACTION_STATUS.FAILED:
-        return TransactionStatusEnum.FAILED;
-      case MOTIONPAY_TRANSACTION_STATUS.PENDING:
-        return TransactionStatusEnum.PENDING;
-      default:
-        this.logger.warn(
-          `Unrecognized MotionPay status [${status}]; holding as PENDING`,
-        );
-        return TransactionStatusEnum.PENDING;
     }
   }
 
@@ -319,6 +292,28 @@ export class MotionPayQRISService {
       );
     }
     return value;
+  }
+
+  /**
+   * Check that we are still reading MotionPay's timestamps the way they mean
+   * them.
+   *
+   * `created_date` describes a transaction created moments ago, so our own
+   * clock is ground truth and this costs nothing. The v2.7 spec and the
+   * sandbox disagree by seven hours about what the printed offset means (see
+   * motionpay.helper.ts); this is what tells us if the answer ever changes,
+   * on the day it changes rather than at the next reconciliation.
+   */
+  private assertTimestampMode(created: string | undefined, sentAt: Date): void {
+    const skewHours = getMotionPayTimestampSkewHours(created, sentAt);
+    if (skewHours === null || Math.abs(skewHours) < 1) return;
+
+    this.logger.error({
+      msg: 'MotionPay timestamp skew - the timezone assumption may have changed. Check MotionPayTimestampMode in motionpay.helper.ts.',
+      created,
+      ourClock: sentAt.toISOString(),
+      skewHours: Number(skewHours.toFixed(2)),
+    });
   }
 
   private emptyToUndefined(value?: string): string | undefined {

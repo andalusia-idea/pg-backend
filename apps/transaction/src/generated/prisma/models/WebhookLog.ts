@@ -32,7 +32,6 @@ export type WebhookLogAvgAggregateOutputType = {
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
-  purchaseTransactionId: number | null
 }
 
 export type WebhookLogSumAggregateOutputType = {
@@ -41,12 +40,12 @@ export type WebhookLogSumAggregateOutputType = {
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
-  purchaseTransactionId: number | null
 }
 
 export type WebhookLogMinAggregateOutputType = {
   id: number | null
   transactionId: number | null
+  providerReference: string | null
   source: string | null
   rawSignature: string | null
   receivedAt: Date | null
@@ -57,12 +56,12 @@ export type WebhookLogMinAggregateOutputType = {
   updatedBy: number | null
   deletedAt: Date | null
   deletedBy: number | null
-  purchaseTransactionId: number | null
 }
 
 export type WebhookLogMaxAggregateOutputType = {
   id: number | null
   transactionId: number | null
+  providerReference: string | null
   source: string | null
   rawSignature: string | null
   receivedAt: Date | null
@@ -73,12 +72,12 @@ export type WebhookLogMaxAggregateOutputType = {
   updatedBy: number | null
   deletedAt: Date | null
   deletedBy: number | null
-  purchaseTransactionId: number | null
 }
 
 export type WebhookLogCountAggregateOutputType = {
   id: number
   transactionId: number
+  providerReference: number
   source: number
   payload: number
   rawSignature: number
@@ -90,7 +89,6 @@ export type WebhookLogCountAggregateOutputType = {
   updatedBy: number
   deletedAt: number
   deletedBy: number
-  purchaseTransactionId: number
   _all: number
 }
 
@@ -101,7 +99,6 @@ export type WebhookLogAvgAggregateInputType = {
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
-  purchaseTransactionId?: true
 }
 
 export type WebhookLogSumAggregateInputType = {
@@ -110,12 +107,12 @@ export type WebhookLogSumAggregateInputType = {
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
-  purchaseTransactionId?: true
 }
 
 export type WebhookLogMinAggregateInputType = {
   id?: true
   transactionId?: true
+  providerReference?: true
   source?: true
   rawSignature?: true
   receivedAt?: true
@@ -126,12 +123,12 @@ export type WebhookLogMinAggregateInputType = {
   updatedBy?: true
   deletedAt?: true
   deletedBy?: true
-  purchaseTransactionId?: true
 }
 
 export type WebhookLogMaxAggregateInputType = {
   id?: true
   transactionId?: true
+  providerReference?: true
   source?: true
   rawSignature?: true
   receivedAt?: true
@@ -142,12 +139,12 @@ export type WebhookLogMaxAggregateInputType = {
   updatedBy?: true
   deletedAt?: true
   deletedBy?: true
-  purchaseTransactionId?: true
 }
 
 export type WebhookLogCountAggregateInputType = {
   id?: true
   transactionId?: true
+  providerReference?: true
   source?: true
   payload?: true
   rawSignature?: true
@@ -159,7 +156,6 @@ export type WebhookLogCountAggregateInputType = {
   updatedBy?: true
   deletedAt?: true
   deletedBy?: true
-  purchaseTransactionId?: true
   _all?: true
 }
 
@@ -251,7 +247,8 @@ export type WebhookLogGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type WebhookLogGroupByOutputType = {
   id: number
-  transactionId: number
+  transactionId: number | null
+  providerReference: string | null
   source: string
   payload: runtime.JsonValue
   rawSignature: string | null
@@ -263,7 +260,6 @@ export type WebhookLogGroupByOutputType = {
   updatedBy: number | null
   deletedAt: Date | null
   deletedBy: number | null
-  purchaseTransactionId: number | null
   _count: WebhookLogCountAggregateOutputType | null
   _avg: WebhookLogAvgAggregateOutputType | null
   _sum: WebhookLogSumAggregateOutputType | null
@@ -291,7 +287,8 @@ export type WebhookLogWhereInput = {
   OR?: Prisma.WebhookLogWhereInput[]
   NOT?: Prisma.WebhookLogWhereInput | Prisma.WebhookLogWhereInput[]
   id?: Prisma.IntFilter<"WebhookLog"> | number
-  transactionId?: Prisma.IntFilter<"WebhookLog"> | number
+  transactionId?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
+  providerReference?: Prisma.StringNullableFilter<"WebhookLog"> | string | null
   source?: Prisma.StringFilter<"WebhookLog"> | string
   payload?: Prisma.JsonFilter<"WebhookLog">
   rawSignature?: Prisma.StringNullableFilter<"WebhookLog"> | string | null
@@ -303,13 +300,12 @@ export type WebhookLogWhereInput = {
   updatedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
   deletedAt?: Prisma.DateTimeNullableFilter<"WebhookLog"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  purchaseTransactionId?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  PurchaseTransaction?: Prisma.XOR<Prisma.PurchaseTransactionNullableScalarRelationFilter, Prisma.PurchaseTransactionWhereInput> | null
 }
 
 export type WebhookLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  transactionId?: Prisma.SortOrder
+  transactionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   rawSignature?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -321,8 +317,6 @@ export type WebhookLogOrderByWithRelationInput = {
   updatedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedBy?: Prisma.SortOrderInput | Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrderInput | Prisma.SortOrder
-  PurchaseTransaction?: Prisma.PurchaseTransactionOrderByWithRelationInput
 }
 
 export type WebhookLogWhereUniqueInput = Prisma.AtLeast<{
@@ -330,7 +324,8 @@ export type WebhookLogWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.WebhookLogWhereInput | Prisma.WebhookLogWhereInput[]
   OR?: Prisma.WebhookLogWhereInput[]
   NOT?: Prisma.WebhookLogWhereInput | Prisma.WebhookLogWhereInput[]
-  transactionId?: Prisma.IntFilter<"WebhookLog"> | number
+  transactionId?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
+  providerReference?: Prisma.StringNullableFilter<"WebhookLog"> | string | null
   source?: Prisma.StringFilter<"WebhookLog"> | string
   payload?: Prisma.JsonFilter<"WebhookLog">
   rawSignature?: Prisma.StringNullableFilter<"WebhookLog"> | string | null
@@ -342,13 +337,12 @@ export type WebhookLogWhereUniqueInput = Prisma.AtLeast<{
   updatedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
   deletedAt?: Prisma.DateTimeNullableFilter<"WebhookLog"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  purchaseTransactionId?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  PurchaseTransaction?: Prisma.XOR<Prisma.PurchaseTransactionNullableScalarRelationFilter, Prisma.PurchaseTransactionWhereInput> | null
 }, "id">
 
 export type WebhookLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  transactionId?: Prisma.SortOrder
+  transactionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   rawSignature?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -360,7 +354,6 @@ export type WebhookLogOrderByWithAggregationInput = {
   updatedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedBy?: Prisma.SortOrderInput | Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.WebhookLogCountOrderByAggregateInput
   _avg?: Prisma.WebhookLogAvgOrderByAggregateInput
   _max?: Prisma.WebhookLogMaxOrderByAggregateInput
@@ -373,7 +366,8 @@ export type WebhookLogScalarWhereWithAggregatesInput = {
   OR?: Prisma.WebhookLogScalarWhereWithAggregatesInput[]
   NOT?: Prisma.WebhookLogScalarWhereWithAggregatesInput | Prisma.WebhookLogScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"WebhookLog"> | number
-  transactionId?: Prisma.IntWithAggregatesFilter<"WebhookLog"> | number
+  transactionId?: Prisma.IntNullableWithAggregatesFilter<"WebhookLog"> | number | null
+  providerReference?: Prisma.StringNullableWithAggregatesFilter<"WebhookLog"> | string | null
   source?: Prisma.StringWithAggregatesFilter<"WebhookLog"> | string
   payload?: Prisma.JsonWithAggregatesFilter<"WebhookLog">
   rawSignature?: Prisma.StringNullableWithAggregatesFilter<"WebhookLog"> | string | null
@@ -385,11 +379,11 @@ export type WebhookLogScalarWhereWithAggregatesInput = {
   updatedBy?: Prisma.IntNullableWithAggregatesFilter<"WebhookLog"> | number | null
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"WebhookLog"> | Date | string | null
   deletedBy?: Prisma.IntNullableWithAggregatesFilter<"WebhookLog"> | number | null
-  purchaseTransactionId?: Prisma.IntNullableWithAggregatesFilter<"WebhookLog"> | number | null
 }
 
 export type WebhookLogCreateInput = {
-  transactionId: number
+  transactionId?: number | null
+  providerReference?: string | null
   source: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: string | null
@@ -401,12 +395,12 @@ export type WebhookLogCreateInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  PurchaseTransaction?: Prisma.PurchaseTransactionCreateNestedOneWithoutWebhookLogsInput
 }
 
 export type WebhookLogUncheckedCreateInput = {
   id?: number
-  transactionId: number
+  transactionId?: number | null
+  providerReference?: string | null
   source: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: string | null
@@ -418,11 +412,11 @@ export type WebhookLogUncheckedCreateInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  purchaseTransactionId?: number | null
 }
 
 export type WebhookLogUpdateInput = {
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
+  transactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -434,12 +428,12 @@ export type WebhookLogUpdateInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  PurchaseTransaction?: Prisma.PurchaseTransactionUpdateOneWithoutWebhookLogsNestedInput
 }
 
 export type WebhookLogUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
+  transactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -451,12 +445,12 @@ export type WebhookLogUncheckedUpdateInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseTransactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type WebhookLogCreateManyInput = {
   id?: number
-  transactionId: number
+  transactionId?: number | null
+  providerReference?: string | null
   source: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: string | null
@@ -468,11 +462,11 @@ export type WebhookLogCreateManyInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  purchaseTransactionId?: number | null
 }
 
 export type WebhookLogUpdateManyMutationInput = {
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
+  transactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -488,7 +482,8 @@ export type WebhookLogUpdateManyMutationInput = {
 
 export type WebhookLogUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
+  transactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -500,22 +495,12 @@ export type WebhookLogUncheckedUpdateManyInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  purchaseTransactionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type WebhookLogListRelationFilter = {
-  every?: Prisma.WebhookLogWhereInput
-  some?: Prisma.WebhookLogWhereInput
-  none?: Prisma.WebhookLogWhereInput
-}
-
-export type WebhookLogOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
 }
 
 export type WebhookLogCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   transactionId?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
   source?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   rawSignature?: Prisma.SortOrder
@@ -527,7 +512,6 @@ export type WebhookLogCountOrderByAggregateInput = {
   updatedBy?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrder
 }
 
 export type WebhookLogAvgOrderByAggregateInput = {
@@ -536,12 +520,12 @@ export type WebhookLogAvgOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrder
 }
 
 export type WebhookLogMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   transactionId?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
   source?: Prisma.SortOrder
   rawSignature?: Prisma.SortOrder
   receivedAt?: Prisma.SortOrder
@@ -552,12 +536,12 @@ export type WebhookLogMaxOrderByAggregateInput = {
   updatedBy?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrder
 }
 
 export type WebhookLogMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   transactionId?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
   source?: Prisma.SortOrder
   rawSignature?: Prisma.SortOrder
   receivedAt?: Prisma.SortOrder
@@ -568,7 +552,6 @@ export type WebhookLogMinOrderByAggregateInput = {
   updatedBy?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrder
 }
 
 export type WebhookLogSumOrderByAggregateInput = {
@@ -577,193 +560,10 @@ export type WebhookLogSumOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
-  purchaseTransactionId?: Prisma.SortOrder
-}
-
-export type WebhookLogCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.WebhookLogCreateWithoutPurchaseTransactionInput[] | Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.WebhookLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-}
-
-export type WebhookLogUncheckedCreateNestedManyWithoutPurchaseTransactionInput = {
-  create?: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.WebhookLogCreateWithoutPurchaseTransactionInput[] | Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.WebhookLogCreateManyPurchaseTransactionInputEnvelope
-  connect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-}
-
-export type WebhookLogUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.WebhookLogCreateWithoutPurchaseTransactionInput[] | Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.WebhookLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.WebhookLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.WebhookLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  disconnect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  delete?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  connect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  update?: Prisma.WebhookLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.WebhookLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.WebhookLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.WebhookLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.WebhookLogScalarWhereInput | Prisma.WebhookLogScalarWhereInput[]
-}
-
-export type WebhookLogUncheckedUpdateManyWithoutPurchaseTransactionNestedInput = {
-  create?: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput> | Prisma.WebhookLogCreateWithoutPurchaseTransactionInput[] | Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput[]
-  connectOrCreate?: Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput | Prisma.WebhookLogCreateOrConnectWithoutPurchaseTransactionInput[]
-  upsert?: Prisma.WebhookLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.WebhookLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput[]
-  createMany?: Prisma.WebhookLogCreateManyPurchaseTransactionInputEnvelope
-  set?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  disconnect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  delete?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  connect?: Prisma.WebhookLogWhereUniqueInput | Prisma.WebhookLogWhereUniqueInput[]
-  update?: Prisma.WebhookLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput | Prisma.WebhookLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput[]
-  updateMany?: Prisma.WebhookLogUpdateManyWithWhereWithoutPurchaseTransactionInput | Prisma.WebhookLogUpdateManyWithWhereWithoutPurchaseTransactionInput[]
-  deleteMany?: Prisma.WebhookLogScalarWhereInput | Prisma.WebhookLogScalarWhereInput[]
 }
 
 export type EnumTransactionTypeEnumFieldUpdateOperationsInput = {
   set?: $Enums.TransactionTypeEnum
-}
-
-export type WebhookLogCreateWithoutPurchaseTransactionInput = {
-  transactionId: number
-  source: string
-  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: string | null
-  receivedAt?: Date | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type WebhookLogUncheckedCreateWithoutPurchaseTransactionInput = {
-  id?: number
-  transactionId: number
-  source: string
-  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: string | null
-  receivedAt?: Date | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type WebhookLogCreateOrConnectWithoutPurchaseTransactionInput = {
-  where: Prisma.WebhookLogWhereUniqueInput
-  create: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput>
-}
-
-export type WebhookLogCreateManyPurchaseTransactionInputEnvelope = {
-  data: Prisma.WebhookLogCreateManyPurchaseTransactionInput | Prisma.WebhookLogCreateManyPurchaseTransactionInput[]
-  skipDuplicates?: boolean
-}
-
-export type WebhookLogUpsertWithWhereUniqueWithoutPurchaseTransactionInput = {
-  where: Prisma.WebhookLogWhereUniqueInput
-  update: Prisma.XOR<Prisma.WebhookLogUpdateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedUpdateWithoutPurchaseTransactionInput>
-  create: Prisma.XOR<Prisma.WebhookLogCreateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedCreateWithoutPurchaseTransactionInput>
-}
-
-export type WebhookLogUpdateWithWhereUniqueWithoutPurchaseTransactionInput = {
-  where: Prisma.WebhookLogWhereUniqueInput
-  data: Prisma.XOR<Prisma.WebhookLogUpdateWithoutPurchaseTransactionInput, Prisma.WebhookLogUncheckedUpdateWithoutPurchaseTransactionInput>
-}
-
-export type WebhookLogUpdateManyWithWhereWithoutPurchaseTransactionInput = {
-  where: Prisma.WebhookLogScalarWhereInput
-  data: Prisma.XOR<Prisma.WebhookLogUpdateManyMutationInput, Prisma.WebhookLogUncheckedUpdateManyWithoutPurchaseTransactionInput>
-}
-
-export type WebhookLogScalarWhereInput = {
-  AND?: Prisma.WebhookLogScalarWhereInput | Prisma.WebhookLogScalarWhereInput[]
-  OR?: Prisma.WebhookLogScalarWhereInput[]
-  NOT?: Prisma.WebhookLogScalarWhereInput | Prisma.WebhookLogScalarWhereInput[]
-  id?: Prisma.IntFilter<"WebhookLog"> | number
-  transactionId?: Prisma.IntFilter<"WebhookLog"> | number
-  source?: Prisma.StringFilter<"WebhookLog"> | string
-  payload?: Prisma.JsonFilter<"WebhookLog">
-  rawSignature?: Prisma.StringNullableFilter<"WebhookLog"> | string | null
-  receivedAt?: Prisma.DateTimeFilter<"WebhookLog"> | Date | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFilter<"WebhookLog"> | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFilter<"WebhookLog"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  updatedAt?: Prisma.DateTimeNullableFilter<"WebhookLog"> | Date | string | null
-  updatedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  deletedAt?: Prisma.DateTimeNullableFilter<"WebhookLog"> | Date | string | null
-  deletedBy?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-  purchaseTransactionId?: Prisma.IntNullableFilter<"WebhookLog"> | number | null
-}
-
-export type WebhookLogCreateManyPurchaseTransactionInput = {
-  id?: number
-  transactionId: number
-  source: string
-  payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: string | null
-  receivedAt?: Date | string
-  transactionType: $Enums.TransactionTypeEnum
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-}
-
-export type WebhookLogUpdateWithoutPurchaseTransactionInput = {
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
-  source?: Prisma.StringFieldUpdateOperationsInput | string
-  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  receivedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type WebhookLogUncheckedUpdateWithoutPurchaseTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
-  source?: Prisma.StringFieldUpdateOperationsInput | string
-  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  receivedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-}
-
-export type WebhookLogUncheckedUpdateManyWithoutPurchaseTransactionInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  transactionId?: Prisma.IntFieldUpdateOperationsInput | number
-  source?: Prisma.StringFieldUpdateOperationsInput | string
-  payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  rawSignature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  receivedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  transactionType?: Prisma.EnumTransactionTypeEnumFieldUpdateOperationsInput | $Enums.TransactionTypeEnum
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 
@@ -771,6 +571,7 @@ export type WebhookLogUncheckedUpdateManyWithoutPurchaseTransactionInput = {
 export type WebhookLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   transactionId?: boolean
+  providerReference?: boolean
   source?: boolean
   payload?: boolean
   rawSignature?: boolean
@@ -782,13 +583,12 @@ export type WebhookLogSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   updatedBy?: boolean
   deletedAt?: boolean
   deletedBy?: boolean
-  purchaseTransactionId?: boolean
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
 }, ExtArgs["result"]["webhookLog"]>
 
 export type WebhookLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   transactionId?: boolean
+  providerReference?: boolean
   source?: boolean
   payload?: boolean
   rawSignature?: boolean
@@ -800,13 +600,12 @@ export type WebhookLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   updatedBy?: boolean
   deletedAt?: boolean
   deletedBy?: boolean
-  purchaseTransactionId?: boolean
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
 }, ExtArgs["result"]["webhookLog"]>
 
 export type WebhookLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   transactionId?: boolean
+  providerReference?: boolean
   source?: boolean
   payload?: boolean
   rawSignature?: boolean
@@ -818,13 +617,12 @@ export type WebhookLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   updatedBy?: boolean
   deletedAt?: boolean
   deletedBy?: boolean
-  purchaseTransactionId?: boolean
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
 }, ExtArgs["result"]["webhookLog"]>
 
 export type WebhookLogSelectScalar = {
   id?: boolean
   transactionId?: boolean
+  providerReference?: boolean
   source?: boolean
   payload?: boolean
   rawSignature?: boolean
@@ -836,28 +634,17 @@ export type WebhookLogSelectScalar = {
   updatedBy?: boolean
   deletedAt?: boolean
   deletedBy?: boolean
-  purchaseTransactionId?: boolean
 }
 
-export type WebhookLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "transactionId" | "source" | "payload" | "rawSignature" | "receivedAt" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy" | "purchaseTransactionId", ExtArgs["result"]["webhookLog"]>
-export type WebhookLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
-}
-export type WebhookLogIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
-}
-export type WebhookLogIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  PurchaseTransaction?: boolean | Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>
-}
+export type WebhookLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "transactionId" | "providerReference" | "source" | "payload" | "rawSignature" | "receivedAt" | "transactionType" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["webhookLog"]>
 
 export type $WebhookLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "WebhookLog"
-  objects: {
-    PurchaseTransaction: Prisma.$PurchaseTransactionPayload<ExtArgs> | null
-  }
+  objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    transactionId: number
+    transactionId: number | null
+    providerReference: string | null
     source: string
     payload: runtime.JsonValue
     rawSignature: string | null
@@ -869,7 +656,6 @@ export type $WebhookLogPayload<ExtArgs extends runtime.Types.Extensions.Internal
     updatedBy: number | null
     deletedAt: Date | null
     deletedBy: number | null
-    purchaseTransactionId: number | null
   }, ExtArgs["result"]["webhookLog"]>
   composites: {}
 }
@@ -1264,7 +1050,6 @@ readonly fields: WebhookLogFieldRefs;
  */
 export interface Prisma__WebhookLogClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  PurchaseTransaction<T extends Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WebhookLog$PurchaseTransactionArgs<ExtArgs>>): Prisma.Prisma__PurchaseTransactionClient<runtime.Types.Result.GetResult<Prisma.$PurchaseTransactionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1296,6 +1081,7 @@ export interface Prisma__WebhookLogClient<T, Null = never, ExtArgs extends runti
 export interface WebhookLogFieldRefs {
   readonly id: Prisma.FieldRef<"WebhookLog", 'Int'>
   readonly transactionId: Prisma.FieldRef<"WebhookLog", 'Int'>
+  readonly providerReference: Prisma.FieldRef<"WebhookLog", 'String'>
   readonly source: Prisma.FieldRef<"WebhookLog", 'String'>
   readonly payload: Prisma.FieldRef<"WebhookLog", 'Json'>
   readonly rawSignature: Prisma.FieldRef<"WebhookLog", 'String'>
@@ -1307,7 +1093,6 @@ export interface WebhookLogFieldRefs {
   readonly updatedBy: Prisma.FieldRef<"WebhookLog", 'Int'>
   readonly deletedAt: Prisma.FieldRef<"WebhookLog", 'DateTime'>
   readonly deletedBy: Prisma.FieldRef<"WebhookLog", 'Int'>
-  readonly purchaseTransactionId: Prisma.FieldRef<"WebhookLog", 'Int'>
 }
     
 
@@ -1324,10 +1109,6 @@ export type WebhookLogFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
   /**
    * Filter, which WebhookLog to fetch.
    */
@@ -1347,10 +1128,6 @@ export type WebhookLogFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extens
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
-  /**
    * Filter, which WebhookLog to fetch.
    */
   where: Prisma.WebhookLogWhereUniqueInput
@@ -1368,10 +1145,6 @@ export type WebhookLogFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
   /**
    * Filter, which WebhookLog to fetch.
    */
@@ -1421,10 +1194,6 @@ export type WebhookLogFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensi
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
-  /**
    * Filter, which WebhookLog to fetch.
    */
   where?: Prisma.WebhookLogWhereInput
@@ -1472,10 +1241,6 @@ export type WebhookLogFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
   /**
    * Filter, which WebhookLogs to fetch.
    */
@@ -1525,10 +1290,6 @@ export type WebhookLogCreateArgs<ExtArgs extends runtime.Types.Extensions.Intern
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
-  /**
    * The data needed to create a WebhookLog.
    */
   data: Prisma.XOR<Prisma.WebhookLogCreateInput, Prisma.WebhookLogUncheckedCreateInput>
@@ -1562,10 +1323,6 @@ export type WebhookLogCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    */
   data: Prisma.WebhookLogCreateManyInput | Prisma.WebhookLogCreateManyInput[]
   skipDuplicates?: boolean
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1580,10 +1337,6 @@ export type WebhookLogUpdateArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
   /**
    * The data needed to update a WebhookLog.
    */
@@ -1636,10 +1389,6 @@ export type WebhookLogUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Exte
    * Limit how many WebhookLogs to update.
    */
   limit?: number
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1654,10 +1403,6 @@ export type WebhookLogUpsertArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
   /**
    * The filter to search for the WebhookLog to update in case it exists.
    */
@@ -1685,10 +1430,6 @@ export type WebhookLogDeleteArgs<ExtArgs extends runtime.Types.Extensions.Intern
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
-  /**
    * Filter which WebhookLog to delete.
    */
   where: Prisma.WebhookLogWhereUniqueInput
@@ -1709,25 +1450,6 @@ export type WebhookLogDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.In
 }
 
 /**
- * WebhookLog.PurchaseTransaction
- */
-export type WebhookLog$PurchaseTransactionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the PurchaseTransaction
-   */
-  select?: Prisma.PurchaseTransactionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the PurchaseTransaction
-   */
-  omit?: Prisma.PurchaseTransactionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.PurchaseTransactionInclude<ExtArgs> | null
-  where?: Prisma.PurchaseTransactionWhereInput
-}
-
-/**
  * WebhookLog without action
  */
 export type WebhookLogDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1739,8 +1461,4 @@ export type WebhookLogDefaultArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the WebhookLog
    */
   omit?: Prisma.WebhookLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WebhookLogInclude<ExtArgs> | null
 }

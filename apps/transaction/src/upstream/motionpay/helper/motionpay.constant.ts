@@ -1,4 +1,4 @@
-export const MOTIONPAY_ENDPOINT = {
+export const MOTIONPAY_QRIS_ENDPOINT = {
   TOKEN: '/priv/v1/pg/token',
   CREATE_QRIS_PAYMENT: '/payment/api/v1/qris/payment',
   /** Append the provider's `transaction_id` (the `FM-…` value), not our code. */
@@ -91,7 +91,7 @@ export const MOTIONPAY_MIN_SESSION_TIME_MINUTES = 1;
  * transaction code format does not fit in 16. We validate rather than truncate
  * — silently cutting a correlation key would break callback matching.
  */
-export const MOTIONPAY_EXTERNAL_ID_MAX_LENGTH = 16;
+export const MOTIONPAY_EXTERNAL_ID_MAX_LENGTH = 21;
 
 /**
  * Bank / e-wallet codes accepted by MotionPay's Transfer service.

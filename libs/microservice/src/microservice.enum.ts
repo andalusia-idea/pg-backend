@@ -147,3 +147,11 @@ export const TransactionStatusEnum = {
 } as const;
 export type TransactionStatusEnum =
   (typeof TransactionStatusEnum)[keyof typeof TransactionStatusEnum];
+
+export const FeeTypeEnum = {
+  AGENT: 'AGENT',
+  INTERNAL: 'INTERNAL',
+  PROVIDER: 'PROVIDER',
+  MERCHANT: 'MERCHANT',
+} as const;
+export type FeeTypeEnum = (typeof FeeTypeEnum)[keyof typeof FeeTypeEnum];

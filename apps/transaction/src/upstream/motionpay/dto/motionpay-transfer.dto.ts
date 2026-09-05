@@ -2,8 +2,8 @@ import { Static, Type } from '@sinclair/typebox';
 import {
   MOTIONPAY_TRANSFER_AMOUNT,
   MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH,
-} from '../motionpay.constant';
-import { MOTIONPAY_BANK_CODE_MAX_LENGTH } from '../motionpay.constant';
+} from '../helper';
+import { MOTIONPAY_BANK_CODE_MAX_LENGTH } from '../helper';
 
 /**
  * Transfer envelopes differ from QRIS in shape, so none of the QRIS schemas

@@ -16,13 +16,13 @@ import { UpstreamException } from '@app/upstream';
 import Decimal from 'decimal.js';
 import { MotionPayTransferService } from './motionpay-transfer.service';
 import { MotionPayTransferAuthService } from './motionpay-transfer.auth.service';
-import { MOTIONPAY_BANK_CODE } from './motionpay.constant';
+import { MOTIONPAY_BANK_CODE } from '../helper';
 import {
   type MotionPayAccountInquiryRequestDto,
   MotionPayAccountInquiryRequestSchema,
   type MotionPayFundTransferRequestDto,
   MotionPayFundTransferRequestSchema,
-} from './dto';
+} from '../dto';
 
 /**
  * Manual test surface for the MotionPay Transfer (payout) integration.
@@ -38,8 +38,8 @@ import {
  */
 @ApiTags('Upstream · MotionPay Transfer (manual test)')
 @Controller('upstream/motionpay/transfer')
-export class MotionPayTransferController {
-  private readonly logger = new Logger(MotionPayTransferController.name);
+export class MotionPayTransferManualController {
+  private readonly logger = new Logger(MotionPayTransferManualController.name);
 
   constructor(
     private readonly transferService: MotionPayTransferService,

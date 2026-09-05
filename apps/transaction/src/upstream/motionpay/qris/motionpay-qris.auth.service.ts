@@ -8,15 +8,12 @@ import {
 } from '@app/upstream';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosRequestConfig } from 'axios';
-import {
-  MOTIONPAY_ENDPOINT,
-  MOTIONPAY_STATUS_CODE,
-} from './motionpay.constant';
+import { MOTIONPAY_QRIS_ENDPOINT, MOTIONPAY_STATUS_CODE } from '../helper';
 import {
   MotionPayTokenRequestDto,
   MotionPayTokenResponseDto,
   MotionPayTokenResponseSchema,
-} from './dto';
+} from '../dto';
 import { ProviderNameEnum } from '@app/microservice';
 
 interface CachedToken {
@@ -26,8 +23,8 @@ interface CachedToken {
 }
 
 @Injectable()
-export class MotionPayAuthService {
-  private readonly logger = new Logger(MotionPayAuthService.name);
+export class MotionPayQrisAuthService {
+  private readonly logger = new Logger(MotionPayQrisAuthService.name);
 
   private cachedToken: CachedToken | null = null;
   /** Shared in-flight fetch, so a burst at cold start issues one token request. */
@@ -95,10 +92,6 @@ export class MotionPayAuthService {
 
   /** Returns a valid token, reusing the cached one until it is close to expiry. */
   async getToken(): Promise<string> {
-    console.log('getToken');
-    // return Promise.resolve(
-    //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODcyMjA2MjEsIm1lcmNoYW50X2lkIjoiNTkyNDAiLCJtZXJjaGFudF9uYW1lIjoiQU5EQVBBWSIsIm1lcmNoYW50X3V1aWQiOiIwMDA1OTEwMiJ9.O1WTwWWAUQkuZYMc0-FfblnBI5tCt9ju5lcUi-Ky4V0',
-    // );
     const nowSeconds = Math.floor(Date.now() / 1000);
 
     if (this.cachedToken && nowSeconds < this.cachedToken.expiresAtSeconds) {
@@ -122,7 +115,7 @@ export class MotionPayAuthService {
     let raw: unknown;
     try {
       const response = await firstValueFrom(
-        this.httpService.post<unknown>(MOTIONPAY_ENDPOINT.TOKEN, body, {
+        this.httpService.post<unknown>(MOTIONPAY_QRIS_ENDPOINT.TOKEN, body, {
           baseURL: this.motionPayConfig.BASE_URL,
           timeout: this.motionPayConfig.TIMEOUT_MS,
           headers: { 'Content-Type': 'application/json' },

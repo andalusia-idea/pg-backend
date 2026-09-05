@@ -1,6 +1,4 @@
 import {
-  FeeCalculateConfigClient,
-  FeeCalculationResultDto,
   PaymentMethodNameEnum,
   ProfileClient,
   ProviderNameEnum,
@@ -11,14 +9,17 @@ import {
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
-  PurchaseUpstreamRequestDto,
-  PurchaseUpstreamResponseDto,
+  UpstreamQrisRequestDto,
+  UpstreamQrisResponseDto,
   UpstreamException,
 } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { FeeTypeEnum, Prisma, PrismaClient } from '@transaction/prisma';
+import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
-import { MotionPayQRISService } from '../../upstream/motionpay';
+import {
+  MOTIONPAY_METADATA_KEY,
+  MotionPayQrisService,
+} from '../../upstream/motionpay';
 import { generateSystemReference } from '../transaction.helper';
 import { CreateQrisDataDto, CreateQrisRequestDto } from './purchase.dto';
 
@@ -33,10 +34,9 @@ export class PurchaseService {
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
 
-    private readonly feeCalculateClient: FeeCalculateConfigClient,
     private readonly profileClient: ProfileClient,
 
-    private readonly motionPayQrisService: MotionPayQRISService,
+    private readonly motionPayQrisService: MotionPayQrisService,
   ) {}
 
   private readonly userRole = UserRoleEnum.MERCHANT;
@@ -68,14 +68,13 @@ export class PurchaseService {
     dto: CreateQrisRequestDto,
   ): Promise<CreateQrisDataDto> {
     const providerName = await this.resolveProvider(userId);
-    const fee = await this.calculateFee(userId, providerName, dto.amount.value);
 
     const systemReference = generateSystemReference({
       userId,
       transactionType: this.transactionType,
       paymentMethodName: this.paymentMethodName,
       providerName,
-      length: 64,
+      length: 32,
     });
 
     const purchaseId = await this.reserveTransaction(
@@ -83,12 +82,10 @@ export class PurchaseService {
       providerName,
       systemReference,
       dto,
-      fee,
     );
 
-    const upstream = await this.callProvider(purchaseId, {
+    const upstream = await this.callUpstream(purchaseId, {
       systemReference,
-      userId,
       providerName,
       merchantReference: dto.merchantReference,
       amount: dto.amount,
@@ -151,53 +148,24 @@ export class PurchaseService {
   }
 
   /**
-   * Split the nominal into merchant / agent / provider / internal cuts.
-   *
-   * Runs before the provider is called, not after, because it can fail - and a
-   * fee failure after a QR exists upstream leaves a payable QR whose economics
-   * were never computed.
-   */
-  private async calculateFee(
-    userId: number,
-    providerName: ProviderNameEnum,
-    nominal: string,
-  ): Promise<FeeCalculationResultDto> {
-    try {
-      return await this.feeCalculateClient.purchase({
-        merchantId: userId,
-        providerName,
-        paymentMethodName: this.paymentMethodName,
-        nominal,
-      });
-    } catch (error) {
-      this.logger.error({
-        msg: 'Fee calculation failed',
-        userId,
-        providerName,
-        nominal,
-        error,
-      });
-      throw TransactionException.serviceUnavailable();
-    }
-  }
-
-  /**
    * Claim `merchantReference` and write the transaction with its fee breakdown.
    *
    * `providerReference` and `expiresAt` are left null: we genuinely do not know
    * them yet, and inventing placeholders would put values in the database that
    * later have to be told apart from real ones.
    *
-   * The fee rows are created in the same statement as the purchase, so they
-   * share its transaction. A purchase whose fee detail is missing cannot be
-   * settled correctly, so the two must land together or not at all.
+   * **No fee breakdown is written here.** Fees are calculated when the payment
+   * is confirmed by callback, not when the QR is issued: a QR that expires
+   * never earns anything, so computing at creation writes rows for transactions
+   * that will never settle. `netNominal` stays at its `0.00` default until then
+   * - unambiguous while the row is PENDING, since a pending purchase has earned
+   * nothing yet by definition.
    */
   private async reserveTransaction(
     userId: number,
     providerName: ProviderNameEnum,
     systemReference: string,
     dto: CreateQrisRequestDto,
-    fee: FeeCalculationResultDto,
   ): Promise<number> {
     try {
       const purchase = await this.prismaMaster.purchaseTransaction.create({
@@ -209,11 +177,8 @@ export class PurchaseService {
           providerName,
           paymentMethodName: this.paymentMethodName,
           nominal: new Decimal(dto.amount.value),
-          netNominal: new Decimal(fee.merchantFee.netNominal),
 
           status: TransactionStatusEnum.PENDING,
-
-          feeDetails: { create: this.feeDetails(fee) },
         },
         select: { id: true },
       });
@@ -256,41 +221,6 @@ export class PurchaseService {
     }
   }
 
-  /** Flatten the fee calculation into one row per party. */
-  private feeDetails(
-    fee: FeeCalculationResultDto,
-  ): Prisma.PurchaseFeeDetailCreateWithoutTransactionInput[] {
-    return [
-      {
-        type: FeeTypeEnum.MERCHANT,
-        nominal: new Decimal(fee.merchantFee.nominal),
-        feePercentage: new Decimal(fee.merchantFee.feePercentage),
-      },
-      {
-        type: FeeTypeEnum.PROVIDER,
-        nominal: new Decimal(fee.providerFee.nominal),
-        feeFixed: new Decimal(fee.providerFee.feeFixed),
-        feePercentage: new Decimal(fee.providerFee.feePercentage),
-      },
-      {
-        type: FeeTypeEnum.INTERNAL,
-        nominal: new Decimal(fee.internalFee.nominal),
-        feeFixed: new Decimal(fee.internalFee.feeFixed),
-        feePercentage: new Decimal(fee.internalFee.feePercentage),
-      },
-      // One row per agent rather than a single AGENT total: the shareholder
-      // split is what settlement pays out against, and collapsing it here would
-      // mean recomputing it at settlement time from a configuration that may
-      // since have changed.
-      ...fee.agentFee.agents.map((agent) => ({
-        type: FeeTypeEnum.AGENT,
-        agentId: agent.agentId,
-        nominal: new Decimal(agent.nominal),
-        feePercentage: new Decimal(agent.feePercentage),
-      })),
-    ];
-  }
-
   /**
    * Call the routed provider, translating any failure into a merchant-facing
    * one and leaving the reserved row in an honest state.
@@ -301,10 +231,10 @@ export class PurchaseService {
    * pays that QR we hold a paid transaction we told everyone had failed. It
    * stays PENDING for reconciliation to settle.
    */
-  private async callProvider(
+  private async callUpstream(
     purchaseId: number,
-    dto: PurchaseUpstreamRequestDto,
-  ): Promise<PurchaseUpstreamResponseDto> {
+    dto: UpstreamQrisRequestDto,
+  ): Promise<UpstreamQrisResponseDto> {
     try {
       switch (dto.providerName) {
         case ProviderNameEnum.MOTIONPAY:
@@ -321,7 +251,11 @@ export class PurchaseService {
       }
     } catch (error) {
       if (error instanceof TransactionException) {
-        await this.markFailed(purchaseId, { reason: 'no client for provider' });
+        await this.markFailed(purchaseId, {
+          [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]: {
+            reason: 'no client for provider',
+          },
+        });
         throw error;
       }
 
@@ -338,16 +272,16 @@ export class PurchaseService {
 
       if (timedOut) throw TransactionException.upstreamTimeout();
 
-      await this.markFailed(
-        purchaseId,
-        error instanceof UpstreamException
-          ? {
-              provider: error.provider,
-              message: error.message,
-              ...error.context,
-            }
-          : { message: 'unknown upstream failure' },
-      );
+      await this.markFailed(purchaseId, {
+        [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]:
+          error instanceof UpstreamException
+            ? {
+                provider: error.provider,
+                message: error.message,
+                ...error.context,
+              }
+            : { message: 'unknown upstream failure' },
+      });
       throw TransactionException.upstreamRejected();
     }
   }
@@ -362,7 +296,7 @@ export class PurchaseService {
    */
   private async recordUpstreamResult(
     purchaseId: number,
-    upstream: PurchaseUpstreamResponseDto,
+    upstream: UpstreamQrisResponseDto,
   ): Promise<void> {
     try {
       await this.prismaMaster.purchaseTransaction.update({

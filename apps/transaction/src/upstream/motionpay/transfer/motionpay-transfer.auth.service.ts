@@ -9,15 +9,12 @@ import {
 import { ProviderNameEnum } from '@app/microservice';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosRequestConfig } from 'axios';
-import {
-  MOTIONPAY_STATUS_CODE,
-  MOTIONPAY_TRANSFER_ENDPOINT,
-} from './motionpay.constant';
+import { MOTIONPAY_STATUS_CODE, MOTIONPAY_TRANSFER_ENDPOINT } from '../helper';
 import {
   MotionPayTransferTokenRequestDto,
   MotionPayTransferTokenResponseDto,
   MotionPayTransferTokenResponseSchema,
-} from './dto';
+} from '../dto';
 
 /** HTTP 200 on the transfer token endpoint's bare numeric `status` field. */
 const TRANSFER_TOKEN_OK = 200;

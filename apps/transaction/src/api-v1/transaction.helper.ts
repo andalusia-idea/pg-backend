@@ -111,3 +111,21 @@ const providerNameConvert = (value: string): ProviderNameEnum => {
   if (value === 'MTNPY') return ProviderNameEnum.MOTIONPAY;
   return ProviderNameEnum.INTERNAL;
 };
+
+/**
+ * Keys under which raw provider payloads are stored in `metadata`.
+ *
+ * The column is one JSON object keyed by event rather than a single payload, so
+ * each stage of a transaction's life keeps its own evidence instead of
+ * overwriting the last. A disputed payment is argued from the create response
+ * *and* the callback, and the callback arriving must never erase what we sent
+ * to make the QR.
+ */
+export const TransactionMetadataKey = {
+  CREATE_QRIS: 'CREATE_QRIS',
+  CREATE_QRIS_ERROR: 'CREATE_QRIS_ERROR',
+  CALLBACK_QRIS: 'CALLBACK_QRIS',
+  STATUS_QRIS: 'STATUS_QRIS',
+} as const;
+export type TransactionMetadataKey =
+  (typeof TransactionMetadataKey)[keyof typeof TransactionMetadataKey];

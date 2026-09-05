@@ -9,8 +9,8 @@ import {
   MOTIONPAY_TRANSFER_ENDPOINT,
   MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_TRANSFER_STATUS_CODE,
-} from './motionpay.constant';
-import { isKnownMotionPayBankCode } from './motionpay.constant';
+} from '../helper';
+import { isKnownMotionPayBankCode } from '../helper';
 import {
   MotionPayAccountInquiryRequestDto,
   MotionPayAccountInquiryResponseDto,
@@ -23,7 +23,7 @@ import {
   MotionPayTransferCallbackDto,
   MotionPayTransferStatusResponseDto,
   MotionPayTransferStatusResponseSchema,
-} from './dto';
+} from '../dto';
 
 export interface AccountInquiryParams {
   bankCode: string;

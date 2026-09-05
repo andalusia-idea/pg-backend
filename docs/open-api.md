@@ -22,14 +22,14 @@ Related docs — read these rather than duplicating them here:
 
 | Phase | Product | Code | Integration | Blocker |
 |---|---|---|---|---|
-| **1** | Purchase QRIS | ✅ complete | 🔴 blocked | MotionPay returns `400` for every create-payment payload |
+| **1** | Purchase QRIS | ✅ complete | ✅ **working** | Create + status verified end-to-end against sandbox 2026-09-02 |
 | **2** | Disbursement TRANSFER_BANK | ⬜ not started | 🔴 blocked | Our public IP is not whitelisted by Flash |
 | **3** | Disbursement EWALLET | ⬜ not started | 🔴 same as phase 2 | Shares the transfer endpoint |
 | **4** | Purchase status query | ⬜ not started | — | Needs phase 1 live |
-| **5** | Provider callbacks | ⬜ not started | 🔴 blocked | MotionPay has published no callback contract |
+| **5** | Provider callbacks (QRIS) | ✅ complete | 🟡 partial | Endpoint live and verified. Needs the URL registered with Flash + their egress IPs |
 | **6** | Merchant webhooks | ⬜ not started | — | Needs phase 5 |
 
-**Both integration blockers are on MotionPay's side and neither is fixable by writing code.** They are the substance of §6 — take that section into your conversation with them.
+**Purchase QRIS is no longer blocked** — the create-payment 400 resolved on MotionPay's side and was re-verified end-to-end on 2026-09-02. Payout is still blocked on IP whitelisting. §6 is the remaining ask list.
 
 ---
 
@@ -65,6 +65,27 @@ MerchantResponseInterceptor   wrap in { responseCode, responseMessage, serverTim
   │
   ▼
 merchant
+```
+
+Later, when the customer actually pays — or the QR expires:
+
+```
+MotionPay
+  │  POST /callback/motionpay/qris        unauthenticated, no signature
+  ▼
+MotionPayQrisCallbackController
+  │  IP allowlist            defence in depth
+  │  WebhookLog              evidence first, matched or not
+  ▼
+MotionPayQrisCallbackService
+  │
+  ├─► MotionPay (HTTPS)   getQrisStatus    ◄── the authenticated re-read.
+  │                                            The callback body is a trigger,
+  │                                            never a source of truth
+  ├─► apps/config (TCP)   calculateFee     only once payment is confirmed
+  │
+  └─► DATABASE            settle           status, paidAt, netNominal,
+                                            feeDetails, metadata merge
 ```
 
 Failures leave via `MerchantExceptionFilter`, which catches `MerchantException` **and its subclasses** — so `TransactionException` renders through the same filter with no extra registration.
@@ -136,6 +157,58 @@ This is why `PurchaseTransaction.providerReference` and `expiresAt` are **nullab
 
 **Apply this same ordering to every phase below.** It is the single most important pattern in this document.
 
+### Why not wrap the whole thing in `prisma.$transaction`?
+
+The natural objection, and worth answering properly because the reasoning generalises:
+
+> Put everything in one interactive transaction. Call the upstream first — if it fails, nothing is inserted and there is no orphaned record. If it succeeds, insert the purchase and its fee cuts. Atomic.
+
+It does not work, and the reason it does not work is the same reason the ordering above exists.
+
+**Rollback cannot un-create a QR.** `$transaction` gives ACID over *rows in our database*. MotionPay is not enrolled in it. A rollback undoes our `INSERT`; it does nothing whatsoever to their QR. So if the upstream call succeeds and the insert then fails — duplicate reference, DB blip, pod restart — we are exactly back to a payable QR with no record. The transaction boundary gives the *feeling* of all-or-nothing while the one side effect that costs money sits outside the guarantee.
+
+Three further problems, all operational:
+
+**It holds a database connection open across a vendor's network call.** At N concurrent purchases we occupy N connections for the whole of MotionPay's latency. When MotionPay slows down our pool drains, and then *every* feature that touches the database stalls — not just purchases. A vendor's bad afternoon becomes our outage.
+
+**Prisma aborts at 5 seconds regardless.** Verified against our own database:
+
+```
+ABORTED after 6300 ms
+code: P2028
+"A query cannot be executed on an expired transaction. The timeout for this
+ transaction was 5000 ms, however 6061 ms passed since the start"
+```
+
+So a slow MotionPay produces the orphaned QR *and* a rolled-back transaction. Raising `timeout` to survive it only makes the connection-pool problem worse.
+
+**Postgres holds locks for the transaction's lifetime**, which blocks VACUUM and bloats the table. Minor beside the rest, but it is why "just make the transaction longer" is never the answer.
+
+> **The rule:** an irreversible external side effect can never sit inside a transaction boundary. Commit the reversible thing first, then do the irreversible one.
+
+### What reserve-first actually buys — and what it does not
+
+It does **not** eliminate orphans. It inverts which kind we can produce:
+
+| Ordering | Orphan it can produce | Cost |
+|---|---|---|
+| Call upstream first | Payable QR, no record | Money we cannot reconcile |
+| **Reserve first** | Record, no QR | A `PENDING` row that expires harmlessly |
+
+That is the entire trade. We are not making failure impossible; we are choosing which failure we are prepared to explain.
+
+One residual case remains by design: the upstream call succeeds, then `recordUpstreamResult` fails. We have the row — so we know the transaction exists — but no `providerReference`. That method logs loudly and deliberately **does not throw**: telling the merchant it failed would make them retry and create a second QR for one order. Reconciliation repairs it, because `external_id` is our own reference on the provider's side.
+
+### Where atomicity *is* correct
+
+The instinct behind the `$transaction` idea is right — it is only the scope that is wrong. "These must land together" genuinely applies to the **purchase row and its fee detail**: a purchase with no fee breakdown cannot be settled. That is already atomic:
+
+```ts
+feeDetails: { create: this.feeDetails(fee) },
+```
+
+Prisma runs a nested create as a single transaction. So we get atomicity exactly where it is achievable — across rows in our own database — and nowhere it is not.
+
 ### Error handling contract
 
 `TransactionException` extends `MerchantException`, so the existing `@Catch(MerchantException)` filter renders it — Nest selects filters with `instanceof`. Service code `90`, the range reserved for manapay business services (SNAP's own registry uses 01–81, so ours cannot be confused with it).
@@ -172,12 +245,29 @@ Recorded because several of these are patterns that will recur in phases 2 and 3
 | **`toWholeRupiah` / `assertExternalIdLength` written but unused** | The guards existed and were bypassed | Both now on the call path |
 | **`assertUpstreamSchema` signature reorder** | Applied to one call site out of six; the transaction app did not compile | All six migrated |
 
+### 4.3 Timestamps: trust the measurement, not the document
+
+The v2.7 spec states that MotionPay's timestamps are WIB despite the `+00:00` they print, and that no conversion is needed. Taken at face value that means `"2026-09-02T09:16:26+00:00"` is 09:16 Jakarta, i.e. `02:16Z`.
+
+**Measuring it says otherwise.** Three creates, comparing `created_date` against our own clock at the instant of the request: sub-second skew when the offset is trusted, exactly `-7.0h` when treated as WIB. The offset is truthful; the note is wrong.
+
+The lesson is not "the spec lies" — it is that **a claim about timezone semantics is checkable, and on money data it should be checked before it is coded against.** A seven-hour error here fails silently: every value still looks like a plausible timestamp, and it would only surface as a reconciliation that will not balance.
+
+Two things came out of it:
+
+- `parseMotionPayTimestamp` takes a **mode**. Default `offset` (measured), with `wib` kept because production may yet match the document.
+- `assertTimestampMode` re-checks on **every create**, where `created_date` describes a transaction we just made and our own clock is ground truth. If MotionPay switches behaviour, a log line says so that day.
+
+I initially implemented the WIB correction on the strength of the spec alone. That would have introduced the exact seven-hour error it was meant to prevent. Probing first would have been cheaper than probing second.
+
 ### 4.2 Patterns worth carrying forward
 
 - **A helper that exists but is not called is worse than no helper** — it reads as protection that is not there. Two of the above were exactly this.
 - **Silent truncation is the worst failure mode in a payment system.** It does not error; it produces a value that stops matching weeks later during reconciliation, when nobody remembers why.
 - **Validate the request against the request schema.** Obvious written down, invisible in a diff.
 - **Every error path on a merchant route must produce the same envelope.** One route answering in two shapes is precisely what the envelope exists to prevent.
+- **A provider's stated timezone offset is a claim, not a fact — and a checkable one.** Measure before coding against it, then keep measuring. §4.3.
+- **An unauthenticated inbound webhook is a trigger, not data.** Re-read the truth over a channel you control. §10.
 
 ---
 
@@ -242,24 +332,23 @@ Confirmed by probe. Nothing on the payout side can be tested until Flash whiteli
 
 **Ask:** whitelist **both** the workstation IP and the K3s node's egress IP. Get the production egress IP whitelisted at the same time — it will be needed and the lead time is the same.
 
-### 6.3 The callback contract — needed for phases 4–6
+### 6.3 The callback contract — ✅ received, two things still needed
 
-"Callback Format" is advertised as a service, but **no endpoint, payload, or signature scheme is published**. For a pay-in flow the callback is normally how `SUCCESS` arrives; polling is the fallback, not the design.
+Answered by QRIS Service v2.7. The handler is built (§10). Two asks remain:
 
-**Ask, specifically:**
-1. The callback **payload schema** and the URL registration process.
-2. **How the callback is authenticated** — signature, IP allowlist, shared secret? This is the one that matters: the legacy codebase verified provider callbacks *not at all*, which the migration audit flagged as a must-fix. We will not repeat that.
-3. **Retry policy** — how many times, over what window, and is delivery at-least-once? Determines whether our handler must be idempotent (assume yes).
-4. Whether callbacks fire for **both** QRIS and Transfer, and whether the payloads differ.
+1. **Your egress IP ranges**, so `MOTIONPAY_CALLBACK_ALLOWED_IPS` can be set. The callback has no signature, so this is its only transport-level authentication. Until it is set the endpoint accepts any origin.
+2. **Confirm there is genuinely no signature option** — not a header we missed, not something available on request. Their spec advises validating `transaction_id` against our own records, which does not authenticate anything: that value is not secret, and a forged `SUCCESS` credits a merchant balance. We have mitigated by re-reading the authoritative status over an authenticated call, but a signature would be better and is worth asking for directly.
 
 ### 6.4 Smaller confirmations
 
 | Question | Why it matters |
 |---|---|
-| Real `external_id` max length (D1) | Decides whether merchants can use UUID references |
-| Does an expired QR report `FAILED`, or stay `PENDING`? | We have no way to close out expired transactions otherwise |
-| Timestamp format — samples show both `2025-03-25T05:09:05+00:00` and `2023-12-06 18:12:19` | The second has no timezone. Presumably WIB, but we will not guess on money |
+| ~~Real `external_id` max length~~ | **Answered: 21.** Constant updated. Still shorter than a UUID, so D1 stands |
+| ~~Does an expired QR report `FAILED`?~~ | **Answered: `FAILED` with `description: "Order expired"`.** Handled |
+| Timestamp semantics | **The spec says WIB-despite-the-offset; the sandbox says the offset is truthful.** We follow the measurement and check it on every create. Ask them to correct the doc or confirm production differs. §4.3 |
 | Transfer: is `0002 / On Process` really the happy path for create? | Our client assumes yes. Treating only `0001` as success would fail almost every real payout |
+| ~~`terminal_id` semantics~~ | **Fixed.** Now `MOTIONPAY_TERMINAL_ID`; it is embedded in the QR payload, so a per-transaction value was writing a different "terminal" into every QR |
+| Per-sub-merchant `terminal_id`? | We send one aggregator-level value. If Flash can register a terminal per sub-merchant, their reporting could distinguish our merchants — worth asking |
 
 ---
 
@@ -389,16 +478,75 @@ Merchants need to ask "what happened to this transaction?" — and after a `5049
 
 ---
 
-## 10. Phase 5 — Provider callbacks (blocked)
+## 10. Phase 5 — Provider callbacks ✅ built
 
-**Blocked on §6.3.** When the contract arrives:
+Contract received 2026-09-01 (QRIS Service v2.7). Full wire details in [upstream/motionpay.md §6.5](upstream/motionpay.md).
 
-- [ ] 5.1 **Verify the callback before trusting it.** Legacy verified nothing — the audit flagged it as a must-fix. Whatever scheme MotionPay uses, implement it before the handler does any work
-- [ ] 5.2 Persist to `WebhookLog` **before** processing. Evidence first: a callback we failed to process is recoverable, one we never recorded is not
-- [ ] 5.3 Make it idempotent. Assume at-least-once delivery until told otherwise. Key on `providerReference`
-- [ ] 5.4 Guard the transition. A callback moving `SUCCESS → PENDING` is either out-of-order or an attack; log and ignore rather than apply
-- [ ] 5.5 Respond `200` fast, process after. Providers commonly retry on slow responses, which manufactures duplicates
-- [ ] 5.6 `WebhookLog.transactionId` is currently a bare `Int` alongside a nullable `purchaseTransactionId` relation — reconcile that before writing to it
+### The security problem, and what we do about it
+
+MotionPay publishes **no callback signature**. Their spec says so, and recommends validating `transaction_id` against your own database instead — which is not a control. A `transaction_id` is not secret, and a forged `SUCCESS` credits a merchant balance.
+
+**So the callback body is never trusted.** It is a trigger, not data:
+
+1. **Record it** to `WebhookLog` — whatever it says, matched or not. An unmatched callback is the single most interesting one to keep.
+2. **Find our transaction** by `transaction_id`.
+3. **Ask MotionPay ourselves** with an authenticated Get Payment Status call.
+4. **Act on that answer only.**
+
+One extra GET per callback converts an unauthenticated push into an authenticated pull. `MOTIONPAY_CALLBACK_ALLOWED_IPS` sits in front as defence in depth — **currently empty, which means unrestricted**, and the handler logs a warning on every request until Flash give us their egress ranges.
+
+### Behaviour
+
+| Situation | HTTP | Why |
+|---|---|---|
+| Settled successfully | 200 | Done |
+| Origin not in the allowlist | **200** | Not an acknowledgement — a refusal to let a spoofer schedule three more rounds of work with one request |
+| Unknown transaction | 200 | We will not know that id in five minutes either |
+| Already terminal | 200 | Idempotency; a retry must not re-run fees or move a balance twice |
+| Malformed payload | 200 | Their retry sends the same bad body three more times |
+| Could not reach MotionPay to confirm | **500** | Exactly what their retry schedule exists for |
+
+MotionPay retries a non-200 **3 times at 5-minute intervals**, then drops it permanently. So the 200/500 choice is the whole protocol: ask for a retry only when retrying could help. Anything lost after that window is the settlement sweep's problem, which is why polling is required rather than optional.
+
+### Fees are calculated here, not at creation
+
+Deliberate, and a change from the original design. A QR that expires never earns anything, so computing at creation writes fee rows for transactions that will never settle. `netNominal` stays at its `0.00` default while the row is PENDING — unambiguous, since a pending purchase has by definition earned nothing.
+
+The trade: a fee-service outage during a callback leaves a paid transaction with no breakdown. The handler therefore **still moves the row to SUCCESS** and logs the gap loudly rather than failing — refusing to record a payment because the fee service is down is strictly worse. Batch settlement re-derives what is missing.
+
+### `metadata` accumulates, it does not overwrite
+
+One JSON object keyed by event:
+
+```jsonc
+{
+  "CREATE_QRIS":   { /* what MotionPay returned when the QR was made */ },
+  "CALLBACK_QRIS": { /* the raw notification, including customer_pan */ },
+  "STATUS_QRIS":   { /* the authenticated re-read we actually acted on */ }
+}
+```
+
+A disputed payment is argued from all three. The callback arriving must never erase what we sent to create the QR, so the update merges rather than assigns. `CREATE_QRIS_ERROR` records why a create attempt failed, so a FAILED row explains itself.
+
+### EXPIRED
+
+MotionPay has no expired status — expiry arrives as `FAILED` with `description: "Order expired"`. `mapMotionPayStatus` requires **both** signals before mapping to our `EXPIRED`: the wording, *and* the expiry instant having passed with no `paid_date`. Prose alone is too fragile to key a money decision on. This closes D4.
+
+### Files
+
+| File | Role |
+|---|---|
+| `apps/transaction/src/callback/motionpay-qris.callback.controller.ts` | Route, payload check, 200/500 decision |
+| `apps/transaction/src/callback/motionpay-qris.callback.service.ts` | Verify-by-pull, idempotency, settlement |
+| `apps/transaction/src/upstream/motionpay/motionpay.helper.ts` | WIB parsing, status mapping, metadata keys |
+| `apps/transaction/src/upstream/motionpay/motionpay.helper.spec.ts` | 13 tests, incl. the seven-hour assertion |
+
+### Still open
+
+- [ ] **Register the callback URL** at Flash: Product Configuration → QRIS. Path is `POST /callback/motionpay/qris`
+- [ ] **Get Flash's egress IPs** and set `MOTIONPAY_CALLBACK_ALLOWED_IPS`. Until then the endpoint accepts any origin
+- [ ] **Balance ledger** — marked `TODO(balance-ledger)` in the settle path. Blocked on D17; money is not moved by this handler yet
+- [ ] **Settlement sweep** — the batch job that resolves anything the callback never delivered, and backfills fees where the fee service was down
 
 ---
 
@@ -449,14 +597,16 @@ Constrain now either way: adding a unique constraint later means finding and res
 
 Things that apply to every phase, learned the expensive way.
 
-1. **Reserve before you call.** Database row first, provider second, update third. §3.
+1. **Reserve before you call.** Database row first, provider second, update third. An irreversible external side effect can never sit inside a transaction boundary - `$transaction` will not save you, because rollback cannot un-create a QR. §3.
 2. **Never truncate an identifier.** Fail loudly. A truncated reference does not error — it stops matching, weeks later.
 3. **A timeout is not a failure.** Leave it `PENDING`. Asserting `FAILED` on something unknowable is how a paid transaction gets written off.
 4. **Validate the beneficiary before money moves.** Pay-in mistakes are recoverable; payout mistakes are not.
 5. **One envelope, every path.** If a route can answer in two shapes, the envelope has already failed.
 6. **Provider vocabulary never reaches a merchant.** Log their rejection text, return ours. Merchants must not end up parsing strings we do not control.
 7. **Regenerate the dashboard schema after every transaction/config schema change.** `prisma:merge:dashboard && prisma:generate:dashboard`. A stale merge turns a breaking change silent.
-8. **Fee calculation happens before the provider call.** A fee failure after a QR exists leaves a payable QR whose economics were never computed.
+8. **Fees are calculated at settlement, not at creation.** A QR that expires never earns anything. The cost is that a fee-service outage leaves a paid transaction without its breakdown - so record the payment anyway and let the settlement sweep backfill. Never refuse to record money that moved.
+9. **Never trust an unauthenticated callback body.** Log it, then re-read the truth over an authenticated channel. §10.
+10. **Measure provider timezone behaviour, do not read it.** Documentation about offsets has been wrong here; a create response plus your own clock settles it in seconds, and a standing check catches the day it changes. §4.3.
 
 ---
 
@@ -466,12 +616,15 @@ Things that apply to every phase, learned the expensive way.
 
 1. §6.1 — PTEN registration for merchant 59240. Send the probe table.
 2. §6.2 — IP whitelisting, workstation + K3s egress + production egress.
-3. §6.3 — the callback contract, especially **how it is authenticated**.
+3. §6.3 — their **egress IP ranges** for the callback allowlist, and confirmation that no signature option exists.
 4. §6.4 — the four smaller confirmations.
 
 **You, in code** (not blocked, do while waiting):
 
 5. D3 — settle the public URL shape before any merchant integrates.
-6. Phase 2 steps 2.1–2.5. The transfer client is written; the API layer around it is not, and none of that work needs MotionPay to answer.
+6. Phase 2 steps 2.1-2.5. The transfer client is written; the API layer around it is not, and none of that work needs MotionPay to answer.
+7. ~~Fix `terminal_id` and re-probe the create-payment 400~~ — **done 2026-09-02. Both resolved; QRIS create and status verified end-to-end.**
+8. Register `POST /callback/motionpay/qris` on the Flash dashboard, then pay a sandbox QR to exercise the callback for real.
+9. Ask MotionPay to correct §Important Notes on timestamps, or confirm production differs from sandbox (§6.4).
 
 **When their docs arrive**, hand them over — the deltas land in [upstream/motionpay.md](upstream/motionpay.md), and anything that changes the merchant contract lands here and in [merchant-api-response-codes.md](merchant-api-response-codes.md).
