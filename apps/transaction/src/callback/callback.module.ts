@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DisbursementModule } from '../api-v1/disbursement';
 import { PurchaseModule } from '../api-v1/purchase';
 import { MotionPayModule } from '../upstream/motionpay';
 import { MotionPayCallbackController } from './motionpay.callback.controller';
@@ -25,7 +26,7 @@ import { MotionPayCallbackController } from './motionpay.callback.controller';
  * merchants receive - MotionPay only reads the status.
  */
 @Module({
-  imports: [MotionPayModule, PurchaseModule],
+  imports: [MotionPayModule, PurchaseModule, DisbursementModule],
   controllers: [MotionPayCallbackController],
 })
 export class CallbackModule {}

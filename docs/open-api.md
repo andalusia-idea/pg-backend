@@ -23,10 +23,10 @@ Related docs — read these rather than duplicating them here:
 | Phase | Product | Code | Integration | Blocker |
 |---|---|---|---|---|
 | **1** | Purchase QRIS | ✅ complete | ✅ **working** | Create + status verified end-to-end against sandbox 2026-09-02 |
-| **2** | Disbursement TRANSFER_BANK | ⬜ not started | 🔴 blocked | Our public IP is not whitelisted by Flash |
-| **3** | Disbursement EWALLET | ⬜ not started | 🔴 same as phase 2 | Shares the transfer endpoint |
+| **2** | Disbursement TRANSFER_BANK | ✅ complete | 🔴 blocked | Code done and booting. Nothing can be exercised until Flash whitelist our IP |
+| **3** | Disbursement EWALLET | 🟡 mostly | 🔴 same as phase 2 | Shares the transfer flow; needs a wallet `BaseFee` row and the inquiry question answered |
 | **4** | Purchase status query | ⬜ not started | — | Needs phase 1 live |
-| **5** | Provider callbacks (QRIS) | ✅ complete | 🟡 partial | Endpoint live and verified. Needs the URL registered with Flash + their egress IPs |
+| **5** | Provider callbacks | ✅ complete | 🟡 partial | QRIS **and** Transfer endpoints live and verified. Needs both URLs registered with Flash + their egress IPs |
 | **6** | Merchant webhooks | ⬜ not started | — | Needs phase 5 |
 
 **Purchase QRIS is no longer blocked** — the create-payment 400 resolved on MotionPay's side and was re-verified end-to-end on 2026-09-02. Payout is still blocked on IP whitelisting. §6 is the remaining ask list.
@@ -352,118 +352,154 @@ Answered by QRIS Service v2.7. The handler is built (§10). Two asks remain:
 
 ---
 
-## 7. Phase 2 — Disbursement TRANSFER_BANK
+## 7. Phase 2 — Disbursement TRANSFER_BANK ✅ built
 
-Payout to a bank account, funded from the Flash prepaid deposit.
+Bank payout, funded from the Flash prepaid deposit. Same shape as the pay-in
+flow throughout — the differences below are the ones worth knowing.
 
-### What already exists
+### The endpoint
 
-`MotionPayTransferService` is written and typechecks. It has `accountInquiry`, `fundTransfer`, `checkTransferStatus`, `checkBalance`. **It has never made a successful call** — the IP blocker.
+```
+POST /v1/transfer/bank
+```
 
-Transfer differs from QRIS in ways that will bite if assumed away:
+```jsonc
+// request
+{
+  "amount": { "value": "100000.00", "currency": "IDR" },
+  "merchantReference": "PAYOUT-0001",
+  "bankCode": "014",
+  "accountNumber": "003600350346",
+  "accountHolderName": "John Doe",   // optional, and NOT what we record
+  "note": "October settlement"       // optional
+}
+```
 
-| | QRIS | Transfer |
+```jsonc
+// 200 — accepted, NOT paid
+{
+  "responseCode": "2009100",
+  "responseMessage": "Successful",
+  "serverTime": "2026-09-05T09:43:04.069Z",
+  "data": {
+    "transactionId": "1772001455392DTBMTNPY-27-a1b2",
+    "merchantReference": "PAYOUT-0001",
+    "status": "PENDING",
+    "beneficiary": {
+      "bankCode": "014",
+      "accountNumber": "003600350346",
+      "accountHolderName": "JOHN DOE"   // as the BANK confirmed it
+    }
+  }
+}
+```
+
+A `200` means **accepted**, not paid. Payouts settle asynchronously; the final
+state arrives on the merchant's registered `payoutUrl`. A merchant reading the
+200 as "money sent" has misread the contract, which is why `status` is in the
+response at all.
+
+### Three differences from pay-in
+
+**1. Beneficiary verification runs first.** Before anything is written, the
+account is checked with the bank:
+
+```
+resolveProvider → accountInquiry → reserve row → fundTransfer → record
+                  ^^^^^^^^^^^^^^ new
+```
+
+Payouts are the asymmetric case: a failed pay-in is retried, money sent to a
+mistyped account number is gone. One round trip converts an unrecoverable loss
+into a `4009103`. A failed lookup is a **business outcome**, not an exception —
+the provider answers HTTP 200 with `valid: false` and an empty name, so the flag
+is checked rather than relying on an absent throw.
+
+We record the name **the bank returned**, not the one the merchant supplied. A
+merchant's spelling is not evidence of who owns an account.
+
+**2. `external_id` is our `systemReference`, not the merchant reference.**
+Unlike QRIS — where status is keyed by *their* `transaction_id` and `external_id`
+is only an echo — the transfer status endpoint is keyed by the value we send. It
+therefore has to be unique across every merchant, and a merchant reference is
+only unique within one merchant. Two merchants both using `PAYOUT-001` would
+collide at the provider.
+
+That also means the callback is matched by `systemReference`, not
+`providerReference`. Same principle, opposite key.
+
+**3. `PENDING` on create is success.** MotionPay's happy path for `fundTransfer`
+is `0002 / On Process`, not `0001`. Treating anything but an outright rejection
+as final would mark almost every real payout failed.
+
+### Failure codes — service `91`
+
+| Code | HTTP | Meaning |
 |---|---|---|
-| Host | `app.` | `secure.` |
-| Token endpoint | `/priv/v1/pg/token` | `/auth/v2/access-token` |
-| `status.code` type | **number** (`0`) | **string** (`'0001'`) |
-| `external_id` max | 16 | 50 |
-| Amount bounds | 1 000 – 10 000 000 | 10 000 – 50 000 000 |
-| Status lookup key | *their* `transaction_id` | **our** `external_id` |
-| Happy path on create | `0` | **`0002` / On Process**, not `0001` |
+| `4009103` | 400 | Beneficiary account did not verify |
+| `4009104` | 400 | Unsupported bank or wallet code |
+| `4039102` | 403 | Our Flash deposit is short. Not the merchant's fault, but they must know the payout is not happening |
 
-E-wallets share the bank-code namespace, so "bank transfer" here can also be a wallet payout — which is why phase 3 is mostly configuration.
+Everything else reuses the shared codes — `4099100` duplicate reference,
+`5029100` provider rejected, `5049100` timeout.
 
-### Steps
+### Verified
 
-**2.1 — Schema.** Mirror the purchase changes on `DisbursementTransaction`:
-
-```prisma
-merchantReference String            // drop the global @unique
-providerReference String?  @unique  // nullable: unknown until the provider answers
-paidAt            DateTime?
-@@unique([merchantId, merchantReference])
-```
-
-Then `npm run prisma:migrate:dev:transaction`, `prisma:generate:transaction`, `prisma:merge:dashboard`, `prisma:generate:dashboard`.
-
-> The dashboard merge is not optional. A stale merged schema turns a breaking change into a silent one — see D19 in [dashboard-migration.md](dashboard-migration.md) for what that cost last time.
-
-**2.2 — Provider-neutral DTOs.** Add to `libs/upstream/src/upstream.dto.ts`:
-
-```ts
-DisbursementUpstreamRequestSchema   // systemReference, userId, providerName,
-                                    // merchantReference, amount, bankCode,
-                                    // accountNumber, accountHolderName?, note
-DisbursementUpstreamResponseSchema  // providerReference, status, nominal,
-                                    // message, metadata
-```
-
-Keep the business layer free of MotionPay's wire shape. Adding a second provider must mean writing a mapper, not touching the flow.
-
-**2.3 — Request/response DTOs** in `apps/transaction/src/api-v1/disbursement/disbursement.dto.ts`. Follow the purchase split exactly: a request schema, a `data` schema, and an envelope schema for documentation. The handler returns **only** `data`.
-
-**2.4 — Add the failure codes.** In `transaction.enum.ts` / `transaction.exception.ts`, add a `DISBURSEMENT: '91'` service code and the cases QRIS does not have:
-
-| Case | Code | HTTP | Note |
-|---|---|---|---|
-| `INVALID_BENEFICIARY` | `4009102` | 400 | Account inquiry says the account does not exist |
-| `INSUFFICIENT_BALANCE` | `4039101` | 403 | Our Flash deposit is short — **our** problem, not the merchant's, but they must know the payout will not happen |
-| `UNSUPPORTED_BANK_CODE` | `4009103` | 400 | Not in MotionPay's list |
-
-Reuse everything else. Add the rows to [merchant-api-response-codes.md](merchant-api-response-codes.md) in the same pass.
-
-**2.5 — The service.** Same ordering as purchase, with one addition:
+Boots clean; `/v1/transfer/bank` and `/callback/motionpay/transfer` both map. A
+**forged payout callback** claiming `0001 / Success` for a PENDING transaction
+was refused:
 
 ```
-resolveProvider          merchant + TRANSFERBANK + DISBURSEMENT
-calculateFee             feeCalculateClient.disbursement(...)
-accountInquiry           ◄── NEW: validate the beneficiary BEFORE reserving
-reserveTransaction       claims merchantReference, status PENDING
-fundTransfer             the outbound call
-recordUpstreamResult     providerReference, status
+forged SUCCESS  : http 500 {"received":false}
+  status        : PENDING     ← unchanged
+  paidAt        : null
+  fee rows      : 0
+  webhook logged: 1 row (DISBURSEMENT)
+
+ERROR: Could not confirm transfer status with the provider
 ```
 
-**Why inquiry comes first:** a payout to a wrong account number is not recoverable the way a failed pay-in is. Money leaves. Validating first costs one round trip and turns an unrecoverable loss into a `4009102`. `accountInquiry` returns `valid: false` rather than throwing — a wrong account is a normal business outcome, so check the flag, do not rely on absence of an exception.
+The 500 is the design working under the worst conditions: the verification
+channel was **entirely unavailable** (the transfer API is IP-blocked), and the
+system still refused to act on an unverified claim about money — asking for a
+retry rather than guessing.
 
-**Do not skip the reserve step because inquiry already ran.** The unique index is still what makes concurrent retries safe.
+### Still open
 
-**2.6 — Status is asynchronous.** Unlike QRIS, `fundTransfer` returning `0002 / On Process` is success-so-far, not settlement. The transaction stays `PENDING` until a callback or a status poll resolves it. Do not map `0002` to `SUCCESS`.
-
-**2.7 — Controller + module**, mirroring purchase. `@MerchantSuccessCode(MERCHANT_SERVICE_CODE.DISBURSEMENT)`.
-
-**2.8 — Verify**: four apps typecheck, tests, eslint, prettier. Then the doc rows.
-
-### Checklist
-
-- [ ] 2.1 Schema + migration + all four regenerations
-- [ ] 2.2 Provider-neutral disbursement DTOs
-- [ ] 2.3 API request/response DTOs
-- [ ] 2.4 Service code `91` + failure cases + response-code doc
-- [ ] 2.5 `DisbursementService` — inquiry → fee → reserve → transfer → record
-- [ ] 2.6 Confirm `0002` handling with MotionPay (§6.4)
-- [ ] 2.7 Controller + module
-- [ ] 2.8 Verification pass
+- [ ] **IP whitelisting.** Nothing on this path has ever made a successful call
+      to Flash. All of the above is verified structurally, not against the live
+      provider.
+- [ ] **Register the payout callback URL** — `POST /callback/motionpay/transfer`.
+- [ ] **Balance ledger** — `TODO(balance-ledger)`, blocked on D17. Note the
+      payout direction depends on the open question there about whether
+      `netNominal` is greater or smaller than `nominal` for a payout; backwards,
+      it leaks the fee on every transfer.
+- [ ] **`toMerchantFailure` matches on provider message text** to separate a bad
+      bank code and an insufficient deposit from a generic rejection. That is a
+      guess at their wording until we can see real rejections — revisit once the
+      IP block lifts.
 
 ---
 
-## 8. Phase 3 — Disbursement EWALLET
+## 8. Phase 3 — Disbursement EWALLET 🟡 mostly built
 
-**Mostly configuration, not new code.** E-wallets go through the same `fundTransfer` endpoint with a wallet code in the `recipient_bank` field.
+E-wallet payouts go through the **same** `fundTransfer` endpoint with a wallet
+code in `recipient_bank`, so phase 2's flow already covers them. What remains is
+configuration and one open question.
 
-What actually differs:
+- [ ] 3.1 **Ask MotionPay whether `accountInquiry` supports wallet codes.** If it
+      does not, the beneficiary-verification step has to be skipped for wallets —
+      and that is a real risk increase to put to the business, not a code detail.
+- [ ] 3.2 Seed the `BaseFee` row for `TRANSFEREWALLET` + `DISBURSEMENT`.
+- [ ] 3.3 Branch `paymentMethodName` in `DisbursementService` — it is currently
+      pinned to `TRANSFERBANK`. The routing lookup already takes the method, so
+      this is a parameter, not a new path.
+- [ ] 3.4 If inquiry is unsupported for wallets, make the skip explicit and
+      commented rather than implicit.
 
-- **`paymentMethodName` is `TRANSFEREWALLET`**, which changes the fee lookup — a different `BaseFee` row, so a different provider/internal/agent split.
-- **Account inquiry may not be supported** for wallets. Confirm with MotionPay (add to §6.4). If it is not, the beneficiary-validation step in 2.5 has to be skipped for wallets — and that is a real risk increase worth flagging to the business, not a code detail.
-- **The bank-code list is shared.** Unknown codes are warned about, not rejected, deliberately: the list is a snapshot and MotionPay adding a wallet should not become our outage.
-
-### Steps
-
-- [ ] 3.1 Confirm with MotionPay whether inquiry works for wallet codes
-- [ ] 3.2 Seed the `BaseFee` rows for `TRANSFEREWALLET` + `DISBURSEMENT`
-- [ ] 3.3 Branch on `paymentMethodName` in the disbursement service — the routing lookup already takes it
-- [ ] 3.4 If inquiry is unsupported, make the skip explicit and commented, not implicit
-- [ ] 3.5 Verification pass
+The shared bank-code list already includes wallets, and unknown codes are warned
+about rather than rejected — deliberately, since the list is a snapshot and
+MotionPay adding a wallet should not become our outage.
 
 ---
 

@@ -11,11 +11,15 @@ import {
 import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Value } from '@sinclair/typebox/value';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { DisbursementWebhookService } from '../api-v1/disbursement';
 import { PurchaseWebhookService } from '../api-v1/purchase';
 import {
   MotionPayQrisCallbackDto,
   MotionPayQrisCallbackSchema,
   MotionPayQrisCallbackService,
+  MotionPayTransferCallbackDto,
+  MotionPayTransferCallbackSchema,
+  MotionPayTransferCallbackService,
 } from '../upstream/motionpay';
 
 @ApiTags('Upstream Callback')
@@ -26,6 +30,8 @@ export class MotionPayCallbackController {
   constructor(
     private readonly qrisCallbackService: MotionPayQrisCallbackService,
     private readonly purchaseWebhookService: PurchaseWebhookService,
+    private readonly transferCallbackService: MotionPayTransferCallbackService,
+    private readonly disbursementWebhookService: DisbursementWebhookService,
   ) {}
 
   /**
@@ -88,6 +94,56 @@ export class MotionPayCallbackController {
     if (!translation.accepted) return { received: true };
 
     const outcome = await this.purchaseWebhookService.handle(
+      translation.webhook,
+    );
+
+    if (outcome.retry) {
+      void reply.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return { received: false };
+    }
+
+    return { received: true };
+  }
+
+  /**
+   * Transfer payout notification, registered with Flash on the same dashboard.
+   *
+   * Same protocol as the QRIS callback above, and the same two-step split. The
+   * body is if anything less trustworthy: MotionPay's transfer callback carries
+   * no signature *and* no amount, so it is a bare "transaction X is now Y" from
+   * an unauthenticated source about money that has already left. Nothing here
+   * is acted on until `checkTransferStatus` confirms it over an authenticated
+   * call.
+   */
+  @Post('transfer')
+  @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'MotionPay transfer payout notification' })
+  async transfer(
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<{ received: boolean }> {
+    if (!Value.Check(MotionPayTransferCallbackSchema, body)) {
+      this.logger.warn({
+        msg: 'Malformed MotionPay transfer callback',
+        sourceIp: request.ip,
+        errors: [...Value.Errors(MotionPayTransferCallbackSchema, body)]
+          .slice(0, 3)
+          .map((error) => `${error.path} ${error.message}`),
+      });
+      return { received: true };
+    }
+
+    const payload = body as MotionPayTransferCallbackDto;
+
+    const translation = this.transferCallbackService.translate(
+      payload,
+      request.ip,
+    );
+    if (!translation.accepted) return { received: true };
+
+    const outcome = await this.disbursementWebhookService.handle(
       translation.webhook,
     );
 

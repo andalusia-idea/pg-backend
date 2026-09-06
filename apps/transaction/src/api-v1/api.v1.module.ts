@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { MerchantExceptionFilter } from './signature';
 import { PingModule } from './ping';
+import { DisbursementModule } from './disbursement';
 import { PurchaseModule } from './purchase';
 
 @Module({
-  imports: [PingModule, PurchaseModule],
+  imports: [PingModule, PurchaseModule, DisbursementModule],
   providers: [
     /**
      * Registered through APP_FILTER so it applies wherever a

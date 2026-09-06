@@ -33,6 +33,8 @@ export const MERCHANT_SERVICE_CODE = {
   COMMON: '00',
   /** Pay-in. First of the `90`+ manapay business codes. */
   PURCHASE: '90',
+  /** Payout. */
+  DISBURSEMENT: '91',
 } as const;
 
 /** SNAP caps `responseMessage` at 150 characters. */

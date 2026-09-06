@@ -7,8 +7,9 @@ import {
   MotionPayQrisService,
 } from './qris';
 import {
-  MotionPayTransferManualController,
   MotionPayTransferAuthService,
+  MotionPayTransferCallbackService,
+  MotionPayTransferManualController,
   MotionPayTransferService,
 } from './transfer';
 
@@ -48,11 +49,13 @@ import {
     MotionPayQrisCallbackService,
     MotionPayTransferAuthService,
     MotionPayTransferService,
+    MotionPayTransferCallbackService,
   ],
   exports: [
     MotionPayQrisService,
     MotionPayQrisCallbackService,
     MotionPayTransferService,
+    MotionPayTransferCallbackService,
   ],
 })
 export class MotionPayModule {}

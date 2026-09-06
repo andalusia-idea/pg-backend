@@ -20,7 +20,23 @@ const CASE = {
   GENERAL: '00',
   INVALID_FIELD_FORMAT: '01',
   INVALID_MANDATORY_FIELD: '02',
+  /** SNAP's `403 xx 02`. */
+  INSUFFICIENT_FUNDS: '02',
+  INVALID_BENEFICIARY: '03',
+  UNSUPPORTED_BANK_CODE: '04',
 } as const;
+
+const disbursement = (
+  httpStatus: HttpStatus,
+  caseCode: string,
+  responseMessage: string,
+): MerchantFailure =>
+  merchantFailure(
+    httpStatus,
+    MERCHANT_SERVICE_CODE.DISBURSEMENT,
+    caseCode,
+    responseMessage,
+  );
 
 const purchase = (
   httpStatus: HttpStatus,
@@ -102,6 +118,30 @@ const TRANSACTION_FAILURE: Record<TransactionFailureEnum, MerchantFailure> = {
     HttpStatus.SERVICE_UNAVAILABLE,
     CASE.GENERAL,
     'Service temporarily unavailable, please retry',
+  ),
+  /**
+   * 400: the merchant sent an account number the bank does not recognise. Their
+   * payload is wrong, and no retry of it will work.
+   */
+  INVALID_BENEFICIARY: disbursement(
+    HttpStatus.BAD_REQUEST,
+    CASE.INVALID_BENEFICIARY,
+    'Beneficiary account could not be verified, check the bank code and account number',
+  ),
+  UNSUPPORTED_BANK_CODE: disbursement(
+    HttpStatus.BAD_REQUEST,
+    CASE.UNSUPPORTED_BANK_CODE,
+    'Unsupported bank or wallet code',
+  ),
+  /**
+   * 403, following SNAP's `403 xx 02` for insufficient funds. Not the
+   * merchant's fault - our deposit is short - but returning a 5xx would tell
+   * them to retry into the same wall, and returning success would be a lie.
+   */
+  INSUFFICIENT_DEPOSIT: disbursement(
+    HttpStatus.FORBIDDEN,
+    CASE.INSUFFICIENT_FUNDS,
+    'Payout could not be funded, please contact support',
   ),
   INTERNAL_ERROR: purchase(
     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -186,5 +226,25 @@ export class TransactionException extends MerchantException {
 
   static internalError(): TransactionException {
     return new TransactionException(TransactionFailureEnum.INTERNAL_ERROR);
+  }
+
+  static invalidBeneficiary(detail?: string): TransactionException {
+    return new TransactionException(
+      TransactionFailureEnum.INVALID_BENEFICIARY,
+      detail,
+    );
+  }
+
+  static unsupportedBankCode(detail?: string): TransactionException {
+    return new TransactionException(
+      TransactionFailureEnum.UNSUPPORTED_BANK_CODE,
+      detail,
+    );
+  }
+
+  static insufficientDeposit(): TransactionException {
+    return new TransactionException(
+      TransactionFailureEnum.INSUFFICIENT_DEPOSIT,
+    );
   }
 }

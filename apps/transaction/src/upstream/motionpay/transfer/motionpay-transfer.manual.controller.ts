@@ -115,9 +115,10 @@ export class MotionPayTransferManualController {
 
     return this.surfaceUpstreamErrors(() =>
       this.transferService.accountInquiry({
+        systemReference: body.external_id,
+        providerName: ProviderNameEnum.MOTIONPAY,
         bankCode: body.bank_code,
         accountNumber: body.bank_account,
-        code: body.external_id,
       }),
     );
   }
@@ -166,11 +167,16 @@ export class MotionPayTransferManualController {
 
     return this.surfaceUpstreamErrors(() =>
       this.transferService.fundTransfer({
-        code: body.external_id,
+        systemReference: body.external_id,
+        providerName: ProviderNameEnum.MOTIONPAY,
+        merchantReference: body.external_id,
+        amount: {
+          value: new Decimal(body.amount).toFixed(2),
+          currency: 'IDR',
+        },
         bankCode: body.recipient_bank,
         accountNumber: body.recipient_account,
-        accountHolderName: body.recipient_name,
-        nominal: new Decimal(body.amount),
+        accountHolderName: body.recipient_name ?? null,
         note: body.note,
       }),
     );
@@ -192,7 +198,10 @@ export class MotionPayTransferManualController {
     this.assertNotProduction();
 
     return this.surfaceUpstreamErrors(() =>
-      this.transferService.checkTransferStatus(externalId),
+      this.transferService.checkTransferStatus({
+        systemReference: externalId,
+        providerReference: null,
+      }),
     );
   }
 

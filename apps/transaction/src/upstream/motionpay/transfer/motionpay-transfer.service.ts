@@ -1,5 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { assertUpstreamSchema, UpstreamException } from '@app/upstream';
+import {
+  assertUpstreamSchema,
+  UpstreamException,
+  UpstreamTransferInquiryRequestDto,
+  UpstreamTransferInquiryResponseDto,
+  UpstreamTransferRequestDto,
+  UpstreamTransferResponseDto,
+  UpstreamTransferStatusRequestDto,
+  UpstreamTransferStatusResponseDto,
+} from '@app/upstream';
 import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 import Decimal from 'decimal.js';
 import { AxiosError } from 'axios';
@@ -9,6 +18,7 @@ import {
   MOTIONPAY_TRANSFER_ENDPOINT,
   MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_TRANSFER_STATUS_CODE,
+  MOTIONPAY_METADATA_KEY,
 } from '../helper';
 import { isKnownMotionPayBankCode } from '../helper';
 import {
@@ -20,55 +30,9 @@ import {
   MotionPayFundTransferRequestDto,
   MotionPayFundTransferResponseDto,
   MotionPayFundTransferResponseSchema,
-  MotionPayTransferCallbackDto,
   MotionPayTransferStatusResponseDto,
   MotionPayTransferStatusResponseSchema,
 } from '../dto';
-
-export interface AccountInquiryParams {
-  bankCode: string;
-  accountNumber: string;
-  /** Our correlation code, sent as `external_id`. */
-  code: string;
-}
-
-export interface AccountInquiryResult {
-  bankCode: string;
-  accountNumber: string;
-  /** Empty when the lookup failed — check `valid` rather than truthiness. */
-  accountHolderName: string;
-  valid: boolean;
-  message: string;
-  metadata: Record<string, unknown>;
-}
-
-export interface FundTransferParams {
-  /** Our correlation code, sent as `external_id`; also the status lookup key. */
-  code: string;
-  bankCode: string;
-  accountNumber: string;
-  accountHolderName?: string;
-  nominal: Decimal;
-  note: string;
-}
-
-export interface FundTransferResult {
-  code: string;
-  /** MotionPay's transaction identifier. */
-  externalId: string;
-  status: TransactionStatusEnum;
-  nominal: Decimal;
-  message: string;
-  metadata: Record<string, unknown>;
-}
-
-export interface TransferStatusResult {
-  code: string;
-  externalId: string;
-  status: TransactionStatusEnum;
-  message: string;
-  metadata: Record<string, unknown>;
-}
 
 export interface TransferBalanceResult {
   /** Remaining Flash deposit, in rupiah. */
@@ -101,12 +65,12 @@ export class MotionPayTransferService {
    * than throwing — the caller decides whether to abort the payout.
    */
   async accountInquiry(
-    params: AccountInquiryParams,
-  ): Promise<AccountInquiryResult> {
+    params: UpstreamTransferInquiryRequestDto,
+  ): Promise<UpstreamTransferInquiryResponseDto> {
     const body: MotionPayAccountInquiryRequestDto = {
       bank_code: this.assertBankCode(params.bankCode),
       bank_account: params.accountNumber,
-      external_id: this.assertExternalIdLength(params.code),
+      external_id: this.assertExternalIdLength(params.systemReference),
     };
 
     const raw = await this.request(
@@ -147,13 +111,18 @@ export class MotionPayTransferService {
    * arriving by callback or a status poll. Treating only `0001` as success here
    * would wrongly fail almost every real payout.
    */
-  async fundTransfer(params: FundTransferParams): Promise<FundTransferResult> {
+  async fundTransfer(
+    params: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferResponseDto> {
+    const nominal = new Decimal(params.amount.value);
     const body: MotionPayFundTransferRequestDto = {
       recipient_bank: this.assertBankCode(params.bankCode),
       recipient_account: params.accountNumber,
-      amount: this.toWholeRupiah(params.nominal),
+      amount: this.toWholeRupiah(nominal),
       note: params.note,
-      external_id: this.assertExternalIdLength(params.code),
+      // OUR systemReference, not the merchant's reference: the status endpoint
+      // is keyed by this value, so it has to be unique across every merchant.
+      external_id: this.assertExternalIdLength(params.systemReference),
       ...(params.accountHolderName
         ? { recipient_name: params.accountHolderName }
         : {}),
@@ -182,17 +151,18 @@ export class MotionPayTransferService {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `fundTransfer rejected: ${parsed.status.message}`,
-        { status: parsed.status, code: params.code },
+        { status: parsed.status, systemReference: params.systemReference },
       );
     }
 
     return {
-      code: parsed.data?.external_id ?? params.code,
-      externalId: parsed.data?.transaction_id ?? '',
+      providerReference: parsed.data?.transaction_id ?? '',
       status,
-      nominal: params.nominal,
+      nominal: nominal.toFixed(2),
       message: parsed.status.message,
-      metadata: { ...parsed } as Record<string, unknown>,
+      metadata: {
+        [MOTIONPAY_METADATA_KEY.CREATE_TRANSFER]: parsed,
+      } as Record<string, unknown>,
     };
   }
 
@@ -203,11 +173,13 @@ export class MotionPayTransferService {
    * opposite of the QRIS status endpoint. Worth remembering when writing the
    * reconciliation job.
    */
-  async checkTransferStatus(code: string): Promise<TransferStatusResult> {
+  async checkTransferStatus(
+    dto: UpstreamTransferStatusRequestDto,
+  ): Promise<UpstreamTransferStatusResponseDto> {
     const raw = await this.request(
       {
         method: 'GET',
-        url: `${MOTIONPAY_TRANSFER_ENDPOINT.TRANSFER_STATUS}/${encodeURIComponent(code)}`,
+        url: `${MOTIONPAY_TRANSFER_ENDPOINT.TRANSFER_STATUS}/${encodeURIComponent(dto.systemReference)}`,
       },
       'checkTransferStatus',
     );
@@ -220,13 +192,16 @@ export class MotionPayTransferService {
     );
 
     return {
-      code: parsed.data?.external_id ?? code,
-      externalId: parsed.data?.transaction_id ?? '',
+      systemReference: parsed.data?.external_id ?? dto.systemReference,
+      providerReference:
+        parsed.data?.transaction_id ?? dto.providerReference ?? '',
       // `data.status` and `status.code` should agree; prefer the envelope code
       // since it is the documented vocabulary and is always present.
       status: this.mapStatusCode(parsed.status.code),
       message: parsed.status.message,
-      metadata: { ...parsed } as Record<string, unknown>,
+      metadata: {
+        [MOTIONPAY_METADATA_KEY.STATUS_TRANSFER]: parsed,
+      } as Record<string, unknown>,
     };
   }
 
@@ -256,29 +231,6 @@ export class MotionPayTransferService {
       deposit: new Decimal(parsed.data.deposit),
       disbursementId: parsed.data.disbursement_id,
       metadata: { ...parsed } as Record<string, unknown>,
-    };
-  }
-
-  /**
-   * Normalize an inbound transfer callback.
-   *
-   * Pure mapping — no HTTP. The controller that receives the webhook is
-   * responsible for verifying it first.
-   *
-   * ⚠️ MotionPay documents **no signature, secret, or any other authentication**
-   * on this callback; the URL is simply registered in their dashboard. Anything
-   * that can reach the endpoint can post a "success" for an arbitrary
-   * `external_id`. Do not let this drive a balance movement until an
-   * authentication mechanism is agreed with them, or the payout is
-   * independently confirmed via `checkTransferStatus`.
-   */
-  mapCallback(payload: MotionPayTransferCallbackDto): TransferStatusResult {
-    return {
-      code: payload.data.external_id ?? '',
-      externalId: payload.data.transaction_id ?? '',
-      status: this.mapStatusCode(payload.status.code),
-      message: payload.status.message,
-      metadata: { ...payload } as Record<string, unknown>,
     };
   }
 

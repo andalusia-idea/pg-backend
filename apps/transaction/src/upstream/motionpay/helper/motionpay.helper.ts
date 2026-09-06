@@ -1,5 +1,8 @@
 import { TransactionStatusEnum } from '@app/microservice';
-import { MOTIONPAY_TRANSACTION_STATUS } from './motionpay.constant';
+import {
+  MOTIONPAY_TRANSACTION_STATUS,
+  MOTIONPAY_TRANSFER_STATUS_CODE,
+} from './motionpay.constant';
 
 /** WIB is UTC+7, with no daylight saving. */
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -194,6 +197,31 @@ function isExpiry(input: {
 }
 
 /**
+ * Map a Transfer envelope `status.code` to ours.
+ *
+ * Note these are **strings** (`'0001'`), not the numbers the QRIS service uses -
+ * comparing them against the QRIS codes silently never matches.
+ *
+ * `0002 / On Process` is the *expected* result of creating a payout, not a
+ * problem: transfers settle asynchronously. Anything unrecognised holds as
+ * PENDING, which for a payout is the only safe direction - asserting FAILED on
+ * a state we do not understand invites a merchant being refunded for money that
+ * did in fact leave.
+ */
+export function mapMotionPayTransferStatus(
+  code: string | null | undefined,
+): TransactionStatusEnum {
+  switch (code) {
+    case MOTIONPAY_TRANSFER_STATUS_CODE.SUCCESS:
+      return TransactionStatusEnum.SUCCESS;
+    case MOTIONPAY_TRANSFER_STATUS_CODE.FAILED:
+      return TransactionStatusEnum.FAILED;
+    default:
+      return TransactionStatusEnum.PENDING;
+  }
+}
+
+/**
  * Keys under which raw provider payloads are stored in `metadata`.
  *
  * The column is one JSON object keyed by event rather than a single payload, so
@@ -208,6 +236,10 @@ export const MOTIONPAY_METADATA_KEY = {
   CREATE_QRIS_ERROR: 'CREATE_QRIS_ERROR',
   CALLBACK_QRIS: 'CALLBACK_QRIS',
   STATUS_QRIS: 'STATUS_QRIS',
+  CREATE_TRANSFER: 'CREATE_TRANSFER',
+  CREATE_TRANSFER_ERROR: 'CREATE_TRANSFER_ERROR',
+  CALLBACK_TRANSFER: 'CALLBACK_TRANSFER',
+  STATUS_TRANSFER: 'STATUS_TRANSFER',
 } as const;
 export type MotionPayMetadataKey =
   (typeof MOTIONPAY_METADATA_KEY)[keyof typeof MOTIONPAY_METADATA_KEY];

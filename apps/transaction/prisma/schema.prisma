@@ -94,9 +94,17 @@ model DisbursementTransaction {
   id         Int @id @default(autoincrement())
   merchantId Int
 
-  systemReference   String  @unique // Our System Reference No
-  merchantReference String  @unique // partnerReferenceNo (SNAP) - Transaction identifier on service provider system.
-  providerReference String  @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  // Our reference, and for Transfer it is also the key the provider's status
+  // endpoint is queried by - unlike QRIS, which is keyed by *their* id. That
+  // makes global uniqueness load-bearing here, not just tidy.
+  systemReference String @unique
+  // partnerReferenceNo (SNAP). Unique PER MERCHANT, not globally: merchants
+  // number their own payouts, so a global unique would let the first merchant
+  // to use "PAYOUT-001" block every other merchant from that string.
+  merchantReference String
+  // referenceNo (SNAP). Nullable because we do not have it until the provider
+  // answers, and the row is written *before* the provider is called.
+  providerReference String? @unique
   bankReference     String? //reff id from bank
 
   recipientName     String // bisa merchant, agent, atau pihak ketiga
@@ -134,6 +142,8 @@ model DisbursementTransaction {
   AgentBalanceLog    AgentBalanceLog[]
   InternalBalanceLog InternalBalanceLog[]
 
+  @@unique([merchantId, merchantReference])
+  @@index([merchantId])
   @@index([providerName])
   @@index([status])
   @@schema("transaction")

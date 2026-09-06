@@ -144,6 +144,36 @@ A successful purchase call returns `2009000`.
 
 ---
 
+## Disbursement (service code `91`)
+
+Payout. Reuses the shared cases above with the same meanings — `4009101`
+invalid field format, `4009102` missing mandatory field, `4099100` duplicate
+reference, `5029100` provider rejected, `5049100` timeout, `5039100`
+unavailable, `5009100` our bug — plus three that only apply to money leaving.
+
+| Code | HTTP | Failure | What it means | What to do |
+|---|---|---|---|---|
+| `4009103` | **400** | `INVALID_BENEFICIARY` | The bank does not recognise that account | Check `bankCode` and `accountNumber`. We verify with the bank before sending, so this costs you nothing but a round trip |
+| `4009104` | **400** | `UNSUPPORTED_BANK_CODE` | Not a bank or wallet code the provider accepts | Use a code from the supported list |
+| `4039102` | **403** | `INSUFFICIENT_DEPOSIT` | The payout could not be funded | **Not your fault and not fixable by retrying.** Contact support |
+
+### A 200 does not mean paid
+
+Payouts settle asynchronously. `POST /v1/transfer/bank` returning `2009100` means
+**accepted**; `data.status` will normally be `PENDING`. The final state arrives
+on your registered `payoutUrl`, or from a status query.
+
+### Why the beneficiary is checked first
+
+A pay-in that fails can be retried. Money sent to a mistyped account number
+cannot be recalled. So the account is verified with the bank before anything is
+written, and `4009103` is returned instead of a transfer being attempted.
+
+The `accountHolderName` in the response is **the name the bank returned**, not
+the one you sent. If they differ, trust ours — and check the account number.
+
+---
+
 ### On `RATE_LIMITED` and `Retry-After`
 
 Also checked **after** the signature verifies, and for the same class of reason: `X-Client-Id` is an unauthenticated header, so counting before verification would let a stranger exhaust a real merchant's budget by spoofing their id. The budget is spent only by callers who proved they hold the secret.
