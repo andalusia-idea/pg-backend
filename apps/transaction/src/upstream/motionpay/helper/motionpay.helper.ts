@@ -1,5 +1,9 @@
 import { TransactionStatusEnum } from '@app/microservice';
+import { EWalletEnum } from '@app/microservice';
 import {
+  MOTIONPAY_BILLER_EWALLET_PRODUCT_CODE,
+  MOTIONPAY_BILLER_PAYMENT_SUFFIX,
+  MOTIONPAY_BILLER_STATUS_CODE,
   MOTIONPAY_TRANSACTION_STATUS,
   MOTIONPAY_TRANSFER_STATUS_CODE,
 } from './motionpay.constant';
@@ -222,6 +226,71 @@ export function mapMotionPayTransferStatus(
 }
 
 /**
+ * Map a Biller `status` to ours.
+ *
+ * **Integers here**, unlike Transfer's `'0001'` strings - the two must never be
+ * compared against each other.
+ *
+ * Everything unrecognised holds as PENDING, which is not merely the cautious
+ * default but MotionPay's own documented rule: "If a Merchant/Partner receives
+ * a response code that is not defined in the official API specification, the
+ * transaction must be recorded with a status of Pending" until the next
+ * business day's reconciliation resolves it.
+ *
+ * `202 Pending` on payment is the normal asynchronous case, not a problem.
+ */
+export function mapMotionPayBillerStatus(
+  code: number | null | undefined,
+): TransactionStatusEnum {
+  switch (code) {
+    case MOTIONPAY_BILLER_STATUS_CODE.SUCCESS:
+      return TransactionStatusEnum.SUCCESS;
+    case MOTIONPAY_BILLER_STATUS_CODE.INVALID_REQUEST:
+    case MOTIONPAY_BILLER_STATUS_CODE.INVALID_CREDENTIAL:
+    case MOTIONPAY_BILLER_STATUS_CODE.INVALID_PRODUCT_CODE:
+    case MOTIONPAY_BILLER_STATUS_CODE.TRANSACTION_NOT_FOUND:
+    case MOTIONPAY_BILLER_STATUS_CODE.INQUIRY_REQUIRED:
+    case MOTIONPAY_BILLER_STATUS_CODE.INSUFFICIENT_BALANCE:
+    case MOTIONPAY_BILLER_STATUS_CODE.PRODUCT_CUT_OFF:
+      return TransactionStatusEnum.FAILED;
+    default:
+      return TransactionStatusEnum.PENDING;
+  }
+}
+
+/**
+ * The Biller product code for an e-wallet.
+ *
+ * Only open-amount top-up products are mapped: this is a payment gateway using
+ * a PPOB channel for cheap wallet payouts, not a PPOB business. Airtime,
+ * electricity and the rest have no entry here on purpose.
+ */
+export function motionPayEWalletProductCode(wallet: EWalletEnum): string {
+  return MOTIONPAY_BILLER_EWALLET_PRODUCT_CODE[wallet];
+}
+
+/** The payment leg's `external_id`, derived from our own reference. */
+export function motionPayBillerPaymentReference(
+  systemReference: string,
+): string {
+  return `${systemReference}${MOTIONPAY_BILLER_PAYMENT_SUFFIX}`;
+}
+
+/**
+ * Recover our `systemReference` from a payment-leg `external_id`.
+ *
+ * The callback and the status endpoint both echo the payment id, so this is
+ * what turns their reference back into something we can look a row up by.
+ */
+export function motionPayBillerSystemReference(
+  paymentReference: string,
+): string {
+  return paymentReference.endsWith(MOTIONPAY_BILLER_PAYMENT_SUFFIX)
+    ? paymentReference.slice(0, -MOTIONPAY_BILLER_PAYMENT_SUFFIX.length)
+    : paymentReference;
+}
+
+/**
  * Keys under which raw provider payloads are stored in `metadata`.
  *
  * The column is one JSON object keyed by event rather than a single payload, so
@@ -240,6 +309,11 @@ export const MOTIONPAY_METADATA_KEY = {
   CREATE_TRANSFER_ERROR: 'CREATE_TRANSFER_ERROR',
   CALLBACK_TRANSFER: 'CALLBACK_TRANSFER',
   STATUS_TRANSFER: 'STATUS_TRANSFER',
+  INQUIRY_BILLER: 'INQUIRY_BILLER',
+  PAYMENT_BILLER: 'PAYMENT_BILLER',
+  PAYMENT_BILLER_ERROR: 'PAYMENT_BILLER_ERROR',
+  CALLBACK_BILLER: 'CALLBACK_BILLER',
+  STATUS_BILLER: 'STATUS_BILLER',
 } as const;
 export type MotionPayMetadataKey =
   (typeof MOTIONPAY_METADATA_KEY)[keyof typeof MOTIONPAY_METADATA_KEY];

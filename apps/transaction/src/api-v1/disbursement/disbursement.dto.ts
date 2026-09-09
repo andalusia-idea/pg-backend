@@ -1,4 +1,8 @@
-import { AmountType, TransactionStatusEnum } from '@app/microservice';
+import {
+  AmountType,
+  EWalletEnum,
+  TransactionStatusEnum,
+} from '@app/microservice';
 import { Static, Type } from '@sinclair/typebox';
 
 export const CreateTransferRequestSchema = Type.Object(
@@ -49,6 +53,65 @@ export const CreateTransferDataSchema = Type.Object({
   }),
 });
 export type CreateTransferDataDto = Static<typeof CreateTransferDataSchema>;
+
+/**
+ * E-wallet payout.
+ *
+ * A separate endpoint from the bank one because the addressing is genuinely
+ * different - a wallet is reached by wallet plus phone number, not bank code
+ * plus account number - and folding both into one body would mean fields that
+ * are required only sometimes.
+ *
+ * **Which upstream rail carries it is not the merchant's concern.** Providers
+ * reach wallets through both their transfer and their bill-payment APIs at
+ * different prices; picking the cheaper one is our margin decision, and
+ * exposing it here would mean we could not change it without a merchant-side
+ * change.
+ */
+export const CreateTransferEWalletRequestSchema = Type.Object(
+  {
+    amount: AmountType,
+    /** Unique per merchant. Sending it twice is a 409, not a second payout. */
+    merchantReference: Type.String({ minLength: 1, maxLength: 64 }),
+    eWallet: Type.Enum(EWalletEnum),
+    /**
+     * The wallet's registered phone number.
+     *
+     * Named `accountNumber` to match the bank endpoint: it is the same thing -
+     * the identifier of the destination - and calling it something else would
+     * mean every report and reconciliation join had to know which endpoint a
+     * row came from before it could find where the money went.
+     */
+    accountNumber: Type.String({ minLength: 1, maxLength: 16 }),
+    note: Type.Optional(Type.String({ maxLength: 128 })),
+  },
+  { additionalProperties: false },
+);
+export type CreateTransferEWalletRequestDto = Static<
+  typeof CreateTransferEWalletRequestSchema
+>;
+
+/**
+ * `data` payload for an e-wallet payout.
+ *
+ * No `accountHolderName` guarantee: unlike a bank transfer, where inquiry
+ * returns the bank-confirmed holder, a wallet top-up may resolve no name at
+ * all. It is returned when the provider supplies one and empty otherwise
+ * rather than being invented.
+ */
+export const CreateTransferEWalletDataSchema = Type.Object({
+  transactionId: Type.String(),
+  merchantReference: Type.String(),
+  status: Type.Enum(TransactionStatusEnum),
+  beneficiary: Type.Object({
+    eWallet: Type.Enum(EWalletEnum),
+    accountNumber: Type.String(),
+    accountHolderName: Type.String(),
+  }),
+});
+export type CreateTransferEWalletDataDto = Static<
+  typeof CreateTransferEWalletDataSchema
+>;
 
 /** Documentation of the full envelope the merchant receives. */
 export const CreateTransferResponseSchema = Type.Object({

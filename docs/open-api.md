@@ -24,7 +24,7 @@ Related docs — read these rather than duplicating them here:
 |---|---|---|---|---|
 | **1** | Purchase QRIS | ✅ complete | ✅ **working** | Create + status verified end-to-end against sandbox 2026-09-02 |
 | **2** | Disbursement TRANSFER_BANK | ✅ complete | 🔴 blocked | Code done and booting. Nothing can be exercised until Flash whitelist our IP |
-| **3** | Disbursement EWALLET | 🟡 mostly | 🔴 same as phase 2 | Shares the transfer flow; needs a wallet `BaseFee` row and the inquiry question answered |
+| **3** | Disbursement EWALLET | ✅ complete | 🔴 blocked | Built on the **Biller** rails, not Transfer. Needs the IP whitelisted and a `TRANSFEREWALLET` `BaseFee` row |
 | **4** | Purchase status query | ⬜ not started | — | Needs phase 1 live |
 | **5** | Provider callbacks | ✅ complete | 🟡 partial | QRIS **and** Transfer endpoints live and verified. Needs both URLs registered with Flash + their egress IPs |
 | **6** | Merchant webhooks | ⬜ not started | — | Needs phase 5 |
@@ -481,25 +481,98 @@ retry rather than guessing.
 
 ---
 
-## 8. Phase 3 — Disbursement EWALLET 🟡 mostly built
+## 8. Phase 3 — Disbursement EWALLET ✅ built
 
-E-wallet payouts go through the **same** `fundTransfer` endpoint with a wallet
-code in `recipient_bank`, so phase 2's flow already covers them. What remains is
-configuration and one open question.
+E-wallet payout, over the provider's **Biller (PPOB) rails** rather than their
+Transfer rails. Same money to the same wallet, materially cheaper — that price
+difference is the entire reason this path exists.
 
-- [ ] 3.1 **Ask MotionPay whether `accountInquiry` supports wallet codes.** If it
-      does not, the beneficiary-verification step has to be skipped for wallets —
-      and that is a real risk increase to put to the business, not a code detail.
-- [ ] 3.2 Seed the `BaseFee` row for `TRANSFEREWALLET` + `DISBURSEMENT`.
-- [ ] 3.3 Branch `paymentMethodName` in `DisbursementService` — it is currently
-      pinned to `TRANSFERBANK`. The routing lookup already takes the method, so
-      this is a parameter, not a new path.
-- [ ] 3.4 If inquiry is unsupported for wallets, make the skip explicit and
-      commented rather than implicit.
+```
+POST /v1/transfer/ewallet
+{
+  "amount": { "value": "50000.00", "currency": "IDR" },
+  "merchantReference": "PAYOUT-0002",
+  "eWallet": "DANA",              // OVO | DANA | GOPAY | SHOPEEPAY
+  "accountNumber": "081234567890" // the wallet's phone number
+}
+```
 
-The shared bank-code list already includes wallets, and unknown codes are warned
-about rather than rejected — deliberately, since the list is a snapshot and
-MotionPay adding a wallet should not become our outage.
+### How the rail gets chosen
+
+**`paymentMethodName` is the routing decision.** No channel column, no second
+provider, nothing new in the schema:
+
+| Payment method | Rail | Client |
+|---|---|---|
+| `TRANSFERBANK` | Transfer | `MotionPayTransferService` |
+| `TRANSFEREWALLET` | Biller | `MotionPayBillerService` |
+
+`BaseFee` is already keyed on `[providerName, paymentMethodName, transactionType]`,
+so the price difference that justifies the second rail is modelled exactly where
+prices already live. Settlement picks the status client the same way — a top-up
+sent over the biller rails is invisible to the transfer status endpoint, so the
+row's own `paymentMethodName` decides which one is asked.
+
+### What the Biller flow does differently
+
+**Inquiry is not a free validation.** A bank account inquiry answers "does this
+exist". A biller inquiry *opens a transaction at the provider* and discovers the
+price — and returns a `transaction_id` the payment leg cannot proceed without.
+So the row is reserved **before** the inquiry, not after: from that call onward
+there is provider-side state we have to be able to account for.
+
+```
+resolveProvider → reserve row → inquiry → payment → record
+                  ^^^^^^^^^^^ before the first upstream call, not after inquiry
+```
+
+**Two `external_id`s, one stored.** The spec requires the payment leg's
+`external_id` to differ from the inquiry's ("Must be different with inquiry";
+reusing it returns *Duplicate External ID*). Rather than storing a second
+reference, the payment id is **derived** — `{systemReference}-P` — which keeps
+the status endpoint, keyed by that value, reachable from the one column the row
+holds. The callback strips the suffix on the way back in. Round-tripping is
+tested both directions.
+
+**`202 Pending` is success.** As with transfer, the create leg is accepted
+asynchronously. And per MotionPay's own documented rule, **any undocumented
+status code holds as PENDING** for next-day reconciliation rather than being
+guessed at.
+
+### Where the data goes
+
+| Field | Column | Why |
+|---|---|---|
+| Phone number | `recipientAccount` | Same thing as a bank account number — where the money goes. A second column would make every report and reconciliation join branch on payment method before it could find the destination |
+| Wallet (`DANA`) | `recipientBankCode` | Same role: which institution |
+| Resolved name | `recipientName` | Empty when the wallet returns none. **Never fabricated** from what the merchant sent — unlike the bank flow, where it is bank-confirmed |
+| `productCode`, `productName`, upstream `fee`/`total` | `additionalInfo` | Provider-shaped catalogue detail. Every upstream codes its products differently, so the schema should not have an opinion |
+
+`upstreamTotal` is what our biller deposit was actually debited — nominal plus
+the provider's cut. That is the number any future price comparison between the
+two rails gets made on.
+
+### Scope
+
+**E-wallet top-up only.** MotionPay's Biller service also sells airtime,
+electricity tokens, mobile data and Vision+; none of it is in scope and none of
+it is mapped. manapay is a payment gateway using a cheap rail for payouts, not a
+*loket*. Only the four open-amount wallet products exist in
+`MOTIONPAY_BILLER_EWALLET_PRODUCT_CODE`.
+
+Fixed-denomination products are deliberately excluded: they make the *product*
+the price, which would mean merchants picking from a catalogue instead of naming
+an amount — a different business, and one that belongs under `PURCHASE`, not
+`DISBURSEMENT`.
+
+### Still open
+
+- [ ] **IP whitelisting.** Biller shares the Transfer host, so nothing here has
+      ever reached Flash.
+- [ ] **Register `POST /callback/motionpay/biller`.**
+- [ ] **Seed the `TRANSFEREWALLET` + `DISBURSEMENT` `BaseFee` row** — without it
+      routing answers `4039100` and the endpoint is unusable.
+- [ ] Balance ledger, as for every other flow.
 
 ---
 

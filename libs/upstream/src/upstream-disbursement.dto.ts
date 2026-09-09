@@ -1,5 +1,6 @@
 import {
   AmountType,
+  EWalletEnum,
   MoneyType,
   ProviderNameEnum,
   TransactionStatusEnum,
@@ -130,4 +131,75 @@ export const UpstreamWebhookTransferSchema = Type.Object({
 });
 export type UpstreamWebhookTransferDto = Static<
   typeof UpstreamWebhookTransferSchema
+>;
+
+/* -------------------------------------------------------------------------- */
+/*  E-wallet payout                                                            */
+/*                                                                             */
+/*  A second route to the same destination. Providers reach wallets through    */
+/*  their bill-payment rails as well as their transfer rails, and the former   */
+/*  is materially cheaper - so the *payment method* decides the route:         */
+/*  TRANSFERBANK goes out over transfer, TRANSFEREWALLET over the biller.      */
+/*                                                                             */
+/*  Kept as its own contract rather than folded into the transfer DTOs because */
+/*  the addressing is genuinely different: a wallet is reached by wallet plus  */
+/*  phone number, not by bank code plus account number, and the biller leg is  */
+/*  two calls rather than one.                                                 */
+/* -------------------------------------------------------------------------- */
+
+export const UpstreamEWalletTopupRequestSchema = Type.Object({
+  /**
+   * Sent as the provider's `external_id` on the **inquiry** leg. The payment
+   * leg derives its own from this, because the biller spec requires the two to
+   * differ.
+   */
+  systemReference: Type.String(),
+  providerName: Type.Enum(ProviderNameEnum),
+  merchantReference: Type.String(),
+  amount: AmountType,
+  eWallet: Type.Enum(EWalletEnum),
+  /** The wallet's phone number. Stored as `recipientAccount`, same as a bank account. */
+  accountNumber: Type.String(),
+});
+export type UpstreamEWalletTopupRequestDto = Static<
+  typeof UpstreamEWalletTopupRequestSchema
+>;
+
+/**
+ * What the inquiry leg discovered.
+ *
+ * Unlike a bank account inquiry - which only answers "does this exist" - a
+ * biller inquiry **creates state at the provider** and discovers the price. The
+ * `providerReference` it returns is required by the payment leg, so it has to
+ * survive between the two calls.
+ */
+export const UpstreamEWalletInquiryResponseSchema = Type.Object({
+  /** The provider's `transaction_id`. **Payment cannot proceed without it.** */
+  providerReference: Type.String(),
+  /** Name the wallet resolved to. Empty when the provider does not supply one. */
+  accountHolderName: Type.String(),
+  productCode: Type.String(),
+  productName: Type.String(),
+  /** What the customer receives. */
+  nominal: MoneyType,
+  /** The provider's cut, on top of the nominal. */
+  fee: MoneyType,
+  /** `nominal + fee + penalty` - what our deposit is actually debited. */
+  total: MoneyType,
+  metadata: Type.Record(Type.String(), Type.Unknown()),
+});
+export type UpstreamEWalletInquiryResponseDto = Static<
+  typeof UpstreamEWalletInquiryResponseSchema
+>;
+
+export const UpstreamEWalletTopupResponseSchema = Type.Object({
+  providerReference: Type.String(),
+  /** `202 Pending` is the ordinary outcome; top-ups settle asynchronously. */
+  status: Type.Enum(TransactionStatusEnum),
+  nominal: MoneyType,
+  message: Type.Union([Type.String(), Type.Null()]),
+  metadata: Type.Record(Type.String(), Type.Unknown()),
+});
+export type UpstreamEWalletTopupResponseDto = Static<
+  typeof UpstreamEWalletTopupResponseSchema
 >;

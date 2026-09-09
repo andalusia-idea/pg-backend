@@ -77,6 +77,29 @@ const DEV_BASE_FEES = [
     feeProviderFixed: '1200',
     feeProviderPercentage: '0',
   },
+  /**
+   * The cheap wallet rail, and the row that makes it reachable.
+   *
+   * Without this the routing lookup finds nothing for
+   * TRANSFEREWALLET/DISBURSEMENT and `/v1/transfer/ewallet` answers `4039100` -
+   * so this row *is* the switch that turns the biller path on.
+   *
+   * The `300` is not arbitrary in the way the rates above are: MotionPay's own
+   * Biller samples show a fee of 300 on a 10,000 DANA top-up and 500 on a
+   * GoPay one, against 1200 flat for the same money over TRANSFERBANK. That
+   * gap is the entire reason this second rail exists, and seeding a number that
+   * did not show it would make the dev data misrepresent the decision.
+   *
+   * Still a dev fixture. The real per-wallet rates are commercial terms and
+   * belong in the dashboard's fee-config screens, not here.
+   */
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
   {
     providerName: ProviderNameEnum.INTERNAL,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,

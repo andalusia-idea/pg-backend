@@ -41,8 +41,8 @@ function compile<T>(schema: Schema): ValidateFunction<T> {
  * reported to our own API consumers as a 400.
  */
 export function assertUpstreamSchema<T>(
-  context: string,
   provider: ProviderNameEnum,
+  context: string,
   schema: Schema,
   value: unknown,
 ): T {

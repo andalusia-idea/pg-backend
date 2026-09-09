@@ -1,7 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import { TransactionStatusEnum } from '@app/microservice';
+import { EWalletEnum } from '@app/microservice';
 import {
   getMotionPayTimestampSkewHours,
+  mapMotionPayBillerStatus,
+  motionPayBillerPaymentReference,
+  motionPayBillerSystemReference,
+  motionPayEWalletProductCode,
   mapMotionPayStatus,
   parseMotionPayTimestamp,
 } from './motionpay.helper';
@@ -189,5 +194,109 @@ describe('mapMotionPayStatus', () => {
     expect(mapMotionPayStatus({ status: 'PENDING' })).toBe(
       TransactionStatusEnum.PENDING,
     );
+  });
+});
+
+describe('mapMotionPayBillerStatus', () => {
+  it('maps 200 to SUCCESS', () => {
+    expect(mapMotionPayBillerStatus(200)).toBe(TransactionStatusEnum.SUCCESS);
+  });
+
+  /**
+   * `202 Pending` is the ordinary outcome of a top-up, not a problem - they
+   * settle asynchronously. Mapping it to anything terminal would close out
+   * transactions that are still in flight.
+   */
+  it('holds 202 as PENDING', () => {
+    expect(mapMotionPayBillerStatus(202)).toBe(TransactionStatusEnum.PENDING);
+  });
+
+  it('maps documented rejections to FAILED', () => {
+    for (const code of [400, 401, 402, 403, 404, 405, 503]) {
+      expect(mapMotionPayBillerStatus(code)).toBe(TransactionStatusEnum.FAILED);
+    }
+  });
+
+  /**
+   * MotionPay's own documented rule for undefined codes: record as Pending and
+   * let the next business day's reconciliation resolve it. Also the only safe
+   * direction - never assert paid or failed on a state we do not understand.
+   */
+  it('holds anything undocumented as PENDING', () => {
+    expect(mapMotionPayBillerStatus(299)).toBe(TransactionStatusEnum.PENDING);
+    expect(mapMotionPayBillerStatus(500)).toBe(TransactionStatusEnum.PENDING);
+    expect(mapMotionPayBillerStatus(undefined)).toBe(
+      TransactionStatusEnum.PENDING,
+    );
+    expect(mapMotionPayBillerStatus(null)).toBe(TransactionStatusEnum.PENDING);
+  });
+
+  /** 204/205 are duplicates - the real state has to be fetched, not assumed. */
+  it('holds duplicate-id rejections as PENDING, not FAILED', () => {
+    expect(mapMotionPayBillerStatus(204)).toBe(TransactionStatusEnum.PENDING);
+    expect(mapMotionPayBillerStatus(205)).toBe(TransactionStatusEnum.PENDING);
+  });
+});
+
+describe('biller external_id derivation', () => {
+  const SYSTEM_REFERENCE = '1772001455392DTEMTNPY-27-a1b2';
+
+  /**
+   * The biller spec requires the payment leg's `external_id` to differ from the
+   * inquiry's. Deriving rather than storing a second reference is what keeps the
+   * status endpoint - which is keyed by the payment id - reachable from the one
+   * value the row holds.
+   */
+  it('derives a payment reference distinct from the inquiry one', () => {
+    const payment = motionPayBillerPaymentReference(SYSTEM_REFERENCE);
+
+    expect(payment).not.toBe(SYSTEM_REFERENCE);
+    expect(payment.startsWith(SYSTEM_REFERENCE)).toBe(true);
+  });
+
+  it('round-trips back to the system reference', () => {
+    expect(
+      motionPayBillerSystemReference(
+        motionPayBillerPaymentReference(SYSTEM_REFERENCE),
+      ),
+    ).toBe(SYSTEM_REFERENCE);
+  });
+
+  /**
+   * The callback echoes the payment id, but a status poll or a manual replay
+   * might pass the bare reference. Stripping has to be idempotent so both reach
+   * the same row.
+   */
+  it('leaves an unsuffixed reference alone', () => {
+    expect(motionPayBillerSystemReference(SYSTEM_REFERENCE)).toBe(
+      SYSTEM_REFERENCE,
+    );
+  });
+
+  /** Their `external_id` cap is 64; ours is 32, so the suffix always fits. */
+  it('stays inside the provider limit', () => {
+    expect(
+      motionPayBillerPaymentReference(SYSTEM_REFERENCE).length,
+    ).toBeLessThanOrEqual(64);
+  });
+});
+
+describe('motionPayEWalletProductCode', () => {
+  /**
+   * Open-amount products only. Fixed-denomination PPOB codes would make the
+   * product the price, which is a different business - we are a gateway using a
+   * cheap rail, not a loket selling vouchers.
+   */
+  it('maps every wallet we accept to an open-amount product', () => {
+    expect(motionPayEWalletProductCode(EWalletEnum.OVO)).toBe('ESBO01');
+    expect(motionPayEWalletProductCode(EWalletEnum.DANA)).toBe('ESBO02');
+    expect(motionPayEWalletProductCode(EWalletEnum.GOPAY)).toBe('ESBO03');
+    expect(motionPayEWalletProductCode(EWalletEnum.SHOPEEPAY)).toBe('ESBO04');
+  });
+
+  it('covers the whole enum, so a new wallet cannot be silently unroutable', () => {
+    for (const wallet of Object.values(EWalletEnum)) {
+      expect(motionPayEWalletProductCode(wallet)).toMatch(/^ESBO\d{2}$/);
+    }
   });
 });

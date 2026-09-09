@@ -157,6 +157,22 @@ unavailable, `5009100` our bug — plus three that only apply to money leaving.
 | `4009104` | **400** | `UNSUPPORTED_BANK_CODE` | Not a bank or wallet code the provider accepts | Use a code from the supported list |
 | `4039102` | **403** | `INSUFFICIENT_DEPOSIT` | The payout could not be funded | **Not your fault and not fixable by retrying.** Contact support |
 
+### Two payout endpoints, one behaviour
+
+`POST /v1/transfer/bank` and `POST /v1/transfer/ewallet` share every code above.
+They differ only in how the destination is addressed — bank code plus account
+number, or wallet plus phone number.
+
+**Which upstream rail carries the money is not exposed and may change.** We reach
+wallets through more than one of our provider's APIs at different prices, and
+picking the cheaper one is our decision. Nothing in the request or the response
+tells you which was used, and nothing about your integration depends on it.
+
+One difference worth knowing: on the bank endpoint `beneficiary.accountHolderName`
+is the name **the bank confirmed**. On the e-wallet endpoint it is whatever the
+wallet resolved, and may be empty — some wallets return no name. It is never
+invented from what you sent.
+
 ### A 200 does not mean paid
 
 Payouts settle asynchronously. `POST /v1/transfer/bank` returning `2009100` means

@@ -22,6 +22,68 @@ export const MOTIONPAY_TRANSFER_ENDPOINT = {
 } as const;
 
 /**
+ * Biller (PPOB) endpoints.
+ *
+ * We use exactly one of the four product categories MotionPay's Biller service
+ * offers: **e-wallet top-up**. It is materially cheaper than sending the same
+ * money through the Transfer API, which is the whole reason this second path
+ * exists. Airtime, electricity tokens and the rest of PPOB are not in scope -
+ * manapay is a payment gateway, not a *loket*.
+ */
+export const MOTIONPAY_BILLER_ENDPOINT = {
+  TOKEN: '/auth/v2/access-token',
+  INQUIRY: '/biller/v1/inquiry',
+  PAYMENT: '/biller/v1/payment',
+  CHECK_STATUS: '/biller/v1/checkstatus',
+  BALANCE: '/biller/v1/balance',
+} as const;
+
+/**
+ * Biller transaction status codes. **Integers**, unlike Transfer's strings and
+ * distinct from the QRIS envelope codes - three vocabularies, one vendor.
+ */
+export const MOTIONPAY_BILLER_STATUS_CODE = {
+  SUCCESS: 200,
+  PENDING: 202,
+  DUPLICATE_EXTERNAL_ID: 204,
+  DUPLICATE_TRANSACTION_ID: 205,
+  INVALID_REQUEST: 400,
+  INVALID_CREDENTIAL: 401,
+  INVALID_PRODUCT_CODE: 402,
+  TRANSACTION_NOT_FOUND: 403,
+  INQUIRY_REQUIRED: 404,
+  INSUFFICIENT_BALANCE: 405,
+  INTERNAL_ERROR: 500,
+  PRODUCT_CUT_OFF: 503,
+} as const;
+
+/**
+ * Open-amount e-wallet product codes, from Appendix B of the Biller spec.
+ *
+ * **Open amount, deliberately.** The fixed-denomination products (`S10` =
+ * Telkomsel 10,000) make the *product* the price, which would mean a merchant
+ * picking from a catalogue rather than naming an amount. Open amount lets us
+ * send `nominal` and keep the payout API identical to the bank one.
+ */
+export const MOTIONPAY_BILLER_EWALLET_PRODUCT_CODE = {
+  OVO: 'ESBO01',
+  DANA: 'ESBO02',
+  GOPAY: 'ESBO03',
+  SHOPEEPAY: 'ESBO04',
+} as const;
+
+/**
+ * Suffix distinguishing the payment leg's `external_id` from the inquiry's.
+ *
+ * The Biller flow is two calls, and the spec requires the payment's
+ * `external_id` to differ from the inquiry's ("Must be different with
+ * inquiry"). Deriving it from our `systemReference` rather than storing a
+ * second reference keeps both legs - and the status lookup, which is keyed by
+ * the *payment* id - reachable from the one value we already hold.
+ */
+export const MOTIONPAY_BILLER_PAYMENT_SUFFIX = '-P';
+
+/**
  * Transfer envelope `status.code` values. Note these are **strings**, not the
  * numbers QRIS uses — do not compare them against MOTIONPAY_STATUS_CODE.
  */

@@ -83,8 +83,8 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayAccountInquiryResponseDto>(
-      'accountInquiry',
       ProviderNameEnum.MOTIONPAY,
+      'accountInquiry',
       MotionPayAccountInquiryResponseSchema,
       raw,
     );
@@ -138,8 +138,8 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayFundTransferResponseDto>(
-      'fundTransfer',
       ProviderNameEnum.MOTIONPAY,
+      'fundTransfer',
       MotionPayFundTransferResponseSchema,
       raw,
     );
@@ -185,8 +185,8 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayTransferStatusResponseDto>(
-      'checkTransferStatus',
       ProviderNameEnum.MOTIONPAY,
+      'checkTransferStatus',
       MotionPayTransferStatusResponseSchema,
       raw,
     );
@@ -213,8 +213,8 @@ export class MotionPayTransferService {
     );
 
     const parsed = assertUpstreamSchema<MotionPayBalanceResponseDto>(
-      'checkBalance',
       ProviderNameEnum.MOTIONPAY,
+      'checkBalance',
       MotionPayBalanceResponseSchema,
       raw,
     );

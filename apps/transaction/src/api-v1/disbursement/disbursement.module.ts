@@ -2,7 +2,9 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { MotionPayModule } from '../../upstream/motionpay';
 import { DisbursementController } from './disbursement.controller';
-import { DisbursementService } from './disbursement.service';
+import { DisbursementBankService } from './disbursement-bank.service';
+import { DisbursementCommonService } from './disbursement-common.service';
+import { DisbursementEWalletService } from './disbursement-ewallet.service';
 import { DisbursementWebhookService } from './disbursement.webhook.service';
 
 /**
@@ -13,7 +15,12 @@ import { DisbursementWebhookService } from './disbursement.webhook.service';
 @Module({
   imports: [MotionPayModule, HttpModule],
   controllers: [DisbursementController],
-  providers: [DisbursementService, DisbursementWebhookService],
+  providers: [
+    DisbursementCommonService,
+    DisbursementBankService,
+    DisbursementEWalletService,
+    DisbursementWebhookService,
+  ],
   exports: [DisbursementWebhookService],
 })
 export class DisbursementModule {}

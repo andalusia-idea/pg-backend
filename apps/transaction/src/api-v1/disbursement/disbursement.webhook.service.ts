@@ -18,7 +18,10 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
 import { firstValueFrom, timeout } from 'rxjs';
-import { MotionPayTransferService } from '../../upstream/motionpay';
+import {
+  MotionPayBillerService,
+  MotionPayTransferService,
+} from '../../upstream/motionpay';
 import { WebhookPayoutDto } from './disbursement.dto';
 
 /**
@@ -53,10 +56,10 @@ export class DisbursementWebhookService {
     private readonly feeCalculateClient: FeeCalculateConfigClient,
     private readonly merchantSignatureClient: MerchantSignatureAuthClient,
     private readonly motionPayTransferService: MotionPayTransferService,
+    private readonly motionPayBillerService: MotionPayBillerService,
   ) {}
 
   private readonly transactionType = TransactionTypeEnum.DISBURSEMENT;
-  private readonly paymentMethodName = PaymentMethodNameEnum.TRANSFERBANK;
 
   /**
    * Settle a payout from a provider notification.
@@ -99,6 +102,8 @@ export class DisbursementWebhookService {
     const confirmed = await this.confirmWithProvider({
       disbursementId: disbursement.id,
       providerName: disbursement.providerName as ProviderNameEnum,
+      paymentMethodName:
+        disbursement.paymentMethodName as PaymentMethodNameEnum,
       systemReference: payload.systemReference,
       providerReference: disbursement.providerReference,
     });
@@ -142,6 +147,10 @@ export class DisbursementWebhookService {
       ? await this.calculateFee({
           merchantId: disbursement.merchantId,
           providerName: disbursement.providerName as ProviderNameEnum,
+          // The fee schedule differs per rail - which is the whole reason the
+          // e-wallet path exists - so the method has to reach the calculator.
+          paymentMethodName:
+            disbursement.paymentMethodName as PaymentMethodNameEnum,
           nominal: disbursement.nominal.toFixed(2),
         })
       : null;
@@ -271,23 +280,36 @@ export class DisbursementWebhookService {
   private async confirmWithProvider({
     disbursementId,
     providerName,
+    paymentMethodName,
     systemReference,
     providerReference,
   }: {
     disbursementId: number;
     providerName: ProviderNameEnum;
+    paymentMethodName: PaymentMethodNameEnum;
     systemReference: string;
     providerReference: string | null;
   }): Promise<UpstreamTransferStatusResponseDto | null> {
+    // The payment method decides which rail carried this payout, and therefore
+    // which status endpoint knows about it. A wallet top-up sent over the
+    // biller rails is invisible to the transfer status endpoint and vice versa.
+    const isEWallet =
+      paymentMethodName === PaymentMethodNameEnum.TRANSFEREWALLET;
+
     try {
       switch (providerName) {
         case ProviderNameEnum.MOTIONPAY:
           // `return await`, not `return`: without the await the promise rejects
           // after this try block has exited and the catch never runs.
-          return await this.motionPayTransferService.checkTransferStatus({
-            systemReference,
-            providerReference,
-          });
+          return await (isEWallet
+            ? this.motionPayBillerService.checkStatus({
+                systemReference,
+                providerReference,
+              })
+            : this.motionPayTransferService.checkTransferStatus({
+                systemReference,
+                providerReference,
+              }));
         default:
           this.logger.error({
             msg: 'No transfer status client for this provider',
@@ -317,6 +339,7 @@ export class DisbursementWebhookService {
           merchantReference: true,
           merchantId: true,
           providerName: true,
+          paymentMethodName: true,
           providerReference: true,
           status: true,
           nominal: true,
@@ -363,17 +386,19 @@ export class DisbursementWebhookService {
   private async calculateFee({
     merchantId,
     providerName,
+    paymentMethodName,
     nominal,
   }: {
     merchantId: number;
     providerName: ProviderNameEnum;
+    paymentMethodName: PaymentMethodNameEnum;
     nominal: string;
   }): Promise<FeeCalculationResultDto | null> {
     try {
       return await this.feeCalculateClient.disbursement({
         merchantId,
         providerName,
-        paymentMethodName: this.paymentMethodName,
+        paymentMethodName,
         nominal,
       });
     } catch (error) {
@@ -437,6 +462,7 @@ type DisbursementRow = {
   merchantReference: string;
   merchantId: number;
   providerName: string;
+  paymentMethodName: string;
   providerReference: string | null;
   status: string;
   nominal: Decimal;

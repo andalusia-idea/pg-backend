@@ -47,7 +47,7 @@ The spec's `servers` block and the docs site's own `config.js`:
 
 > **✅ Resolved 13 Aug 2026 — use `.id`.** The prose section of the same document gives `.co.id` (and so does its cURL sample), contradicting the `servers` block. Tested directly: **`sandbox-app.flashmobile.co.id` does not resolve at all** (DNS failure), while `sandbox-app.flashmobile.id` authenticates successfully. The `.co.id` references in the docs are wrong — ignore them.
 
-The base URL is still read from `MOTIONPAY_BASE_URL` rather than hardcoded, so production can be pointed without a code change.
+The base URL is still read from `MOTIONPAY_QRIS_BASE_URL` rather than hardcoded, so production can be pointed without a code change.
 
 There are also `SECURE_SANDBOX` / `SECURE_LIVE` hosts (`sandbox-secure.flashmobile.id` / `secure.flashmobile.id`) in the site config. No QRIS endpoint in this spec uses them; ignore unless told otherwise.
 
@@ -422,7 +422,7 @@ Credentials are read from env only. The legacy PDN integration hardcoded its key
 ### Required environment variables
 
 ```bash
-MOTIONPAY_BASE_URL="https://sandbox-app.flashmobile.id"   # confirm .id vs .co.id first
+MOTIONPAY_QRIS_BASE_URL="https://sandbox-app.flashmobile.id"   # confirm .id vs .co.id first
 MOTIONPAY_CLIENT_KEY="<from Flash merchant dashboard>"
 MOTIONPAY_SERVER_KEY="<from Flash merchant dashboard>"
 MOTIONPAY_TIMEOUT_MS=15000              # optional, default 15000

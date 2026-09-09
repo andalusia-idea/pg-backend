@@ -155,3 +155,11 @@ export const FeeTypeEnum = {
   MERCHANT: 'MERCHANT',
 } as const;
 export type FeeTypeEnum = (typeof FeeTypeEnum)[keyof typeof FeeTypeEnum];
+
+export const EWalletEnum = {
+  OVO: 'OVO',
+  DANA: 'DANA',
+  GOPAY: 'GOPAY',
+  SHOPEEPAY: 'SHOPEEPAY',
+} as const;
+export type EWalletEnum = (typeof EWalletEnum)[keyof typeof EWalletEnum];

@@ -93,8 +93,8 @@ export class MotionPayQrisService {
       data: body,
     });
     const parsed = assertUpstreamSchema<MotionPayCreateQrisResponseDto>(
-      context,
       ProviderNameEnum.MOTIONPAY,
+      context,
       MotionPayCreateQrisResponseSchema,
       raw,
     );
@@ -187,8 +187,8 @@ export class MotionPayQrisService {
     });
 
     const parsed = assertUpstreamSchema<MotionPayQrisStatusResponseDto>(
-      'getQrisStatus',
       ProviderNameEnum.MOTIONPAY,
+      'getQrisStatus',
       MotionPayQrisStatusResponseSchema,
       raw,
     );

@@ -30,10 +30,6 @@ export class MotionPayConfig {
    * `flashmobile.co.id` in the prose and the cURL sample). See
    * docs/upstream/motionpay.md.
    */
-  get BASE_URL(): string {
-    const value = this.configService.getOrThrow<string>('MOTIONPAY_BASE_URL');
-    return value.replace(/\/+$/, '');
-  }
 
   get CLIENT_KEY(): string {
     return this.configService.getOrThrow<string>('MOTIONPAY_CLIENT_KEY');
@@ -41,6 +37,13 @@ export class MotionPayConfig {
 
   get SERVER_KEY(): string {
     return this.configService.getOrThrow<string>('MOTIONPAY_SERVER_KEY');
+  }
+
+  get QRIS_BASE_URL(): string {
+    const value = this.configService.getOrThrow<string>(
+      'MOTIONPAY_QRIS_BASE_URL',
+    );
+    return value.replace(/\/+$/, '');
   }
 
   /**
@@ -122,7 +125,7 @@ export class MotionPayConfig {
    *                                                                    *
    * Transfer is a separate product from QRIS with its own host and its *
    * own token endpoint, so it gets its own settings rather than reusing *
-   * BASE_URL above. Credentials fall back to the QRIS pair when the     *
+   * QRIS_BASE_URL above. Credentials fall back to the QRIS pair when the     *
    * transfer-specific ones are unset, since a merchant may be issued    *
    * one set for both.                                                   *
    * ------------------------------------------------------------------ */
@@ -154,5 +157,12 @@ export class MotionPayConfig {
       this.configService.get<string>('MOTIONPAY_TRANSFER_SERVER_KEY') ||
       this.SERVER_KEY
     );
+  }
+
+  get BILLER_BASE_URL(): string {
+    const value = this.configService.getOrThrow<string>(
+      'MOTIONPAY_BILLER_BASE_URL',
+    );
+    return value.replace(/\/+$/, '');
   }
 }

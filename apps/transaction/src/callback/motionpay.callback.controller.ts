@@ -14,6 +14,9 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { DisbursementWebhookService } from '../api-v1/disbursement';
 import { PurchaseWebhookService } from '../api-v1/purchase';
 import {
+  MotionPayBillerCallbackDto,
+  MotionPayBillerCallbackSchema,
+  MotionPayBillerCallbackService,
   MotionPayQrisCallbackDto,
   MotionPayQrisCallbackSchema,
   MotionPayQrisCallbackService,
@@ -32,6 +35,7 @@ export class MotionPayCallbackController {
     private readonly purchaseWebhookService: PurchaseWebhookService,
     private readonly transferCallbackService: MotionPayTransferCallbackService,
     private readonly disbursementWebhookService: DisbursementWebhookService,
+    private readonly billerCallbackService: MotionPayBillerCallbackService,
   ) {}
 
   /**
@@ -138,6 +142,59 @@ export class MotionPayCallbackController {
     const payload = body as MotionPayTransferCallbackDto;
 
     const translation = this.transferCallbackService.translate(
+      payload,
+      request.ip,
+    );
+    if (!translation.accepted) return { received: true };
+
+    const outcome = await this.disbursementWebhookService.handle(
+      translation.webhook,
+    );
+
+    if (outcome.retry) {
+      void reply.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return { received: false };
+    }
+
+    return { received: true };
+  }
+
+  /**
+   * Biller payout notification — e-wallet top-ups.
+   *
+   * A third route into the same settlement path. The Biller rails carry the
+   * same payout the Transfer rails would, more cheaply, so the notification
+   * lands in `DisbursementWebhookService` exactly like a transfer one: the
+   * translator emits the same neutral shape, and which rail was used stays a
+   * routing detail rather than a fork in the settlement logic.
+   *
+   * Unauthenticated like the other two, and treated the same way - the body is
+   * a trigger, and nothing is written until an authenticated status read
+   * confirms it.
+   */
+  @Post('biller')
+  @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'MotionPay biller (e-wallet top-up) notification' })
+  async biller(
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<{ received: boolean }> {
+    if (!Value.Check(MotionPayBillerCallbackSchema, body)) {
+      this.logger.warn({
+        msg: 'Malformed MotionPay biller callback',
+        sourceIp: request.ip,
+        errors: [...Value.Errors(MotionPayBillerCallbackSchema, body)]
+          .slice(0, 3)
+          .map((error) => `${error.path} ${error.message}`),
+      });
+      return { received: true };
+    }
+
+    const payload = body as MotionPayBillerCallbackDto;
+
+    const translation = this.billerCallbackService.translate(
       payload,
       request.ip,
     );

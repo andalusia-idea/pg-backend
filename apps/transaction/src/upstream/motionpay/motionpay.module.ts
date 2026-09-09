@@ -12,6 +12,12 @@ import {
   MotionPayTransferManualController,
   MotionPayTransferService,
 } from './transfer';
+import {
+  MotionPayBillerAuthService,
+  MotionPayBillerCallbackService,
+  MotionPayBillerManualController,
+  MotionPayBillerService,
+} from './biller';
 
 /**
  * MotionPay (Flash Mobile) client — two independent products behind one
@@ -42,6 +48,7 @@ import {
   controllers: [
     MotionPayQrisManualController,
     MotionPayTransferManualController,
+    MotionPayBillerManualController,
   ],
   providers: [
     MotionPayQrisAuthService,
@@ -50,12 +57,17 @@ import {
     MotionPayTransferAuthService,
     MotionPayTransferService,
     MotionPayTransferCallbackService,
+    MotionPayBillerAuthService,
+    MotionPayBillerService,
+    MotionPayBillerCallbackService,
   ],
   exports: [
     MotionPayQrisService,
     MotionPayQrisCallbackService,
     MotionPayTransferService,
     MotionPayTransferCallbackService,
+    MotionPayBillerService,
+    MotionPayBillerCallbackService,
   ],
 })
 export class MotionPayModule {}

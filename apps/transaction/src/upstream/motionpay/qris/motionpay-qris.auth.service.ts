@@ -59,7 +59,7 @@ export class MotionPayQrisAuthService {
 
   private async send<T>(config: AxiosRequestConfig, token: string): Promise<T> {
     const configRequest: AxiosRequestConfig = {
-      baseURL: this.motionPayConfig.BASE_URL,
+      baseURL: this.motionPayConfig.QRIS_BASE_URL,
       timeout: this.motionPayConfig.TIMEOUT_MS,
       ...config,
       headers: {
@@ -107,6 +107,7 @@ export class MotionPayQrisAuthService {
   }
 
   private async fetchToken(): Promise<string> {
+    const context = 'qris token';
     const body: MotionPayTokenRequestDto = {
       client_key: this.motionPayConfig.CLIENT_KEY,
       server_key: this.motionPayConfig.SERVER_KEY,
@@ -116,7 +117,7 @@ export class MotionPayQrisAuthService {
     try {
       const response = await firstValueFrom(
         this.httpService.post<unknown>(MOTIONPAY_QRIS_ENDPOINT.TOKEN, body, {
-          baseURL: this.motionPayConfig.BASE_URL,
+          baseURL: this.motionPayConfig.QRIS_BASE_URL,
           timeout: this.motionPayConfig.TIMEOUT_MS,
           headers: { 'Content-Type': 'application/json' },
         }),
@@ -127,7 +128,7 @@ export class MotionPayQrisAuthService {
       const axiosError = error as AxiosError;
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
-        'token request failed',
+        `${context} request failed`,
         {
           status: axiosError.response?.status,
           response: axiosError.response?.data,
@@ -136,8 +137,8 @@ export class MotionPayQrisAuthService {
     }
 
     const parsed = assertUpstreamSchema<MotionPayTokenResponseDto>(
-      'token',
       ProviderNameEnum.MOTIONPAY,
+      context,
       MotionPayTokenResponseSchema,
       raw,
     );
