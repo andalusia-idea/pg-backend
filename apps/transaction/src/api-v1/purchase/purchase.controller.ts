@@ -11,12 +11,12 @@ import {
   type CreateQrisRequestDto,
   CreateQrisRequestSchema,
 } from './purchase.dto';
-import { PurchaseService } from './purchase.service';
+import { PurchaseQrisService } from './purchase-qris.service';
 
 @Controller()
 @ApiTags('Merchant API v1')
 export class PurchaseController {
-  constructor(private readonly purchaseService: PurchaseService) {}
+  constructor(private readonly qrisService: PurchaseQrisService) {}
 
   @Post('/open/v1/test')
   @MerchantEndpoint()
@@ -47,6 +47,6 @@ export class PurchaseController {
     @Body(MerchantBodyPipe<CreateQrisRequestDto>(CreateQrisRequestSchema))
     body: CreateQrisRequestDto,
   ) {
-    return this.purchaseService.createQRIS(userId, body);
+    return this.qrisService.createPurchase(userId, body);
   }
 }

@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MotionPayModule } from '../../upstream/motionpay';
 import { PurchaseController } from './purchase.controller';
-import { PurchaseService } from './purchase.service';
+import { PurchaseCommonService } from './purchase-common.service';
+import { PurchaseQrisService } from './purchase-qris.service';
 import { PurchaseWebhookService } from './purchase.webhook.service';
 import { HttpModule } from '@nestjs/axios';
 
@@ -17,7 +18,11 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [MotionPayModule, HttpModule],
   controllers: [PurchaseController],
-  providers: [PurchaseService, PurchaseWebhookService],
+  providers: [
+    PurchaseCommonService,
+    PurchaseQrisService,
+    PurchaseWebhookService,
+  ],
   exports: [PurchaseWebhookService],
 })
 export class PurchaseModule {}

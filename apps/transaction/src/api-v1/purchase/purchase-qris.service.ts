@@ -1,17 +1,14 @@
 import {
   PaymentMethodNameEnum,
-  ProfileClient,
   ProviderNameEnum,
   TransactionException,
   TransactionStatusEnum,
-  TransactionTypeEnum,
-  UserRoleEnum,
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
+  UpstreamException,
   UpstreamQrisRequestDto,
   UpstreamQrisResponseDto,
-  UpstreamException,
 } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
@@ -21,26 +18,28 @@ import {
   MotionPayQrisService,
 } from '../../upstream/motionpay';
 import { generateSystemReference } from '../transaction.helper';
+import { PurchaseCommonService } from './purchase-common.service';
 import { CreateQrisDataDto, CreateQrisRequestDto } from './purchase.dto';
 
-/** Prisma's unique-constraint violation. */
-const UNIQUE_VIOLATION = 'P2002';
-
+/**
+ * Pay-in by dynamic QRIS.
+ *
+ * What it shares with any other pay-in instrument lives in
+ * `PurchaseCommonService`; what is specific to presenting a customer with a QR
+ * code - and to the fact that QR codes expire - is here.
+ */
 @Injectable()
-export class PurchaseService {
-  private readonly logger = new Logger(PurchaseService.name);
+export class PurchaseQrisService {
+  private readonly logger = new Logger(PurchaseQrisService.name);
 
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
 
-    private readonly profileClient: ProfileClient,
-
+    private readonly common: PurchaseCommonService,
     private readonly motionPayQrisService: MotionPayQrisService,
   ) {}
 
-  private readonly userRole = UserRoleEnum.MERCHANT;
-  private readonly transactionType = TransactionTypeEnum.PURCHASE;
   private readonly paymentMethodName = PaymentMethodNameEnum.QRIS;
 
   /**
@@ -63,15 +62,18 @@ export class PurchaseService {
    * is rejected atomically. A read-then-write check would let two concurrent
    * retries both pass the check and both create a QR upstream.
    */
-  async createQRIS(
+  async createPurchase(
     userId: number,
     dto: CreateQrisRequestDto,
   ): Promise<CreateQrisDataDto> {
-    const providerName = await this.resolveProvider(userId);
+    const providerName = await this.common.resolveProvider(
+      userId,
+      this.paymentMethodName,
+    );
 
     const systemReference = generateSystemReference({
       userId,
-      transactionType: this.transactionType,
+      transactionType: this.common.transactionType,
       paymentMethodName: this.paymentMethodName,
       providerName,
       length: 32,
@@ -106,49 +108,7 @@ export class PurchaseService {
   }
 
   /**
-   * Which provider this merchant routes QRIS pay-ins to.
-   *
-   * A merchant with no fee configuration for QRIS/PURCHASE gets a 403, not a
-   * 500: they are authenticated and their request is well-formed, we simply
-   * have not enabled the product for them. That is an onboarding gap someone
-   * on our side has to close, and saying so is more useful than a generic
-   * error that sends them to re-read their signing code.
-   */
-  private async resolveProvider(userId: number): Promise<ProviderNameEnum> {
-    try {
-      const profile = await this.profileClient.findProfileProvider({
-        userId,
-        userRole: this.userRole,
-        paymentMethodName: this.paymentMethodName,
-        transactionType: this.transactionType,
-      });
-      return profile.providerName;
-    } catch (error) {
-      // config answers "no such fee row" by throwing, and over TCP that arrives
-      // as an opaque error rather than a Prisma code - so we can only separate
-      // the two cases by whether the transport itself failed.
-      if (this.isTransportFailure(error)) {
-        this.logger.error({
-          msg: 'Config service unreachable while resolving provider',
-          userId,
-          error,
-        });
-        throw TransactionException.serviceUnavailable();
-      }
-
-      this.logger.warn({
-        msg: 'No provider routing configured for merchant',
-        userId,
-        paymentMethodName: this.paymentMethodName,
-        transactionType: this.transactionType,
-        error,
-      });
-      throw TransactionException.transactionNotPermitted();
-    }
-  }
-
-  /**
-   * Claim `merchantReference` and write the transaction with its fee breakdown.
+   * Claim `merchantReference` and write the transaction.
    *
    * `providerReference` and `expiresAt` are left null: we genuinely do not know
    * them yet, and inventing placeholders would put values in the database that
@@ -184,40 +144,13 @@ export class PurchaseService {
       });
       return purchase.id;
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === UNIQUE_VIOLATION
-      ) {
-        const target = (error.meta?.target as string[] | undefined) ?? [];
-
-        // A systemReference collision is ours, not theirs - our generator
-        // produced a value we already hold. Vanishingly unlikely, and a 409
-        // blaming the merchant would send them hunting a bug in their code.
-        if (target.includes('systemReference')) {
-          this.logger.error({
-            msg: 'systemReference collision',
-            systemReference,
-          });
-          throw TransactionException.internalError();
-        }
-
-        this.logger.debug({
-          msg: 'Duplicate merchantReference',
-          userId,
-          merchantReference: dto.merchantReference,
-        });
-        throw TransactionException.duplicateMerchantReference(
-          dto.merchantReference,
-        );
-      }
-
-      this.logger.error({
-        msg: 'Failed to reserve purchase transaction',
+      this.common.reserveFailure({
+        error,
         userId,
         systemReference,
-        error,
+        merchantReference: dto.merchantReference,
+        instrument: 'QRIS',
       });
-      throw TransactionException.serviceUnavailable();
     }
   }
 
@@ -251,7 +184,7 @@ export class PurchaseService {
       }
     } catch (error) {
       if (error instanceof TransactionException) {
-        await this.markFailed(purchaseId, {
+        await this.common.markFailed(purchaseId, {
           [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]: {
             reason: 'no client for provider',
           },
@@ -259,7 +192,7 @@ export class PurchaseService {
         throw error;
       }
 
-      const timedOut = this.isTransportFailure(error);
+      const timedOut = this.common.isTransportFailure(error);
       this.logger.error({
         msg: 'Upstream QRIS creation failed',
         purchaseId,
@@ -272,7 +205,7 @@ export class PurchaseService {
 
       if (timedOut) throw TransactionException.upstreamTimeout();
 
-      await this.markFailed(purchaseId, {
+      await this.common.markFailed(purchaseId, {
         [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]:
           error instanceof UpstreamException
             ? {
@@ -316,64 +249,5 @@ export class PurchaseService {
         error,
       });
     }
-  }
-
-  /** Best-effort: the merchant is being told this failed either way. */
-  private async markFailed(
-    purchaseId: number,
-    metadata: Record<string, unknown>,
-  ): Promise<void> {
-    try {
-      await this.prismaMaster.purchaseTransaction.update({
-        where: { id: purchaseId },
-        data: {
-          status: TransactionStatusEnum.FAILED,
-          metadata: metadata as Prisma.InputJsonValue,
-        },
-      });
-    } catch (error) {
-      this.logger.error({
-        msg: 'Could not mark purchase FAILED',
-        purchaseId,
-        error,
-      });
-    }
-  }
-
-  /**
-   * Whether an error is "we could not complete the call" rather than "the call
-   * completed and the answer was no".
-   *
-   * The distinction decides between 503/504 (retry, we may be fine next time)
-   * and a 4xx (do not retry this unchanged), so it earns more than a catch-all.
-   * rxjs surfaces a TCP timeout as `TimeoutError`; axios uses
-   * `ECONNABORTED`/`ETIMEDOUT` and leaves `response` undefined when nothing
-   * came back at all.
-   */
-  private isTransportFailure(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false;
-
-    const candidate = error as {
-      name?: string;
-      code?: string;
-      context?: { status?: number };
-    };
-
-    if (candidate.name === 'TimeoutError') return true;
-    if (
-      candidate.code === 'ECONNABORTED' ||
-      candidate.code === 'ETIMEDOUT' ||
-      candidate.code === 'ECONNREFUSED'
-    ) {
-      return true;
-    }
-
-    // An UpstreamException with no HTTP status means the request never got an
-    // answer; one carrying a status means the provider replied and refused.
-    if (error instanceof UpstreamException) {
-      return candidate.context?.status === undefined;
-    }
-
-    return false;
   }
 }
