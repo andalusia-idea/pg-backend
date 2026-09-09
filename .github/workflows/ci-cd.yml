@@ -150,12 +150,10 @@ jobs:
         env:
           TAG: ${{ needs.build.outputs.tag }}
         run: |
-          cd k8s
-          for app in auth config transaction dashboard; do
-            kubectl kustomize --help >/dev/null
-            sed -i "/name: andapay\/${app}$/,/newTag:/ s|newTag: .*|newTag: ${TAG}|" kustomization.yaml
-          done
-          grep -A2 "name: andapay/" kustomization.yaml
+          # Keempat image memakai SHA yang sama, jadi satu sed global sudah benar
+          # dan jauh lebih tahan banting daripada mencocokkan blok per-image.
+          sed -i "s|newTag: .*|newTag: ${TAG}|" k8s/kustomization.yaml
+          grep -A2 "name: andapay/" k8s/kustomization.yaml
 
       - name: Deploy
         run: kubectl apply -k k8s/
