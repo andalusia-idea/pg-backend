@@ -15,45 +15,66 @@ import {
   MotionPayTokenResponseSchema,
 } from '../dto';
 import { ProviderNameEnum } from '@app/microservice';
+import { TokenContext, TokenRedis, UpstreamToken } from '@app/redis';
 
-interface CachedToken {
-  token: string;
-  /** Epoch seconds after which the token must not be reused. */
-  expiresAtSeconds: number;
-}
+/** Which of MotionPay's three products this service authenticates. */
+const TOKEN_CONTEXT = TokenContext.QRIS;
 
 @Injectable()
 export class MotionPayQrisAuthService {
   private readonly logger = new Logger(MotionPayQrisAuthService.name);
 
-  private cachedToken: CachedToken | null = null;
+  private cachedToken: UpstreamToken | null = null;
   /** Shared in-flight fetch, so a burst at cold start issues one token request. */
   private inFlight: Promise<string> | null = null;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly motionPayConfig: MotionPayConfig,
+    private readonly tokenRedis: TokenRedis,
   ) {}
 
   /**
    * Perform an authenticated request against MotionPay.
    *
-   * On a 401 the token is discarded and the request retried exactly once with a
-   * fresh token — MotionPay's token TTL is documented inconsistently (7 vs 30
-   * days), so treating the server's own rejection as the signal is more
-   * reliable than trusting either number.
+   * On a 401 the request is retried exactly once — MotionPay's token TTL is
+   * documented inconsistently (7 vs 30 days), so treating the server's own
+   * rejection as the signal is more reliable than trusting either number.
+   *
+   * **The retry adopts before it mints.** A 401 under a revoking upstream
+   * usually means a sibling replica refreshed and invalidated us, so the
+   * replacement comes from whatever they published. Only when nobody has
+   * published a different token do we call the token endpoint ourselves.
    */
   async authorizedRequest<T>(config: AxiosRequestConfig): Promise<T> {
+    // Resolved before the try, so a failure to obtain a token is not mistaken
+    // for the business call being refused - and so the 401 handler knows which
+    // token actually failed.
+    const token = await this.getToken();
+
     try {
-      return await this.send<T>(config, await this.getToken());
+      return await this.send<T>(config, token);
     } catch (error) {
       if (!this.isUnauthorized(error)) throw error;
 
       this.logger.warn(
-        'MotionPay rejected the cached token; refreshing and retrying once',
+        'MotionPay rejected the token; checking for a sibling refresh before minting',
       );
       this.cachedToken = null;
-      return this.send<T>(config, await this.getToken());
+
+      // Not a blind refresh: if another replica has already published a
+      // different token we adopt it. Minting unconditionally here is what
+      // turns one 401 into a refresh storm when the upstream revokes on
+      // reissue.
+      const replacement = await this.tokenRedis.refreshIfUnchanged({
+        providerName: ProviderNameEnum.MOTIONPAY,
+        context: TOKEN_CONTEXT,
+        staleToken: token,
+        refresh: () => this.mintToken(),
+      });
+      this.cachedToken = replacement;
+
+      return this.send<T>(config, replacement.token);
     }
   }
 
@@ -97,15 +118,34 @@ export class MotionPayQrisAuthService {
       return this.cachedToken.token;
     }
 
-    // Collapse concurrent misses onto one request rather than stampeding.
-    this.inFlight ??= this.fetchToken().finally(() => {
+    // Collapse concurrent misses *within this pod* onto one request; the
+    // Redis lock does the same job across pods.
+    this.inFlight ??= this.resolveToken().finally(() => {
       this.inFlight = null;
     });
 
     return this.inFlight;
   }
 
-  private async fetchToken(): Promise<string> {
+  /**
+   * Take whatever the replicas already share, minting only if nobody has.
+   *
+   * The in-memory copy stays in front of this deliberately - it keeps a Redis
+   * round trip off the hot path, and it is what the system falls back to
+   * unchanged if Redis is unreachable.
+   */
+  private async resolveToken(): Promise<string> {
+    const shared = await this.tokenRedis.getOrRefresh({
+      providerName: ProviderNameEnum.MOTIONPAY,
+      context: TOKEN_CONTEXT,
+      refresh: () => this.mintToken(),
+    });
+    this.cachedToken = shared;
+    return shared.token;
+  }
+
+  /** Actually call the token endpoint. The caller decides what to do with it. */
+  private async mintToken(): Promise<UpstreamToken> {
     const context = 'qris token';
     const body: MotionPayTokenRequestDto = {
       client_key: this.motionPayConfig.CLIENT_KEY,
@@ -153,7 +193,6 @@ export class MotionPayQrisAuthService {
 
     const token: string = parsed.data.token;
     const expiresAtSeconds = this.resolveExpiry(token);
-    this.cachedToken = { token, expiresAtSeconds };
 
     // Expiry only — the token is a live credential and must never reach a log
     // line, a log file, or the log shipper.
@@ -162,7 +201,7 @@ export class MotionPayQrisAuthService {
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
 
-    return token;
+    return { token, expiresAtSeconds };
   }
 
   /**

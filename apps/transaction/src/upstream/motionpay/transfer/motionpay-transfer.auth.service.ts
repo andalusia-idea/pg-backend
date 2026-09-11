@@ -7,6 +7,7 @@ import {
   UpstreamException,
 } from '@app/upstream';
 import { ProviderNameEnum } from '@app/microservice';
+import { TokenContext, TokenRedis, UpstreamToken } from '@app/redis';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError, AxiosRequestConfig } from 'axios';
 import { MOTIONPAY_STATUS_CODE, MOTIONPAY_TRANSFER_ENDPOINT } from '../helper';
@@ -19,10 +20,8 @@ import {
 /** HTTP 200 on the transfer token endpoint's bare numeric `status` field. */
 const TRANSFER_TOKEN_OK = 200;
 
-interface CachedToken {
-  token: string;
-  expiresAtSeconds: number;
-}
+/** Which of MotionPay's three products this service authenticates. */
+const TOKEN_CONTEXT = TokenContext.TRANSFER;
 
 /**
  * Auth for MotionPay's **Transfer** product.
@@ -42,12 +41,13 @@ interface CachedToken {
 export class MotionPayTransferAuthService {
   private readonly logger = new Logger(MotionPayTransferAuthService.name);
 
-  private cachedToken: CachedToken | null = null;
+  private cachedToken: UpstreamToken | null = null;
   private inFlight: Promise<string> | null = null;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly motionPayConfig: MotionPayConfig,
+    private readonly tokenRedis: TokenRedis,
   ) {}
 
   /**
@@ -55,16 +55,27 @@ export class MotionPayTransferAuthService {
    * MotionPay rejects it.
    */
   async authorizedRequest<T>(config: AxiosRequestConfig): Promise<T> {
+    const token = await this.getToken();
+
     try {
-      return await this.send<T>(config, await this.getToken());
+      return await this.send<T>(config, token);
     } catch (error) {
       if (!this.isUnauthorized(error)) throw error;
 
       this.logger.warn(
-        'MotionPay Transfer rejected the cached token; refreshing and retrying once',
+        'MotionPay Transfer rejected the token; checking for a sibling refresh before minting',
       );
       this.cachedToken = null;
-      return this.send<T>(config, await this.getToken());
+
+      const replacement = await this.tokenRedis.refreshIfUnchanged({
+        providerName: ProviderNameEnum.MOTIONPAY,
+        context: TOKEN_CONTEXT,
+        staleToken: token,
+        refresh: () => this.mintToken(),
+      });
+      this.cachedToken = replacement;
+
+      return this.send<T>(config, replacement.token);
     }
   }
 
@@ -111,14 +122,26 @@ export class MotionPayTransferAuthService {
       return this.cachedToken.token;
     }
 
-    this.inFlight ??= this.fetchToken().finally(() => {
+    // Per-pod dedupe; the Redis lock does the same across pods.
+    this.inFlight ??= this.resolveToken().finally(() => {
       this.inFlight = null;
     });
 
     return this.inFlight;
   }
 
-  private async fetchToken(): Promise<string> {
+  /** Take whatever the replicas already share, minting only if nobody has. */
+  private async resolveToken(): Promise<string> {
+    const shared = await this.tokenRedis.getOrRefresh({
+      providerName: ProviderNameEnum.MOTIONPAY,
+      context: TOKEN_CONTEXT,
+      refresh: () => this.mintToken(),
+    });
+    this.cachedToken = shared;
+    return shared.token;
+  }
+
+  private async mintToken(): Promise<UpstreamToken> {
     const context = 'transfer token';
     const body: MotionPayTransferTokenRequestDto = {
       client_key: this.motionPayConfig.TRANSFER_CLIENT_KEY,
@@ -169,14 +192,13 @@ export class MotionPayTransferAuthService {
 
     const token: string = parsed.data.token;
     const expiresAtSeconds = this.resolveExpiry(token);
-    this.cachedToken = { token, expiresAtSeconds };
 
     this.logger.log({
       msg: 'MotionPay Transfer token acquired',
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
 
-    return token;
+    return { token, expiresAtSeconds };
   }
 
   private resolveExpiry(token: string): number {

@@ -10,6 +10,7 @@ import {
   UpstreamException,
 } from '@app/upstream';
 import { ProviderNameEnum } from '@app/microservice';
+import { TokenContext, TokenRedis, UpstreamToken } from '@app/redis';
 import {
   MotionPayBillerTokenRequestDto,
   MotionPayBillerTokenResponseDto,
@@ -18,35 +19,44 @@ import {
 
 const BILLER_TOKEN_OK = 200;
 
-interface CachedToken {
-  token: string;
-  /** Epoch seconds after which the token must not be reused. */
-  expiresAtSeconds: number;
-}
+/** Which of MotionPay's three products this service authenticates. */
+const TOKEN_CONTEXT = TokenContext.BILLER;
 
 @Injectable()
 export class MotionPayBillerAuthService {
   private readonly logger = new Logger(MotionPayBillerAuthService.name);
 
-  private cachedToken: CachedToken | null = null;
+  private cachedToken: UpstreamToken | null = null;
   private inFlight: Promise<string> | null = null;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly motionPayConfig: MotionPayConfig,
+    private readonly tokenRedis: TokenRedis,
   ) {}
 
   async authorizedRequest<T>(config: AxiosRequestConfig): Promise<T> {
+    const token = await this.getToken();
+
     try {
-      return await this.send<T>(config, await this.getToken());
+      return await this.send<T>(config, token);
     } catch (error) {
       if (!this.isUnauthorized(error)) throw error;
 
       this.logger.warn(
-        'MotionPay Biller rejected the cached token; refreshing and retrying once',
+        'MotionPay Biller rejected the token; checking for a sibling refresh before minting',
       );
       this.cachedToken = null;
-      return this.send<T>(config, await this.getToken());
+
+      const replacement = await this.tokenRedis.refreshIfUnchanged({
+        providerName: ProviderNameEnum.MOTIONPAY,
+        context: TOKEN_CONTEXT,
+        staleToken: token,
+        refresh: () => this.mintToken(),
+      });
+      this.cachedToken = replacement;
+
+      return this.send<T>(config, replacement.token);
     }
   }
 
@@ -85,14 +95,26 @@ export class MotionPayBillerAuthService {
     if (this.cachedToken && nowSeconds < this.cachedToken.expiresAtSeconds)
       return this.cachedToken.token;
 
-    this.inFlight ??= this.fetchToken().finally(() => {
+    // Per-pod dedupe; the Redis lock does the same across pods.
+    this.inFlight ??= this.resolveToken().finally(() => {
       this.inFlight = null;
     });
 
     return this.inFlight;
   }
 
-  private async fetchToken(): Promise<string> {
+  /** Take whatever the replicas already share, minting only if nobody has. */
+  private async resolveToken(): Promise<string> {
+    const shared = await this.tokenRedis.getOrRefresh({
+      providerName: ProviderNameEnum.MOTIONPAY,
+      context: TOKEN_CONTEXT,
+      refresh: () => this.mintToken(),
+    });
+    this.cachedToken = shared;
+    return shared.token;
+  }
+
+  private async mintToken(): Promise<UpstreamToken> {
     const context = 'biller token';
     const body: MotionPayBillerTokenRequestDto = {
       client_key: this.motionPayConfig.CLIENT_KEY,
@@ -138,14 +160,13 @@ export class MotionPayBillerAuthService {
 
     const token: string = parsed.data.token;
     const expiresAtSeconds = this.resolveExpiry(token);
-    this.cachedToken = { token, expiresAtSeconds };
 
     this.logger.log({
       msg: 'MotionPay Biller token acquired',
-      expiresA: new Date(expiresAtSeconds * 1000).toISOString(),
+      expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
 
-    return token;
+    return { token, expiresAtSeconds };
   }
 
   private resolveExpiry(token: string): number {
@@ -154,7 +175,7 @@ export class MotionPayBillerAuthService {
 
     if (exp === null) {
       this.logger.warn(
-        'Could not read `exp` from the MotionPay Transfer token; not caching it',
+        'Could not read `exp` from the MotionPay Biller token; not caching it',
       );
       return nowSeconds;
     }
