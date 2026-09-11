@@ -396,7 +396,7 @@ Ordered by how much they can hurt.
 
    **The finding that mattered is that they reject rather than truncate.** Silent truncation was the dangerous outcome — a shortened correlation key does not error, it just stops matching at callback and reconciliation time. That failure mode does not exist here.
 
-   Consequences: `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` is now 255, no separate short provider-side reference is needed, and the 64-character `merchantReference` we accept from merchants clears the field with room to spare. Script and raw responses: `probe-external-id.js` (see §12.5).
+   Consequences: `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` is now 255, no separate short provider-side reference is needed, and the 64-character `merchantReference` we accept from merchants clears the field with room to spare. Script: `scripts/motionpay/probe-qris-external-id.js` (see also §12.5).
 2. ~~**Base URL `.id` vs `.co.id`**~~ — **resolved 13 Aug 2026**: `.id` is correct, `.co.id` does not resolve. See §1.
 3. **No callback contract.** "Callback Format" is advertised as a service but no endpoint, payload, or signature scheme is defined in the spec. For a pay-in flow, the callback is normally how `SUCCESS` arrives — polling `payment-status` is the fallback, not the design. Ask MotionPay for the callback spec, and specifically **how the callback is authenticated** (signature? IP allowlist? shared secret?). This matters: the legacy codebase's provider callbacks verified nothing at all, which the migration audit flagged as a must-fix.
 4. **No `EXPIRED` status.** `session_time` sets a QR expiry and the status response has an `expired_date`, yet `status` only has `PENDING`/`SUCCESS`/`FAILED`. Our internal `TransactionStatusEnum` has a distinct `EXPIRED`. Unclear whether an expired QR reports `FAILED` or stays `PENDING` forever. Our mapper currently leaves it as reported and derives nothing from `expired_date` — confirm the real behavior.
@@ -533,6 +533,18 @@ Conclusions:
 
 Practical consequence: your workstation's public IP and the K3s node's egress IP are different addresses. Send Flash both, or testing works in one place and fails in the other.
 
+**Re-confirmed 11 Sep 2026, still blocking.** Current workstation egress IP: **`182.253.55.156`**. A three-way comparison run in one pass makes the diagnosis unambiguous, and is the check worth repeating rather than guessing at a 403:
+
+| Request | Result | Reading |
+|---|---|---|
+| QRIS host, real credentials | **200**, `application/json`, token issued | Network and credentials are both fine |
+| QRIS host, **deliberately wrong** credentials | **401**, `application/json` — `{"status":{"code":401,"message":"Unauthorized"}}` | This is what an auth failure looks like: their *application* answers, in their own envelope |
+| Transfer/Biller host, real credentials | **403**, `text/html`, bare edge page | No envelope at all — the request never reached their application |
+
+The distinction that matters is **content type, not status code**. A JSON body means MotionPay's code ran and refused you; an HTML body means the edge refused you first and MotionPay never saw it. Only the second is the allowlist.
+
+This blocks the `external_id` length probe for both Transfer and Biller (open question #5 below, and #1 in §7 for the QRIS result it should be compared against). The probe script is written and ready at `scripts/motionpay/probe-transfer-biller-external-id.js` — inquiry legs only, since the payment legs move money — and needs nothing but the allowlist to run. The three-way check above is `scripts/motionpay/check-host-reachability.js`.
+
 ## 12. Authentication
 
 `POST {transferBaseUrl}/auth/v2/access-token` — body `{ client_key, server_key }`, same field names as QRIS.
@@ -668,9 +680,14 @@ Same conventions as the QRIS test controller: request bodies are MotionPay's ver
 
 ## 17. Transfer open questions
 
-1. **🔴 BLOCKER — the public IP is not whitelisted.** Confirmed by probe, see §11.1. Nothing else can be tested until Flash whitelists it. Send them **both** your workstation IP and the K3s node's egress IP.
+1. **🔴 BLOCKER — the public IP is not whitelisted.** Confirmed by probe, see §11.1, and **re-confirmed 11 Sep 2026** — current workstation egress IP `182.253.55.156`. Nothing else can be tested until Flash whitelists it. Send them **both** your workstation IP and the K3s node's egress IP. This is what holds up #5 below.
 2. ~~**Are Transfer credentials separate from QRIS?**~~ — **resolved**: the QRIS pair authenticated fine against the transfer token endpoint. `MOTIONPAY_TRANSFER_CLIENT_KEY` / `_SERVER_KEY` can stay unset; they fall back to the QRIS pair.
 3. **Is `x-server-key` actually required?** Undocumented in the header tables, present in the samples. We always send it. Untestable until #1 clears.
 4. **Callback authentication** — see §14. The most serious of these, and independent of #1.
-5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50, and `MotionPayTransferService.systemReferenceMaxLength` exposes that to the payout flow so references are sized before a row is reserved. **Worth probing rather than believing** — the same exercise on QRIS found 255 against a documented 16 (open question #1 in §7). The probe script is reusable; only the endpoint and body shape change.
+5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50, and `MotionPayTransferService.systemReferenceMaxLength` exposes that to the payout flow so references are sized before a row is reserved. **Attempted 11 Sep 2026 — blocked by #1**, the host answered an edge 403 before the request reached MotionPay. Still unverified, and still worth distrusting: the same exercise on QRIS found 255 against a documented 16 (open question #1 in §7). Biller's 64 is in exactly the same position.
+
+   The probe is `scripts/motionpay/probe-transfer-biller-external-id.js`, waiting on the allowlist. It walks a ladder of `external_id` lengths through the **inquiry legs only** — `/transfer/api/v1/inquiry` and `/biller/v1/inquiry` — because `/transfer/api/v1/payment` and `/biller/v1/payment` move money and must never be used to test a field width. Two caveats for whoever runs it:
+
+   - A transfer inquiry echoes back only `bank_code`, `bank_account` and `name`, so it can establish the **accept/reject boundary but not whether they truncate**. Observing storage would mean creating a real transfer. Biller's inquiry does echo `external_id`, so that one gives both signals.
+   - A biller inquiry is **not free the way a bank lookup is** — it opens provider-side state and prices a product. It debits nothing, but it does leave dangling inquiries behind.
 6. ~~**Host contradiction**~~ — **resolved**: `secure.` is correct (the `servers` block), the cURL samples are wrong. The app host 404s every `/transfer/api/v1/*` path. See §11.1.
