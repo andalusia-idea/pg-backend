@@ -363,7 +363,7 @@ Matching on that prose alone would be fragile, so `mapMotionPayStatus` requires 
 
 | Field | v2.7 says | We had |
 |---|---|---|
-| `external_id` | String, **max 21** | 16 — now corrected to 21 |
+| `external_id` | String, **max 21** | **255** — measured, see open question #1. Both documented numbers are wrong |
 | `terminal_id` | String, max 21. *"Option 1: ID Merchant from Flash (e.g. `00022654`). Option 2: your POS identifier (e.g. `KASIR001`)"* | Was the per-transaction `external_id` — **fixed**, now `MotionPayConfig.TERMINAL_ID`. It is **embedded in the QR payload** (a probe returned `...0708KASIR001...` inside `qr_string`), so a per-transaction value wrote a different "terminal" into every QR and made their terminal-level reporting meaningless. Not the cause of the 400, but wrong regardless |
 | `amount` | Integer, 1,000–10,000,000 | matches |
 | `session_time` | Integer minutes, min 1 | matches |
@@ -388,7 +388,15 @@ Ordered by how much they can hurt.
 
    Worth keeping the probe table below on file: it is what the diagnosis was built on, and it is the evidence to reuse if this recurs.
 
-1. **`external_id` is documented as String(16), but our transaction code does not fit.** The monorepo's correlation key is `{timestampMs}{type}{method}{provider}-{userId}[-random]` — the millisecond timestamp alone is 13 characters, so the full code is far over 16. Compounding it, MotionPay's *own* samples violate their stated limit (`"20c67336-dcea-42d8-a"` is 20 characters, and `"PSTMN{{uuid}}"` expands well past 16). **Needs confirmation: is 16 the real limit, or stale documentation?** If it is real, we need a separate short reference for MotionPay and a mapping back to our transaction code — which changes what gets persisted. Until this is settled, our client does not silently truncate; it validates and fails loudly.
+1. ~~**`external_id` is documented as String(16), but our transaction code does not fit.**~~ — **resolved 10 Sep 2026 by probe. The real limit is 255.** Stale documentation, wrong by a factor of sixteen; their own 20-character samples were not violating the spec, the spec was simply out of date.
+
+   Ladder from 16 to 1024 against sandbox. Every length **up to and including 255** was accepted and echoed back byte-identical — checked in two independent places, the create response and a status read keyed by their `transaction_id`, with a sentinel on the tail of each value so a quiet trim could not hide behind a length match. **256 and above** answered HTTP 422 `Failed processing data`. A clean cliff at 255 is a `varchar(255)` with an API in front of it.
+
+   A control run isolated the field: a 300-character `description` alongside a short `external_id` was accepted without complaint, so the 422 belongs to `external_id` alone and not to body size or a blanket field rule.
+
+   **The finding that mattered is that they reject rather than truncate.** Silent truncation was the dangerous outcome — a shortened correlation key does not error, it just stops matching at callback and reconciliation time. That failure mode does not exist here.
+
+   Consequences: `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` is now 255, no separate short provider-side reference is needed, and the 64-character `merchantReference` we accept from merchants clears the field with room to spare. Script and raw responses: `probe-external-id.js` (see §12.5).
 2. ~~**Base URL `.id` vs `.co.id`**~~ — **resolved 13 Aug 2026**: `.id` is correct, `.co.id` does not resolve. See §1.
 3. **No callback contract.** "Callback Format" is advertised as a service but no endpoint, payload, or signature scheme is defined in the spec. For a pay-in flow, the callback is normally how `SUCCESS` arrives — polling `payment-status` is the fallback, not the design. Ask MotionPay for the callback spec, and specifically **how the callback is authenticated** (signature? IP allowlist? shared secret?). This matters: the legacy codebase's provider callbacks verified nothing at all, which the migration audit flagged as a must-fix.
 4. **No `EXPIRED` status.** `session_time` sets a QR expiry and the status response has an `expired_date`, yet `status` only has `PENDING`/`SUCCESS`/`FAILED`. Our internal `TransactionStatusEnum` has a distinct `EXPIRED`. Unclear whether an expired QR reports `FAILED` or stays `PENDING` forever. Our mapper currently leaves it as reported and derives nothing from `expired_date` — confirm the real behavior.
@@ -467,7 +475,7 @@ Things to know while testing:
 - The paths above are shown without a prefix because `setGlobalPrefix` is currently commented out in [main.ts](../../apps/transaction/src/main.ts). With it enabled they become `/api/v1/upstream/motionpay/…`, which is what the nginx and k8s ingress rules expect.
 - `MotionPayService.createQrisPayment` (the normalized, domain-shaped method the real purchase flow should call) is untouched and still validates responses — only this test endpoint bypasses it via `createQrisPaymentRaw`.
 - **Blocked in production.** The endpoints are unauthenticated and, against live credentials, would create real upstream QRIS transactions our system has no record of, so they return 403 when `NODE_ENV=production`. Delete the controller or move it behind the real auth guards once the purchase flow in `src/api` supersedes it.
-- To probe MotionPay's real `external_id` limit (open question #1 in §7), raise `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` in `motionpay.constant.ts` — that single constant drives both the request-body validation and the service-side assertion.
+- **`external_id` length has been probed** — 255, see open question #1. The probe did **not** go through this controller or `MotionPayQrisService`: it signs and posts directly, so `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` never has to be loosened to run it and nothing touches our database. Re-run it against Transfer or Biller the same way rather than raising a production constant to find out.
 
 ---
 
@@ -491,7 +499,7 @@ This is the section to re-read before assuming any QRIS knowledge carries over.
 | Success code | `0` (payments), `200` (token) | **`"0001"`** — a zero-padded string |
 | Status keyed by | MotionPay's `transaction_id` | **our `external_id`** |
 | Amount bounds | 1.000 – 10.000.000 | **10.000 – 50.000.000** |
-| `external_id` max | 16 (disputed) | **50** |
+| `external_id` max | **255** (probed; docs said 16) | **50** (documented, *unprobed* — the QRIS number was off by 16×, so treat this one as a guess too) |
 | IP whitelisting | not mentioned | **required** |
 | Extra header | — | **`x-server-key`** (see §13.1) |
 
@@ -664,5 +672,5 @@ Same conventions as the QRIS test controller: request bodies are MotionPay's ver
 2. ~~**Are Transfer credentials separate from QRIS?**~~ — **resolved**: the QRIS pair authenticated fine against the transfer token endpoint. `MOTIONPAY_TRANSFER_CLIENT_KEY` / `_SERVER_KEY` can stay unset; they fall back to the QRIS pair.
 3. **Is `x-server-key` actually required?** Undocumented in the header tables, present in the samples. We always send it. Untestable until #1 clears.
 4. **Callback authentication** — see §14. The most serious of these, and independent of #1.
-5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50.
+5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50, and `MotionPayTransferService.systemReferenceMaxLength` exposes that to the payout flow so references are sized before a row is reserved. **Worth probing rather than believing** — the same exercise on QRIS found 255 against a documented 16 (open question #1 in §7). The probe script is reusable; only the endpoint and body shape change.
 6. ~~**Host contradiction**~~ — **resolved**: `secure.` is correct (the `servers` block), the cURL samples are wrong. The app host 404s every `/transfer/api/v1/*` path. See §11.1.

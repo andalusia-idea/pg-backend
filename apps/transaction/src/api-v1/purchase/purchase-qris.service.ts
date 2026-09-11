@@ -17,7 +17,10 @@ import {
   MOTIONPAY_METADATA_KEY,
   MotionPayQrisService,
 } from '../../upstream/motionpay';
-import { generateSystemReference } from '../transaction.helper';
+import {
+  DEFAULT_SYSTEM_REFERENCE_LENGTH,
+  generateSystemReference,
+} from '../transaction.helper';
 import { PurchaseCommonService } from './purchase-common.service';
 import { CreateQrisDataDto, CreateQrisRequestDto } from './purchase.dto';
 
@@ -76,7 +79,7 @@ export class PurchaseQrisService {
       transactionType: this.common.transactionType,
       paymentMethodName: this.paymentMethodName,
       providerName,
-      length: 32,
+      maxLength: this.systemReferenceMaxLength(providerName),
     });
 
     const purchaseId = await this.reserveTransaction(
@@ -105,6 +108,29 @@ export class PurchaseQrisService {
         expiresAt: upstream.expiresAt,
       },
     };
+  }
+
+  /**
+   * Ask the routed provider how long a reference it can carry, before one is
+   * generated.
+   *
+   * Deciding this up front rather than after the call is the point: the
+   * reference is the key every callback is matched on, so it has to be right in
+   * the row's very first write and never change afterwards. Adjusting it later
+   * would mean doing so in `recordUpstreamResult`, which deliberately swallows
+   * its errors — a lost update there would leave the row permanently
+   * unmatchable instead of merely missing some decoration.
+   */
+  private systemReferenceMaxLength(providerName: ProviderNameEnum): number {
+    switch (providerName) {
+      case ProviderNameEnum.MOTIONPAY:
+        return this.motionPayQrisService.systemReferenceMaxLength;
+      default:
+        // Routing sent us somewhere we have no client for. `callUpstream` is
+        // where that gets reported properly; all we need here is a length that
+        // cannot produce an over-long reference, and our own default is it.
+        return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+    }
   }
 
   /**

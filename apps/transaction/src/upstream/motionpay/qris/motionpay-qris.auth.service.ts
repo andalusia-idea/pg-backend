@@ -68,7 +68,6 @@ export class MotionPayQrisAuthService {
         ...config.headers,
       },
     };
-    console.log({ configRequest });
     // Never log `configRequest` — it carries the bearer token in its headers.
     // Log the routing facts only.
     this.logger.debug({

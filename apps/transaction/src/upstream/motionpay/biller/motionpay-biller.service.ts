@@ -26,6 +26,8 @@ import {
 } from '../dto';
 import {
   MOTIONPAY_BILLER_ENDPOINT,
+  MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+  MOTIONPAY_BILLER_PAYMENT_SUFFIX,
   MOTIONPAY_BILLER_STATUS_CODE,
   MOTIONPAY_METADATA_KEY,
   mapMotionPayBillerStatus,
@@ -69,6 +71,22 @@ export class MotionPayBillerService {
   private readonly logger = new Logger(MotionPayBillerService.name);
 
   constructor(private readonly authService: MotionPayBillerAuthService) {}
+
+  /**
+   * How long a `systemReference` this product can carry.
+   *
+   * **The suffix comes out of the budget, not on top of it.** `external_id` is
+   * 64 here, but the payment leg sends `{systemReference}-P` (see
+   * `motionPayBillerPaymentReference`) — so a reference sized to the full 64
+   * would clear the inquiry and then overflow the payment that follows it, at
+   * the point where a deposit is about to be debited. Reserving the suffix up
+   * front means the two legs cannot disagree about whether a reference fits.
+   *
+   * Unverified, like Transfer's — see the constant.
+   */
+  readonly systemReferenceMaxLength =
+    MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH -
+    MOTIONPAY_BILLER_PAYMENT_SUFFIX.length;
 
   /**
    * Price the top-up and open a transaction at the provider.

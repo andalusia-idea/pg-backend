@@ -84,6 +84,20 @@ export const MOTIONPAY_BILLER_EWALLET_PRODUCT_CODE = {
 export const MOTIONPAY_BILLER_PAYMENT_SUFFIX = '-P';
 
 /**
+ * Documented max length of Biller's `external_id`.
+ *
+ * **Unverified.** 64 is what their Biller v1.3 spec states, and a stated number
+ * is worth exactly what QRIS's turned out to be — that field was documented as
+ * 16 and measured at 255. Probe before trusting it; the recipe is in
+ * docs/upstream/motionpay.md §12.5.
+ *
+ * Note this is the *field* width. The reference we generate has to leave room
+ * for `MOTIONPAY_BILLER_PAYMENT_SUFFIX` on top — see
+ * `MotionPayBillerService.systemReferenceMaxLength`.
+ */
+export const MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH = 64;
+
+/**
  * Transfer envelope `status.code` values. Note these are **strings**, not the
  * numbers QRIS uses — do not compare them against MOTIONPAY_STATUS_CODE.
  */
@@ -106,7 +120,14 @@ export const MOTIONPAY_TRANSFER_AMOUNT = {
   MAX: 50_000_000,
 } as const;
 
-/** Documented max length of the transfer `external_id`. */
+/**
+ * Documented max length of the transfer `external_id`.
+ *
+ * **Unverified**, and the docs contradict themselves: "String, 64" and "max 50
+ * characters" sit in the same row, so we take the smaller. The one number here
+ * that has actually been measured is QRIS's, which was documented as 16 and
+ * turned out to be 255 — treat this one as a guess until it is probed.
+ */
 export const MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH = 50;
 
 /**
@@ -146,14 +167,28 @@ export const MOTIONPAY_AMOUNT = {
 export const MOTIONPAY_MIN_SESSION_TIME_MINUTES = 1;
 
 /**
- * Documented max length of `external_id` / `terminal_id`.
+ * Real max length of `external_id` / `terminal_id` — **measured, not read**.
  *
- * Flagged as an open question in docs/upstream/motionpay.md: the provider's own
- * samples exceed this (`"20c67336-dcea-42d8-a"` is 20 chars), and our
- * transaction code format does not fit in 16. We validate rather than truncate
- * — silently cutting a correlation key would break callback matching.
+ * Their spec says `String(16)`. It is stale by a factor of sixteen. Probed
+ * against sandbox on 2026-09-10 with a ladder from 16 to 1024: every length up
+ * to and including 255 was accepted and echoed back byte-identical, both on the
+ * create response and on a status read keyed by their `transaction_id`; 256 and
+ * above answered HTTP 422 `Failed processing data`. A control run confirmed the
+ * 422 is specific to this field — a 300-character `description` alongside a
+ * short `external_id` was accepted without complaint.
+ *
+ * A clean cliff at 255 is a `varchar(255)` with an API in front of it.
+ *
+ * **They reject rather than truncate**, which is the answer that mattered: an
+ * over-long value fails loudly at their end instead of silently coming back
+ * shortened and matching nothing at callback time.
+ *
+ * This is the *field width* — what validation must refuse to exceed. It is not
+ * a target: `generateSystemReference` applies our own house length on top and
+ * takes whichever is smaller, so passing this straight through as a budget is
+ * safe and does not produce 255-character references.
  */
-export const MOTIONPAY_EXTERNAL_ID_MAX_LENGTH = 21;
+export const MOTIONPAY_EXTERNAL_ID_MAX_LENGTH = 255;
 
 /**
  * Bank / e-wallet codes accepted by MotionPay's Transfer service.

@@ -18,7 +18,10 @@ import {
   MOTIONPAY_METADATA_KEY,
   MotionPayTransferService,
 } from '../../upstream/motionpay';
-import { generateSystemReference } from '../transaction.helper';
+import {
+  DEFAULT_SYSTEM_REFERENCE_LENGTH,
+  generateSystemReference,
+} from '../transaction.helper';
 import { DisbursementCommonService } from './disbursement-common.service';
 import {
   CreateTransferDataDto,
@@ -80,7 +83,7 @@ export class DisbursementBankService {
       transactionType: this.common.transactionType,
       paymentMethodName: this.paymentMethodName,
       providerName,
-      length: 32,
+      maxLength: this.systemReferenceMaxLength(providerName),
     });
 
     const beneficiary = await this.verifyBeneficiary({
@@ -122,6 +125,26 @@ export class DisbursementBankService {
         accountHolderName: beneficiary.accountHolderName,
       },
     };
+  }
+
+  /**
+   * Ask the routed provider how long a reference it can carry, before one is
+   * generated.
+   *
+   * It matters more here than on the pay-in side: this value is sent as
+   * `external_id` on the transfer itself, and the status endpoint is keyed by
+   * it. Sizing it correctly before the reserve is what makes an over-long
+   * reference impossible rather than caught after the row exists.
+   */
+  private systemReferenceMaxLength(providerName: ProviderNameEnum): number {
+    switch (providerName) {
+      case ProviderNameEnum.MOTIONPAY:
+        return this.motionPayTransferService.systemReferenceMaxLength;
+      default:
+        // Routing sent us somewhere we have no client for; `verifyBeneficiary`
+        // reports that properly. Our own default is a safe placeholder.
+        return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+    }
   }
 
   /**

@@ -40,6 +40,18 @@ export class MotionPayQrisService {
     private readonly motionPayConfig: MotionPayConfig,
   ) {}
 
+  /**
+   * How long a `systemReference` this product can carry.
+   *
+   * The probed field width, and generous rather than exact: QRIS sends the
+   * *merchant's* reference as `external_id`, so our own code never goes on the
+   * wire for a pay-in and nothing upstream really constrains it. Reporting the
+   * field width anyway keeps every client answering the same question the same
+   * way, and costs nothing — the generator applies our own house target on top
+   * and takes whichever is smaller.
+   */
+  readonly systemReferenceMaxLength = MOTIONPAY_EXTERNAL_ID_MAX_LENGTH;
+
   async createQRIS(
     dto: UpstreamQrisRequestDto,
   ): Promise<UpstreamQrisResponseDto> {
@@ -277,11 +289,12 @@ export class MotionPayQrisService {
   /**
    * Fail loudly instead of truncating.
    *
-   * `external_id` is documented as String(16) but our transaction code is
-   * longer, and MotionPay's own samples exceed 16 too — see the open question
-   * in docs/upstream/motionpay.md. Truncating would silently break callback
-   * and reconciliation matching, so this throws until the real limit is
-   * confirmed with their team.
+   * The limit is now measured rather than guessed — 255, see
+   * `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH`. That is far above anything a merchant
+   * can send us (`merchantReference` is capped at 64 on the way in), so this
+   * should never fire in practice. It stays because the alternative to failing
+   * is truncating, and a shortened correlation key does not error — it quietly
+   * stops matching at callback and reconciliation time.
    */
   private assertExternalIdLength(value: string, field: string): string {
     if (value.length > MOTIONPAY_EXTERNAL_ID_MAX_LENGTH) {

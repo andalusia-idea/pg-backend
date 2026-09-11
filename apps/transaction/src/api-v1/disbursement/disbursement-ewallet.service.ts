@@ -18,7 +18,10 @@ import {
   MOTIONPAY_METADATA_KEY,
   MotionPayBillerService,
 } from '../../upstream/motionpay';
-import { generateSystemReference } from '../transaction.helper';
+import {
+  DEFAULT_SYSTEM_REFERENCE_LENGTH,
+  generateSystemReference,
+} from '../transaction.helper';
 import { DisbursementCommonService } from './disbursement-common.service';
 import {
   CreateTransferEWalletDataDto,
@@ -81,7 +84,7 @@ export class DisbursementEWalletService {
       transactionType: this.common.transactionType,
       paymentMethodName: this.paymentMethodName,
       providerName,
-      length: 32,
+      maxLength: this.systemReferenceMaxLength(providerName),
     });
 
     const disbursementId = await this.reserveTransaction({
@@ -115,6 +118,25 @@ export class DisbursementEWalletService {
         accountHolderName: inquiry.accountHolderName,
       },
     };
+  }
+
+  /**
+   * Ask the routed provider how long a reference it can carry, before one is
+   * generated.
+   *
+   * The client's answer already has the `-P` payment suffix subtracted from it,
+   * so a reference that clears the inquiry cannot overflow the payment leg that
+   * follows — the leg where a deposit is actually debited.
+   */
+  private systemReferenceMaxLength(providerName: ProviderNameEnum): number {
+    switch (providerName) {
+      case ProviderNameEnum.MOTIONPAY:
+        return this.motionPayBillerService.systemReferenceMaxLength;
+      default:
+        // Routing sent us somewhere we have no client for; `inquire` reports
+        // that properly. Our own default is a safe placeholder.
+        return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+    }
   }
 
   /**

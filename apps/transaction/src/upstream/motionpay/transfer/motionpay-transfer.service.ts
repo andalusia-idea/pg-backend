@@ -57,6 +57,22 @@ export class MotionPayTransferService {
   constructor(private readonly authService: MotionPayTransferAuthService) {}
 
   /**
+   * How long a `systemReference` this product can carry.
+   *
+   * Unlike QRIS, this is not our choice: the payout rails send our reference as
+   * `external_id` on every leg, and the status endpoint is keyed by it. The
+   * caller asks before generating, so an over-long reference is impossible
+   * rather than merely caught afterwards — by the time `assertExternalIdLength`
+   * fires, the row has already been reserved.
+   *
+   * Unverified. Their docs give "String, 64" and "max 50 characters" in the
+   * same row and we enforce the smaller. The QRIS field turned out to be 255
+   * against a documented 16, so this number deserves the same probe before it
+   * is trusted.
+   */
+  readonly systemReferenceMaxLength = MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH;
+
+  /**
    * Validate a beneficiary account before sending money to it.
    *
    * A failed lookup is **not** an exception: MotionPay answers HTTP 200 with

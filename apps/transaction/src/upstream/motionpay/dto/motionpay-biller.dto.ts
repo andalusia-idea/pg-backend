@@ -1,4 +1,5 @@
 import { Static, Type } from '@sinclair/typebox';
+import { MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH } from '../helper';
 
 const NominalType = Type.String({
   pattern: '^\\d+(\\.\\d{1,2})?$',
@@ -34,7 +35,10 @@ export type MotionPayBillerTokenResponseDto = Static<
 /// Inquiry Prepaid
 export const MotionPayBillerInquiryPrepaidRequestSchema = Type.Object(
   {
-    external_id: Type.String({ minLength: 1, maxLength: 64 }),
+    external_id: Type.String({
+      minLength: 1,
+      maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+    }),
     product_code: Type.String({ minLength: 1, maxLength: 7 }),
     customer_id: Type.String({ minLength: 1, maxLength: 16 }),
     nominal: Type.Union([Type.Null(), NominalType]),
@@ -53,7 +57,10 @@ export const MotionPayBillerInquiryPrepaidResponseSchema = Type.Object({
     Type.Null(),
     Type.Object({}),
     Type.Object({
-      external_id: Type.String({ minLength: 1, maxLength: 64 }),
+      external_id: Type.String({
+        minLength: 1,
+        maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+      }),
       transaction_id: Type.String({ minLength: 1, maxLength: 64 }),
       product_code: Type.String({ minLength: 1, maxLength: 7 }),
       product_name: Type.String({ minLength: 1, maxLength: 150 }),
@@ -76,7 +83,10 @@ export type MotionPayBillerInquiryPrepaidResponseDto = Static<
 /// Payment Prepaid
 export const MotionPayBillerPaymentPrepaidRequestSchema = Type.Object(
   {
-    external_id: Type.String({ minLength: 1, maxLength: 64 }),
+    external_id: Type.String({
+      minLength: 1,
+      maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+    }),
     transaction_id: Type.String({ minLength: 1, maxLength: 64 }),
     product_code: Type.String({ minLength: 1, maxLength: 7 }),
     customer_id: Type.String({ minLength: 1, maxLength: 16 }),
@@ -95,7 +105,10 @@ export const MotionPayBillerPaymentPrepaidResponseSchema = Type.Object({
     Type.Null(),
     Type.Object({}),
     Type.Object({
-      external_id: Type.String({ minLength: 1, maxLength: 64 }),
+      external_id: Type.String({
+        minLength: 1,
+        maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+      }),
       transaction_id: Type.String({ minLength: 1, maxLength: 64 }),
       product_code: Type.String({ minLength: 1, maxLength: 7 }),
       product_name: Type.String({ minLength: 1, maxLength: 150 }),
@@ -138,7 +151,10 @@ export type MotionPayBillerBalanceResponseDto = Static<
 /// Status Check
 export const MotionPayBillerStatusRequestSchema = Type.Object(
   {
-    external_id: Type.String({ minLength: 1, maxLength: 64 }),
+    external_id: Type.String({
+      minLength: 1,
+      maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+    }),
   },
   { additionalProperties: false },
 );
@@ -154,7 +170,10 @@ export const MotionPayBillerStatusResponseSchema = Type.Object({
     Type.Null(),
     Type.Object({}),
     Type.Object({
-      external_id: Type.String({ minLength: 1, maxLength: 64 }),
+      external_id: Type.String({
+        minLength: 1,
+        maxLength: MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
+      }),
       transaction_id: Type.String({ minLength: 1, maxLength: 64 }),
       product_code: Type.String({ minLength: 1, maxLength: 7 }),
       product_name: Type.String({ minLength: 1, maxLength: 150 }),

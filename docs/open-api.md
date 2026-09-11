@@ -94,19 +94,63 @@ Failures leave via `MerchantExceptionFilter`, which catches `MerchantException` 
 
 ## 3. What is built: Purchase QRIS
 
-### Files
+### How the code is laid out
+
+Both money-movement flows have the same shape, so learning one teaches the other.
+
+```
+api-v1/
+├── purchase/                          pay-in
+│   ├── purchase.controller.ts         routes, body pipe, success codes
+│   ├── purchase.dto.ts                request / data / envelope schemas
+│   ├── purchase-common.service.ts     what every instrument must agree on
+│   ├── purchase-qris.service.ts       QRIS          (+ -va.service.ts later)
+│   └── purchase.webhook.service.ts    settlement from a provider callback
+│
+├── disbursement/                      payout
+│   ├── disbursement.controller.ts
+│   ├── disbursement.dto.ts
+│   ├── disbursement-common.service.ts
+│   ├── disbursement-bank.service.ts       transfer rails
+│   ├── disbursement-ewallet.service.ts    biller rails
+│   └── disbursement.webhook.service.ts
+│
+└── signature/                         merchant auth, envelope, body pipe
+```
+
+**One service per rail, plus a shared core.** The `-common` service holds the
+decisions the rails must *agree* on — how a merchant is routed, how a
+reservation conflict is reported, what an unreachable provider means. The rails
+hold what genuinely differs: how a destination is addressed, and how many
+upstream calls it takes to reach it.
+
+`-common` is deliberately **not a facade** — there is no `createPurchase` or
+`createTransfer` on it. Each rail owns its own entry point. That is also why the
+file is not named `purchase.service.ts`: the bare name would send a reader
+looking for the entry points in the wrong place.
+
+The split exists because the alternative is worse in a specific way. Two rails
+paying out the same money must not answer differently to the same mistake, and a
+duplicated `reserveFailure` that only got fixed on one side is exactly how a
+bank payout and a wallet payout start diverging. Meanwhile a single service
+carrying both would grow a conditional per difference.
+
+**Adding a rail is a new file, a controller method, and a line in the module** —
+no branch added to anything that already works.
+
+### Everything else it touches
 
 | File | Role |
 |---|---|
-| `apps/transaction/src/api-v1/purchase/purchase.controller.ts` | Route, body pipe, success code |
-| `apps/transaction/src/api-v1/purchase/purchase.dto.ts` | Request schema, `data` payload schema, envelope schema |
-| `apps/transaction/src/api-v1/purchase/purchase.service.ts` | The flow |
-| `apps/transaction/src/api-v1/purchase/purchase.module.ts` | Wiring |
-| `apps/transaction/src/api-v1/signature/merchant-body.pipe.ts` | Validation that speaks the SNAP envelope |
-| `libs/microservice/src/transaction.exception.ts` | Business failures for transaction endpoints |
+| `api-v1/signature/merchant-body.pipe.ts` | Validation that speaks the SNAP envelope |
+| `api-v1/transaction.helper.ts` | `systemReference` generation and parsing |
+| `libs/microservice/src/transaction.exception.ts` | Business failures, service codes `90`/`91` |
 | `libs/microservice/src/transaction.enum.ts` | The failure list |
-| `libs/upstream/src/upstream.dto.ts` | Provider-neutral purchase request/response |
-| `apps/transaction/src/upstream/motionpay/motionpay-qris.service.ts` | MotionPay's wire format |
+| `libs/upstream/src/upstream-purchase.dto.ts` | Provider-neutral pay-in contracts |
+| `libs/upstream/src/upstream-disbursement.dto.ts` | Provider-neutral payout contracts |
+| `upstream/motionpay/qris/` · `transfer/` · `biller/` | Three products, three wire formats |
+| `upstream/motionpay/helper/` | Timestamps, status mapping, metadata keys, constants |
+| `callback/` | Where provider callbacks meet the business layer — §10 |
 
 ### The endpoint
 
@@ -281,15 +325,11 @@ Documented as String(16). Our `systemReference` is far longer, and MotionPay's *
 
 Currently: we send `merchantReference` and **fail loudly** above 16 rather than truncating. That means a merchant sending a UUID reference gets a `502` — a poor experience for what is really an input problem.
 
-Three options once MotionPay answers:
+**Resolved 10 Sep 2026 — probed, not asked.** The real limit is **255**; the documented 16 was stale by a factor of sixteen. Every length to 255 came back byte-identical on both the create echo and a status read; 256 answered HTTP 422. Crucially **they reject rather than truncate**, so the silent-mismatch failure this section was written to guard against does not exist.
 
-| If the limit is | Do this |
-|---|---|
-| Really 16 | Cap `merchantReference` at 16 in the request schema, so merchants get a clean `4009001` instead of a `502`. Or generate a short provider-side reference and map it back — more code, but frees merchants to use any reference |
-| Higher | Raise `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` — that one constant drives both the request schema and the assertion |
-| Unbounded | Same, set generously |
+`MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` is now 255. The 64-character `merchantReference` we accept clears it comfortably, so the misattributed `502` this section warned about can no longer happen. Full evidence: open question #1 in [motionpay.md](upstream/motionpay.md).
 
-**Do not leave it as-is.** The current state is correct but the error is misattributed.
+The lesson generalises past this field: **Transfer's 50 and Biller's 64 are documented numbers that have never been tested.** The one number we did test was wrong by 16×.
 
 ### D2 — `DisbursementTransaction.merchantReference` has the same global-unique bug 🟡
 
@@ -355,7 +395,11 @@ Answered by QRIS Service v2.7. The handler is built (§10). Two asks remain:
 ## 7. Phase 2 — Disbursement TRANSFER_BANK ✅ built
 
 Bank payout, funded from the Flash prepaid deposit. Same shape as the pay-in
-flow throughout — the differences below are the ones worth knowing.
+flow throughout — see §3 for the layout, which is deliberately identical. The
+differences below are the ones worth knowing.
+
+Lives in `DisbursementBankService`; what it shares with the e-wallet rail is in
+`DisbursementCommonService`.
 
 ### The endpoint
 
@@ -486,6 +530,9 @@ retry rather than guessing.
 E-wallet payout, over the provider's **Biller (PPOB) rails** rather than their
 Transfer rails. Same money to the same wallet, materially cheaper — that price
 difference is the entire reason this path exists.
+
+Lives in `DisbursementEWalletService`, beside the bank rail and sharing
+`DisbursementCommonService` with it.
 
 ```
 POST /v1/transfer/ewallet
@@ -645,10 +692,21 @@ MotionPay has no expired status — expiry arrives as `FAILED` with `description
 
 | File | Role |
 |---|---|
-| `apps/transaction/src/callback/motionpay-qris.callback.controller.ts` | Route, payload check, 200/500 decision |
-| `apps/transaction/src/callback/motionpay-qris.callback.service.ts` | Verify-by-pull, idempotency, settlement |
-| `apps/transaction/src/upstream/motionpay/motionpay.helper.ts` | WIB parsing, status mapping, metadata keys |
-| `apps/transaction/src/upstream/motionpay/motionpay.helper.spec.ts` | 13 tests, incl. the seven-hour assertion |
+| `callback/motionpay.callback.controller.ts` | All three routes; payload check and the 200/500 decision |
+| `callback/callback.module.ts` | The composition point that breaks the cycle |
+| `upstream/motionpay/qris/motionpay-qris.callback.service.ts` | QRIS wire → neutral |
+| `upstream/motionpay/transfer/motionpay-transfer.callback.service.ts` | Transfer wire → neutral |
+| `upstream/motionpay/biller/motionpay-biller.callback.service.ts` | Biller wire → neutral |
+| `api-v1/purchase/purchase.webhook.service.ts` | Pay-in settlement |
+| `api-v1/disbursement/disbursement.webhook.service.ts` | Payout settlement |
+| `upstream/motionpay/helper/motionpay.helper.ts` | Timestamps, status mapping, metadata keys |
+| `upstream/motionpay/helper/motionpay.helper.spec.ts` | 28 tests, incl. the seven-hour assertion |
+
+**Three translators, two settlement services.** The translators are
+provider-specific by necessity — three wire formats, three status vocabularies.
+The settlement services are not: an e-wallet top-up and a bank transfer reaching
+a terminal state are the same event, so both biller and transfer callbacks land
+in `DisbursementWebhookService` and which rail carried it stays a routing detail.
 
 ### Still open
 
@@ -674,8 +732,8 @@ We call the merchant when their transaction settles. `MerchantSignature.payinUrl
 
 `ProviderNameEnum` already reserves INACASH, PDNT1, ZIPAY, PAKAIDONK. When one lands:
 
-1. Write a `<provider>-<product>.service.ts` that maps to and from the **provider-neutral DTOs** in `libs/upstream/src/upstream.dto.ts`. Nothing else should change.
-2. Add a `case` to the service's `callProvider` switch. The `default` branch already throws `internalError()` and logs — routing to a provider with no client is our configuration bug, not the merchant's.
+1. Write a `<provider>-<product>.service.ts` under `upstream/<provider>/<product>/` that maps to and from the **provider-neutral DTOs** in `libs/upstream/src/upstream-{purchase,disbursement}.dto.ts`. Nothing else should change.
+2. Add a `case` to the rail service's provider switch — and to the settlement service's `confirmWithProvider`, which is the one that is easy to forget. The `default` branch already throws `internalError()` and logs: routing to a provider with no client is our configuration bug, not the merchant's.
 3. Seed `BaseFee` rows for the new provider. `@@unique([providerName, paymentMethodName, transactionType])` means one row per combination.
 4. **Close the `MerchantFee` uniqueness gap first — see below.**
 
@@ -716,6 +774,7 @@ Things that apply to every phase, learned the expensive way.
 8. **Fees are calculated at settlement, not at creation.** A QR that expires never earns anything. The cost is that a fee-service outage leaves a paid transaction without its breakdown - so record the payment anyway and let the settlement sweep backfill. Never refuse to record money that moved.
 9. **Never trust an unauthenticated callback body.** Log it, then re-read the truth over an authenticated channel. §10.
 10. **Measure provider timezone behaviour, do not read it.** Documentation about offsets has been wrong here; a create response plus your own clock settles it in seconds, and a standing check catches the day it changes. §4.3.
+11. **One service per rail, one shared core.** What two rails must agree on gets extracted, not copied - a duplicate fixed on only one side is how two ways of moving the same money start answering differently. What genuinely differs stays separate, so neither rail carries conditionals about the other. §3.
 
 ---
 
@@ -731,9 +790,9 @@ Things that apply to every phase, learned the expensive way.
 **You, in code** (not blocked, do while waiting):
 
 5. D3 — settle the public URL shape before any merchant integrates.
-6. Phase 2 steps 2.1-2.5. The transfer client is written; the API layer around it is not, and none of that work needs MotionPay to answer.
+6. ~~Phase 2 - the payout API layer~~ — **done.** Both payout rails are built, split per rail, and boot clean. Nothing more can be verified until the IP block lifts.
 7. ~~Fix `terminal_id` and re-probe the create-payment 400~~ — **done 2026-09-02. Both resolved; QRIS create and status verified end-to-end.**
-8. Register `POST /callback/motionpay/qris` on the Flash dashboard, then pay a sandbox QR to exercise the callback for real.
+8. Register all three callback URLs on the Flash dashboard - `POST /callback/motionpay/{qris,transfer,biller}` - then pay a sandbox QR to exercise the pay-in path for real. It is the only one not gated on IP whitelisting.
 9. Ask MotionPay to correct §Important Notes on timestamps, or confirm production differs from sandbox (§6.4).
 
 **When their docs arrive**, hand them over — the deltas land in [upstream/motionpay.md](upstream/motionpay.md), and anything that changes the merchant contract lands here and in [merchant-api-response-codes.md](merchant-api-response-codes.md).
