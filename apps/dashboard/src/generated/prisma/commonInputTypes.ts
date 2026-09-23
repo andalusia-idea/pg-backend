@@ -416,6 +416,118 @@ export type EnumTransactionTypeEnumWithAggregatesFilter<$PrismaModel = never> = 
   _max?: Prisma.NestedEnumTransactionTypeEnumFilter<$PrismaModel>
 }
 
+export type BigIntFilter<$PrismaModel = never> = {
+  equals?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  in?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  notIn?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  lt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  lte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBigIntFilter<$PrismaModel> | bigint | number
+}
+
+export type EnumBalanceHolderTypeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceHolderTypeEnum | Prisma.EnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel> | $Enums.BalanceHolderTypeEnum
+}
+
+export type EnumBalanceBucketEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceBucketEnum | Prisma.EnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel> | $Enums.BalanceBucketEnum
+}
+
+export type EnumBalanceDirectionEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceDirectionEnum | Prisma.EnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel> | $Enums.BalanceDirectionEnum
+}
+
+export type EnumBalanceReasonEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceReasonEnum | Prisma.EnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel> | $Enums.BalanceReasonEnum
+}
+
+export type EnumBalanceSourceTypeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceSourceTypeEnum | Prisma.EnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel> | $Enums.BalanceSourceTypeEnum
+}
+
+export type BigIntWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  in?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  notIn?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  lt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  lte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
+  _sum?: Prisma.NestedBigIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBigIntFilter<$PrismaModel>
+  _max?: Prisma.NestedBigIntFilter<$PrismaModel>
+}
+
+export type EnumBalanceHolderTypeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceHolderTypeEnum | Prisma.EnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceHolderTypeEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceHolderTypeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel>
+}
+
+export type EnumBalanceBucketEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceBucketEnum | Prisma.EnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceBucketEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceBucketEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel>
+}
+
+export type EnumBalanceDirectionEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceDirectionEnum | Prisma.EnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceDirectionEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceDirectionEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel>
+}
+
+export type EnumBalanceReasonEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceReasonEnum | Prisma.EnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceReasonEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceReasonEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel>
+}
+
+export type EnumBalanceSourceTypeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceSourceTypeEnum | Prisma.EnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceSourceTypeEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceSourceTypeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel>
+}
+
 export type NestedIntFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -775,6 +887,118 @@ export type NestedEnumTransactionTypeEnumWithAggregatesFilter<$PrismaModel = nev
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumTransactionTypeEnumFilter<$PrismaModel>
   _max?: Prisma.NestedEnumTransactionTypeEnumFilter<$PrismaModel>
+}
+
+export type NestedBigIntFilter<$PrismaModel = never> = {
+  equals?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  in?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  notIn?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  lt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  lte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBigIntFilter<$PrismaModel> | bigint | number
+}
+
+export type NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceHolderTypeEnum | Prisma.EnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel> | $Enums.BalanceHolderTypeEnum
+}
+
+export type NestedEnumBalanceBucketEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceBucketEnum | Prisma.EnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel> | $Enums.BalanceBucketEnum
+}
+
+export type NestedEnumBalanceDirectionEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceDirectionEnum | Prisma.EnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel> | $Enums.BalanceDirectionEnum
+}
+
+export type NestedEnumBalanceReasonEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceReasonEnum | Prisma.EnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel> | $Enums.BalanceReasonEnum
+}
+
+export type NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceSourceTypeEnum | Prisma.EnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel> | $Enums.BalanceSourceTypeEnum
+}
+
+export type NestedBigIntWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  in?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  notIn?: bigint[] | number[] | Prisma.ListBigIntFieldRefInput<$PrismaModel>
+  lt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  lte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gt?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  gte?: bigint | number | Prisma.BigIntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _avg?: Prisma.NestedFloatFilter<$PrismaModel>
+  _sum?: Prisma.NestedBigIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBigIntFilter<$PrismaModel>
+  _max?: Prisma.NestedBigIntFilter<$PrismaModel>
+}
+
+export type NestedEnumBalanceHolderTypeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceHolderTypeEnum | Prisma.EnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceHolderTypeEnum[] | Prisma.ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceHolderTypeEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceHolderTypeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceHolderTypeEnumFilter<$PrismaModel>
+}
+
+export type NestedEnumBalanceBucketEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceBucketEnum | Prisma.EnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceBucketEnum[] | Prisma.ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceBucketEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceBucketEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceBucketEnumFilter<$PrismaModel>
+}
+
+export type NestedEnumBalanceDirectionEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceDirectionEnum | Prisma.EnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceDirectionEnum[] | Prisma.ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceDirectionEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceDirectionEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceDirectionEnumFilter<$PrismaModel>
+}
+
+export type NestedEnumBalanceReasonEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceReasonEnum | Prisma.EnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceReasonEnum[] | Prisma.ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceReasonEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceReasonEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceReasonEnumFilter<$PrismaModel>
+}
+
+export type NestedEnumBalanceSourceTypeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.BalanceSourceTypeEnum | Prisma.EnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.BalanceSourceTypeEnum[] | Prisma.ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumBalanceSourceTypeEnumWithAggregatesFilter<$PrismaModel> | $Enums.BalanceSourceTypeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumBalanceSourceTypeEnumFilter<$PrismaModel>
 }
 
 

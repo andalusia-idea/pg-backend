@@ -396,7 +396,10 @@ export const ModelName = {
   TransactionAudit: 'TransactionAudit',
   MerchantBalanceLog: 'MerchantBalanceLog',
   AgentBalanceLog: 'AgentBalanceLog',
-  InternalBalanceLog: 'InternalBalanceLog'
+  InternalBalanceLog: 'InternalBalanceLog',
+  BalanceEntry: 'BalanceEntry',
+  BalanceSnapshot: 'BalanceSnapshot',
+  BalanceAdjustment: 'BalanceAdjustment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -412,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog"
+    modelProps: "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog" | "balanceEntry" | "balanceSnapshot" | "balanceAdjustment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1378,6 +1381,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BalanceEntry: {
+      payload: Prisma.$BalanceEntryPayload<ExtArgs>
+      fields: Prisma.BalanceEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BalanceEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BalanceEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.BalanceEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BalanceEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        findMany: {
+          args: Prisma.BalanceEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>[]
+        }
+        create: {
+          args: Prisma.BalanceEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        createMany: {
+          args: Prisma.BalanceEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BalanceEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.BalanceEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        update: {
+          args: Prisma.BalanceEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.BalanceEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BalanceEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BalanceEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.BalanceEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.BalanceEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBalanceEntry>
+        }
+        groupBy: {
+          args: Prisma.BalanceEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BalanceEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceEntryCountAggregateOutputType> | number
+        }
+      }
+    }
+    BalanceSnapshot: {
+      payload: Prisma.$BalanceSnapshotPayload<ExtArgs>
+      fields: Prisma.BalanceSnapshotFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BalanceSnapshotFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BalanceSnapshotFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        findFirst: {
+          args: Prisma.BalanceSnapshotFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BalanceSnapshotFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        findMany: {
+          args: Prisma.BalanceSnapshotFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>[]
+        }
+        create: {
+          args: Prisma.BalanceSnapshotCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        createMany: {
+          args: Prisma.BalanceSnapshotCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BalanceSnapshotCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>[]
+        }
+        delete: {
+          args: Prisma.BalanceSnapshotDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        update: {
+          args: Prisma.BalanceSnapshotUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        deleteMany: {
+          args: Prisma.BalanceSnapshotDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BalanceSnapshotUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BalanceSnapshotUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>[]
+        }
+        upsert: {
+          args: Prisma.BalanceSnapshotUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceSnapshotPayload>
+        }
+        aggregate: {
+          args: Prisma.BalanceSnapshotAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBalanceSnapshot>
+        }
+        groupBy: {
+          args: Prisma.BalanceSnapshotGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceSnapshotGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BalanceSnapshotCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceSnapshotCountAggregateOutputType> | number
+        }
+      }
+    }
+    BalanceAdjustment: {
+      payload: Prisma.$BalanceAdjustmentPayload<ExtArgs>
+      fields: Prisma.BalanceAdjustmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BalanceAdjustmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BalanceAdjustmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        findFirst: {
+          args: Prisma.BalanceAdjustmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BalanceAdjustmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        findMany: {
+          args: Prisma.BalanceAdjustmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>[]
+        }
+        create: {
+          args: Prisma.BalanceAdjustmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        createMany: {
+          args: Prisma.BalanceAdjustmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BalanceAdjustmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>[]
+        }
+        delete: {
+          args: Prisma.BalanceAdjustmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        update: {
+          args: Prisma.BalanceAdjustmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.BalanceAdjustmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BalanceAdjustmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BalanceAdjustmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.BalanceAdjustmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BalanceAdjustmentPayload>
+        }
+        aggregate: {
+          args: Prisma.BalanceAdjustmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBalanceAdjustment>
+        }
+        groupBy: {
+          args: Prisma.BalanceAdjustmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceAdjustmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BalanceAdjustmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BalanceAdjustmentCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1721,6 +1946,53 @@ export const InternalBalanceLogScalarFieldEnum = {
 export type InternalBalanceLogScalarFieldEnum = (typeof InternalBalanceLogScalarFieldEnum)[keyof typeof InternalBalanceLogScalarFieldEnum]
 
 
+export const BalanceEntryScalarFieldEnum = {
+  id: 'id',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  sourceType: 'sourceType',
+  sourceId: 'sourceId',
+  batchId: 'batchId',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceEntryScalarFieldEnum = (typeof BalanceEntryScalarFieldEnum)[keyof typeof BalanceEntryScalarFieldEnum]
+
+
+export const BalanceSnapshotScalarFieldEnum = {
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  amount: 'amount',
+  lastEntryId: 'lastEntryId',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BalanceSnapshotScalarFieldEnum = (typeof BalanceSnapshotScalarFieldEnum)[keyof typeof BalanceSnapshotScalarFieldEnum]
+
+
+export const BalanceAdjustmentScalarFieldEnum = {
+  id: 'id',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  evidence: 'evidence',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceAdjustmentScalarFieldEnum = (typeof BalanceAdjustmentScalarFieldEnum)[keyof typeof BalanceAdjustmentScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1888,6 +2160,90 @@ export type ListEnumTransactionTypeEnumFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
+ * Reference to a field of type 'BigInt'
+ */
+export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+/**
+ * Reference to a field of type 'BigInt[]'
+ */
+export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceHolderTypeEnum'
+ */
+export type EnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceHolderTypeEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceHolderTypeEnum[]'
+ */
+export type ListEnumBalanceHolderTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceHolderTypeEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceBucketEnum'
+ */
+export type EnumBalanceBucketEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceBucketEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceBucketEnum[]'
+ */
+export type ListEnumBalanceBucketEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceBucketEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceDirectionEnum'
+ */
+export type EnumBalanceDirectionEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceDirectionEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceDirectionEnum[]'
+ */
+export type ListEnumBalanceDirectionEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceDirectionEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceReasonEnum'
+ */
+export type EnumBalanceReasonEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceReasonEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceReasonEnum[]'
+ */
+export type ListEnumBalanceReasonEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceReasonEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceSourceTypeEnum'
+ */
+export type EnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceSourceTypeEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'BalanceSourceTypeEnum[]'
+ */
+export type ListEnumBalanceSourceTypeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BalanceSourceTypeEnum[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2023,6 +2379,9 @@ export type GlobalOmitConfig = {
   merchantBalanceLog?: Prisma.MerchantBalanceLogOmit
   agentBalanceLog?: Prisma.AgentBalanceLogOmit
   internalBalanceLog?: Prisma.InternalBalanceLogOmit
+  balanceEntry?: Prisma.BalanceEntryOmit
+  balanceSnapshot?: Prisma.BalanceSnapshotOmit
+  balanceAdjustment?: Prisma.BalanceAdjustmentOmit
 }
 
 /* Types for Logging */

@@ -191,3 +191,18 @@ export type AgentBalanceLog = Prisma.AgentBalanceLogModel
  * 
  */
 export type InternalBalanceLog = Prisma.InternalBalanceLogModel
+/**
+ * Model BalanceEntry
+ * 
+ */
+export type BalanceEntry = Prisma.BalanceEntryModel
+/**
+ * Model BalanceSnapshot
+ * 
+ */
+export type BalanceSnapshot = Prisma.BalanceSnapshotModel
+/**
+ * Model BalanceAdjustment
+ * 
+ */
+export type BalanceAdjustment = Prisma.BalanceAdjustmentModel

@@ -63,7 +63,10 @@ export const ModelName = {
   TransactionAudit: 'TransactionAudit',
   MerchantBalanceLog: 'MerchantBalanceLog',
   AgentBalanceLog: 'AgentBalanceLog',
-  InternalBalanceLog: 'InternalBalanceLog'
+  InternalBalanceLog: 'InternalBalanceLog',
+  BalanceEntry: 'BalanceEntry',
+  BalanceSnapshot: 'BalanceSnapshot',
+  BalanceAdjustment: 'BalanceAdjustment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -380,6 +383,53 @@ export const InternalBalanceLogScalarFieldEnum = {
 } as const
 
 export type InternalBalanceLogScalarFieldEnum = (typeof InternalBalanceLogScalarFieldEnum)[keyof typeof InternalBalanceLogScalarFieldEnum]
+
+
+export const BalanceEntryScalarFieldEnum = {
+  id: 'id',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  sourceType: 'sourceType',
+  sourceId: 'sourceId',
+  batchId: 'batchId',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceEntryScalarFieldEnum = (typeof BalanceEntryScalarFieldEnum)[keyof typeof BalanceEntryScalarFieldEnum]
+
+
+export const BalanceSnapshotScalarFieldEnum = {
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  amount: 'amount',
+  lastEntryId: 'lastEntryId',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BalanceSnapshotScalarFieldEnum = (typeof BalanceSnapshotScalarFieldEnum)[keyof typeof BalanceSnapshotScalarFieldEnum]
+
+
+export const BalanceAdjustmentScalarFieldEnum = {
+  id: 'id',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  evidence: 'evidence',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceAdjustmentScalarFieldEnum = (typeof BalanceAdjustmentScalarFieldEnum)[keyof typeof BalanceAdjustmentScalarFieldEnum]
 
 
 export const SortOrder = {

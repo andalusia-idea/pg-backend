@@ -346,7 +346,7 @@ export type DisbursementTransactionGroupByOutputType = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference: string | null
   bankReference: string | null
   recipientName: string
   recipientAccount: string
@@ -400,7 +400,7 @@ export type DisbursementTransactionWhereInput = {
   merchantId?: Prisma.IntFilter<"DisbursementTransaction"> | number
   systemReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
   merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  providerReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  providerReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
@@ -435,7 +435,7 @@ export type DisbursementTransactionOrderByWithRelationInput = {
   merchantId?: Prisma.SortOrder
   systemReference?: Prisma.SortOrder
   merchantReference?: Prisma.SortOrder
-  providerReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientAccount?: Prisma.SortOrder
@@ -468,12 +468,13 @@ export type DisbursementTransactionOrderByWithRelationInput = {
 export type DisbursementTransactionWhereUniqueInput = Prisma.AtLeast<{
   id?: number
   systemReference?: string
-  merchantReference?: string
   providerReference?: string
+  merchantId_merchantReference?: Prisma.DisbursementTransactionMerchantIdMerchantReferenceCompoundUniqueInput
   AND?: Prisma.DisbursementTransactionWhereInput | Prisma.DisbursementTransactionWhereInput[]
   OR?: Prisma.DisbursementTransactionWhereInput[]
   NOT?: Prisma.DisbursementTransactionWhereInput | Prisma.DisbursementTransactionWhereInput[]
   merchantId?: Prisma.IntFilter<"DisbursementTransaction"> | number
+  merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
   bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
@@ -501,14 +502,14 @@ export type DisbursementTransactionWhereUniqueInput = Prisma.AtLeast<{
   MerchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
   AgentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
   InternalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
-}, "id" | "systemReference" | "merchantReference" | "providerReference">
+}, "id" | "systemReference" | "providerReference" | "merchantId_merchantReference">
 
 export type DisbursementTransactionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   merchantId?: Prisma.SortOrder
   systemReference?: Prisma.SortOrder
   merchantReference?: Prisma.SortOrder
-  providerReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientAccount?: Prisma.SortOrder
@@ -547,7 +548,7 @@ export type DisbursementTransactionScalarWhereWithAggregatesInput = {
   merchantId?: Prisma.IntWithAggregatesFilter<"DisbursementTransaction"> | number
   systemReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   merchantReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  providerReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  providerReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
   bankReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
   recipientName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   recipientAccount?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
@@ -577,7 +578,7 @@ export type DisbursementTransactionCreateInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -612,7 +613,7 @@ export type DisbursementTransactionUncheckedCreateInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -646,7 +647,7 @@ export type DisbursementTransactionUpdateInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -681,7 +682,7 @@ export type DisbursementTransactionUncheckedUpdateInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -716,7 +717,7 @@ export type DisbursementTransactionCreateManyInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -746,7 +747,7 @@ export type DisbursementTransactionUpdateManyMutationInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -777,7 +778,7 @@ export type DisbursementTransactionUncheckedUpdateManyInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -801,6 +802,11 @@ export type DisbursementTransactionUncheckedUpdateManyInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+}
+
+export type DisbursementTransactionMerchantIdMerchantReferenceCompoundUniqueInput = {
+  merchantId: number
+  merchantReference: string
 }
 
 export type DisbursementTransactionCountOrderByAggregateInput = {
@@ -992,7 +998,7 @@ export type DisbursementTransactionCreateWithoutFeeDetailsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1026,7 +1032,7 @@ export type DisbursementTransactionUncheckedCreateWithoutFeeDetailsInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1075,7 +1081,7 @@ export type DisbursementTransactionUpdateWithoutFeeDetailsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1109,7 +1115,7 @@ export type DisbursementTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1142,7 +1148,7 @@ export type DisbursementTransactionCreateWithoutMerchantBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1176,7 +1182,7 @@ export type DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1225,7 +1231,7 @@ export type DisbursementTransactionUpdateWithoutMerchantBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1259,7 +1265,7 @@ export type DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1292,7 +1298,7 @@ export type DisbursementTransactionCreateWithoutAgentBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1326,7 +1332,7 @@ export type DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput = 
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1375,7 +1381,7 @@ export type DisbursementTransactionUpdateWithoutAgentBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1409,7 +1415,7 @@ export type DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput = 
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1442,7 +1448,7 @@ export type DisbursementTransactionCreateWithoutInternalBalanceLogInput = {
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1476,7 +1482,7 @@ export type DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput
   merchantId: number
   systemReference: string
   merchantReference: string
-  providerReference: string
+  providerReference?: string | null
   bankReference?: string | null
   recipientName: string
   recipientAccount: string
@@ -1525,7 +1531,7 @@ export type DisbursementTransactionUpdateWithoutInternalBalanceLogInput = {
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1559,7 +1565,7 @@ export type DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
   systemReference?: Prisma.StringFieldUpdateOperationsInput | string
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1799,7 +1805,7 @@ export type $DisbursementTransactionPayload<ExtArgs extends runtime.Types.Extens
     merchantId: number
     systemReference: string
     merchantReference: string
-    providerReference: string
+    providerReference: string | null
     bankReference: string | null
     recipientName: string
     recipientAccount: string

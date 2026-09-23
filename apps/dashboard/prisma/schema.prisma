@@ -434,7 +434,7 @@ model PurchaseTransaction {
 
   status TransactionStatusEnum
 
-  paidAt DateTime? @db.Timestamptz(6)
+  paidAt    DateTime? @db.Timestamptz(6)
   // Nullable for the same reason as providerReference: the row exists before
   // the QR does, and a fabricated expiry would be a lie we then serve back.
   expiresAt DateTime? @db.Timestamptz(6)
@@ -456,7 +456,6 @@ model PurchaseTransaction {
 
   // Relasi
   feeDetails         PurchaseFeeDetail[]
-  webhookLogs        WebhookLog[]
   MerchantBalanceLog MerchantBalanceLog[]
   AgentBalanceLog    AgentBalanceLog[]
   InternalBalanceLog InternalBalanceLog[]
@@ -496,9 +495,17 @@ model DisbursementTransaction {
   id         Int @id @default(autoincrement())
   merchantId Int
 
-  systemReference   String  @unique // Our System Reference No
-  merchantReference String  @unique // partnerReferenceNo (SNAP) - Transaction identifier on service provider system.
-  providerReference String  @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  // Our reference, and for Transfer it is also the key the provider's status
+  // endpoint is queried by - unlike QRIS, which is keyed by *their* id. That
+  // makes global uniqueness load-bearing here, not just tidy.
+  systemReference   String  @unique
+  // partnerReferenceNo (SNAP). Unique PER MERCHANT, not globally: merchants
+  // number their own payouts, so a global unique would let the first merchant
+  // to use "PAYOUT-001" block every other merchant from that string.
+  merchantReference String
+  // referenceNo (SNAP). Nullable because we do not have it until the provider
+  // answers, and the row is written *before* the provider is called.
+  providerReference String? @unique
   bankReference     String? //reff id from bank
 
   recipientName     String // bisa merchant, agent, atau pihak ketiga
@@ -536,6 +543,8 @@ model DisbursementTransaction {
   AgentBalanceLog    AgentBalanceLog[]
   InternalBalanceLog InternalBalanceLog[]
 
+  @@unique([merchantId, merchantReference])
+  @@index([merchantId])
   @@index([providerName])
   @@index([status])
   @@schema("transaction")
@@ -728,7 +737,7 @@ model WebhookLog {
   // most worth keeping - a spoofing attempt, or a provider referencing an id we
   // never issued. Requiring a transaction here would mean the only callbacks we
   // could record are the ones that were already fine.
-  transactionId Int?
+  transactionId     Int?
   // The provider's own id from the payload, so an unmatched callback is still
   // searchable without parsing the JSON.
   providerReference String?
@@ -745,9 +754,6 @@ model WebhookLog {
   updatedBy Int?      @db.Integer()
   deletedAt DateTime? @db.Timestamptz(6)
   deletedBy Int?      @db.Integer()
-
-  PurchaseTransaction   PurchaseTransaction? @relation(fields: [purchaseTransactionId], references: [id])
-  purchaseTransactionId Int?
 
   @@index([source])
   @@index([providerReference])
@@ -904,5 +910,131 @@ enum TransactionTypeEnum {
   PURCHASE
   SETTLEMENT_PURCHASE
 
+  @@schema("transaction")
+}
+
+enum BalanceHolderTypeEnum {
+  MERCHANT
+  AGENT
+  INTERNAL
+
+  @@schema("transaction")
+}
+
+enum BalanceBucketEnum {
+  PENDING /// Payment succeeded; not settled to the holder yet
+  AVAILABLE /// Spendable now
+  RESERVED /// Committed to a payout that is in flight
+
+  @@schema("transaction")
+}
+
+enum BalanceDirectionEnum {
+  CREDIT
+  DEBIT
+
+  @@schema("transaction")
+}
+
+enum BalanceReasonEnum {
+  PAYIN_CAPTURED
+  /// Refund or chargeback: a new entry reversing PAYIN_CAPTURED, never an edit.
+  /// Note the spelling - REVERSED, not RESERVED. Reservation is a payout
+  /// concept (PAYOUT_RESERVED below); there is no such thing as reserving a
+  /// payin, and the two words transpose easily enough to type-check silently.
+  PAYIN_REVERSED
+
+  PAYOUT_RESERVED
+  PAYOUT_COMPLETED
+  PAYOUT_FAILED
+
+  MERCHANT_SETTLED
+  TOPUP_APPROVED
+  MANUAL_ADJUSTMENT
+  OPENING_BALANCE
+
+  @@schema("transaction")
+}
+
+enum BalanceSourceTypeEnum {
+  PURCHASE
+  DISBURSEMENT
+  WITHDRAW
+  TOPUP
+  ADJUSTMENT
+  OPENING
+
+  @@schema("transaction")
+}
+
+model BalanceEntry {
+  id BigInt @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  direction BalanceDirectionEnum
+  amount    Decimal              @db.Decimal(18, 2) /// ALWAYS positive
+
+  reason     BalanceReasonEnum
+  sourceType BalanceSourceTypeEnum
+  sourceId   Int
+  batchId    Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  /// Idempotency. A replayed webhook, a re-run batch or a double-clicked
+  /// admin button fails the insert instead of double-crediting.
+  ///
+  /// `bucket` is in the key because one movement writes two rows - a
+  /// MERCHANT_SETTLED debits PENDING and credits AVAILABLE for the same
+  /// source. Without it those two would collide with each other.
+  @@unique([holderType, holderId, bucket, reason, sourceType, sourceId])
+  @@index([holderType, holderId, bucket, id])
+  @@index([batchId])
+  @@schema("transaction")
+}
+
+model BalanceSnapshot {
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  amount Decimal @db.Decimal(18, 2)
+
+  /// The newest entry folded into `amount`. This is what makes the nightly
+  /// check in Step 4 exact rather than approximate: it sums entries up to
+  /// this id, so concurrent writes during the check cannot make it disagree.
+  lastEntryId BigInt
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedBy Int      @db.Integer()
+
+  @@id([holderType, holderId, bucket])
+  @@schema("transaction")
+}
+
+model BalanceAdjustment {
+  id Int @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+  direction  BalanceDirectionEnum
+  amount     Decimal               @db.Decimal(18, 2)
+
+  /// Mandatory. An adjustment nobody can explain is indistinguishable from
+  /// an error, six months later.
+  reason   String  @db.VarChar(500)
+  /// Free-form pointer at whatever the evidence is - a chat thread, a ticket,
+  /// an upstream export filename.
+  evidence String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  @@index([holderType, holderId])
   @@schema("transaction")
 }

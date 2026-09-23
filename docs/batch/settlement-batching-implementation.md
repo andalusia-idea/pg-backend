@@ -124,7 +124,7 @@ model BalanceEntry {
   batchId    Int?
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  createdBy Int?     @db.Integer()
+  createdBy Int      @db.Integer() /// NOT NULL - see "Attribution" below
 
   /// Idempotency. A replayed webhook, a re-run batch or a double-clicked
   /// admin button fails the insert instead of double-crediting.
@@ -196,11 +196,33 @@ reversals: a refund on a payment the merchant already spent legitimately drives
 record it. Overdraw is prevented on the *payout* path instead, in Step 2, where
 it belongs.
 
-### Housekeeping
+### Attribution — do NOT add these to `AUDITED_MODELS`
 
-Add the three new models to `AUDITED_MODELS` in
-[apps/transaction/src/database/audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:5),
-which is where `MerchantBalanceLog` and friends already sit.
+The instinct is to add all three to `AUDITED_MODELS` in
+[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:5),
+next to `MerchantBalanceLog`. **Don't** — it breaks two ways, both found by
+doing it:
+
+**It throws on `BalanceSnapshot`.** The extension's create path calls
+`creationAuditFields()`, which returns `createdAt` *unconditionally* — only
+`createdBy` is guarded by the CLS check. `BalanceSnapshot` has neither column,
+so the first `upsert` in Step 2 injects an unknown argument and Prisma rejects
+it. Not a null, not a wrong value: a hard `PrismaClientValidationError` on the
+very first balance write.
+
+**It silently overrides explicit attribution.** `mergeData` spreads the audit
+fields last (`{ ...data, ...fields }`), so the extension wins over anything the
+caller passed. With two mechanisms writing one column on a money table, the
+implicit one takes precedence — the wrong way round.
+
+So: `createdBy` is **NOT NULL and passed explicitly** by `libs/balance`. The
+generated type is `createdBy: number`, which means TypeScript refuses an
+unattributed balance entry at every call site — a stronger guarantee than an
+ambient CLS value that is easy to forget to set, and cron jobs are exactly where
+ambient context is least reliable.
+
+The extension stays for ordinary CRUD, where a request context is genuinely
+present.
 
 > **🔴 The dashboard has a generated schema over the same tables.** Miss this and
 > dashboard code writes to columns that do not exist:
@@ -353,6 +375,12 @@ two entries and credit `RESERVED`.
 
 `GREATEST` is there because `lastEntryId` must never go backwards when two
 transactions interleave; Step 4 depends on it being monotonic.
+
+> **Raw SQL bypasses `@updatedAt`.** That attribute is a Prisma *client*
+> feature, not a database default or trigger, so this statement fires neither it
+> nor the audit extension. `BalanceSnapshot.updatedBy` is NOT NULL, so an update
+> to an existing row will succeed while quietly leaving both columns stale.
+> **Set `updated_at` and `updated_by` explicitly in this statement.**
 
 **Verify**: `npx jest libs/balance`. Cover — legs applied in sorted order; a
 duplicate movement throws rather than double-posting; `reserve` returns
@@ -524,6 +552,73 @@ and point it at those three.
 > There are now two generated schemas over the `transaction` tables. A change to
 > `apps/transaction/prisma/schema.prisma` must re-run **both** merges. Add them
 > to one `npm run prisma:merge:all` so neither is forgotten.
+
+### 7.1 Machine identity — who is `createdBy` on a cron's writes?
+
+[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:37)
+stamps `createdBy` / `updatedBy` from `nestjs-cls` at `authInfo.userId`. A cron
+has no request, so no CLS context, so `getAuditUserId()` returns `undefined` —
+and the extension then **omits the field** rather than writing null:
+
+```ts
+return { updatedAt: now, ...(userId !== undefined ? { updatedBy: userId } : {}) };
+```
+
+That omission behaves differently on the two paths, and the difference matters:
+
+- **On a create**, the column has no prior value and no `@default`, so it lands
+  as `NULL`. **Every balance entry a background job writes gets
+  `createdBy: null`** — Steps 4, 10 and 13.
+- **On an update**, the column keeps whatever was already there while
+  `updatedAt` moves. So a row ends up reading *"last updated 03:00 by user
+  42"* when user 42 did nothing at 03:00. A stale id is worse than a null,
+  because it looks authoritative.
+
+The existing `MerchantSecretCleanupService` is the second kind. Wrapping jobs in
+a CLS context fixes both at once.
+
+[auth-engine.seed.ts](../../apps/auth/prisma/seed/auth-engine.seed.ts:11) already
+seeds `scheduler01@pg.id` … `scheduler10@pg.id` with `ROLE.SCHEDULER`, plus five
+`reserved*` spares. This is what they are for.
+
+**Allocate one scheduler account per job, not per pod.** Which pod did the work
+is already answered by `SettlementRun.claimedBy`, and pod names are ephemeral —
+a `Deployment` gives you `settlement-7d9f8b-x4k2p`, which cannot be mapped to a
+stable account without a `StatefulSet`. *Which job* did the work is the question
+`createdBy` is actually good at, and it is the one worth answering: a balance
+entry attributed to the export job is a bug you would otherwise never find.
+
+| Account | Job |
+|---|---|
+| `scheduler01` | Settlement batch runner (Step 10) |
+| `scheduler02` | Settlement enqueuer (Step 11) |
+| `scheduler03` | Stuck-run sweeper (Step 11) |
+| `scheduler04` | Balance verification (Step 4) |
+| `scheduler05` | Export runner (Step 13) |
+| `scheduler06` | Export / MinIO cleanup (Step 13) |
+| `scheduler07` | Merchant secret cleanup (exists; currently leaves a stale `updatedBy` beside a fresh `updatedAt`) |
+| `scheduler08`–`10` | Unallocated — transaction expiry, webhook retry, import processing |
+
+**Resolve the ids at boot, never hardcode them.** `User.id` is autoincrement, so
+the numeric ids differ between a fresh database and production. The settlement
+app's Prisma client does not span the `auth` schema — deliberately, since that
+would also hand it merchant secrets — so resolve over TCP with a new
+`AUTH_CMD.FIND_SCHEDULER_USER`, once at startup, cached for the process
+lifetime. **Fail startup if an account is missing**, rather than silently
+falling back to null and discovering it in an audit six months later.
+
+**Then wrap each job run in a CLS context** and the existing audit extension does
+the rest — no identity parameter has to be threaded through `libs/balance`:
+
+```ts
+await this.cls.run(async () => {
+  this.cls.set('authInfo.userId', this.schedulerIds.settlementRunner);
+  await this.runOnce();
+});
+```
+
+**Verify**: run the batch job and confirm `BalanceEntry.createdBy` is
+`scheduler01`'s id, not null.
 
 **Verify**: `npx nest build settlement`; the app boots and `/health` answers.
 
