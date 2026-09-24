@@ -22,6 +22,12 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@app/balance": [
+        "libs/balance/src"
+      ],
+      "@app/balance/*": [
+        "libs/balance/src/*"
+      ],
       "@app/configuration": [
         "libs/configuration/src"
       ],

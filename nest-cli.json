@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/auth/tsconfig.app.json"
       }
     },
+    "balance": {
+      "type": "library",
+      "root": "libs/balance",
+      "entryFile": "index",
+      "sourceRoot": "libs/balance/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/balance/tsconfig.lib.json"
+      }
+    },
     "config": {
       "type": "application",
       "root": "apps/config",
