@@ -112,7 +112,7 @@ model BalanceEntry {
   batchId    Int?
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  createdBy Int?
+  createdBy Int      // NOT NULL - passed explicitly, never via the audit extension
 
   // Idempotency. A replayed webhook or a re-run batch fails the insert
   // instead of double-crediting.
@@ -158,15 +158,36 @@ Run that nightly, compare to the snapshot, alert on any difference. That single
 job is the whole reason this design is trustworthy rather than merely tidy.
 Never auto-correct on a mismatch — investigate it.
 
-### Non-negative available balance
+### Preventing an overdraw — not with a `CHECK`
+
+The obvious move is a constraint:
 
 ```sql
-ALTER TABLE transaction.balance_snapshot
-  ADD CONSTRAINT available_non_negative
-  CHECK (bucket <> 'AVAILABLE' OR amount >= 0);
+CHECK (bucket <> 'AVAILABLE' OR amount >= 0)   -- don't
 ```
 
-Last line of defence against an overdraw that slips past application code.
+It looks right and it would break refunds. A reversal on a payment the merchant
+has already spent legitimately drives `AVAILABLE` negative, and the constraint
+would block *recording* it rather than preventing it — the money already moved.
+
+Guard the payout path instead, with a conditional update:
+
+```sql
+UPDATE transaction.balance_snapshot
+SET amount = amount - $1
+WHERE holder_type = $2 AND holder_id = $3
+  AND bucket = 'AVAILABLE'
+  AND amount >= $1
+RETURNING amount;
+```
+
+Zero rows back means insufficient balance, and it means it *reliably*, because
+the comparison and the decrement are the same statement. Two concurrent
+withdrawals cannot both pass.
+
+A negative `AVAILABLE` then means exactly one thing — a reversal the merchant
+cannot cover — which is a receivable worth alerting on, not a constraint
+violation.
 
 ---
 
@@ -229,7 +250,10 @@ model MerchantSettlementPolicy {
   effectiveFrom DateTime  @db.Timestamptz(6)
   effectiveTo   DateTime? @db.Timestamptz(6)
 
-  @@schema("config")
+  // Settlement configuration, not general merchant configuration - nothing
+  // outside the settlement app reads it. Keeping it here means that app
+  // borrows nothing from the `config` schema.
+  @@schema("settlement")
 }
 ```
 

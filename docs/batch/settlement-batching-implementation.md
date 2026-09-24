@@ -537,21 +537,51 @@ sequential test passes against the broken implementation too.
 
 Only now is there something to run. Scaffold it like the existing apps:
 
-- `apps/settlement/{src,prisma,tsconfig.app.json}`
+- `apps/settlement/{src,tsconfig.app.json}` — note: **no `prisma/` directory**
 - a `projects` entry in [nest-cli.json](../../nest-cli.json)
-- `build:settlement` / `start:settlement` and the `prisma:*:settlement` scripts
-  in `package.json`, mirroring the transaction ones
+- `build:settlement` / `start:settlement` in `package.json`. **No
+  `prisma:*:settlement` scripts** — see below
 - `PrismaModule`, `ConfigModule`, `LoggerModule`, `HealthModule`,
   `RedisModule`, `ScheduleModule.forRoot()`
 
-Its Prisma client spans **`transaction` + `config` + `settlement`**, so it needs
-a merge step like the dashboard's. Copy
-[apps/dashboard/prisma/merge-schema.js](../../apps/dashboard/prisma/merge-schema.js)
-and point it at those three.
+### 7.0 This app has no Prisma schema of its own
 
-> There are now two generated schemas over the `transaction` tables. A change to
-> `apps/transaction/prisma/schema.prisma` must re-run **both** merges. Add them
-> to one `npm run prisma:merge:all` so neither is forgotten.
+It imports the transaction app's client:
+
+```ts
+import { PrismaClient } from '@transaction/prisma';
+```
+
+`@transaction/prisma` is a **root-level** path alias in
+[tsconfig.json](../../tsconfig.json:82), so every app in the monorepo can import
+it. Pass the ctor to the existing `createPrismaMasterProvider` /
+`createPrismaSlaveProvider` from `@app/prisma` exactly as
+`apps/transaction` does.
+
+This works because **every table this app touches is declared in
+`apps/transaction/prisma/schema.prisma`** — the `transaction` schema's
+transaction and balance tables, and the `settlement` schema's run, batch and
+policy tables (Steps 8 and 9). One schema file, one migration history, one
+generated client.
+
+**What that avoids is the whole point.** The earlier plan gave this app its own
+merged schema, which meant a copy of the transaction models, a merge script to
+produce it, a CI check to catch it going stale, and a second generated client
+committed to the repo. All of that machinery existed only to keep a copy in
+sync with an original. Remove the copy and it all goes — and the drift that
+`apps/dashboard` accumulated over several migrations (its merged schema claimed
+a uniqueness constraint and a relation that no longer existed) becomes
+impossible here rather than merely guarded against.
+
+So: no `schema.prisma`, no `prisma.config.ts`, no `migrations/`, no
+`src/generated/`, no merge step.
+
+> **The trade.** `apps/settlement` now build-depends on `apps/transaction`'s
+> generated client, and its deploy depends on transaction's migrations having
+> run. Both are desirable — the two apps are *meant* to agree on these tables,
+> and settlement's tables carry foreign keys into transaction's, so the ordering
+> requirement exists in the database whether or not the build expresses it.
+> `apps/dashboard` already works this way.
 
 ### 7.1 Machine identity — who is `createdBy` on a cron's writes?
 
@@ -626,7 +656,30 @@ await this.cls.run(async () => {
 
 ## Step 8 — `SettlementRun` and `SettlementBatch`
 
-`apps/settlement/prisma/schema.prisma`, schema `settlement`.
+These go in **`apps/transaction/prisma/schema.prisma`**, in a new `settlement`
+Postgres schema. First widen the datasource:
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  schemas  = ["transaction", "settlement"]
+}
+```
+
+Then add the models with `@@schema("settlement")`. Lead the block with a comment
+explaining the split, because it is the one place in this repo where a schema's
+migrations live outside the app that owns the tables:
+
+```prisma
+/// Tables owned by apps/settlement, in their own Postgres schema so it is
+/// obvious at a glance which app writes them.
+///
+/// Their MIGRATIONS live here rather than in apps/settlement, deliberately:
+/// the DSN's default schema is `transaction`, so `transaction._prisma_migrations`
+/// is the one history covering both. That also lets apps/settlement import
+/// `@transaction/prisma` instead of maintaining a merged copy of these models -
+/// see Step 7.0. Do not look for apps/settlement/prisma/; there isn't one.
+```
 
 ```prisma
 model SettlementRun {
@@ -675,6 +728,30 @@ model SettlementBatch {
 
 One run can produce several batches because of the 500-transaction cap.
 
+`SettlementRunStatusEnum` needs `@@schema("settlement")` too — Prisma requires
+every enum in a multi-schema datasource to declare one.
+
+### Housekeeping — two strings that are easy to miss
+
+**The dashboard merge script hardcodes its schema list.**
+[merge-schema.js:58](../../apps/dashboard/prisma/merge-schema.js:58) writes:
+
+```js
+'  schemas  = ["auth", "config", "transaction"]',
+```
+
+Add `"settlement"`. Miss it and the merge produces a schema whose models
+reference a Postgres schema the datasource does not declare — the dashboard
+client will not generate, so at least this one fails loudly.
+
+**The admin UI needs these tables.** The dashboard edits
+`MerchantSettlementPolicy` (Step 9) and shows batch history (Step 12), so run
+the merge and regenerate after this step:
+
+```bash
+npm run prisma:merge:dashboard && npm run prisma:generate:dashboard
+```
+
 ### The claim index
 
 The claim query in Step 10 filters on `settlementBatchId IS NULL`. A partial
@@ -694,9 +771,20 @@ Write this as raw SQL in the migration — Prisma cannot express a partial index
 
 ## Step 9 — Policy and eligibility
 
-`MerchantSettlementPolicy` goes in `apps/config/prisma/schema.prisma` alongside
-`Merchant`, since it is merchant configuration. Shape is in
+`MerchantSettlementPolicy` goes in the **`settlement` schema**, beside the run
+and batch models from Step 8 — not in `apps/config`. Shape is in
 [settlement-batching.md §4](settlement-batching.md).
+
+It is settlement configuration, not general merchant configuration: nothing
+outside this app reads it, and the eligibility check in this step is its only
+consumer. Putting it here also means `apps/settlement` borrows nothing from the
+`config` schema at all, so its client stays exactly the transaction app's — the
+whole basis of Step 7.0.
+
+`UpstreamSettlementWindow` (below) belongs there for the same reason.
+
+The dashboard still edits both through its merged schema; that is a read/write
+of settlement's tables by the admin UI, not a reason to move them.
 
 **Resolution is most-specific-first**: a row matching
 `(merchantId, paymentMethodName)` wins over `(merchantId, null)`. If neither
@@ -947,9 +1035,9 @@ entries reference figures that came from them.
 | `feat(transaction): nightly balance verification` | 4 | yes |
 | `feat(transaction): credit merchant balance on payin` | 5 | **behavior change** |
 | `feat(transaction): reserve balance before payout` | 6 | **behavior change** — closes D17 |
-| `feat(settlement): app skeleton` | 7 | yes, empty |
-| `feat(settlement): run and batch schema` | 8 | yes, dormant |
-| `feat(config): merchant settlement policy` | 9 | yes, dormant |
+| `feat(settlement): app skeleton on the transaction client` | 7 | yes, empty |
+| `feat(transaction): settlement schema - run and batch` | 8 | yes, dormant |
+| `feat(transaction): settlement policy and upstream windows` | 9 | yes, dormant |
 | `feat(settlement): claim and post batches` | 10 | yes — nothing schedules it yet |
 | `feat(settlement): enqueuer and stuck-run sweeper` | 11 | **behavior change** — the cutover |
 | `feat(dashboard): read balances from snapshot` | 12 | **behavior change** |
