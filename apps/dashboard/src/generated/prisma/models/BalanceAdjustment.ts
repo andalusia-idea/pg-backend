@@ -42,8 +42,8 @@ export type BalanceAdjustmentSumAggregateOutputType = {
 
 export type BalanceAdjustmentMinAggregateOutputType = {
   id: number | null
-  holderId: number | null
   holderType: $Enums.BalanceHolderTypeEnum | null
+  holderId: number | null
   bucket: $Enums.BalanceBucketEnum | null
   direction: $Enums.BalanceDirectionEnum | null
   amount: runtime.Decimal | null
@@ -55,8 +55,8 @@ export type BalanceAdjustmentMinAggregateOutputType = {
 
 export type BalanceAdjustmentMaxAggregateOutputType = {
   id: number | null
-  holderId: number | null
   holderType: $Enums.BalanceHolderTypeEnum | null
+  holderId: number | null
   bucket: $Enums.BalanceBucketEnum | null
   direction: $Enums.BalanceDirectionEnum | null
   amount: runtime.Decimal | null
@@ -68,8 +68,8 @@ export type BalanceAdjustmentMaxAggregateOutputType = {
 
 export type BalanceAdjustmentCountAggregateOutputType = {
   id: number
-  holderId: number
   holderType: number
+  holderId: number
   bucket: number
   direction: number
   amount: number
@@ -97,8 +97,8 @@ export type BalanceAdjustmentSumAggregateInputType = {
 
 export type BalanceAdjustmentMinAggregateInputType = {
   id?: true
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   direction?: true
   amount?: true
@@ -110,8 +110,8 @@ export type BalanceAdjustmentMinAggregateInputType = {
 
 export type BalanceAdjustmentMaxAggregateInputType = {
   id?: true
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   direction?: true
   amount?: true
@@ -123,8 +123,8 @@ export type BalanceAdjustmentMaxAggregateInputType = {
 
 export type BalanceAdjustmentCountAggregateInputType = {
   id?: true
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   direction?: true
   amount?: true
@@ -223,8 +223,8 @@ export type BalanceAdjustmentGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type BalanceAdjustmentGroupByOutputType = {
   id: number
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   direction: $Enums.BalanceDirectionEnum
   amount: runtime.Decimal
@@ -259,8 +259,8 @@ export type BalanceAdjustmentWhereInput = {
   OR?: Prisma.BalanceAdjustmentWhereInput[]
   NOT?: Prisma.BalanceAdjustmentWhereInput | Prisma.BalanceAdjustmentWhereInput[]
   id?: Prisma.IntFilter<"BalanceAdjustment"> | number
-  holderId?: Prisma.IntFilter<"BalanceAdjustment"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFilter<"BalanceAdjustment"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFilter<"BalanceAdjustment"> | number
   bucket?: Prisma.EnumBalanceBucketEnumFilter<"BalanceAdjustment"> | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFilter<"BalanceAdjustment"> | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFilter<"BalanceAdjustment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -272,8 +272,8 @@ export type BalanceAdjustmentWhereInput = {
 
 export type BalanceAdjustmentOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -288,8 +288,8 @@ export type BalanceAdjustmentWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.BalanceAdjustmentWhereInput | Prisma.BalanceAdjustmentWhereInput[]
   OR?: Prisma.BalanceAdjustmentWhereInput[]
   NOT?: Prisma.BalanceAdjustmentWhereInput | Prisma.BalanceAdjustmentWhereInput[]
-  holderId?: Prisma.IntFilter<"BalanceAdjustment"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFilter<"BalanceAdjustment"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFilter<"BalanceAdjustment"> | number
   bucket?: Prisma.EnumBalanceBucketEnumFilter<"BalanceAdjustment"> | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFilter<"BalanceAdjustment"> | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFilter<"BalanceAdjustment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -301,8 +301,8 @@ export type BalanceAdjustmentWhereUniqueInput = Prisma.AtLeast<{
 
 export type BalanceAdjustmentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -322,8 +322,8 @@ export type BalanceAdjustmentScalarWhereWithAggregatesInput = {
   OR?: Prisma.BalanceAdjustmentScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BalanceAdjustmentScalarWhereWithAggregatesInput | Prisma.BalanceAdjustmentScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"BalanceAdjustment"> | number
-  holderId?: Prisma.IntWithAggregatesFilter<"BalanceAdjustment"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumWithAggregatesFilter<"BalanceAdjustment"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntWithAggregatesFilter<"BalanceAdjustment"> | number
   bucket?: Prisma.EnumBalanceBucketEnumWithAggregatesFilter<"BalanceAdjustment"> | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumWithAggregatesFilter<"BalanceAdjustment"> | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalWithAggregatesFilter<"BalanceAdjustment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -334,8 +334,8 @@ export type BalanceAdjustmentScalarWhereWithAggregatesInput = {
 }
 
 export type BalanceAdjustmentCreateInput = {
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   direction: $Enums.BalanceDirectionEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -347,8 +347,8 @@ export type BalanceAdjustmentCreateInput = {
 
 export type BalanceAdjustmentUncheckedCreateInput = {
   id?: number
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   direction: $Enums.BalanceDirectionEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -359,8 +359,8 @@ export type BalanceAdjustmentUncheckedCreateInput = {
 }
 
 export type BalanceAdjustmentUpdateInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFieldUpdateOperationsInput | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -372,8 +372,8 @@ export type BalanceAdjustmentUpdateInput = {
 
 export type BalanceAdjustmentUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFieldUpdateOperationsInput | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -385,8 +385,8 @@ export type BalanceAdjustmentUncheckedUpdateInput = {
 
 export type BalanceAdjustmentCreateManyInput = {
   id?: number
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   direction: $Enums.BalanceDirectionEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -397,8 +397,8 @@ export type BalanceAdjustmentCreateManyInput = {
 }
 
 export type BalanceAdjustmentUpdateManyMutationInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFieldUpdateOperationsInput | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -410,8 +410,8 @@ export type BalanceAdjustmentUpdateManyMutationInput = {
 
 export type BalanceAdjustmentUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   direction?: Prisma.EnumBalanceDirectionEnumFieldUpdateOperationsInput | $Enums.BalanceDirectionEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -423,8 +423,8 @@ export type BalanceAdjustmentUncheckedUpdateManyInput = {
 
 export type BalanceAdjustmentCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -443,8 +443,8 @@ export type BalanceAdjustmentAvgOrderByAggregateInput = {
 
 export type BalanceAdjustmentMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -456,8 +456,8 @@ export type BalanceAdjustmentMaxOrderByAggregateInput = {
 
 export type BalanceAdjustmentMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   direction?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -478,8 +478,8 @@ export type BalanceAdjustmentSumOrderByAggregateInput = {
 
 export type BalanceAdjustmentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   direction?: boolean
   amount?: boolean
@@ -491,8 +491,8 @@ export type BalanceAdjustmentSelect<ExtArgs extends runtime.Types.Extensions.Int
 
 export type BalanceAdjustmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   direction?: boolean
   amount?: boolean
@@ -504,8 +504,8 @@ export type BalanceAdjustmentSelectCreateManyAndReturn<ExtArgs extends runtime.T
 
 export type BalanceAdjustmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   direction?: boolean
   amount?: boolean
@@ -517,8 +517,8 @@ export type BalanceAdjustmentSelectUpdateManyAndReturn<ExtArgs extends runtime.T
 
 export type BalanceAdjustmentSelectScalar = {
   id?: boolean
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   direction?: boolean
   amount?: boolean
@@ -528,15 +528,15 @@ export type BalanceAdjustmentSelectScalar = {
   createdBy?: boolean
 }
 
-export type BalanceAdjustmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "holderId" | "holderType" | "bucket" | "direction" | "amount" | "reason" | "evidence" | "createdAt" | "createdBy", ExtArgs["result"]["balanceAdjustment"]>
+export type BalanceAdjustmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "holderType" | "holderId" | "bucket" | "direction" | "amount" | "reason" | "evidence" | "createdAt" | "createdBy", ExtArgs["result"]["balanceAdjustment"]>
 
 export type $BalanceAdjustmentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BalanceAdjustment"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    holderId: number
     holderType: $Enums.BalanceHolderTypeEnum
+    holderId: number
     bucket: $Enums.BalanceBucketEnum
     direction: $Enums.BalanceDirectionEnum
     amount: runtime.Decimal
@@ -976,8 +976,8 @@ export interface Prisma__BalanceAdjustmentClient<T, Null = never, ExtArgs extend
  */
 export interface BalanceAdjustmentFieldRefs {
   readonly id: Prisma.FieldRef<"BalanceAdjustment", 'Int'>
-  readonly holderId: Prisma.FieldRef<"BalanceAdjustment", 'Int'>
   readonly holderType: Prisma.FieldRef<"BalanceAdjustment", 'BalanceHolderTypeEnum'>
+  readonly holderId: Prisma.FieldRef<"BalanceAdjustment", 'Int'>
   readonly bucket: Prisma.FieldRef<"BalanceAdjustment", 'BalanceBucketEnum'>
   readonly direction: Prisma.FieldRef<"BalanceAdjustment", 'BalanceDirectionEnum'>
   readonly amount: Prisma.FieldRef<"BalanceAdjustment", 'Decimal'>

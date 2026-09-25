@@ -41,8 +41,8 @@ export type BalanceSnapshotSumAggregateOutputType = {
 }
 
 export type BalanceSnapshotMinAggregateOutputType = {
-  holderId: number | null
   holderType: $Enums.BalanceHolderTypeEnum | null
+  holderId: number | null
   bucket: $Enums.BalanceBucketEnum | null
   amount: runtime.Decimal | null
   lastEntryId: bigint | null
@@ -51,8 +51,8 @@ export type BalanceSnapshotMinAggregateOutputType = {
 }
 
 export type BalanceSnapshotMaxAggregateOutputType = {
-  holderId: number | null
   holderType: $Enums.BalanceHolderTypeEnum | null
+  holderId: number | null
   bucket: $Enums.BalanceBucketEnum | null
   amount: runtime.Decimal | null
   lastEntryId: bigint | null
@@ -61,8 +61,8 @@ export type BalanceSnapshotMaxAggregateOutputType = {
 }
 
 export type BalanceSnapshotCountAggregateOutputType = {
-  holderId: number
   holderType: number
+  holderId: number
   bucket: number
   amount: number
   lastEntryId: number
@@ -87,8 +87,8 @@ export type BalanceSnapshotSumAggregateInputType = {
 }
 
 export type BalanceSnapshotMinAggregateInputType = {
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   amount?: true
   lastEntryId?: true
@@ -97,8 +97,8 @@ export type BalanceSnapshotMinAggregateInputType = {
 }
 
 export type BalanceSnapshotMaxAggregateInputType = {
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   amount?: true
   lastEntryId?: true
@@ -107,8 +107,8 @@ export type BalanceSnapshotMaxAggregateInputType = {
 }
 
 export type BalanceSnapshotCountAggregateInputType = {
-  holderId?: true
   holderType?: true
+  holderId?: true
   bucket?: true
   amount?: true
   lastEntryId?: true
@@ -204,8 +204,8 @@ export type BalanceSnapshotGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 }
 
 export type BalanceSnapshotGroupByOutputType = {
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   amount: runtime.Decimal
   lastEntryId: bigint
@@ -237,8 +237,8 @@ export type BalanceSnapshotWhereInput = {
   AND?: Prisma.BalanceSnapshotWhereInput | Prisma.BalanceSnapshotWhereInput[]
   OR?: Prisma.BalanceSnapshotWhereInput[]
   NOT?: Prisma.BalanceSnapshotWhereInput | Prisma.BalanceSnapshotWhereInput[]
-  holderId?: Prisma.IntFilter<"BalanceSnapshot"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFilter<"BalanceSnapshot"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFilter<"BalanceSnapshot"> | number
   bucket?: Prisma.EnumBalanceBucketEnumFilter<"BalanceSnapshot"> | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFilter<"BalanceSnapshot"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFilter<"BalanceSnapshot"> | bigint | number
@@ -247,8 +247,8 @@ export type BalanceSnapshotWhereInput = {
 }
 
 export type BalanceSnapshotOrderByWithRelationInput = {
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   lastEntryId?: Prisma.SortOrder
@@ -261,8 +261,8 @@ export type BalanceSnapshotWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.BalanceSnapshotWhereInput | Prisma.BalanceSnapshotWhereInput[]
   OR?: Prisma.BalanceSnapshotWhereInput[]
   NOT?: Prisma.BalanceSnapshotWhereInput | Prisma.BalanceSnapshotWhereInput[]
-  holderId?: Prisma.IntFilter<"BalanceSnapshot"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFilter<"BalanceSnapshot"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFilter<"BalanceSnapshot"> | number
   bucket?: Prisma.EnumBalanceBucketEnumFilter<"BalanceSnapshot"> | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFilter<"BalanceSnapshot"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFilter<"BalanceSnapshot"> | bigint | number
@@ -271,8 +271,8 @@ export type BalanceSnapshotWhereUniqueInput = Prisma.AtLeast<{
 }, "holderType_holderId_bucket">
 
 export type BalanceSnapshotOrderByWithAggregationInput = {
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   lastEntryId?: Prisma.SortOrder
@@ -289,8 +289,8 @@ export type BalanceSnapshotScalarWhereWithAggregatesInput = {
   AND?: Prisma.BalanceSnapshotScalarWhereWithAggregatesInput | Prisma.BalanceSnapshotScalarWhereWithAggregatesInput[]
   OR?: Prisma.BalanceSnapshotScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BalanceSnapshotScalarWhereWithAggregatesInput | Prisma.BalanceSnapshotScalarWhereWithAggregatesInput[]
-  holderId?: Prisma.IntWithAggregatesFilter<"BalanceSnapshot"> | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumWithAggregatesFilter<"BalanceSnapshot"> | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntWithAggregatesFilter<"BalanceSnapshot"> | number
   bucket?: Prisma.EnumBalanceBucketEnumWithAggregatesFilter<"BalanceSnapshot"> | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalWithAggregatesFilter<"BalanceSnapshot"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntWithAggregatesFilter<"BalanceSnapshot"> | bigint | number
@@ -299,8 +299,8 @@ export type BalanceSnapshotScalarWhereWithAggregatesInput = {
 }
 
 export type BalanceSnapshotCreateInput = {
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId: bigint | number
@@ -309,8 +309,8 @@ export type BalanceSnapshotCreateInput = {
 }
 
 export type BalanceSnapshotUncheckedCreateInput = {
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId: bigint | number
@@ -319,8 +319,8 @@ export type BalanceSnapshotUncheckedCreateInput = {
 }
 
 export type BalanceSnapshotUpdateInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
@@ -329,8 +329,8 @@ export type BalanceSnapshotUpdateInput = {
 }
 
 export type BalanceSnapshotUncheckedUpdateInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
@@ -339,8 +339,8 @@ export type BalanceSnapshotUncheckedUpdateInput = {
 }
 
 export type BalanceSnapshotCreateManyInput = {
-  holderId: number
   holderType: $Enums.BalanceHolderTypeEnum
+  holderId: number
   bucket: $Enums.BalanceBucketEnum
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId: bigint | number
@@ -349,8 +349,8 @@ export type BalanceSnapshotCreateManyInput = {
 }
 
 export type BalanceSnapshotUpdateManyMutationInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
@@ -359,8 +359,8 @@ export type BalanceSnapshotUpdateManyMutationInput = {
 }
 
 export type BalanceSnapshotUncheckedUpdateManyInput = {
-  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   holderType?: Prisma.EnumBalanceHolderTypeEnumFieldUpdateOperationsInput | $Enums.BalanceHolderTypeEnum
+  holderId?: Prisma.IntFieldUpdateOperationsInput | number
   bucket?: Prisma.EnumBalanceBucketEnumFieldUpdateOperationsInput | $Enums.BalanceBucketEnum
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   lastEntryId?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
@@ -375,8 +375,8 @@ export type BalanceSnapshotHolderTypeHolderIdBucketCompoundUniqueInput = {
 }
 
 export type BalanceSnapshotCountOrderByAggregateInput = {
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   lastEntryId?: Prisma.SortOrder
@@ -392,8 +392,8 @@ export type BalanceSnapshotAvgOrderByAggregateInput = {
 }
 
 export type BalanceSnapshotMaxOrderByAggregateInput = {
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   lastEntryId?: Prisma.SortOrder
@@ -402,8 +402,8 @@ export type BalanceSnapshotMaxOrderByAggregateInput = {
 }
 
 export type BalanceSnapshotMinOrderByAggregateInput = {
-  holderId?: Prisma.SortOrder
   holderType?: Prisma.SortOrder
+  holderId?: Prisma.SortOrder
   bucket?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   lastEntryId?: Prisma.SortOrder
@@ -421,8 +421,8 @@ export type BalanceSnapshotSumOrderByAggregateInput = {
 
 
 export type BalanceSnapshotSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   amount?: boolean
   lastEntryId?: boolean
@@ -431,8 +431,8 @@ export type BalanceSnapshotSelect<ExtArgs extends runtime.Types.Extensions.Inter
 }, ExtArgs["result"]["balanceSnapshot"]>
 
 export type BalanceSnapshotSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   amount?: boolean
   lastEntryId?: boolean
@@ -441,8 +441,8 @@ export type BalanceSnapshotSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
 }, ExtArgs["result"]["balanceSnapshot"]>
 
 export type BalanceSnapshotSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   amount?: boolean
   lastEntryId?: boolean
@@ -451,8 +451,8 @@ export type BalanceSnapshotSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
 }, ExtArgs["result"]["balanceSnapshot"]>
 
 export type BalanceSnapshotSelectScalar = {
-  holderId?: boolean
   holderType?: boolean
+  holderId?: boolean
   bucket?: boolean
   amount?: boolean
   lastEntryId?: boolean
@@ -460,14 +460,14 @@ export type BalanceSnapshotSelectScalar = {
   updatedBy?: boolean
 }
 
-export type BalanceSnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"holderId" | "holderType" | "bucket" | "amount" | "lastEntryId" | "updatedAt" | "updatedBy", ExtArgs["result"]["balanceSnapshot"]>
+export type BalanceSnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"holderType" | "holderId" | "bucket" | "amount" | "lastEntryId" | "updatedAt" | "updatedBy", ExtArgs["result"]["balanceSnapshot"]>
 
 export type $BalanceSnapshotPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BalanceSnapshot"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
-    holderId: number
     holderType: $Enums.BalanceHolderTypeEnum
+    holderId: number
     bucket: $Enums.BalanceBucketEnum
     amount: runtime.Decimal
     /**
@@ -901,8 +901,8 @@ export interface Prisma__BalanceSnapshotClient<T, Null = never, ExtArgs extends 
  * Fields of the BalanceSnapshot model
  */
 export interface BalanceSnapshotFieldRefs {
-  readonly holderId: Prisma.FieldRef<"BalanceSnapshot", 'Int'>
   readonly holderType: Prisma.FieldRef<"BalanceSnapshot", 'BalanceHolderTypeEnum'>
+  readonly holderId: Prisma.FieldRef<"BalanceSnapshot", 'Int'>
   readonly bucket: Prisma.FieldRef<"BalanceSnapshot", 'BalanceBucketEnum'>
   readonly amount: Prisma.FieldRef<"BalanceSnapshot", 'Decimal'>
   readonly lastEntryId: Prisma.FieldRef<"BalanceSnapshot", 'BigInt'>

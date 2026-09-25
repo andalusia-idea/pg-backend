@@ -512,78 +512,6 @@ enum TransactionTypeEnum {
   @@schema("transaction")
 }
 
-model BalanceEntry {
-  id BigInt @id @default(autoincrement())
-
-  holderId   Int
-  holderType BalanceHolderTypeEnum
-  bucket     BalanceBucketEnum
-
-  direction BalanceDirectionEnum
-  amount    Decimal              @db.Decimal(18, 2) /// ALWAYS positive
-
-  reason     BalanceReasonEnum
-  sourceType BalanceSourceTypeEnum
-  sourceId   Int
-  batchId    Int?
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  createdBy Int      @db.Integer()
-
-  /// Idempotency. A replayed webhook, a re-run batch or a double-clicked
-  /// admin button fails the insert instead of double-crediting.
-  ///
-  /// `bucket` is in the key because one movement writes two rows - a
-  /// MERCHANT_SETTLED debits PENDING and credits AVAILABLE for the same
-  /// source. Without it those two would collide with each other.
-  @@unique([holderType, holderId, bucket, reason, sourceType, sourceId])
-  @@index([holderType, holderId, bucket, id])
-  @@index([batchId])
-  @@schema("transaction")
-}
-
-model BalanceSnapshot {
-  holderId   Int
-  holderType BalanceHolderTypeEnum
-  bucket     BalanceBucketEnum
-
-  amount Decimal @db.Decimal(18, 2)
-
-  /// The newest entry folded into `amount`. This is what makes the nightly
-  /// check in Step 4 exact rather than approximate: it sums entries up to
-  /// this id, so concurrent writes during the check cannot make it disagree.
-  lastEntryId BigInt
-
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  updatedBy Int      @db.Integer()
-
-  @@id([holderType, holderId, bucket])
-  @@schema("transaction")
-}
-
-model BalanceAdjustment {
-  id Int @id @default(autoincrement())
-
-  holderId   Int
-  holderType BalanceHolderTypeEnum
-  bucket     BalanceBucketEnum
-  direction  BalanceDirectionEnum
-  amount     Decimal               @db.Decimal(18, 2)
-
-  /// Mandatory. An adjustment nobody can explain is indistinguishable from
-  /// an error, six months later.
-  reason   String  @db.VarChar(500)
-  /// Free-form pointer at whatever the evidence is - a chat thread, a ticket,
-  /// an upstream export filename.
-  evidence String? @db.VarChar(500)
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  createdBy Int      @db.Integer()
-
-  @@index([holderType, holderId])
-  @@schema("transaction")
-}
-
 enum BalanceHolderTypeEnum {
   MERCHANT
   AGENT
@@ -635,5 +563,77 @@ enum BalanceSourceTypeEnum {
   ADJUSTMENT
   OPENING
 
+  @@schema("transaction")
+}
+
+model BalanceEntry {
+  id BigInt @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  direction BalanceDirectionEnum
+  amount    Decimal              @db.Decimal(18, 2) /// ALWAYS positive
+
+  reason     BalanceReasonEnum
+  sourceType BalanceSourceTypeEnum
+  sourceId   Int
+  batchId    Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  /// Idempotency. A replayed webhook, a re-run batch or a double-clicked
+  /// admin button fails the insert instead of double-crediting.
+  ///
+  /// `bucket` is in the key because one movement writes two rows - a
+  /// MERCHANT_SETTLED debits PENDING and credits AVAILABLE for the same
+  /// source. Without it those two would collide with each other.
+  @@unique([holderType, holderId, bucket, reason, sourceType, sourceId])
+  @@index([holderType, holderId, bucket, id])
+  @@index([batchId])
+  @@schema("transaction")
+}
+
+model BalanceSnapshot {
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  amount Decimal @db.Decimal(18, 2)
+
+  /// The newest entry folded into `amount`. This is what makes the nightly
+  /// check in Step 4 exact rather than approximate: it sums entries up to
+  /// this id, so concurrent writes during the check cannot make it disagree.
+  lastEntryId BigInt
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedBy Int      @db.Integer()
+
+  @@id([holderType, holderId, bucket])
+  @@schema("transaction")
+}
+
+model BalanceAdjustment {
+  id Int @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+  direction  BalanceDirectionEnum
+  amount     Decimal               @db.Decimal(18, 2)
+
+  /// Mandatory. An adjustment nobody can explain is indistinguishable from
+  /// an error, six months later.
+  reason   String  @db.VarChar(500)
+  /// Free-form pointer at whatever the evidence is - a chat thread, a ticket,
+  /// an upstream export filename.
+  evidence String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  @@index([holderType, holderId])
   @@schema("transaction")
 }
