@@ -694,8 +694,8 @@ export type InternalBalanceLogScalarFieldEnum = (typeof InternalBalanceLogScalar
 
 export const BalanceEntryScalarFieldEnum = {
   id: 'id',
-  holderType: 'holderType',
   holderId: 'holderId',
+  holderType: 'holderType',
   bucket: 'bucket',
   direction: 'direction',
   amount: 'amount',
@@ -711,8 +711,8 @@ export type BalanceEntryScalarFieldEnum = (typeof BalanceEntryScalarFieldEnum)[k
 
 
 export const BalanceSnapshotScalarFieldEnum = {
-  holderType: 'holderType',
   holderId: 'holderId',
+  holderType: 'holderType',
   bucket: 'bucket',
   amount: 'amount',
   lastEntryId: 'lastEntryId',
@@ -725,8 +725,8 @@ export type BalanceSnapshotScalarFieldEnum = (typeof BalanceSnapshotScalarFieldE
 
 export const BalanceAdjustmentScalarFieldEnum = {
   id: 'id',
-  holderType: 'holderType',
   holderId: 'holderId',
+  holderType: 'holderType',
   bucket: 'bucket',
   direction: 'direction',
   amount: 'amount',
