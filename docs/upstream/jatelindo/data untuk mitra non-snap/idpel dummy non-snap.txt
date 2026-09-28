@@ -1,0 +1,8 @@
+Data dummy testing
+Nomor rekening bank Mandiri : 1250010399080
+Nomor rekening bank BCA : 7890654041
+Nomor rekening bank BNI : 0449544599
+
+Invalid account number : 1250010399081 (Mandiri)
+Transfer di bawah limit : 7890654041 (BCA) dgn nominal < 5.000
+Transfer di atas limit : 7890654041 (BCA) dgn nominal > 150.000.000

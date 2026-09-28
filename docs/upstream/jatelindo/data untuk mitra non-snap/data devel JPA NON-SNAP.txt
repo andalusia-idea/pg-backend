@@ -1,0 +1,8 @@
+url_public = https://dev-transferonline.fello.id:14890 (IP Mitra harus didaftarkan di Jatelindo)
+
+Credentials untuk sandbox
+username :	devids
+password :	dlijlk125
+api-key :	534715a1-348e-11ee-80e3-00259064666c
+secret : uihjbmn1281AS8sh1
+
