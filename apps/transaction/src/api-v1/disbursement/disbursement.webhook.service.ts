@@ -239,9 +239,9 @@ export class DisbursementWebhookService {
         },
         status: confirmed.status,
         beneficiary: {
-          bankCode: disbursement.recipientBankCode,
-          accountNumber: disbursement.recipientAccount,
-          accountHolderName: disbursement.recipientName,
+          bankCode: disbursement.bankCode,
+          accountNumber: disbursement.accountNumber,
+          accountHolderName: disbursement.accountHolderName,
         },
         paidAt: paidAt ? paidAt.toISOString() : null,
       };
@@ -343,9 +343,9 @@ export class DisbursementWebhookService {
           providerReference: true,
           status: true,
           nominal: true,
-          recipientName: true,
-          recipientAccount: true,
-          recipientBankCode: true,
+          accountHolderName: true,
+          accountNumber: true,
+          bankCode: true,
           metadata: true,
         },
       });
@@ -466,8 +466,8 @@ type DisbursementRow = {
   providerReference: string | null;
   status: string;
   nominal: Decimal;
-  recipientName: string;
-  recipientAccount: string;
-  recipientBankCode: string;
+  accountHolderName: string;
+  accountNumber: string;
+  bankCode: string;
   metadata: Prisma.JsonValue;
 };

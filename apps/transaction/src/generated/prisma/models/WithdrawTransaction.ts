@@ -86,10 +86,9 @@ export type WithdrawTransactionMinAggregateOutputType = {
   paymentMethodName: string | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
-  recipientName: string | null
-  recipientAccount: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   status: $Enums.TransactionStatusEnum | null
   paidAt: Date | null
   settlementAt: Date | null
@@ -112,10 +111,9 @@ export type WithdrawTransactionMaxAggregateOutputType = {
   paymentMethodName: string | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
-  recipientName: string | null
-  recipientAccount: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   status: $Enums.TransactionStatusEnum | null
   paidAt: Date | null
   settlementAt: Date | null
@@ -138,10 +136,9 @@ export type WithdrawTransactionCountAggregateOutputType = {
   paymentMethodName: number
   nominal: number
   netNominal: number
-  recipientName: number
-  recipientAccount: number
-  recipientBankCode: number
-  recipientBankName: number
+  accountHolderName: number
+  accountNumber: number
+  bankCode: number
   status: number
   paidAt: number
   settlementAt: number
@@ -188,10 +185,9 @@ export type WithdrawTransactionMinAggregateInputType = {
   paymentMethodName?: true
   nominal?: true
   netNominal?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   status?: true
   paidAt?: true
   settlementAt?: true
@@ -214,10 +210,9 @@ export type WithdrawTransactionMaxAggregateInputType = {
   paymentMethodName?: true
   nominal?: true
   netNominal?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   status?: true
   paidAt?: true
   settlementAt?: true
@@ -240,10 +235,9 @@ export type WithdrawTransactionCountAggregateInputType = {
   paymentMethodName?: true
   nominal?: true
   netNominal?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   status?: true
   paidAt?: true
   settlementAt?: true
@@ -355,10 +349,9 @@ export type WithdrawTransactionGroupByOutputType = {
   paymentMethodName: string
   nominal: runtime.Decimal
   netNominal: runtime.Decimal
-  recipientName: string | null
-  recipientAccount: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   status: $Enums.TransactionStatusEnum
   paidAt: Date | null
   settlementAt: Date | null
@@ -406,10 +399,9 @@ export type WithdrawTransactionWhereInput = {
   paymentMethodName?: Prisma.StringFilter<"WithdrawTransaction"> | string
   nominal?: Prisma.DecimalFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientAccount?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientBankCode?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientBankName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  accountHolderName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  accountNumber?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  bankCode?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
   status?: Prisma.EnumTransactionStatusEnumFilter<"WithdrawTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"WithdrawTransaction"> | Date | string | null
   settlementAt?: Prisma.DateTimeNullableFilter<"WithdrawTransaction"> | Date | string | null
@@ -438,10 +430,9 @@ export type WithdrawTransactionOrderByWithRelationInput = {
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankCode?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -473,10 +464,9 @@ export type WithdrawTransactionWhereUniqueInput = Prisma.AtLeast<{
   paymentMethodName?: Prisma.StringFilter<"WithdrawTransaction"> | string
   nominal?: Prisma.DecimalFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientAccount?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientBankCode?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
-  recipientBankName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  accountHolderName?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  accountNumber?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
+  bankCode?: Prisma.StringNullableFilter<"WithdrawTransaction"> | string | null
   status?: Prisma.EnumTransactionStatusEnumFilter<"WithdrawTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"WithdrawTransaction"> | Date | string | null
   settlementAt?: Prisma.DateTimeNullableFilter<"WithdrawTransaction"> | Date | string | null
@@ -505,10 +495,9 @@ export type WithdrawTransactionOrderByWithAggregationInput = {
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankCode?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -541,10 +530,9 @@ export type WithdrawTransactionScalarWhereWithAggregatesInput = {
   paymentMethodName?: Prisma.StringWithAggregatesFilter<"WithdrawTransaction"> | string
   nominal?: Prisma.DecimalWithAggregatesFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalWithAggregatesFilter<"WithdrawTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
-  recipientAccount?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
-  recipientBankCode?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
-  recipientBankName?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
+  accountHolderName?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
+  accountNumber?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
+  bankCode?: Prisma.StringNullableWithAggregatesFilter<"WithdrawTransaction"> | string | null
   status?: Prisma.EnumTransactionStatusEnumWithAggregatesFilter<"WithdrawTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"WithdrawTransaction"> | Date | string | null
   settlementAt?: Prisma.DateTimeNullableWithAggregatesFilter<"WithdrawTransaction"> | Date | string | null
@@ -568,10 +556,9 @@ export type WithdrawTransactionCreateInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -600,10 +587,9 @@ export type WithdrawTransactionUncheckedCreateInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -631,10 +617,9 @@ export type WithdrawTransactionUpdateInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -663,10 +648,9 @@ export type WithdrawTransactionUncheckedUpdateInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -695,10 +679,9 @@ export type WithdrawTransactionCreateManyInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -722,10 +705,9 @@ export type WithdrawTransactionUpdateManyMutationInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -750,10 +732,9 @@ export type WithdrawTransactionUncheckedUpdateManyInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -778,10 +759,9 @@ export type WithdrawTransactionCountOrderByAggregateInput = {
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
   settlementAt?: Prisma.SortOrder
@@ -816,10 +796,9 @@ export type WithdrawTransactionMaxOrderByAggregateInput = {
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
   settlementAt?: Prisma.SortOrder
@@ -842,10 +821,9 @@ export type WithdrawTransactionMinOrderByAggregateInput = {
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
   settlementAt?: Prisma.SortOrder
@@ -949,10 +927,9 @@ export type WithdrawTransactionCreateWithoutFeeDetailsInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -980,10 +957,9 @@ export type WithdrawTransactionUncheckedCreateWithoutFeeDetailsInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1026,10 +1002,9 @@ export type WithdrawTransactionUpdateWithoutFeeDetailsInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1057,10 +1032,9 @@ export type WithdrawTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1087,10 +1061,9 @@ export type WithdrawTransactionCreateWithoutMerchantBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1118,10 +1091,9 @@ export type WithdrawTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1164,10 +1136,9 @@ export type WithdrawTransactionUpdateWithoutMerchantBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1195,10 +1166,9 @@ export type WithdrawTransactionUncheckedUpdateWithoutMerchantBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1225,10 +1195,9 @@ export type WithdrawTransactionCreateWithoutAgentBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1256,10 +1225,9 @@ export type WithdrawTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1302,10 +1270,9 @@ export type WithdrawTransactionUpdateWithoutAgentBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1333,10 +1300,9 @@ export type WithdrawTransactionUncheckedUpdateWithoutAgentBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1363,10 +1329,9 @@ export type WithdrawTransactionCreateWithoutInternalBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1394,10 +1359,9 @@ export type WithdrawTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: string | null
-  recipientAccount?: string | null
-  recipientBankCode?: string | null
-  recipientBankName?: string | null
+  accountHolderName?: string | null
+  accountNumber?: string | null
+  bankCode?: string | null
   status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
   settlementAt?: Date | string | null
@@ -1440,10 +1404,9 @@ export type WithdrawTransactionUpdateWithoutInternalBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1471,10 +1434,9 @@ export type WithdrawTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1560,10 +1522,9 @@ export type WithdrawTransactionSelect<ExtArgs extends runtime.Types.Extensions.I
   paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   status?: boolean
   paidAt?: boolean
   settlementAt?: boolean
@@ -1593,10 +1554,9 @@ export type WithdrawTransactionSelectCreateManyAndReturn<ExtArgs extends runtime
   paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   status?: boolean
   paidAt?: boolean
   settlementAt?: boolean
@@ -1621,10 +1581,9 @@ export type WithdrawTransactionSelectUpdateManyAndReturn<ExtArgs extends runtime
   paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   status?: boolean
   paidAt?: boolean
   settlementAt?: boolean
@@ -1649,10 +1608,9 @@ export type WithdrawTransactionSelectScalar = {
   paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   status?: boolean
   paidAt?: boolean
   settlementAt?: boolean
@@ -1666,7 +1624,7 @@ export type WithdrawTransactionSelectScalar = {
   deletedBy?: boolean
 }
 
-export type WithdrawTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "userRole" | "systemReference" | "providerReference" | "bankReference" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "recipientName" | "recipientAccount" | "recipientBankCode" | "recipientBankName" | "status" | "paidAt" | "settlementAt" | "additionalInfo" | "metadata" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["withdrawTransaction"]>
+export type WithdrawTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "userRole" | "systemReference" | "providerReference" | "bankReference" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "accountHolderName" | "accountNumber" | "bankCode" | "status" | "paidAt" | "settlementAt" | "additionalInfo" | "metadata" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["withdrawTransaction"]>
 export type WithdrawTransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   feeDetails?: boolean | Prisma.WithdrawTransaction$feeDetailsArgs<ExtArgs>
   MerchantBalanceLog?: boolean | Prisma.WithdrawTransaction$MerchantBalanceLogArgs<ExtArgs>
@@ -1696,10 +1654,19 @@ export type $WithdrawTransactionPayload<ExtArgs extends runtime.Types.Extensions
     paymentMethodName: string
     nominal: runtime.Decimal
     netNominal: runtime.Decimal
-    recipientName: string | null
-    recipientAccount: string | null
-    recipientBankCode: string | null
-    recipientBankName: string | null
+    /**
+     * Nullable, unlike the same three on DisbursementTransaction, because
+     * `paymentMethodName` here can be USDT - which has no bank, no account
+     * number and no account holder. NOT NULL would force a placeholder, and an
+     * empty string in a bank-code column is how a bad join eventually finds a
+     * match.
+     * 
+     * Same polymorphism caveat as DisbursementTransaction: not a foreign key,
+     * and the meaning depends on `paymentMethodName`.
+     */
+    accountHolderName: string | null
+    accountNumber: string | null
+    bankCode: string | null
     status: $Enums.TransactionStatusEnum
     paidAt: Date | null
     settlementAt: Date | null
@@ -2148,10 +2115,9 @@ export interface WithdrawTransactionFieldRefs {
   readonly paymentMethodName: Prisma.FieldRef<"WithdrawTransaction", 'String'>
   readonly nominal: Prisma.FieldRef<"WithdrawTransaction", 'Decimal'>
   readonly netNominal: Prisma.FieldRef<"WithdrawTransaction", 'Decimal'>
-  readonly recipientName: Prisma.FieldRef<"WithdrawTransaction", 'String'>
-  readonly recipientAccount: Prisma.FieldRef<"WithdrawTransaction", 'String'>
-  readonly recipientBankCode: Prisma.FieldRef<"WithdrawTransaction", 'String'>
-  readonly recipientBankName: Prisma.FieldRef<"WithdrawTransaction", 'String'>
+  readonly accountHolderName: Prisma.FieldRef<"WithdrawTransaction", 'String'>
+  readonly accountNumber: Prisma.FieldRef<"WithdrawTransaction", 'String'>
+  readonly bankCode: Prisma.FieldRef<"WithdrawTransaction", 'String'>
   readonly status: Prisma.FieldRef<"WithdrawTransaction", 'TransactionStatusEnum'>
   readonly paidAt: Prisma.FieldRef<"WithdrawTransaction", 'DateTime'>
   readonly settlementAt: Prisma.FieldRef<"WithdrawTransaction", 'DateTime'>

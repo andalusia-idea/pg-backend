@@ -57,10 +57,9 @@ export type DisbursementTransactionMinAggregateOutputType = {
   merchantReference: string | null
   providerReference: string | null
   bankReference: string | null
-  recipientName: string | null
-  recipientAccount: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   providerName: string | null
   paymentMethodName: string | null
   nominal: runtime.Decimal | null
@@ -86,10 +85,9 @@ export type DisbursementTransactionMaxAggregateOutputType = {
   merchantReference: string | null
   providerReference: string | null
   bankReference: string | null
-  recipientName: string | null
-  recipientAccount: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   providerName: string | null
   paymentMethodName: string | null
   nominal: runtime.Decimal | null
@@ -115,10 +113,9 @@ export type DisbursementTransactionCountAggregateOutputType = {
   merchantReference: number
   providerReference: number
   bankReference: number
-  recipientName: number
-  recipientAccount: number
-  recipientBankCode: number
-  recipientBankName: number
+  accountHolderName: number
+  accountNumber: number
+  bankCode: number
   providerName: number
   paymentMethodName: number
   nominal: number
@@ -172,10 +169,9 @@ export type DisbursementTransactionMinAggregateInputType = {
   merchantReference?: true
   providerReference?: true
   bankReference?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
   paymentMethodName?: true
   nominal?: true
@@ -201,10 +197,9 @@ export type DisbursementTransactionMaxAggregateInputType = {
   merchantReference?: true
   providerReference?: true
   bankReference?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
   paymentMethodName?: true
   nominal?: true
@@ -230,10 +225,9 @@ export type DisbursementTransactionCountAggregateInputType = {
   merchantReference?: true
   providerReference?: true
   bankReference?: true
-  recipientName?: true
-  recipientAccount?: true
-  recipientBankCode?: true
-  recipientBankName?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
   paymentMethodName?: true
   nominal?: true
@@ -348,10 +342,9 @@ export type DisbursementTransactionGroupByOutputType = {
   merchantReference: string
   providerReference: string | null
   bankReference: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal: runtime.Decimal
@@ -402,10 +395,9 @@ export type DisbursementTransactionWhereInput = {
   merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
   providerReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -437,10 +429,9 @@ export type DisbursementTransactionOrderByWithRelationInput = {
   merchantReference?: Prisma.SortOrder
   providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
@@ -476,10 +467,9 @@ export type DisbursementTransactionWhereUniqueInput = Prisma.AtLeast<{
   merchantId?: Prisma.IntFilter<"DisbursementTransaction"> | number
   merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
   bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -511,10 +501,9 @@ export type DisbursementTransactionOrderByWithAggregationInput = {
   merchantReference?: Prisma.SortOrder
   providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
   bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
@@ -550,10 +539,9 @@ export type DisbursementTransactionScalarWhereWithAggregatesInput = {
   merchantReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   providerReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
   bankReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
-  recipientName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientAccount?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   paymentMethodName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalWithAggregatesFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -580,10 +568,9 @@ export type DisbursementTransactionCreateInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -615,10 +602,9 @@ export type DisbursementTransactionUncheckedCreateInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -649,10 +635,9 @@ export type DisbursementTransactionUpdateInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -684,10 +669,9 @@ export type DisbursementTransactionUncheckedUpdateInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -719,10 +703,9 @@ export type DisbursementTransactionCreateManyInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -749,10 +732,9 @@ export type DisbursementTransactionUpdateManyMutationInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -780,10 +762,9 @@ export type DisbursementTransactionUncheckedUpdateManyInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -816,10 +797,9 @@ export type DisbursementTransactionCountOrderByAggregateInput = {
   merchantReference?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
   bankReference?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
@@ -859,10 +839,9 @@ export type DisbursementTransactionMaxOrderByAggregateInput = {
   merchantReference?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
   bankReference?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
@@ -888,10 +867,9 @@ export type DisbursementTransactionMinOrderByAggregateInput = {
   merchantReference?: Prisma.SortOrder
   providerReference?: Prisma.SortOrder
   bankReference?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
@@ -1000,10 +978,9 @@ export type DisbursementTransactionCreateWithoutFeeDetailsInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1034,10 +1011,9 @@ export type DisbursementTransactionUncheckedCreateWithoutFeeDetailsInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1083,10 +1059,9 @@ export type DisbursementTransactionUpdateWithoutFeeDetailsInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1117,10 +1092,9 @@ export type DisbursementTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1150,10 +1124,9 @@ export type DisbursementTransactionCreateWithoutMerchantBalanceLogInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1184,10 +1157,9 @@ export type DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1233,10 +1205,9 @@ export type DisbursementTransactionUpdateWithoutMerchantBalanceLogInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1267,10 +1238,9 @@ export type DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1300,10 +1270,9 @@ export type DisbursementTransactionCreateWithoutAgentBalanceLogInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1334,10 +1303,9 @@ export type DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput = 
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1383,10 +1351,9 @@ export type DisbursementTransactionUpdateWithoutAgentBalanceLogInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1417,10 +1384,9 @@ export type DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput = 
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1450,10 +1416,9 @@ export type DisbursementTransactionCreateWithoutInternalBalanceLogInput = {
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1484,10 +1449,9 @@ export type DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput
   merchantReference: string
   providerReference?: string | null
   bankReference?: string | null
-  recipientName: string
-  recipientAccount: string
-  recipientBankCode: string
-  recipientBankName?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
   paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1533,10 +1497,9 @@ export type DisbursementTransactionUpdateWithoutInternalBalanceLogInput = {
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1567,10 +1530,9 @@ export type DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput
   merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
   providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1659,10 +1621,9 @@ export type DisbursementTransactionSelect<ExtArgs extends runtime.Types.Extensio
   merchantReference?: boolean
   providerReference?: boolean
   bankReference?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   nominal?: boolean
@@ -1695,10 +1656,9 @@ export type DisbursementTransactionSelectCreateManyAndReturn<ExtArgs extends run
   merchantReference?: boolean
   providerReference?: boolean
   bankReference?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   nominal?: boolean
@@ -1726,10 +1686,9 @@ export type DisbursementTransactionSelectUpdateManyAndReturn<ExtArgs extends run
   merchantReference?: boolean
   providerReference?: boolean
   bankReference?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   nominal?: boolean
@@ -1757,10 +1716,9 @@ export type DisbursementTransactionSelectScalar = {
   merchantReference?: boolean
   providerReference?: boolean
   bankReference?: boolean
-  recipientName?: boolean
-  recipientAccount?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   nominal?: boolean
@@ -1781,7 +1739,7 @@ export type DisbursementTransactionSelectScalar = {
   deletedBy?: boolean
 }
 
-export type DisbursementTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "merchantId" | "systemReference" | "merchantReference" | "providerReference" | "bankReference" | "recipientName" | "recipientAccount" | "recipientBankCode" | "recipientBankName" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "status" | "paidAt" | "batchSettlementId" | "settlementAt" | "batchReconciliationId" | "reconciliationAt" | "additionalInfo" | "metadata" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementTransaction"]>
+export type DisbursementTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "merchantId" | "systemReference" | "merchantReference" | "providerReference" | "bankReference" | "accountHolderName" | "accountNumber" | "bankCode" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "status" | "paidAt" | "batchSettlementId" | "settlementAt" | "batchReconciliationId" | "reconciliationAt" | "additionalInfo" | "metadata" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementTransaction"]>
 export type DisbursementTransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   feeDetails?: boolean | Prisma.DisbursementTransaction$feeDetailsArgs<ExtArgs>
   MerchantBalanceLog?: boolean | Prisma.DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs>
@@ -1807,10 +1765,28 @@ export type $DisbursementTransactionPayload<ExtArgs extends runtime.Types.Extens
     merchantReference: string
     providerReference: string | null
     bankReference: string | null
-    recipientName: string
-    recipientAccount: string
-    recipientBankCode: string
-    recipientBankName: string | null
+    /**
+     * Where the money goes. Named to match `auth.MerchantDetail` /
+     * `auth.AgentDetail` and `config.Bank.code`, which is where these values are
+     * copied from.
+     * 
+     * `bankCode` is **polymorphic, and deliberately not a foreign key**: it holds
+     * a `config.Bank.code` when `paymentMethodName` is TRANSFERBANK, and an
+     * `EWalletEnum` value (OVO / DANA / GOPAY / SHOPEEPAY) when it is
+     * TRANSFEREWALLET. `accountNumber` likewise holds a wallet phone number in
+     * the e-wallet case.
+     * 
+     * So check `paymentMethodName` before joining on either. A bare
+     * `JOIN config."Bank" ON code = "bankCode"` silently drops every e-wallet
+     * payout instead of failing - there is no constraint to catch it, since the
+     * two tables live in different Postgres schemas.
+     * 
+     * The bank's *name* is not stored: it is derivable from `bankCode`, and a
+     * stored copy goes stale when a bank is renamed.
+     */
+    accountHolderName: string
+    accountNumber: string
+    bankCode: string
     providerName: string
     paymentMethodName: string
     nominal: runtime.Decimal
@@ -2262,10 +2238,9 @@ export interface DisbursementTransactionFieldRefs {
   readonly merchantReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly providerReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly bankReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientAccount: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientBankCode: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientBankName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly accountHolderName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly accountNumber: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly bankCode: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly providerName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly paymentMethodName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly nominal: Prisma.FieldRef<"DisbursementTransaction", 'Decimal'>

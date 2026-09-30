@@ -359,6 +359,7 @@ Twenty entries (D1–D20), each a real defect or ambiguity found while reading t
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
 | **D19** | Transaction v2 renamed every reference column; the four listing DTOs still declare the old names, so `externalId` / `referenceId` are silently absent from every response | **You**, then backend + frontend | **Live now.** 21 table columns across 5 pages render blank. Needs your call on one old→new mapping before the DTOs can be fixed |
 | **D18** | Transaction v2 dropped `InternalBalanceLog.providerName` and `TopUpTransaction.metadata`, both exposed through the dashboard API | Frontend dev | Backend is fixed and compiling. Two response/param shapes changed — see the table at the end of D18 |
+| **D21** | Payout destination columns renamed (`recipient*` → `accountHolderName` / `accountNumber` / `bankCode`) and `recipientBankName` dropped | Dashboard team, then frontend | `apps/transaction` is done. One dashboard DTO still declares the old four; they will go silently absent from every disbursement response, D19-style. Re-run the schema merge first |
 
 > **D17 and D1 are not migration issues.** Both are defects in the code running in production right now, found while reading it. They're worth acting on independently of this port.
 
@@ -770,6 +771,48 @@ The column only ever *looked* like a constraint. Nothing checked that `code` agr
 The two `orderBy: { code: 'asc' }` clauses became `[{ providerName }, { paymentMethodName }, { transactionType }]` — the same ordering, since the string was built in that order.
 
 > Do not "tidy up" the derivation by deleting `code` from the DTO. It is what keeps rows 19–23 non-breaking; the column is gone, the response field is not.
+
+---
+
+### D21 — Payout destination columns renamed; `recipientBankName` dropped → **transaction app fixed, dashboard needs a backend fix**
+
+Landed 30 Sep 2026 in `apps/transaction`. The dashboard side was **deliberately left alone** — it is the dashboard team's to make.
+
+`DisbursementTransaction` and `WithdrawTransaction` both carried four `recipient*` columns. They are now named the way `auth.MerchantDetail`, `auth.AgentDetail` and `config.Bank` already name the same values — which is where they are copied from:
+
+| Old | New | Note |
+|---|---|---|
+| `recipientName` | `accountHolderName` | |
+| `recipientAccount` | `accountNumber` | |
+| `recipientBankCode` | `bankCode` | |
+| `recipientBankName` | **dropped** | derivable from `bankCode`; a stored copy goes stale when a bank is renamed |
+
+`WithdrawTransaction`'s three stay **nullable** — `paymentMethodName` there can be `USDT`, which has no bank, no account number and no account holder. On `DisbursementTransaction` they are NOT NULL, since every payment method has a destination.
+
+**What breaks, and why you will not see it break.** One dashboard file reads these:
+
+```
+apps/dashboard/src/modules/disbursement/dto/disbursement-transaction.dto.ts:38  recipientName
+apps/dashboard/src/modules/disbursement/dto/disbursement-transaction.dto.ts:41  recipientBankCode
+apps/dashboard/src/modules/disbursement/dto/disbursement-transaction.dto.ts:44  recipientBankName
+apps/dashboard/src/modules/disbursement/dto/disbursement-transaction.dto.ts:47  recipientAccount
+```
+
+This is **exactly the D19 failure mode**: the service builds the DTO with `as unknown as`, so a field the row no longer has becomes `undefined`, and `JSON.stringify` omits undefined properties entirely. The four columns will not arrive as `null` — they will not arrive *at all*. No compile error, no failing test. Four columns on the disbursement page silently render blank.
+
+**To fix:**
+
+1. `npm run prisma:merge:dashboard && npm run prisma:generate:dashboard` — the merged schema is stale until this runs (§6.1).
+2. Rename the three DTO fields. The frontend's row type needs the same three renamed.
+3. Decide what to do about `recipientBankName`. Either drop it from the DTO and the frontend table, or resolve it — `config.Bank` is already in the dashboard's merged client, so `bankCode → Bank.name` is a join or a lookup, not new infrastructure.
+
+> ⚠️ **`bankCode` is polymorphic, and there is no foreign key.** It holds a `config.Bank.code` when `paymentMethodName` is `TRANSFERBANK`, and an `EWalletEnum` value (`OVO` / `DANA` / `GOPAY` / `SHOPEEPAY`) when it is `TRANSFEREWALLET`. `accountNumber` likewise holds a wallet phone number in the e-wallet case.
+>
+> So if you resolve the bank name with a bare `JOIN config."Bank" ON code = "bankCode"`, **every e-wallet payout silently drops out of the result** — the two tables are in different Postgres schemas, so nothing constrains or catches it. Branch on `paymentMethodName` first.
+
+**On the migration.** `20260930134813_rename_payout_destination_columns` is hand-written, and has to be: Prisma cannot detect a rename — it sees a dropped field and a new one, so `migrate dev` would have generated `DROP COLUMN` + `ADD COLUMN` and destroyed the destination of every payout already in the table. It uses `ALTER TABLE ... RENAME COLUMN`, which preserves the data.
+
+**Before deploying**, check production for `WithdrawTransaction` / `DisbursementTransaction` rows — the rename is safe on any data, but it is worth confirming the row counts you expect.
 
 ---
 
