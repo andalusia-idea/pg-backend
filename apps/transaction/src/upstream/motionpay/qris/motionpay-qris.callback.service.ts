@@ -1,14 +1,10 @@
 import { MotionPayConfig } from '@app/configuration';
 import { ProviderNameEnum, isIpAllowed } from '@app/microservice';
-import { UpstreamWebhookQrisDto } from '@app/upstream';
+import { METADATA_KEY, UpstreamWebhookQrisDto } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
 import Decimal from 'decimal.js';
 import { MotionPayQrisCallbackDto } from '../dto';
-import {
-  MOTIONPAY_METADATA_KEY,
-  mapMotionPayStatus,
-  parseMotionPayTimestamp,
-} from '../helper';
+import { mapMotionPayStatus, parseMotionPayTimestamp } from '../helper';
 
 /**
  * Either a normalised notification the business layer can act on, or a reason
@@ -83,7 +79,7 @@ export class MotionPayQrisCallbackService {
         // Whole rupiah on the wire; our money is fixed-2 everywhere.
         nominal: new Decimal(payload.amount ?? 0).toFixed(2),
         paidAt,
-        metadata: { [MOTIONPAY_METADATA_KEY.CALLBACK_QRIS]: payload },
+        metadata: { [METADATA_KEY.QRIS_CALLBACK]: payload },
         // Kept separately and unaltered: the webhook log exists to hold what
         // actually arrived, and a normalised copy is not evidence.
         rawPayload: payload as unknown as Record<string, unknown>,

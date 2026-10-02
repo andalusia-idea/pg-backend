@@ -1,10 +1,9 @@
 import { MotionPayConfig } from '@app/configuration';
 import { ProviderNameEnum, isIpAllowed } from '@app/microservice';
-import { UpstreamWebhookTransferDto } from '@app/upstream';
+import { METADATA_KEY, UpstreamWebhookTransferDto } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
 import { MotionPayBillerCallbackDto } from '../dto';
 import {
-  MOTIONPAY_METADATA_KEY,
   mapMotionPayBillerStatus,
   motionPayBillerSystemReference,
 } from '../helper';
@@ -71,7 +70,7 @@ export class MotionPayBillerCallbackService {
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayBillerStatus(payload.status),
         message: payload.description || payload.message || null,
-        metadata: { [MOTIONPAY_METADATA_KEY.CALLBACK_BILLER]: payload },
+        metadata: { [METADATA_KEY.TRANSFER_EWALLET_CALLBACK]: payload },
         rawPayload: payload as unknown as Record<string, unknown>,
       },
     };

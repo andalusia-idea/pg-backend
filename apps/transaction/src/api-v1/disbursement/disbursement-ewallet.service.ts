@@ -6,18 +6,16 @@ import {
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
+  METADATA_KEY,
   UpstreamEWalletInquiryResponseDto,
-  UpstreamEWalletTopupRequestDto,
-  UpstreamEWalletTopupResponseDto,
+  UpstreamEWalletRequestDto,
+  UpstreamEWalletPaymentResponseDto,
   UpstreamException,
 } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
-import {
-  MOTIONPAY_METADATA_KEY,
-  MotionPayBillerService,
-} from '../../upstream/motionpay';
+import { MotionPayBillerService } from '../../upstream/motionpay';
 import {
   DEFAULT_SYSTEM_REFERENCE_LENGTH,
   generateSystemReference,
@@ -94,7 +92,7 @@ export class DisbursementEWalletService {
       dto,
     });
 
-    const request: UpstreamEWalletTopupRequestDto = {
+    const eWalletRequestDto: UpstreamEWalletRequestDto = {
       systemReference,
       providerName,
       merchantReference: dto.merchantReference,
@@ -103,8 +101,11 @@ export class DisbursementEWalletService {
       accountNumber: dto.accountNumber,
     };
 
-    const inquiry = await this.inquire(disbursementId, request);
-    const upstream = await this.pay(disbursementId, request, inquiry);
+    const inquiry = await this.accountInquiry(
+      disbursementId,
+      eWalletRequestDto,
+    );
+    const upstream = await this.pay(disbursementId, eWalletRequestDto, inquiry);
 
     await this.recordUpstreamResult(disbursementId, inquiry, upstream);
 
@@ -133,7 +134,7 @@ export class DisbursementEWalletService {
       case ProviderNameEnum.MOTIONPAY:
         return this.motionPayBillerService.systemReferenceMaxLength;
       default:
-        // Routing sent us somewhere we have no client for; `inquire` reports
+        // Routing sent us somewhere we have no client for; `accountInquiry` reports
         // that properly. Our own default is a safe placeholder.
         return DEFAULT_SYSTEM_REFERENCE_LENGTH;
     }
@@ -142,13 +143,13 @@ export class DisbursementEWalletService {
   /**
    * Reserve the payout row before the provider is touched at all.
    *
-   * `recipientAccount` holds the wallet's phone number - the same column a bank
+   * `accountNumber` holds the wallet's phone number - the same column a bank
    * account number goes in, because it is the same thing: where the money is
    * going. A second column for the same concept would mean every query and
    * every reconciliation join had to branch on payment method before it could
    * find the destination.
    *
-   * `recipientBankCode` holds the wallet name. The provider's product code goes
+   * `bankCode` holds the wallet name. The provider's product code goes
    * into `additionalInfo` rather than a column of its own - every upstream
    * codes its catalogue differently, so it is provider-shaped detail rather
    * than something the schema should have an opinion about.
@@ -174,9 +175,9 @@ export class DisbursementEWalletService {
           // Left empty rather than guessed: a wallet top-up may resolve no name
           // at all, and inventing one would put an unverified value where the
           // bank flow puts a bank-confirmed one.
-          recipientName: '',
-          recipientAccount: dto.accountNumber,
-          recipientBankCode: dto.eWallet,
+          accountHolderName: '',
+          accountNumber: dto.accountNumber,
+          bankCode: dto.eWallet,
 
           providerName,
           paymentMethodName: this.paymentMethodName,
@@ -205,9 +206,9 @@ export class DisbursementEWalletService {
    * money moved - so it is worth reaching before the payment leg rather than
    * discovering the destination is unusable afterwards.
    */
-  private async inquire(
+  private async accountInquiry(
     disbursementId: number,
-    request: UpstreamEWalletTopupRequestDto,
+    request: UpstreamEWalletRequestDto,
   ): Promise<UpstreamEWalletInquiryResponseDto> {
     try {
       switch (request.providerName) {
@@ -224,7 +225,7 @@ export class DisbursementEWalletService {
     } catch (error) {
       if (error instanceof TransactionException) {
         await this.common.markFailed(disbursementId, {
-          [MOTIONPAY_METADATA_KEY.PAYMENT_BILLER_ERROR]: {
+          [METADATA_KEY.TRANSFER_EWALLET_CREATE_ERROR]: {
             reason: 'no client for provider',
           },
         });
@@ -244,7 +245,7 @@ export class DisbursementEWalletService {
       if (timedOut) throw TransactionException.upstreamTimeout();
 
       await this.common.markFailed(disbursementId, {
-        [MOTIONPAY_METADATA_KEY.PAYMENT_BILLER_ERROR]:
+        [METADATA_KEY.TRANSFER_EWALLET_CREATE_ERROR]:
           error instanceof UpstreamException
             ? { message: error.message, ...error.context }
             : { message: 'unknown upstream failure' },
@@ -268,9 +269,9 @@ export class DisbursementEWalletService {
    */
   private async pay(
     disbursementId: number,
-    request: UpstreamEWalletTopupRequestDto,
+    request: UpstreamEWalletRequestDto,
     inquiry: UpstreamEWalletInquiryResponseDto,
-  ): Promise<UpstreamEWalletTopupResponseDto> {
+  ): Promise<UpstreamEWalletPaymentResponseDto> {
     try {
       switch (request.providerName) {
         case ProviderNameEnum.MOTIONPAY:
@@ -294,7 +295,7 @@ export class DisbursementEWalletService {
       if (timedOut) throw TransactionException.upstreamTimeout();
 
       await this.common.markFailed(disbursementId, {
-        [MOTIONPAY_METADATA_KEY.PAYMENT_BILLER_ERROR]:
+        [METADATA_KEY.TRANSFER_EWALLET_CREATE_ERROR]:
           error instanceof UpstreamException
             ? { message: error.message, ...error.context }
             : { message: 'unknown upstream failure' },
@@ -319,7 +320,7 @@ export class DisbursementEWalletService {
   private async recordUpstreamResult(
     disbursementId: number,
     inquiry: UpstreamEWalletInquiryResponseDto,
-    upstream: UpstreamEWalletTopupResponseDto,
+    upstream: UpstreamEWalletPaymentResponseDto,
   ): Promise<void> {
     try {
       await this.prismaMaster.disbursementTransaction.update({
@@ -329,7 +330,7 @@ export class DisbursementEWalletService {
           status: upstream.status,
           // Only when the provider actually resolved one - never fabricated.
           ...(inquiry.accountHolderName
-            ? { recipientName: inquiry.accountHolderName }
+            ? { accountHolderName: inquiry.accountHolderName }
             : {}),
           additionalInfo: {
             productCode: inquiry.productCode,

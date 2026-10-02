@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  METADATA_KEY,
   assertUpstreamSchema,
   UpstreamException,
-  UpstreamTransferInquiryRequestDto,
-  UpstreamTransferInquiryResponseDto,
-  UpstreamTransferRequestDto,
-  UpstreamTransferResponseDto,
   UpstreamTransferStatusRequestDto,
   UpstreamTransferStatusResponseDto,
+  UpstreamTransferRequestDto,
+  UpstreamTransferAccountInquiryResponseDto,
+  UpstreamTransferPaymentResponseDto,
 } from '@app/upstream';
 import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 import Decimal from 'decimal.js';
@@ -18,7 +18,6 @@ import {
   MOTIONPAY_TRANSFER_ENDPOINT,
   MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_TRANSFER_STATUS_CODE,
-  MOTIONPAY_METADATA_KEY,
 } from '../helper';
 import { isKnownMotionPayBankCode } from '../helper';
 import {
@@ -81,8 +80,8 @@ export class MotionPayTransferService {
    * than throwing — the caller decides whether to abort the payout.
    */
   async accountInquiry(
-    params: UpstreamTransferInquiryRequestDto,
-  ): Promise<UpstreamTransferInquiryResponseDto> {
+    params: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferAccountInquiryResponseDto> {
     const body: MotionPayAccountInquiryRequestDto = {
       bank_code: this.assertBankCode(params.bankCode),
       bank_account: params.accountNumber,
@@ -129,7 +128,7 @@ export class MotionPayTransferService {
    */
   async fundTransfer(
     params: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferResponseDto> {
+  ): Promise<UpstreamTransferPaymentResponseDto> {
     const nominal = new Decimal(params.amount.value);
     const body: MotionPayFundTransferRequestDto = {
       recipient_bank: this.assertBankCode(params.bankCode),
@@ -177,7 +176,7 @@ export class MotionPayTransferService {
       nominal: nominal.toFixed(2),
       message: parsed.status.message,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.CREATE_TRANSFER]: parsed,
+        [METADATA_KEY.TRANSFER_BANK_PAYMENT]: parsed,
       } as Record<string, unknown>,
     };
   }
@@ -216,7 +215,7 @@ export class MotionPayTransferService {
       status: this.mapStatusCode(parsed.status.code),
       message: parsed.status.message,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.STATUS_TRANSFER]: parsed,
+        [METADATA_KEY.TRANSFER_BANK_STATUS]: parsed,
       } as Record<string, unknown>,
     };
   }

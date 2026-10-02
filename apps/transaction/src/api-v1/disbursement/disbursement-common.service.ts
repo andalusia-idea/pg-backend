@@ -1,4 +1,5 @@
 import {
+  isEwalletEnum,
   PaymentMethodNameEnum,
   ProfileClient,
   ProviderNameEnum,
@@ -11,6 +12,13 @@ import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { UpstreamException } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
+import {
+  MotionPayBillerService,
+  MotionPayTransferService,
+} from '../../upstream/motionpay';
+import { DEFAULT_SYSTEM_REFERENCE_LENGTH } from '../transaction.helper';
+import { CreateTransferRequestDto } from './disbursement.dto';
+import Decimal from 'decimal.js';
 
 /** Prisma's unique-constraint violation. */
 const UNIQUE_VIOLATION = 'P2002';
@@ -37,12 +45,50 @@ export class DisbursementCommonService {
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
-
     private readonly profileClient: ProfileClient,
+
+    private readonly motionPayTransferService: MotionPayTransferService,
+    private readonly motionPayBillerService: MotionPayBillerService,
   ) {}
 
   readonly userRole = UserRoleEnum.MERCHANT;
   readonly transactionType = TransactionTypeEnum.DISBURSEMENT;
+
+  /**
+   * Ask the rail that will actually carry this payout how long a reference it
+   * can hold, before one is generated.
+   *
+   * **The payment method is load-bearing here, not decoration.** The two
+   * MotionPay rails have different budgets, and they are not close: Transfer
+   * allows 50 characters, Biller 64 less the `-P` payment suffix, so 62.
+   * Answering with Biller's number for a bank payout produces a reference the
+   * Transfer endpoint refuses - and since `external_id` is also the key the
+   * status endpoint is queried by, a reference that will not fit has to be
+   * caught here, before the row is reserved, rather than at the provider.
+   *
+   * Biller's own getter already subtracts the suffix, so a reference that clears
+   * the inquiry cannot overflow the payment leg that follows - the leg where a
+   * deposit is actually debited.
+   *
+   * An unroutable combination gets the house default rather than a throw: the
+   * inquiry reports a missing client properly, and this only has to avoid
+   * generating something unusable in the meantime.
+   */
+  systemReferenceMaxLength(
+    providerName: ProviderNameEnum,
+    paymentMethodName: PaymentMethodNameEnum,
+  ): number {
+    if (ProviderNameEnum.MOTIONPAY === providerName) {
+      if (PaymentMethodNameEnum.TRANSFERBANK === paymentMethodName) {
+        return this.motionPayTransferService.systemReferenceMaxLength;
+      }
+      if (PaymentMethodNameEnum.TRANSFEREWALLET === paymentMethodName) {
+        return this.motionPayBillerService.systemReferenceMaxLength;
+      }
+    }
+
+    return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+  }
 
   /**
    * Which provider this merchant routes a payout through.
@@ -89,6 +135,56 @@ export class DisbursementCommonService {
       });
       throw TransactionException.transactionNotPermitted();
     }
+  }
+
+  async reserveTransaction({
+    userId,
+    systemReference,
+    providerName,
+    paymentMethodName,
+    dto,
+  }: {
+    userId: number;
+    systemReference: string;
+    providerName: ProviderNameEnum;
+    paymentMethodName: PaymentMethodNameEnum;
+    dto: CreateTransferRequestDto;
+  }): Promise<number> {
+    try {
+      const row = await this.prismaMaster.disbursementTransaction.create({
+        data: {
+          merchantId: userId,
+          systemReference,
+          merchantReference: dto.merchantReference,
+
+          accountHolderName: '',
+          accountNumber: dto.accountNumber,
+          bankCode: dto.bankCode,
+
+          providerName,
+          paymentMethodName: paymentMethodName,
+          nominal: new Decimal(dto.amount.value),
+
+          status: TransactionStatusEnum.PENDING,
+        },
+        select: { id: true },
+      });
+      return row.id;
+    } catch (error) {
+      this.reserveFailure({
+        error,
+        userId,
+        systemReference,
+        merchantReference: dto.merchantReference,
+        rail: paymentMethodName,
+      });
+    }
+  }
+
+  decidePaymentMethodName(bankCode: string) {
+    /// TODO refer to microservices.enum.ts PaymentMethodNameEnum
+    if (isEwalletEnum(bankCode)) return PaymentMethodNameEnum.TRANSFEREWALLET;
+    return PaymentMethodNameEnum.TRANSFERBANK;
   }
 
   /**
@@ -145,6 +241,53 @@ export class DisbursementCommonService {
   }
 
   /** Best-effort: the merchant is being told this failed either way. */
+  /**
+   * Write the provider-confirmed destination onto the reserved row.
+   *
+   * The reserve writes the merchant's unverified values, because it has to run
+   * before any upstream call. The inquiry is what turns them into the *bank's*
+   * spelling, and that is the version worth keeping: it is what the merchant's
+   * settlement webhook reports, and what a support question six months later is
+   * answered from.
+   *
+   * **Called right after the inquiry, not folded into the post-payment update.**
+   * Every failure path in the payment leg marks the row FAILED and throws, which
+   * skips the post-payment update entirely - so folding it there would leave a
+   * verified beneficiary unrecorded on exactly the payouts someone later has to
+   * explain.
+   *
+   * **Fatal, unlike `markFailed` and the post-payment update.** Both of those
+   * swallow, because by then money is in flight and raising would invite a retry
+   * that pays the recipient twice. Here nothing has moved yet, so refusing to
+   * continue with a row we could not update is the safe direction.
+   */
+  async recordBeneficiary(
+    disbursementId: number,
+    beneficiary: {
+      accountHolderName: string;
+      accountNumber: string;
+      bankCode: string;
+    },
+  ): Promise<void> {
+    try {
+      await this.prismaMaster.disbursementTransaction.update({
+        where: { id: disbursementId },
+        data: {
+          accountHolderName: beneficiary.accountHolderName,
+          accountNumber: beneficiary.accountNumber,
+          bankCode: beneficiary.bankCode,
+        },
+      });
+    } catch (error) {
+      this.logger.error({
+        msg: 'Beneficiary verified but could not be recorded - not sending the payout',
+        disbursementId,
+        error,
+      });
+      throw TransactionException.internalError();
+    }
+  }
+
   async markFailed(
     disbursementId: number,
     metadata: Record<string, unknown>,

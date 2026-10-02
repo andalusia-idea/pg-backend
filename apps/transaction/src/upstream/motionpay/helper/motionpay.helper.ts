@@ -289,31 +289,3 @@ export function motionPayBillerSystemReference(
     ? paymentReference.slice(0, -MOTIONPAY_BILLER_PAYMENT_SUFFIX.length)
     : paymentReference;
 }
-
-/**
- * Keys under which raw provider payloads are stored in `metadata`.
- *
- * The column is one JSON object keyed by event rather than a single payload, so
- * each stage of a transaction's life keeps its own evidence instead of
- * overwriting the last. A disputed payment is argued from the create response
- * *and* the callback, and the callback arriving must never erase what we sent
- * to make the QR.
- */
-export const MOTIONPAY_METADATA_KEY = {
-  CREATE_QRIS: 'CREATE_QRIS',
-  /** Why a create attempt failed, kept so a FAILED row explains itself. */
-  CREATE_QRIS_ERROR: 'CREATE_QRIS_ERROR',
-  CALLBACK_QRIS: 'CALLBACK_QRIS',
-  STATUS_QRIS: 'STATUS_QRIS',
-  CREATE_TRANSFER: 'CREATE_TRANSFER',
-  CREATE_TRANSFER_ERROR: 'CREATE_TRANSFER_ERROR',
-  CALLBACK_TRANSFER: 'CALLBACK_TRANSFER',
-  STATUS_TRANSFER: 'STATUS_TRANSFER',
-  INQUIRY_BILLER: 'INQUIRY_BILLER',
-  PAYMENT_BILLER: 'PAYMENT_BILLER',
-  PAYMENT_BILLER_ERROR: 'PAYMENT_BILLER_ERROR',
-  CALLBACK_BILLER: 'CALLBACK_BILLER',
-  STATUS_BILLER: 'STATUS_BILLER',
-} as const;
-export type MotionPayMetadataKey =
-  (typeof MOTIONPAY_METADATA_KEY)[keyof typeof MOTIONPAY_METADATA_KEY];

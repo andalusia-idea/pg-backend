@@ -435,10 +435,14 @@ export class PurchaseWebhookService {
   /**
    * Merge new evidence into `metadata` without discarding what is there.
    *
-   * The column holds one object keyed by event - `{ CREATE_QRIS,
-   * CALLBACK_QRIS, STATUS_QRIS }` - so each stage keeps its own payload. A
+   * The column holds one object keyed by event - `{ QRIS_CREATE, QRIS_CALLBACK,
+   * QRIS_STATUS }`, from `METADATA_KEY` - so each stage keeps its own payload. A
    * plain assignment would let the callback erase the create response, which is
    * half of what a disputed payment is argued from.
+   *
+   * Rows written before those keys were renamed carry the old spellings
+   * (`CREATE_QRIS`, …). Nothing reads `metadata` by key, so the mix is
+   * cosmetic - but it is worth knowing before grepping production evidence.
    */
   private mergeMetadata(
     existing: Prisma.JsonValue,

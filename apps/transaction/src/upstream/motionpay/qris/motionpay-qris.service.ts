@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  METADATA_KEY,
   assertUpstreamSchema,
   UpstreamQrisRequestDto,
   UpstreamQrisResponseDto,
@@ -16,7 +17,6 @@ import {
   MOTIONPAY_QRIS_ENDPOINT,
   MOTIONPAY_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_STATUS_CODE,
-  MOTIONPAY_METADATA_KEY,
   getMotionPayTimestampSkewHours,
   mapMotionPayStatus,
 } from '../helper';
@@ -131,7 +131,7 @@ export class MotionPayQrisService {
       status: mapMotionPayStatus({ status: data.status }),
       message: data.description ?? null,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.CREATE_QRIS]: parsed,
+        [METADATA_KEY.QRIS_CREATE]: parsed,
       } as Record<string, unknown>,
     };
     return res;
@@ -234,7 +234,7 @@ export class MotionPayQrisService {
       paidAt: data.paid_date ?? null,
       expiresAt: data.expired_date ?? null,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.STATUS_QRIS]: parsed,
+        [METADATA_KEY.QRIS_STATUS]: parsed,
       } as Record<string, unknown>,
     };
   }

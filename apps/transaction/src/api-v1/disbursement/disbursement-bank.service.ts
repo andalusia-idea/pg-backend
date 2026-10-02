@@ -6,18 +6,16 @@ import {
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
+  METADATA_KEY,
   UpstreamException,
-  UpstreamTransferInquiryResponseDto,
-  UpstreamTransferRequestDto,
-  UpstreamTransferResponseDto,
+  UpstreamBankInquiryResponseDto,
+  UpstreamBankRequestDto,
+  UpstreamBankPaymentResponseDto,
 } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
-import {
-  MOTIONPAY_METADATA_KEY,
-  MotionPayTransferService,
-} from '../../upstream/motionpay';
+import { MotionPayTransferService } from '../../upstream/motionpay';
 import {
   DEFAULT_SYSTEM_REFERENCE_LENGTH,
   generateSystemReference,
@@ -59,10 +57,18 @@ export class DisbursementBankService {
    * anything, so we can never have money in flight that we have no record of.
    *
    * **With one step the pay-in flow does not have.** The beneficiary is
-   * verified with the bank *before* the row is reserved. Payouts are the
-   * asymmetric case - a failed pay-in can be retried, money sent to a mistyped
-   * account number is gone. One extra round trip converts an unrecoverable loss
-   * into a `4009103`.
+   * verified with the bank before any money is sent. Payouts are the asymmetric
+   * case - a failed pay-in can be retried, money sent to a mistyped account
+   * number is gone. One extra round trip converts an unrecoverable loss into a
+   * `4009103`.
+   *
+   * The order is reserve, then inquire, then record what the bank said, then
+   * pay. The reserve has to come first - no money may move before a row exists
+   * - which means it writes the merchant's unverified values and
+   * `recordBeneficiary` replaces them with the bank's. Reserving *after* the
+   * inquiry would let the verified values be written once, but it would also
+   * leave a window where an invalid account number had already consumed nothing
+   * and `merchantReference` was not yet claimed.
    *
    * Idempotency is claimed by the insert, via
    * `@@unique([merchantId, merchantReference])`. A merchant retrying the same
@@ -86,22 +92,14 @@ export class DisbursementBankService {
       maxLength: this.systemReferenceMaxLength(providerName),
     });
 
-    const beneficiary = await this.verifyBeneficiary({
-      systemReference,
-      providerName,
-      bankCode: dto.bankCode,
-      accountNumber: dto.accountNumber,
-    });
-
     const disbursementId = await this.reserveTransaction({
       userId,
       providerName,
       systemReference,
       dto,
-      beneficiary,
     });
 
-    const upstream = await this.callUpstream(disbursementId, {
+    const bankRequestDto: UpstreamBankRequestDto = {
       systemReference,
       providerName,
       merchantReference: dto.merchantReference,
@@ -109,9 +107,24 @@ export class DisbursementBankService {
       bankCode: dto.bankCode,
       accountNumber: dto.accountNumber,
       // The bank's spelling, not the merchant's.
-      accountHolderName: beneficiary.accountHolderName,
+      accountHolderName: dto.accountHolderName ?? null,
       note: dto.note ?? dto.merchantReference,
+    };
+
+    const beneficiary = await this.accountInquiry(bankRequestDto);
+    bankRequestDto.accountHolderName = beneficiary.accountHolderName;
+    bankRequestDto.accountNumber = beneficiary.accountNumber;
+
+    // The reserve wrote the merchant's unverified values; this replaces them
+    // with the bank's. Before the payment leg, so a payout that then fails
+    // still carries the beneficiary it was actually checked against.
+    await this.common.recordBeneficiary(disbursementId, {
+      accountHolderName: beneficiary.accountHolderName,
+      accountNumber: beneficiary.accountNumber,
+      bankCode: beneficiary.bankCode,
     });
+
+    const upstream = await this.callUpstream(disbursementId, bankRequestDto);
 
     await this.recordUpstreamResult(disbursementId, upstream);
 
@@ -141,7 +154,7 @@ export class DisbursementBankService {
       case ProviderNameEnum.MOTIONPAY:
         return this.motionPayTransferService.systemReferenceMaxLength;
       default:
-        // Routing sent us somewhere we have no client for; `verifyBeneficiary`
+        // Routing sent us somewhere we have no client for; `accountInquiry`
         // reports that properly. Our own default is a safe placeholder.
         return DEFAULT_SYSTEM_REFERENCE_LENGTH;
     }
@@ -154,13 +167,10 @@ export class DisbursementBankService {
    * answers HTTP 200 with `valid: false` and an empty name. Relying on an
    * absent throw here would send money to unverified accounts.
    */
-  private async verifyBeneficiary(params: {
-    systemReference: string;
-    providerName: ProviderNameEnum;
-    bankCode: string;
-    accountNumber: string;
-  }): Promise<UpstreamTransferInquiryResponseDto> {
-    let inquiry: UpstreamTransferInquiryResponseDto;
+  private async accountInquiry(
+    params: UpstreamBankRequestDto,
+  ): Promise<UpstreamBankInquiryResponseDto> {
+    let inquiry: UpstreamBankInquiryResponseDto;
 
     try {
       switch (params.providerName) {
@@ -212,13 +222,11 @@ export class DisbursementBankService {
     providerName,
     systemReference,
     dto,
-    beneficiary,
   }: {
     userId: number;
     providerName: ProviderNameEnum;
     systemReference: string;
     dto: CreateTransferRequestDto;
-    beneficiary: UpstreamTransferInquiryResponseDto;
   }): Promise<number> {
     try {
       const row = await this.prismaMaster.disbursementTransaction.create({
@@ -227,9 +235,9 @@ export class DisbursementBankService {
           systemReference,
           merchantReference: dto.merchantReference,
 
-          recipientName: beneficiary.accountHolderName,
-          recipientAccount: beneficiary.accountNumber,
-          recipientBankCode: beneficiary.bankCode,
+          accountHolderName: '',
+          accountNumber: dto.accountNumber,
+          bankCode: dto.bankCode,
 
           providerName,
           paymentMethodName: this.paymentMethodName,
@@ -261,8 +269,8 @@ export class DisbursementBankService {
    */
   private async callUpstream(
     disbursementId: number,
-    dto: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferResponseDto> {
+    dto: UpstreamBankRequestDto,
+  ): Promise<UpstreamBankPaymentResponseDto> {
     try {
       switch (dto.providerName) {
         case ProviderNameEnum.MOTIONPAY:
@@ -278,7 +286,7 @@ export class DisbursementBankService {
     } catch (error) {
       if (error instanceof TransactionException) {
         await this.common.markFailed(disbursementId, {
-          [MOTIONPAY_METADATA_KEY.CREATE_TRANSFER_ERROR]: {
+          [METADATA_KEY.TRANSFER_BANK_CREATE_ERROR]: {
             reason: 'no client for provider',
           },
         });
@@ -299,7 +307,7 @@ export class DisbursementBankService {
       if (timedOut) throw TransactionException.upstreamTimeout();
 
       await this.common.markFailed(disbursementId, {
-        [MOTIONPAY_METADATA_KEY.CREATE_TRANSFER_ERROR]:
+        [METADATA_KEY.TRANSFER_BANK_CREATE_ERROR]:
           error instanceof UpstreamException
             ? {
                 provider: error.provider,
@@ -320,7 +328,7 @@ export class DisbursementBankService {
   /** Attach what the provider returned to the reserved row. */
   private async recordUpstreamResult(
     disbursementId: number,
-    upstream: UpstreamTransferResponseDto,
+    upstream: UpstreamBankPaymentResponseDto,
   ): Promise<void> {
     try {
       await this.prismaMaster.disbursementTransaction.update({

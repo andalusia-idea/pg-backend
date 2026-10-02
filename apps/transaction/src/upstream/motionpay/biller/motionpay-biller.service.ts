@@ -1,12 +1,17 @@
-import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 import {
+  EWalletEnum,
+  ProviderNameEnum,
+  TransactionStatusEnum,
+} from '@app/microservice';
+import {
+  METADATA_KEY,
   assertUpstreamSchema,
-  UpstreamEWalletInquiryResponseDto,
-  UpstreamEWalletTopupRequestDto,
-  UpstreamEWalletTopupResponseDto,
   UpstreamException,
+  UpstreamTransferRequestDto,
+  UpstreamTransferAccountInquiryResponseDto,
   UpstreamTransferStatusRequestDto,
   UpstreamTransferStatusResponseDto,
+  UpstreamTransferPaymentResponseDto,
 } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
 import { AxiosError } from 'axios';
@@ -29,7 +34,6 @@ import {
   MOTIONPAY_BILLER_EXTERNAL_ID_MAX_LENGTH,
   MOTIONPAY_BILLER_PAYMENT_SUFFIX,
   MOTIONPAY_BILLER_STATUS_CODE,
-  MOTIONPAY_METADATA_KEY,
   mapMotionPayBillerStatus,
   motionPayBillerPaymentReference,
   motionPayEWalletProductCode,
@@ -96,10 +100,12 @@ export class MotionPayBillerService {
    * `transaction_id` the payment leg can use, or the payout cannot proceed.
    */
   async inquiry(
-    dto: UpstreamEWalletTopupRequestDto,
-  ): Promise<UpstreamEWalletInquiryResponseDto> {
+    dto: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferAccountInquiryResponseDto> {
     const context = 'billerInquiry';
-    const productCode = motionPayEWalletProductCode(dto.eWallet);
+    const productCode = motionPayEWalletProductCode(
+      dto.bankCode as EWalletEnum,
+    );
 
     const body: MotionPayBillerInquiryPrepaidRequestDto = {
       external_id: dto.systemReference,
@@ -135,15 +141,14 @@ export class MotionPayBillerService {
     }
 
     return {
+      valid: true,
+      bankCode: dto.bankCode,
+      accountNumber: dto.accountNumber,
+      accountHolderName: parsed!.data?.customer_name ?? '',
       providerReference: data.transaction_id,
-      accountHolderName: data.customer_name ?? '',
-      productCode: data.product_code,
-      productName: data.product_name,
-      nominal: new Decimal(data.amount).toFixed(2),
-      fee: new Decimal(data.fee).toFixed(2),
-      total: new Decimal(data.total).toFixed(2),
+      message: parsed!.message,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.INQUIRY_BILLER]: parsed,
+        [METADATA_KEY.TRANSFER_EWALLET_ACCOUNT_INQUIRY]: parsed,
       } as Record<string, unknown>,
     };
   }
@@ -160,15 +165,18 @@ export class MotionPayBillerService {
    * asynchronously with the final state arriving by callback.
    */
   async payment(
-    dto: UpstreamEWalletTopupRequestDto,
-    inquiry: UpstreamEWalletInquiryResponseDto,
-  ): Promise<UpstreamEWalletTopupResponseDto> {
+    dto: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferPaymentResponseDto> {
     const context = 'billerPayment';
+
+    const productCode = motionPayEWalletProductCode(
+      dto.bankCode as EWalletEnum,
+    );
 
     const body: MotionPayBillerPaymentPrepaidRequestDto = {
       external_id: motionPayBillerPaymentReference(dto.systemReference),
-      transaction_id: inquiry.providerReference,
-      product_code: inquiry.productCode,
+      transaction_id: dto.providerReference!,
+      product_code: productCode,
       customer_id: dto.accountNumber,
     };
 
@@ -205,7 +213,7 @@ export class MotionPayBillerService {
       nominal: new Decimal(data.amount).toFixed(2),
       message: parsed.description || parsed.message || null,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.PAYMENT_BILLER]: parsed,
+        [METADATA_KEY.TRANSFER_EWALLET_PAYMENT]: parsed,
       } as Record<string, unknown>,
     };
   }
@@ -246,7 +254,7 @@ export class MotionPayBillerService {
       status: mapMotionPayBillerStatus(parsed.status),
       message: parsed.description || parsed.message || null,
       metadata: {
-        [MOTIONPAY_METADATA_KEY.STATUS_BILLER]: parsed,
+        [METADATA_KEY.TRANSFER_EWALLET_STATUS]: parsed,
       } as Record<string, unknown>,
     };
   }

@@ -55,7 +55,6 @@ export const MotionPayBillerInquiryPrepaidResponseSchema = Type.Object({
   description: Type.String(),
   data: Type.Union([
     Type.Null(),
-    Type.Object({}),
     Type.Object({
       external_id: Type.String({
         minLength: 1,

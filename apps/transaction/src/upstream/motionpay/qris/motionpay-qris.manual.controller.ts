@@ -32,7 +32,7 @@ import { MotionPayQrisAuthService } from './motionpay-qris.auth.service';
  * has no record of. Delete this controller, or put it behind the real auth
  * guards, once the purchase flow supersedes it.
  */
-@ApiTags('Upstream · MotionPay (manual test)')
+@ApiTags('Upstream · MotionPay Qris (manual test)')
 @Controller('upstream/motionpay')
 export class MotionPayQrisManualController {
   private readonly logger = new Logger(MotionPayQrisManualController.name);

@@ -6,6 +6,7 @@ import {
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
+  METADATA_KEY,
   UpstreamException,
   UpstreamQrisRequestDto,
   UpstreamQrisResponseDto,
@@ -13,10 +14,7 @@ import {
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
-import {
-  MOTIONPAY_METADATA_KEY,
-  MotionPayQrisService,
-} from '../../upstream/motionpay';
+import { MotionPayQrisService } from '../../upstream/motionpay';
 import {
   DEFAULT_SYSTEM_REFERENCE_LENGTH,
   generateSystemReference,
@@ -211,7 +209,7 @@ export class PurchaseQrisService {
     } catch (error) {
       if (error instanceof TransactionException) {
         await this.common.markFailed(purchaseId, {
-          [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]: {
+          [METADATA_KEY.QRIS_CREATE_ERROR]: {
             reason: 'no client for provider',
           },
         });
@@ -232,7 +230,7 @@ export class PurchaseQrisService {
       if (timedOut) throw TransactionException.upstreamTimeout();
 
       await this.common.markFailed(purchaseId, {
-        [MOTIONPAY_METADATA_KEY.CREATE_QRIS_ERROR]:
+        [METADATA_KEY.QRIS_CREATE_ERROR]:
           error instanceof UpstreamException
             ? {
                 provider: error.provider,

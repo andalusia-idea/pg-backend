@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-const DEFAULT_TIMEOUT_MS = 15_000;
-/** Renew the token this long before its JWT `exp`, to absorb clock skew and flight time. */
-const DEFAULT_TOKEN_SKEW_SECONDS = 300; // 5 minutes
-
 @Injectable()
 export class MotionPayConfig {
   constructor(private readonly configService: ConfigService) {}
@@ -107,17 +103,11 @@ export class MotionPayConfig {
   }
 
   get TIMEOUT_MS(): number {
-    return this.positiveIntOrDefault(
-      'MOTIONPAY_TIMEOUT_MS',
-      DEFAULT_TIMEOUT_MS,
-    );
+    return this.positiveIntOrDefault('MOTIONPAY_TIMEOUT_MS', 15_000);
   }
 
   get TOKEN_SKEW_SECONDS(): number {
-    return this.positiveIntOrDefault(
-      'MOTIONPAY_TOKEN_SKEW_SECONDS',
-      DEFAULT_TOKEN_SKEW_SECONDS,
-    );
+    return this.positiveIntOrDefault('MOTIONPAY_TOKEN_SKEW_SECONDS', 300);
   }
 
   /* ------------------------------------------------------------------ *

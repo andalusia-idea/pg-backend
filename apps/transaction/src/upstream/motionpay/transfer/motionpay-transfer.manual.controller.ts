@@ -36,7 +36,7 @@ import {
  * unauthenticated. Delete this controller, or put it behind the real auth
  * guards, before the payout flow goes live.
  */
-@ApiTags('Upstream · MotionPay Transfer (manual test)')
+@ApiTags('Upstream - MotionPay Transfer (manual test)')
 @Controller('upstream/motionpay/transfer')
 export class MotionPayTransferManualController {
   private readonly logger = new Logger(MotionPayTransferManualController.name);

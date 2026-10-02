@@ -1,9 +1,9 @@
 import { MotionPayConfig } from '@app/configuration';
 import { ProviderNameEnum, isIpAllowed } from '@app/microservice';
-import { UpstreamWebhookTransferDto } from '@app/upstream';
+import { METADATA_KEY, UpstreamWebhookTransferDto } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
 import { MotionPayTransferCallbackDto } from '../dto';
-import { MOTIONPAY_METADATA_KEY, mapMotionPayTransferStatus } from '../helper';
+import { mapMotionPayTransferStatus } from '../helper';
 
 /**
  * Either a normalised notification the business layer can act on, or a reason
@@ -67,7 +67,7 @@ export class MotionPayTransferCallbackService {
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayTransferStatus(payload.status.code),
         message: payload.status.message ?? null,
-        metadata: { [MOTIONPAY_METADATA_KEY.CALLBACK_TRANSFER]: payload },
+        metadata: { [METADATA_KEY.TRANSFER_BANK_CALLBACK]: payload },
         rawPayload: payload as unknown as Record<string, unknown>,
       },
     };
