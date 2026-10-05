@@ -291,13 +291,32 @@ Request: `traceNumber`. Response mirrors Single Transfer but with
 
 | Gap | Where |
 |---|---|
-| **No status resolution path.** `callback.service.ts` is empty, `JatelindoTransferOtherService` is exported from its barrel but **not registered in `JatelindoModule`**, and the webhook's `confirmWithProvider` switches on MotionPay only | §7 |
+| **No status resolution path.** `callback.service.ts` is empty and the webhook's `confirmWithProvider` switches on MotionPay only | §7 |
 | `transactionStatus` validates against `JatelindoBalanceInquiryResponseSchema` and labels its errors `balanceInquiry` | `jatelindo-transfer.other.service.ts` |
-| `isUnathorized` reads `data['responseCode']`, but the envelope nests it as `status.responseCode` — so the 401-refresh path never fires | `jatelindo-transfer.auth.service.ts` |
-| Credentials reach the logs: the raw `username:password`, its base64, the whole axios response, the bearer token, and `MD5(secret)` twice | same file |
-| `send()` spreads `...config` before `headers`, silently dropping any caller-supplied header | same file |
 | `TRANSACTION_HISTORY` absent from `JATELINDO_ENDPOINT` | `jatelindo.constant.ts` |
 | Bank channel map covers 2 of 142 | same file |
+
+### Closed
+
+| Was | Fixed by |
+|---|---|
+| Credentials in the logs: the raw `username:password`, its base64, the whole axios response, the bearer token, and `MD5(secret)` twice | removed; the "token acquired" line keeps `expiresAt` only |
+| `E99` → CANCELLED and `E18` → EXPIRED, both terminal on a `SUSPECT` outcome | both → `PENDING`; `T18`/`T16`/`A90` → `FAILED`; unknown codes → `PENDING` |
+| E-wallet `channelId` sent as the wallet's name | the 90x block from spec v1.6 |
+| `isUnathorized` read `data['responseCode']` — one level too shallow, and it crashed on a body-less response | reads `status.responseCode`, guards the body, and also accepts a real HTTP 401 |
+| The refresh path could not fire **at all**: it only ran in a `catch`, and A90 arrives in a 200 | `send()` now raises an internal signal when it sees A90 in a successful envelope, so both arrival shapes take the one retry path |
+| `send()` spread `...config` before `headers`, dropping caller headers | headers merged; `Content-Type` overridable, `APIKey`/`Authorization`/`RequestAuth` and `baseURL` are not |
+| `JatelindoTransferOtherService` not registered in `JatelindoModule` | registered and exported |
+
+Covered by `jatelindo-transfer.auth.service.spec.ts`, which asserts the call
+*count* and which token each attempt carries — the original bug was a silent
+no-op, and only those assertions catch its return.
+
+> **Worth confirming with Jatelindo** (add to §9): whether a refused or expired
+> session token comes back as a 200 envelope carrying `A90`, as an HTTP 401, or
+> both. The spec lists A90 in the response-code table and never mentions a 401
+> anywhere, so the implementation handles both shapes rather than guess. The
+> answer decides whether the 401 branch is dead code or the main path.
 
 ---
 
