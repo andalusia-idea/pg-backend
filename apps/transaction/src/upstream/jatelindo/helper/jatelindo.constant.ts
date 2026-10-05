@@ -106,9 +106,95 @@ export const JATELINDO_CHANNEL = {
   [EWalletEnum.GOPAY]: '903',
   [EWalletEnum.OVO]: '904',
 
-  // Banks. 2 of 142 mapped.
-  '013': '2', // PT. BANK PERMATA Tbk.
-  '008': '3', // PT. BANK MANDIRI Tbk.
-  /// TODO complete the rest - the full table is in the spec, transcribed
-  /// partially in docs/upstream/jatelindo.md §3.
+  // Banks: 74 of our 91 mapped, from the spec v1.7 channel list.
+  //
+  // 17 are deliberately absent rather than guessed - renames where our name and
+  // theirs are different eras of the same bank, our 022 label, their duplicate
+  // Bali entry, and banks they do not carry at all. docs/upstream/jatelindo.md §3
+  // lists each with the reason. A missing row fails loudly; a wrong row pays a
+  // stranger, so absent is the safer default until someone confirms.
+
+  // Bank Umum Nasional (24)
+  '014': '4', // BCA = PT. BANK CENTRAL ASIA Tbk.
+  '008': '3', // MANDIRI = PT. BANK MANDIRI Tbk.
+  '009': '5', // BNI = PT. BNI 1946 (Persero) Tbk.
+  '002': '6', // BRI = PT.BRI (Persero) Tbk.
+  '200': '8', // BTN = PT. BANK TABUNGAN NEGARA (Persero)
+  '013': '2', // PERMATA = PT. BANK PERMATA Tbk.
+  '011': '10', // DANAMON = PT BANK DANAMON INDONESIA Tbk
+  '016': '142', // MAYBANK INDONESIA = PT. Bank Maybank Indonesia
+  '426': '11', // MEGA = PT. BANK MEGA Tbk.
+  '153': '123', // SINARMAS = PT. BANK SINARMAS
+  '028': '15', // OCBC NISP = PT. BANK OCBC NISP Tbk.
+  '441': '19', // BUKOPIN (KB BUKOPIN) = PT. BUKOPIN
+  '019': '119', // PANIN = PT. BANK PAN INDONESIA Tbk. (PAN
+  '213': '17', // BTPN / Jenius = PT. BANK TABUNGAN PENSIUNAN NASIONAL
+  '950': '136', // COMMONWEALTH = PT. BANK COMMONWEALTH
+  '023': '16', // UOB INDONESIA = PT. BANK UOB INDONESIA
+  '054': '141', // CAPITAL INDONESIA = PT. BANK CAPITAL INDONESIA
+  '097': '87', // MAYAPADA = PT. BANK MAYAPADA
+  '157': '86', // MASPION = PT. BANK MASPION INDONESIA
+  '161': '72', // GANESHA = PT. BANK GANESHA
+  '566': '132', // VICTORIA INTERNATIONAL = PT. BANK VICTORIA INTERNATIONAL
+  '555': '137', // INDEX SELINDO = PT. BANK INDEX SELINDO
+  '513': '79', // INA PERDANA = PT. BANK INA PERDANA
+  '553': '88', // MAYORA INDONESIA = PT. BANK MAYORA INDONESIA
+
+  // Digital (1)
+  '535': '125', // Seabank = PT BANK SEABANK INDONESIA
+
+  // Syariah (9)
+  '451': '7', // Bank Suariah Indonesia (BSI) = PT BANK SYARIAH INDONESIA TBK
+  '147': '18', // Bank Muamalat = PT. BANK MUAMALAT INDONESIA
+  '536': '21', // BCA Syariah = PT. BANK BCA SYARIAH
+  '506': '23', // Bank Mega Syariah = PT. BANK SYARIAH MEGA INDONESIA
+  '517': '22', // Bank Panin Dubai Syariah = PT. Bank Panin Syariah
+  '425': '35', // Bank BJB Syariah = PT. BANK JABAR BANTEN SYARIAH
+  '116': '29', // BPD Aceh Suariah = PT. Bank Aceh Syariah
+  '521': '27', // KB Bukopin Syariah = PT BANK SYARIAH BUKOPIN
+  '947': '25', // Bank Aladin Syariah = PT BANK ALADIN SYARIAH Tbk
+
+  // Bank Pembangunan Daerah (25)
+  '110': '99', // Bank BJB = PT. BANK JABAR DAN BANTEN
+  '111': '135', // Bank DKI = PT. BPD DKI JAKARTA
+  '112': '118', // BPD DIY = PT. BANK PEMBANGUNAN DAERAH DIY
+  '113': '100', // Bank Jateng = PT. BPD JAWA TENGAH
+  '114': '102', // Bank Jatim = BPD JATIM
+  '115': '101', // BPD Jambi = PT.BANK PEMBANGUNAN DAERAH JAMBI
+  '117': '113', // Bank Sumut = BPD SUMATERA UTARA
+  '118': '112', // Bank Nagari (Sumbar) = BPD SUMATERA BARAT
+  '119': '111', // Bank Riau Kepri = PT.BANK PEMBANGUNAN DAERAH RIAU
+  '120': '61', // Bank Sumsel Babel = BPD SUMSEL DAN BABEL
+  '121': '107', // Bank Lampung = BPD LAMPUNG
+  '122': '105', // Bank Kalsel = BPD KALIMANTAN SELATAN
+  '123': '103', // Bank Kalbar = PT.BPD KALIMANTAN BARAT
+  '124': '106', // Bank Kaltimtara = PT.BPD KALTIM DAN KALTARA
+  '125': '104', // Bank Kalteng = PT. BPD KALTENG
+  '126': '116', // Bank Sulselbar = PT BPD SULAWESI SELATAN
+  '127': '109', // Bank NTB = PT. BANK PEMBANGUNAN DAERAH NTB
+  '128': '117', // Bank SulutGo = BPD SULAWESI UTARA
+  '130': '110', // Bank NTT = BPD NUSA TENGGARA TIMUR
+  '131': '108', // Bank Muluku Malut = PT. BPD MALUKU DAN MALUKU UTARA
+  '132': '98', // Bank Papua = PT.BANK PEMBANGUNAN DAERAH PAPUA
+  '133': '97', // Bank Bengkulu = PT. BPD BENGKULU
+  '134': '114', // Bank Sulteng = PT.BPD SULAWESI TENGAH
+  '135': '115', // Bank Sultra = PT.BPD SULAWESI TENGGARA
+  '137': '96', // Bank Banten = PT. BPD BANTEN, Tbk
+
+  // Bank Asing (15)
+  '041': '14', // HSBC = PT BANK HSBC INDONESIA
+  '050': '124', // Standart Chartered = STANDARD CHARTERED BANK
+  '032': '64', // JP Morgan Chase = JPMORGAN CHASE BANK, NA
+  '033': '55', // Bank of America = BANK OF AMERICA , NA
+  '046': '68', // DBS Indonesia = PT. BANK DBS INDONESIA
+  '069': '138', // Bank of China = Bank of China (Hongkong) Limited
+  '048': '93', // Mizuho Bank = PT. BANK MIZUHO INDONESIA
+  '042': '57', // MUFG Bank = MUFG BANK LTD
+  '061': '12', // ANZ Indonesia = PT. ANZ PANIN BANK
+  '067': '69', // Deutsche Bank = DEUTSCHE BANK AG
+  '057': '54', // BNP Paribas = PT. BANK BNP PARIBAS INDONESIA
+  '040': '139', // Bangkok Bank = THE BANGKOK BANK PCL
+  '036': '89', // China Construction Bank (CCB) = BANK CHINA CONSTRUCTION BANK IND
+  '164': '77', // ICBC Indonesia = PT. BANK ICBC INDONESIA
+  '047': '59', // Resona Perdania = PT. BANK RESONA PERDANIA
 } as const;

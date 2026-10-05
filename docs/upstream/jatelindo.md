@@ -157,21 +157,213 @@ Added in spec v1.6. **LinkAja is not in Jatelindo's list** — worth knowing
 because MotionPay's bank-code list does include it, so a merchant routed to
 Jatelindo cannot reach LinkAja.
 
-### Banks — the ones mapped so far
+### Banks
 
-| Our `bankCode` | Jatelindo `channelId` | Name |
+74 of our 91 banks are mapped in `JATELINDO_CHANNEL`. The mapping direction
+matters: ours is `config.Bank.code` (Indonesian clearing codes, `014` = BCA),
+theirs is their own sequence. Unrelated schemes, no formula between them, so
+every bank needs a row.
+
+**Every row is a name-based inference, not a verified route.** The two lists use
+different naming conventions and sometimes different eras of the same bank, and
+nothing here has been exercised against Jatelindo. A missing row fails loudly -
+an empty `channelId=` that the provider refuses - while a *wrong* row succeeds
+and pays a stranger. So anything ambiguous is left out rather than guessed, and
+the whole map wants one verification pass before production.
+
+> **How to verify safely:** the account-inquiry leg is read-only and returns the
+> account holder name. An inquiry per channel against a known account confirms
+> the route without moving money. Never use `/SingleTransfer` for this.
+
+#### Not mapped, and why
+
+| Our `bankCode` | Our name | Why not |
 |---|---|---|
-| `013` | `2` | PT. BANK PERMATA Tbk. |
-| `008` | `3` | PT. BANK MANDIRI Tbk. |
+| `129` | BPD Bali | duplicate on THEIR side: 47 and 95 are both "BANK PEMBANGUNAN DAERAH BALI" |
+| `212` | WOORI SAUDARA | absent from their list (no WOORI and no SAUDARA entry) |
+| `484` | Line Bank | absent from their list (no LINE entry) |
+| `485` | MNC INTERNASIONAL | rename: ours is MNC INTERNASIONAL, their only candidate is 62 PT. BANK BUMIPUTERA (Bumiputera -> ICB Bumiputera -> MNC) |
+| `490` | Bank Neo Commerce | absent from their list (no NEO COMMERCE entry) |
+| `501` | blu by BCA Digital | absent from their list (no blu / BCA Digital entry) |
+| `503` | NOBU (NATIONAL NOBU) | absent from their list (no NOBU entry) |
+| `523` | SAHABAT SAMPOERNA | absent from their list (no SAMPOERNA entry) |
+| `542` | Bank Jago | absent as a conventional bank: their only Jago entry is 30 "BANK JAGO UNIT USAHA SYARIAH" |
+| `547` | BTPN Syariah | absent from their list (no BTPN SYARIAH entry) |
+| `562` | Superbank | absent from their list (no SUPERBANK entry) |
+| `567` | HARDA INTERNASIONAL | rename: ours is HARDA INTERNASIONAL, their only candidate is 74 PT. ALLO BANK INDONESIA (Harda renamed Allo 2021) |
+| `949` | CTBC Indonesia | rename: ours is CTBC Indonesia, their only candidate is 67 PT. BANK CHINATRUST INDONESIA (renamed CTBC 2012) |
+| `095` | JTRUST | rename: ours is JTRUST, their only candidate is 65 PT. BANK MUTIARA Tbk. (renamed JTrust 2014) |
+| `059` | Korea Exchane Bank | rename/merger: ours is Korea Exchane Bank, nearest is 73 BANK HANA (KEB merged into KEB Hana) |
+| `022` | CIMB Niaga Syariah | ambiguous on OUR side: our seed labels 022 "CIMB Niaga Syariah", but 022 is the clearing code for CIMB Niaga itself. Their 9 is conventional, 40 is "PT. BANK NIAGA Tbk. SYARIAH" |
+| `039` | Credit Agricole Indosuez | absent from their list (no CREDIT AGRICOLE / INDOSUEZ entry) |
 
-Others confirmed from the spec, not yet mapped: `1` Fello (Jatelindo's own),
-`5` BNI, `6` BRI, `10` Danamon, `123` Sinarmas, `125` Seabank, `142` Maybank
-(added v1.7). The full table is in the spec; `JATELINDO_CHANNEL` carries a
-`TODO complete the rest`.
+The renames are the interesting group: in each case our catalogue carries one
+era's name and the spec the other, so the match is probably right - but
+"probably" is not good enough for a payout destination.
 
-> The mapping direction matters: ours is `config.Bank.code` (Indonesian clearing
-> codes, `014` = BCA) and Jatelindo's is its own sequence. They are unrelated
-> numbering schemes and there is no formula - every bank needs a table row.
+`022` is the one that is wrong on *our* side. The seed labels it "CIMB Niaga
+Syariah", but `022` is the clearing code for CIMB Niaga itself, and the spec
+offers both `9` (conventional) and `40` (syariah). Our catalogue has no plain
+CIMB Niaga entry at all, which is the real gap.
+
+> Two misspellings in `bank-engine.seed.ts` found while matching: `451` is
+> "Bank Suariah Indonesia (BSI)" and `116` is "BPD Aceh Suariah" — *Suariah* for
+> *Syariah*. Display names only, shown in the dashboard's `BANK` dropdown, so
+> they affect nothing but the UI.
+
+#### The full channel list, spec v1.7
+
+Transcribed from the PDF, so that this does not have to be done again. **`81` is
+absent from the spec** - the table goes 80, then 82. `76` was recovered from a
+page break. `1` is Jatelindo's own account, not a destination.
+
+Duplicates to be aware of: `47` and `95` are both BPD Bali, and `75`/`128`
+both repeat HSBC's foreign branch alongside `14` for the Indonesian subsidiary.
+`76` (BII) and `142` (Maybank Indonesia) are the same bank under two names.
+
+| ID | Name | Our code |
+|---|---|---|
+| 1 | Fello | — |
+| 2 | PT. BANK PERMATA Tbk. | `013` |
+| 3 | PT. BANK MANDIRI Tbk. | `008` |
+| 4 | PT. BANK CENTRAL ASIA Tbk. | `014` |
+| 5 | PT. BNI 1946 (Persero) Tbk. | `009` |
+| 6 | PT.BRI (Persero) Tbk. | `002` |
+| 7 | PT BANK SYARIAH INDONESIA TBK | `451` |
+| 8 | PT. BANK TABUNGAN NEGARA (Persero) | `200` |
+| 9 | PT. BANK CIMB NIAGA Tbk. | — |
+| 10 | PT BANK DANAMON INDONESIA Tbk | `011` |
+| 11 | PT. BANK MEGA Tbk. | `426` |
+| 12 | PT. ANZ PANIN BANK | `061` |
+| 13 | PT. BANK ARTHA GRAHA INTERNASION | — |
+| 14 | PT BANK HSBC INDONESIA | `041` |
+| 15 | PT. BANK OCBC NISP Tbk. | `028` |
+| 16 | PT. BANK UOB INDONESIA | `023` |
+| 17 | PT. BANK TABUNGAN PENSIUNAN NASIONAL | `213` |
+| 18 | PT. BANK MUAMALAT INDONESIA | `147` |
+| 19 | PT. BUKOPIN | `441` |
+| 20 | PT. BANK MANDIRI TASPEN | — |
+| 21 | PT. BANK BCA SYARIAH | `536` |
+| 22 | PT. Bank Panin Syariah | `517` |
+| 23 | PT. BANK SYARIAH MEGA INDONESIA | `506` |
+| 24 | PT BANK MAYBANK SYARIAH INDONESI | — |
+| 25 | PT BANK ALADIN SYARIAH Tbk | `947` |
+| 26 | PT. BPD NTB SYARIAH | — |
+| 27 | PT BANK SYARIAH BUKOPIN | `521` |
+| 28 | PT. BANK VICTORIA SYARIAH | — |
+| 29 | PT. Bank Aceh Syariah | `116` |
+| 30 | PT. BANK JAGO UNIT USAHA SYARIAH | — |
+| 31 | PT. BANK PERMATA Tbk. SYARIAH | — |
+| 32 | PT BANK DANAMON Tbk SYARIAH | — |
+| 33 | PT. BTN (Persero) SYARIAH | — |
+| 34 | PT. BPD DKI JAKARTA SYARIAH | — |
+| 35 | PT. BANK JABAR BANTEN SYARIAH | `425` |
+| 36 | BPD JATENG SYARIAH | — |
+| 37 | BPD JATIM SYARIAH | — |
+| 38 | PT BPD KALIMANTAN BARAT SYARIAH | — |
+| 39 | BPD KALIMANTAN SELATAN SYARIAH | — |
+| 40 | PT. BANK NIAGA Tbk. SYARIAH | — |
+| 41 | PT BANK OCBC NISP TBK. SYARIAH | — |
+| 42 | PT BPD SUMSEL DAN BABEL SYARIAH | — |
+| 43 | PT BPD SUMUT SYARIAH | — |
+| 44 | PT. BANK SINARMAS SYARIAH | — |
+| 45 | PT BANK SULSELBAR SYARIAH | — |
+| 46 | PT. BPD DIY SYARIAH | — |
+| 47 | PT. BANK PEMBANGUNAN DAERAH BALI | — |
+| 48 | THE ROYAL BANK OF SCOTLAND N.V. | — |
+| 49 | PT. AGRONIAGA BANK | — |
+| 50 | PT. BANK AKITA | — |
+| 51 | PT. BANK ARTOS INDONESIA | — |
+| 52 | PT. BANK KESAWAN | — |
+| 53 | PT. BANK BUMI ARTA | — |
+| 54 | PT. BANK BNP PARIBAS INDONESIA | `057` |
+| 55 | BANK OF AMERICA , NA | `033` |
+| 56 | BANK OF SCOTLAND PLC | — |
+| 57 | MUFG BANK LTD | `042` |
+| 58 | THE BoT MITSUBISHI UFJ LTD. | — |
+| 59 | PT. BANK RESONA PERDANIA | `047` |
+| 60 | PT. BANK HS 1906 | — |
+| 61 | BPD SUMSEL DAN BABEL | `120` |
+| 62 | PT. BANK BUMIPUTERA | — |
+| 63 | PT. BANK BISNIS INTERNATIONAL | — |
+| 64 | JPMORGAN CHASE BANK, NA | `032` |
+| 65 | PT. BANK MUTIARA Tbk. | — |
+| 66 | CITIBANK NA | — |
+| 67 | PT. BANK CHINATRUST INDONESIA | — |
+| 68 | PT. BANK DBS INDONESIA | `046` |
+| 69 | DEUTSCHE BANK AG | `067` |
+| 70 | PT. BANK FAMA INTERNATIONAL | — |
+| 71 | PT. BANK AGRIS | — |
+| 72 | PT. BANK GANESHA | `161` |
+| 73 | BANK HANA | — |
+| 74 | PT. ALLO BANK INDONESIA, TBK | — |
+| 75 | THE HONGKONG AND SHANGHAI BC (HSBC) | — |
+| 76 | PT. BII Tbk. | — |
+| 77 | PT. BANK ICBC INDONESIA | `164` |
+| 78 | PT. BANK SBI INDONESIA | — |
+| 79 | PT. BANK INA PERDANA | `513` |
+| 80 | PT. BANK JASA JAKARTA | — |
+| 82 | PT Bank Dinar Indonesia Tbk | — |
+| 83 | PT.ANGLOMAS INTERNATIONAL BANK | — |
+| 84 | LLOYDS BANK PLC | — |
+| 85 | INDONESIA EXIMBANK | — |
+| 86 | PT. BANK MASPION INDONESIA | `157` |
+| 87 | PT. BANK MAYAPADA | `097` |
+| 88 | PT. BANK MAYORA INDONESIA | `553` |
+| 89 | BANK CHINA CONSTRUCTION BANK IND | `036` |
+| 90 | PT. BANK MESTIKA DHARMA | — |
+| 91 | PT BANK SHINHAN INDONESIA | — |
+| 92 | PT. BANK MITRANIAGA | — |
+| 93 | PT. BANK MIZUHO INDONESIA | `048` |
+| 94 | PT. BANK NUSANTARA PARAHYANGAN | — |
+| 95 | PT. BANK PEMBANGUNAN DAERAH BALI | — |
+| 96 | PT. BPD BANTEN, Tbk | `137` |
+| 97 | PT. BPD BENGKULU | `133` |
+| 98 | PT.BANK PEMBANGUNAN DAERAH PAPUA | `132` |
+| 99 | PT. BANK JABAR DAN BANTEN | `110` |
+| 100 | PT. BPD JAWA TENGAH | `113` |
+| 101 | PT.BANK PEMBANGUNAN DAERAH JAMBI | `115` |
+| 102 | BPD JATIM | `114` |
+| 103 | PT.BPD KALIMANTAN BARAT | `123` |
+| 104 | PT. BPD KALTENG | `125` |
+| 105 | BPD KALIMANTAN SELATAN | `122` |
+| 106 | PT.BPD KALTIM DAN KALTARA | `124` |
+| 107 | BPD LAMPUNG | `121` |
+| 108 | PT. BPD MALUKU DAN MALUKU UTARA | `131` |
+| 109 | PT. BANK PEMBANGUNAN DAERAH NTB | `127` |
+| 110 | BPD NUSA TENGGARA TIMUR | `130` |
+| 111 | PT.BANK PEMBANGUNAN DAERAH RIAU | `119` |
+| 112 | BPD SUMATERA BARAT | `118` |
+| 113 | BPD SUMATERA UTARA | `117` |
+| 114 | PT.BPD SULAWESI TENGAH | `134` |
+| 115 | PT.BPD SULAWESI TENGGARA | `135` |
+| 116 | PT BPD SULAWESI SELATAN | `126` |
+| 117 | BPD SULAWESI UTARA | `128` |
+| 118 | PT. BANK PEMBANGUNAN DAERAH DIY | `112` |
+| 119 | PT. BANK PAN INDONESIA Tbk. (PAN | `019` |
+| 120 | PT. BANK PURBA DANARTA | — |
+| 121 | PT BANK RABOBANK INTERNATIONAL | — |
+| 122 | PT. BANK ROYAL INDONESIA | — |
+| 123 | PT. BANK SINARMAS | `153` |
+| 124 | STANDARD CHARTERED BANK | `050` |
+| 125 | PT BANK SEABANK INDONESIA | `535` |
+| 126 | PT. BANK SWADESI Tbk. | — |
+| 127 | PT. BII Tbk. SYARIAH | — |
+| 128 | THE HONGKONG AND SHANGHAI BC (HS | — |
+| 129 | PT.BPD KALTIM DAN KALTARA UUS | — |
+| 130 | BPD SUMATERA BARAT UUS | — |
+| 131 | WISE EUROPE S A | — |
+| 132 | PT. BANK VICTORIA INTERNATIONAL | `566` |
+| 133 | PT. BANK YUDHA BHAKTI | — |
+| 134 | PT. BANK DIPO INTERNATIONAL | — |
+| 135 | PT. BPD DKI JAKARTA | `111` |
+| 136 | PT. BANK COMMONWEALTH | `950` |
+| 137 | PT. BANK INDEX SELINDO | `555` |
+| 138 | Bank of China (Hongkong) Limited | `069` |
+| 139 | THE BANGKOK BANK PCL | `040` |
+| 140 | PT. BANK MULTI ARTA SENTOSA TBK | — |
+| 141 | PT. BANK CAPITAL INDONESIA | `054` |
+| 142 | PT. Bank Maybank Indonesia | `016` |
 
 ---
 
@@ -293,7 +485,7 @@ Request: `traceNumber`. Response mirrors Single Transfer but with
 |---|---|
 | **No status resolution path.** `callback.service.ts` is empty and the webhook's `confirmWithProvider` switches on MotionPay only | §7 |
 | `TRANSACTION_HISTORY` absent from `JATELINDO_ENDPOINT` | `jatelindo.constant.ts` |
-| Bank channel map covers 2 of 142 | same file |
+| Bank channel map: 74 of our 91 mapped, and **none of them verified against Jatelindo** — 17 unmapped with reasons in §3 | same file |
 
 ### Closed
 
@@ -302,6 +494,7 @@ Request: `traceNumber`. Response mirrors Single Transfer but with
 | Credentials in the logs: the raw `username:password`, its base64, the whole axios response, the bearer token, and `MD5(secret)` twice | removed; the "token acquired" line keeps `expiresAt` only |
 | `E99` → CANCELLED and `E18` → EXPIRED, both terminal on a `SUSPECT` outcome | both → `PENDING`; `T18`/`T16`/`A90` → `FAILED`; unknown codes → `PENDING` |
 | E-wallet `channelId` sent as the wallet's name | the 90x block from spec v1.6 |
+| Bank channel map covered 2 of 142 | 74 of our 91 banks transcribed from spec v1.7, with the full 141-row list in §3 so it need not be done again |
 | `isUnathorized` read `data['responseCode']` — one level too shallow, and it crashed on a body-less response | reads `status.responseCode`, guards the body, and also accepts a real HTTP 401 |
 | The refresh path could not fire **at all**: it only ran in a `catch`, and A90 arrives in a 200 | `send()` now raises an internal signal when it sees A90 in a successful envelope, so both arrival shapes take the one retry path |
 | `send()` spread `...config` before `headers`, dropping caller headers | headers merged; `Content-Type` overridable, `APIKey`/`Authorization`/`RequestAuth` and `baseURL` are not |
