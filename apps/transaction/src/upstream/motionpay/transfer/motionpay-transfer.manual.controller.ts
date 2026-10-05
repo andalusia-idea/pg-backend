@@ -11,7 +11,11 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AppConfig } from '@app/configuration';
-import { AjvPipe, ProviderNameEnum } from '@app/microservice';
+import {
+  AjvPipe,
+  PaymentMethodNameEnum,
+  ProviderNameEnum,
+} from '@app/microservice';
 import { UpstreamException } from '@app/upstream';
 import Decimal from 'decimal.js';
 import { MotionPayTransferService } from './motionpay-transfer.service';
@@ -117,8 +121,20 @@ export class MotionPayTransferManualController {
       this.transferService.accountInquiry({
         systemReference: body.external_id,
         providerName: ProviderNameEnum.MOTIONPAY,
+        paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
         bankCode: body.bank_code,
         accountNumber: body.bank_account,
+
+        // An inquiry reads an account; it does not carry an amount, a note or a
+        // merchant's reference. They are on the shared request DTO because the
+        // payment leg needs them, and are filled with empties here rather than
+        // invented values - this controller exercises the raw wire contract,
+        // and a plausible-looking amount on a read would be misleading.
+        merchantReference: body.external_id,
+        amount: { value: '0.00', currency: 'IDR' },
+        accountHolderName: null,
+        note: '',
+        providerReference: null,
       }),
     );
   }
@@ -169,6 +185,7 @@ export class MotionPayTransferManualController {
       this.transferService.fundTransfer({
         systemReference: body.external_id,
         providerName: ProviderNameEnum.MOTIONPAY,
+        paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
         merchantReference: body.external_id,
         amount: {
           value: new Decimal(body.amount).toFixed(2),
@@ -178,6 +195,10 @@ export class MotionPayTransferManualController {
         accountNumber: body.recipient_account,
         accountHolderName: body.recipient_name ?? null,
         note: body.note,
+
+        // MotionPay's transfer leg is keyed by our own `external_id`, not by a
+        // reference it hands back on inquiry - unlike the Biller rail.
+        providerReference: null,
       }),
     );
   }

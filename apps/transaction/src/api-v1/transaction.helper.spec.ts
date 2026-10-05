@@ -14,7 +14,10 @@ import {
 const base = {
   userId: 27,
   transactionType: TransactionTypeEnum.DISBURSEMENT,
-  paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET,
+  // A per-wallet method on purpose: these replaced the single
+  // `TRANSFEREWALLET`, and the round-trip test below is what proves each one
+  // decodes back to itself rather than to a shared e-wallet code.
+  paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
   providerName: ProviderNameEnum.MOTIONPAY,
 };
 
@@ -125,6 +128,31 @@ describe('extractSystemReference', () => {
     });
     if (parts.pattern !== 'structured') throw new Error('unreachable');
     expect(parts.createdAt.getTime()).toBeGreaterThanOrEqual(before);
+  });
+
+  /**
+   * Each wallet needs its own two-character code. A shared `TE` could be
+   * written into a reference but not read back out of it, and the reference is
+   * the correlation key every callback is matched by - a method that decodes to
+   * the wrong wallet is worse than one that is not encoded at all.
+   */
+  it.each([
+    PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
+    PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY,
+    PaymentMethodNameEnum.TRANSFEREWALLET_OVO,
+    PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY,
+    PaymentMethodNameEnum.TRANSFERBANK,
+  ])('decodes %s back to itself', (paymentMethodName) => {
+    const reference = generateSystemReference({
+      ...base,
+      paymentMethodName,
+      maxLength: 32,
+    });
+
+    expect(extractSystemReference(reference)).toMatchObject({
+      pattern: 'structured',
+      paymentMethodName,
+    });
   });
 
   it('round-trips a reference with no random suffix', () => {

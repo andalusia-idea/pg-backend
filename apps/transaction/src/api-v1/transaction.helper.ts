@@ -197,25 +197,59 @@ const transactionTypeConvert = (value: string): TransactionTypeEnum => {
   else return TransactionTypeEnum.SETTLEMENT_PURCHASE;
 };
 
+/**
+ * Two-character payment-method codes, as embedded in `systemReference`.
+ *
+ * **One map, read in both directions.** The two parallel `if` chains this
+ * replaces are exactly how a method ends up encodable but not decodable - which
+ * is what happened when `TRANSFEREWALLET` became four per-wallet methods and
+ * only one of the chains was updated.
+ *
+ * `satisfies Record<PaymentMethodNameEnum, string>` is the load-bearing part: a
+ * new payment method is now a **compile error here** rather than silently
+ * encoding as the fallback.
+ *
+ * The codes are exactly two characters because `STRUCTURED_PATTERN` reserves
+ * `[A-Z0-9]{2}` for this field and `STRUCTURED_PREFIX_LENGTH` counts on it. A
+ * one-character code would shift every field after it.
+ *
+ * Each wallet gets its own code rather than a shared `TE`, so the reference
+ * decodes back to the method that produced it. A shared code could be written
+ * but not read, which for a correlation key is worse than not encoding it at
+ * all.
+ */
+const PAYMENT_METHOD_CODE = {
+  [PaymentMethodNameEnum.QRIS]: 'QR',
+  [PaymentMethodNameEnum.VIRTUALACCOUNT]: 'VA',
+  [PaymentMethodNameEnum.DIRECTEWALLET]: 'DE',
+  [PaymentMethodNameEnum.TRANSFERBANK]: 'TB',
+  [PaymentMethodNameEnum.TRANSFEREWALLET_DANA]: 'TD',
+  [PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY]: 'TG',
+  [PaymentMethodNameEnum.TRANSFEREWALLET_OVO]: 'TO',
+  [PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY]: 'TS',
+} as const satisfies Record<PaymentMethodNameEnum, string>;
+
+/** Derived, never hand-written, so the two directions cannot disagree. */
+const PAYMENT_METHOD_BY_CODE = Object.fromEntries(
+  Object.entries(PAYMENT_METHOD_CODE).map(([method, code]) => [code, method]),
+) as Record<string, PaymentMethodNameEnum | undefined>;
+
 const paymentMethodNameMapper = (
   paymentMethodName: PaymentMethodNameEnum,
-): string => {
-  if (PaymentMethodNameEnum.QRIS === paymentMethodName) return 'QR';
-  if (PaymentMethodNameEnum.VIRTUALACCOUNT === paymentMethodName) return 'VA';
-  if (PaymentMethodNameEnum.DIRECTEWALLET === paymentMethodName) return 'DE';
-  if (PaymentMethodNameEnum.TRANSFERBANK === paymentMethodName) return 'TB';
-  if (PaymentMethodNameEnum.TRANSFEREWALLET === paymentMethodName) return 'TE';
-  return '0';
-};
+): string => PAYMENT_METHOD_CODE[paymentMethodName] ?? '00';
 
-const paymentMethodConvert = (value: string): PaymentMethodNameEnum => {
-  if (value === 'QR') return PaymentMethodNameEnum.QRIS;
-  if (value === 'VA') return PaymentMethodNameEnum.VIRTUALACCOUNT;
-  if (value === 'DE') return PaymentMethodNameEnum.DIRECTEWALLET;
-  if (value === 'TB') return PaymentMethodNameEnum.TRANSFERBANK;
-  if (value === 'TE') return PaymentMethodNameEnum.TRANSFEREWALLET;
-  return PaymentMethodNameEnum.QRIS;
-};
+/**
+ * Unknown codes fall back to QRIS, as they always have.
+ *
+ * Note `TE` is now unknown: it was the shared code for e-wallet payouts before
+ * the per-wallet split, so any reference carrying it decodes to QRIS rather than
+ * to a wallet. Nothing outside the spec reads this today, which is the only
+ * reason that is tolerable - if it ever becomes load-bearing, the fallback
+ * should return null and let the caller decide, rather than naming a method
+ * that was never used.
+ */
+const paymentMethodConvert = (value: string): PaymentMethodNameEnum =>
+  PAYMENT_METHOD_BY_CODE[value] ?? PaymentMethodNameEnum.QRIS;
 
 const providerNameMapper = (providerName: ProviderNameEnum): string => {
   if (ProviderNameEnum.INTERNAL === providerName) return 'INTER';

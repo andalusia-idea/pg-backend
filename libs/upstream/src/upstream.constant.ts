@@ -33,16 +33,21 @@ export const METADATA_KEY = {
   VA_CALLBACK: 'VA_CALLBACK',
   VA_STATUS: 'VA_STATUS',
 
-  TRANSFER_BANK_ACCOUNT_INQUIRY: 'TRANSFER_BANK_ACCOUNT_INQUIRY',
-  TRANSFER_BANK_PAYMENT: 'TRANSFER_BANK_PAYMENT',
-  TRANSFER_BANK_CREATE_ERROR: 'TRANSFER_BANK_CREATE_ERROR',
-  TRANSFER_BANK_CALLBACK: 'TRANSFER_BANK_CALLBACK',
-  TRANSFER_BANK_STATUS: 'TRANSFER_BANK_STATUS',
-
-  TRANSFER_EWALLET_ACCOUNT_INQUIRY: 'TRANSFER_EWALLET_ACCOUNT_INQUIRY',
-  TRANSFER_EWALLET_PAYMENT: 'TRANSFER_EWALLET_PAYMENT',
-  TRANSFER_EWALLET_CREATE_ERROR: 'TRANSFER_EWALLET_CREATE_ERROR',
-  TRANSFER_EWALLET_CALLBACK: 'TRANSFER_EWALLET_CALLBACK',
-  TRANSFER_EWALLET_STATUS: 'TRANSFER_EWALLET_STATUS',
+  /**
+   * A payout is two legs, and each one needs its own success *and* failure key.
+   *
+   * One shared error key would file an unresolvable account number and a refused
+   * payment under the same label, and writing a failure to
+   * `TRANSFER_ACCOUNT_INQUIRY` would overwrite the successful inquiry it is
+   * reporting about. The distinction that matters is not which rail carried it -
+   * `paymentMethodName` is on the row - but **which leg failed**, because a
+   * failed inquiry moved no money and a failed payment may well have.
+   */
+  TRANSFER_ACCOUNT_INQUIRY: 'TRANSFER_ACCOUNT_INQUIRY',
+  TRANSFER_ACCOUNT_INQUIRY_ERROR: 'TRANSFER_ACCOUNT_INQUIRY_ERROR',
+  TRANSFER_PAYMENT: 'TRANSFER_PAYMENT',
+  TRANSFER_PAYMENT_ERROR: 'TRANSFER_PAYMENT_ERROR',
+  TRANSFER_CALLBACK: 'TRANSFER_CALLBACK',
+  TRANSFER_STATUS: 'TRANSFER_STATUS',
 } as const;
 export type METADATA_KEY = (typeof METADATA_KEY)[keyof typeof METADATA_KEY];

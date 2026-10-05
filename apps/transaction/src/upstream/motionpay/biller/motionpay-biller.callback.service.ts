@@ -70,7 +70,7 @@ export class MotionPayBillerCallbackService {
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayBillerStatus(payload.status),
         message: payload.description || payload.message || null,
-        metadata: { [METADATA_KEY.TRANSFER_EWALLET_CALLBACK]: payload },
+        metadata: { [METADATA_KEY.TRANSFER_CALLBACK]: payload },
         rawPayload: payload as unknown as Record<string, unknown>,
       },
     };

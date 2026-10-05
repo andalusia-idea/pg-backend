@@ -6,8 +6,11 @@ import {
   UpstreamTransferStatusRequestDto,
   UpstreamTransferStatusResponseDto,
   UpstreamTransferRequestDto,
-  UpstreamTransferAccountInquiryResponseDto,
-  UpstreamTransferPaymentResponseDto,
+  UpstreamTransferResponseDto,
+  UpstreamTransferBeneficiary,
+  UpstreamTransferException,
+  UpstreamTransferStep,
+  isUpstreamTransportFailure,
 } from '@app/upstream';
 import { ProviderNameEnum, TransactionStatusEnum } from '@app/microservice';
 import Decimal from 'decimal.js';
@@ -72,6 +75,112 @@ export class MotionPayTransferService {
   readonly systemReferenceMaxLength = MOTIONPAY_TRANSFER_EXTERNAL_ID_MAX_LENGTH;
 
   /**
+   * Send a bank payout: inquiry, then transfer, as one operation.
+   *
+   * **This is the entry point the business layer uses.** That MotionPay needs
+   * two round trips for one payout is this service's business, not the
+   * disbursement domain's - another provider may do it in one call, or in three,
+   * or check something between them. The caller should not have to know. The
+   * two legs stay public below because the manual test controllers exercise
+   * them individually.
+   *
+   * The sequence is written out here rather than shared with the Biller rail.
+   * They look alike today and will not stay that way: each provider decides
+   * what to check between its legs, and a shared runner would have to grow a
+   * special case the first time one of them differs.
+   *
+   * Failures are `UpstreamTransferException`, which names the leg and says
+   * whether the outcome is unknown - the caller needs both to decide whether
+   * the payout may be called FAILED.
+   */
+  async createTransfer(
+    params: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferResponseDto> {
+    let inquiry: MotionPayAccountInquiryResponseDto;
+    try {
+      inquiry = await this.accountInquiry(params);
+    } catch (error) {
+      // An inquiry is a read, so nothing moved - even a timeout here is safe to
+      // report as a clean failure.
+      throw new UpstreamTransferException({
+        provider: ProviderNameEnum.MOTIONPAY,
+        message: 'account inquiry failed',
+        step: UpstreamTransferStep.INQUIRY,
+        outcomeUnknown: false,
+        cause: error,
+        context: error instanceof Error ? { cause: error.message } : {},
+      });
+    }
+
+    // A rejected lookup is a business outcome, not a fault: MotionPay answers
+    // HTTP 200 with `status.success = false`. Treating an absent throw as
+    // success is what would send money to an unverified account.
+    if (!this.accountInquiryResolved(inquiry)) {
+      throw new UpstreamTransferException({
+        provider: ProviderNameEnum.MOTIONPAY,
+        message:
+          inquiry.status.message ?? 'beneficiary account did not resolve',
+        step: UpstreamTransferStep.INQUIRY,
+        outcomeUnknown: false,
+        context: {
+          beneficiaryValid: false,
+          [METADATA_KEY.TRANSFER_ACCOUNT_INQUIRY]: inquiry,
+        },
+      });
+    }
+
+    const beneficiary: UpstreamTransferBeneficiary = {
+      bankCode: inquiry.data?.bank_code ?? params.bankCode,
+      accountNumber: inquiry.data?.bank_account ?? params.accountNumber,
+      accountHolderName: inquiry.data?.name ?? '',
+    };
+
+    // The bank's spelling of the destination from here on, not the merchant's.
+    const confirmed: UpstreamTransferRequestDto = {
+      ...params,
+      accountHolderName: beneficiary.accountHolderName,
+      accountNumber: beneficiary.accountNumber,
+    };
+
+    let payment: MotionPayFundTransferResponseDto;
+    try {
+      payment = await this.fundTransfer(confirmed);
+    } catch (error) {
+      // The one case where the caller must not assert anything: if the call
+      // never got an answer, the money may already have left.
+      throw new UpstreamTransferException({
+        provider: ProviderNameEnum.MOTIONPAY,
+        message: 'fund transfer failed',
+        step: UpstreamTransferStep.PAYMENT,
+        outcomeUnknown: isUpstreamTransportFailure(error),
+        beneficiary,
+        cause: error,
+        context: error instanceof Error ? { cause: error.message } : {},
+      });
+    }
+
+    return {
+      providerReference: payment.data?.transaction_id ?? '',
+      // Only a callback or a status read produces one; inventing a value here
+      // would be a lie on the row.
+      bankReference: null,
+
+      ...beneficiary,
+
+      status: this.mapStatusCode(payment.status.code),
+      nominal: params.amount,
+      message: payment.status.message,
+
+      // Both legs' raw payloads, each under its own key, so neither overwrites
+      // the other and a dispute can be argued from either.
+      metadata: {
+        [METADATA_KEY.TRANSFER_ACCOUNT_INQUIRY]: inquiry,
+        [METADATA_KEY.TRANSFER_PAYMENT]: payment,
+      },
+    };
+  }
+
+  /**
    * Validate a beneficiary account before sending money to it.
    *
    * A failed lookup is **not** an exception: MotionPay answers HTTP 200 with
@@ -81,7 +190,7 @@ export class MotionPayTransferService {
    */
   async accountInquiry(
     params: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferAccountInquiryResponseDto> {
+  ): Promise<MotionPayAccountInquiryResponseDto> {
     const body: MotionPayAccountInquiryRequestDto = {
       bank_code: this.assertBankCode(params.bankCode),
       bank_account: params.accountNumber,
@@ -104,18 +213,21 @@ export class MotionPayTransferService {
       raw,
     );
 
-    const valid =
-      parsed.status.success &&
-      parsed.status.code === MOTIONPAY_TRANSFER_STATUS_CODE.SUCCESS;
+    return parsed;
+  }
 
-    return {
-      bankCode: parsed.data?.bank_code ?? params.bankCode,
-      accountNumber: parsed.data?.bank_account ?? params.accountNumber,
-      accountHolderName: parsed.data?.name ?? '',
-      valid,
-      message: parsed.status.message,
-      metadata: { ...parsed } as Record<string, unknown>,
-    };
+  /**
+   * Whether an inquiry resolved the account.
+   *
+   * Not a throw, because MotionPay answers HTTP 200 with
+   * `status.success = false` for a wrong account number - a normal business
+   * outcome, not a fault. `createTransfer` decides what to do about it.
+   */
+  accountInquiryResolved(parsed: MotionPayAccountInquiryResponseDto): boolean {
+    return (
+      parsed.status.success &&
+      parsed.status.code === MOTIONPAY_TRANSFER_STATUS_CODE.SUCCESS
+    );
   }
 
   /**
@@ -128,7 +240,7 @@ export class MotionPayTransferService {
    */
   async fundTransfer(
     params: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferPaymentResponseDto> {
+  ): Promise<MotionPayFundTransferResponseDto> {
     const nominal = new Decimal(params.amount.value);
     const body: MotionPayFundTransferRequestDto = {
       recipient_bank: this.assertBankCode(params.bankCode),
@@ -159,10 +271,11 @@ export class MotionPayTransferService {
       raw,
     );
 
-    const status = this.mapStatusCode(parsed.status.code);
-
-    // Only an outright rejection is an exception. PENDING is the normal result.
-    if (status === TransactionStatusEnum.FAILED) {
+    // Only an outright rejection is an exception. PENDING is the normal result -
+    // the expected happy path is `0002 / On Process`, not `0001`.
+    if (
+      this.mapStatusCode(parsed.status.code) === TransactionStatusEnum.FAILED
+    ) {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `fundTransfer rejected: ${parsed.status.message}`,
@@ -170,15 +283,7 @@ export class MotionPayTransferService {
       );
     }
 
-    return {
-      providerReference: parsed.data?.transaction_id ?? '',
-      status,
-      nominal: nominal.toFixed(2),
-      message: parsed.status.message,
-      metadata: {
-        [METADATA_KEY.TRANSFER_BANK_PAYMENT]: parsed,
-      } as Record<string, unknown>,
-    };
+    return parsed;
   }
 
   /**
@@ -215,7 +320,7 @@ export class MotionPayTransferService {
       status: this.mapStatusCode(parsed.status.code),
       message: parsed.status.message,
       metadata: {
-        [METADATA_KEY.TRANSFER_BANK_STATUS]: parsed,
+        [METADATA_KEY.TRANSFER_STATUS]: parsed,
       } as Record<string, unknown>,
     };
   }

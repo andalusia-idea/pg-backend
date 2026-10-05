@@ -34,6 +34,31 @@ describe('METADATA_KEY', () => {
     expect(offenders).toEqual([]);
   });
 
+  /**
+   * A failure has to be filed separately from the success it reports about, or
+   * writing the error overwrites the payload that explains it. Every `_ERROR`
+   * key therefore needs the stage key it belongs to.
+   */
+  it('pairs every error key with the stage it reports on', () => {
+    const keys = Object.keys(METADATA_KEY);
+    const orphans = keys
+      .filter((key) => key.endsWith('_ERROR'))
+      .filter((key) => !keys.includes(key.replace(/_ERROR$/, '')));
+
+    expect(orphans).toEqual([]);
+  });
+
+  /**
+   * Both legs of a payout can fail, and they do not mean the same thing: a
+   * failed inquiry moved no money, a failed payment may have. One shared error
+   * key would make those indistinguishable after the fact.
+   */
+  it('gives each payout leg its own error key', () => {
+    expect(METADATA_KEY.TRANSFER_ACCOUNT_INQUIRY_ERROR).not.toBe(
+      METADATA_KEY.TRANSFER_PAYMENT_ERROR,
+    );
+  });
+
   it('uses each key as its own value, so a rename cannot drift', () => {
     for (const [key, value] of Object.entries(METADATA_KEY)) {
       expect(value).toBe(key);

@@ -1,6 +1,6 @@
 import {
   AmountType,
-  MoneyType,
+  PaymentMethodNameEnum,
   ProviderNameEnum,
   TransactionStatusEnum,
 } from '@app/microservice';
@@ -10,39 +10,31 @@ export const UpstreamTransferRequestSchema = Type.Object({
   systemReference: Type.String(),
   merchantReference: Type.String(),
   providerName: Type.Enum(ProviderNameEnum),
+  paymentMethodName: Type.Enum(PaymentMethodNameEnum),
   amount: AmountType,
   bankCode: Type.String(),
   accountNumber: Type.String(),
   accountHolderName: Type.Union([Type.String(), Type.Null()]),
   note: Type.String(),
-  providerReference: Type.Union([Type.String(), Type.Null()]),
+  providerReference: Type.Union([Type.String(), Type.Null()]), // TODO di hapus ketika revamp motionpay
 });
 export type UpstreamTransferRequestDto = Static<
   typeof UpstreamTransferRequestSchema
 >;
 
-export const UpstreamTransferAccountInquiryResponseSchema = Type.Object({
-  valid: Type.Boolean(),
+export const UpstreamTransferResponseSchema = Type.Object({
+  providerReference: Type.String(),
+  bankReference: Type.Union([Type.String(), Type.Null()]),
   bankCode: Type.String(),
   accountNumber: Type.String(),
   accountHolderName: Type.String(),
-  message: Type.Union([Type.String(), Type.Null()]),
-  metadata: Type.Record(Type.String(), Type.Unknown()),
-  providerReference: Type.Union([Type.String(), Type.Null()]),
-});
-export type UpstreamTransferAccountInquiryResponseDto = Static<
-  typeof UpstreamTransferAccountInquiryResponseSchema
->;
-
-export const UpstreamTransferPaymentResponseSchema = Type.Object({
-  providerReference: Type.String(),
   status: Type.Enum(TransactionStatusEnum),
-  nominal: MoneyType,
+  nominal: AmountType,
   message: Type.Union([Type.String(), Type.Null()]),
   metadata: Type.Record(Type.String(), Type.Unknown()),
 });
-export type UpstreamTransferPaymentResponseDto = Static<
-  typeof UpstreamTransferPaymentResponseSchema
+export type UpstreamTransferResponseDto = Static<
+  typeof UpstreamTransferResponseSchema
 >;
 
 /// Transfer Additional

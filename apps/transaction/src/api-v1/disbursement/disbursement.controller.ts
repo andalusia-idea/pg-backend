@@ -8,21 +8,24 @@ import {
   MerchantUserId,
 } from '../signature';
 import {
-  type CreateTransferEWalletRequestDto,
-  CreateTransferEWalletRequestSchema,
   type CreateTransferRequestDto,
   CreateTransferRequestSchema,
 } from './disbursement.dto';
-import { DisbursementBankService } from './disbursement-bank.service';
-import { DisbursementEWalletService } from './disbursement-ewallet.service';
+import { DisbursementService } from './disbursement.service';
 
+/**
+ * Both endpoints below now resolve to the same service call: `bankCode` decides
+ * the rail, so there is nothing left for the handlers to decide between them.
+ *
+ * **They stay two paths anyway.** Collapsing them would remove a URL merchants
+ * have already integrated against, which is a contract change rather than a
+ * refactor. Whether `/v1/transfer/ewallet` is worth deprecating is a product
+ * decision, and until it is made, keeping both costs two identical handlers.
+ */
 @Controller()
 @ApiTags('Merchant API v1')
 export class DisbursementController {
-  constructor(
-    private readonly bankService: DisbursementBankService,
-    private readonly eWalletService: DisbursementEWalletService,
-  ) {}
+  constructor(private readonly disbursementService: DisbursementService) {}
 
   /**
    * Send a bank payout.
@@ -42,7 +45,7 @@ export class DisbursementController {
     )
     body: CreateTransferRequestDto,
   ) {
-    return this.bankService.createTransfer(userId, body);
+    return this.disbursementService.createTransfer(userId, body);
   }
 
   /**
@@ -65,12 +68,10 @@ export class DisbursementController {
   createTransferEWallet(
     @MerchantUserId() userId: number,
     @Body(
-      MerchantBodyPipe<CreateTransferEWalletRequestDto>(
-        CreateTransferEWalletRequestSchema,
-      ),
+      MerchantBodyPipe<CreateTransferRequestDto>(CreateTransferRequestSchema),
     )
-    body: CreateTransferEWalletRequestDto,
+    body: CreateTransferRequestDto,
   ) {
-    return this.eWalletService.createTransfer(userId, body);
+    return this.disbursementService.createTransfer(userId, body);
   }
 }

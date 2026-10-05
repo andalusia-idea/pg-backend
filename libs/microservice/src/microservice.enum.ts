@@ -84,6 +84,8 @@ export const PROFILE_KIND_BY_ROLE = {
 export const ProviderNameEnum = {
   INTERNAL: 'INTERNAL',
   MOTIONPAY: 'MOTIONPAY',
+  TELEANJAR: 'TELEANJAR',
+  JATELINDO: 'JATELINDO',
   // INACASH: 'INACASH',
   // PDNT1: 'PDNT1',
   // ZIPAY: 'ZIPAY',
@@ -92,15 +94,64 @@ export const ProviderNameEnum = {
 export type ProviderNameEnum =
   (typeof ProviderNameEnum)[keyof typeof ProviderNameEnum];
 
+export const EWalletEnum = {
+  DANA: 'DANA',
+  GOPAY: 'GOPAY',
+  OVO: 'OVO',
+  SHOPEEPAY: 'SHOPEEPAY',
+} as const;
+export type EWalletEnum = (typeof EWalletEnum)[keyof typeof EWalletEnum];
+export const isEwalletEnum = (bankCode: string): bankCode is EWalletEnum => {
+  return Object.values(EWalletEnum).includes(bankCode as EWalletEnum);
+};
+export const BankEnum = {}; // In the future if each bank has its own fee
+export type BankEnum = (typeof BankEnum)[keyof typeof BankEnum];
+
 export const PaymentMethodNameEnum = {
   QRIS: 'QRIS',
   VIRTUALACCOUNT: 'VIRTUALACCOUNT',
   DIRECTEWALLET: 'DIRECTEWALLET',
   TRANSFERBANK: 'TRANSFERBANK',
-  TRANSFEREWALLET: 'TRANSFEREWALLET',
+  // TRANSFEREWALLET: 'TRANSFEREWALLET',
+  /// TODO Tolong remind saya tentang ini, new business plan
+  TRANSFEREWALLET_DANA: 'TRANSFEREWALLET_DANA',
+  TRANSFEREWALLET_GOPAY: 'TRANSFEREWALLET_GOPAY',
+  TRANSFEREWALLET_OVO: 'TRANSFEREWALLET_OVO',
+  TRANSFEREWALLET_SHOPEEPAY: 'TRANSFEREWALLET_SHOPEEPAY',
 } as const;
 export type PaymentMethodNameEnum =
   (typeof PaymentMethodNameEnum)[keyof typeof PaymentMethodNameEnum];
+
+/**
+ * Whether a payment method is any of the per-wallet payout methods.
+ *
+ * Sibling of `isEwalletEnum`, which answers the same question about a *bank
+ * code*. Both exist because the one-value `TRANSFEREWALLET` it replaced could be
+ * compared directly, and a per-wallet split turns every such comparison into a
+ * four-way test that is easy to write as a three-way test by accident.
+ *
+ * Derived from the enum rather than listing the four, so adding a fifth wallet
+ * cannot leave this behind.
+ */
+export const isEWalletPaymentMethod = (
+  paymentMethodName: string,
+): paymentMethodName is PaymentMethodNameEnum =>
+  paymentMethodName.startsWith('TRANSFEREWALLET');
+
+export const paymentMethodByBankCode = (bankCode: string) => {
+  switch (bankCode) {
+    case EWalletEnum.DANA:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_DANA;
+    case EWalletEnum.GOPAY:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY;
+    case EWalletEnum.OVO:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_OVO;
+    case EWalletEnum.SHOPEEPAY:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY;
+    default:
+      return PaymentMethodNameEnum.TRANSFERBANK;
+  }
+};
 
 export const WithdrawPaymentMethodNameEnum = {
   TRANSFERBANK: 'TRANSFERBANK',
@@ -155,11 +206,3 @@ export const FeeTypeEnum = {
   MERCHANT: 'MERCHANT',
 } as const;
 export type FeeTypeEnum = (typeof FeeTypeEnum)[keyof typeof FeeTypeEnum];
-
-export const EWalletEnum = {
-  OVO: 'OVO',
-  DANA: 'DANA',
-  GOPAY: 'GOPAY',
-  SHOPEEPAY: 'SHOPEEPAY',
-} as const;
-export type EWalletEnum = (typeof EWalletEnum)[keyof typeof EWalletEnum];

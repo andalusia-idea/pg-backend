@@ -1,5 +1,4 @@
 import {
-  isEwalletEnum,
   PaymentMethodNameEnum,
   ProfileClient,
   ProviderNameEnum,
@@ -9,7 +8,11 @@ import {
   UserRoleEnum,
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
-import { UpstreamException } from '@app/upstream';
+import {
+  METADATA_KEY,
+  UpstreamException,
+  UpstreamTransferResponseDto,
+} from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import {
@@ -82,12 +85,41 @@ export class DisbursementCommonService {
       if (PaymentMethodNameEnum.TRANSFERBANK === paymentMethodName) {
         return this.motionPayTransferService.systemReferenceMaxLength;
       }
-      if (PaymentMethodNameEnum.TRANSFEREWALLET === paymentMethodName) {
-        return this.motionPayBillerService.systemReferenceMaxLength;
-      }
+      return this.motionPayBillerService.systemReferenceMaxLength;
     }
 
     return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+  }
+
+  async recordUpstreamResult(
+    disbursementId: number,
+    upstream: UpstreamTransferResponseDto,
+  ): Promise<void> {
+    try {
+      await this.prismaMaster.disbursementTransaction.update({
+        where: { id: disbursementId },
+        data: {
+          providerReference: upstream.providerReference,
+          bankReference: upstream.bankReference,
+
+          accountHolderName: upstream.accountHolderName,
+          accountNumber: upstream.accountNumber,
+          bankCode: upstream.bankCode,
+
+          status: upstream.status,
+          metadata: upstream.metadata as Prisma.InputJsonValue,
+        },
+      });
+    } catch (error) {
+      // Not raised: the payout is already in flight. Telling the merchant it
+      // failed would invite a retry that pays the recipient twice.
+      this.logger.error({
+        msg: 'Payout sent but the transaction could not be updated - needs reconciliation',
+        disbursementId,
+        providerReference: upstream.providerReference,
+        error,
+      });
+    }
   }
 
   /**
@@ -179,12 +211,6 @@ export class DisbursementCommonService {
         rail: paymentMethodName,
       });
     }
-  }
-
-  decidePaymentMethodName(bankCode: string) {
-    /// TODO refer to microservices.enum.ts PaymentMethodNameEnum
-    if (isEwalletEnum(bankCode)) return PaymentMethodNameEnum.TRANSFEREWALLET;
-    return PaymentMethodNameEnum.TRANSFERBANK;
   }
 
   /**
@@ -286,6 +312,47 @@ export class DisbursementCommonService {
       });
       throw TransactionException.internalError();
     }
+  }
+
+  /**
+   * Mark a payout FAILED, filing the error under the key for the leg it came
+   * from, and describing the error rather than guessing at it.
+   *
+   * **Written once because the obvious version is wrong.** The hand-rolled
+   * shape this replaces was
+   * `markFailed(id, { [key]: { reason: 'no client for provider' } })` for any
+   * `TransactionException` - but `invalidBeneficiary` is a `TransactionException`
+   * too, so a merchant mistyping an account number produced metadata reading
+   * *"no client for provider"*. Whoever read that went looking for a routing
+   * bug that did not exist.
+   *
+   * `TransactionException` carries `failure`, which names the actual condition,
+   * so there is no need to guess. An `UpstreamException` already carries the
+   * provider's own payload in `context`; anything else only has a message worth
+   * keeping.
+   */
+  async markFailedFrom(
+    disbursementId: number,
+    metadataKey: METADATA_KEY,
+    error: unknown,
+  ): Promise<void> {
+    let detail: Record<string, unknown>;
+
+    if (error instanceof TransactionException) {
+      detail = { failure: error.failure, message: error.message };
+    } else if (error instanceof UpstreamException) {
+      detail = {
+        provider: error.provider,
+        message: error.message,
+        ...error.context,
+      };
+    } else {
+      detail = {
+        message: error instanceof Error ? error.message : 'unknown failure',
+      };
+    }
+
+    await this.markFailed(disbursementId, { [metadataKey]: detail });
   }
 
   async markFailed(

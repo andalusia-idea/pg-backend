@@ -67,7 +67,7 @@ export class MotionPayTransferCallbackService {
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayTransferStatus(payload.status.code),
         message: payload.status.message ?? null,
-        metadata: { [METADATA_KEY.TRANSFER_BANK_CALLBACK]: payload },
+        metadata: { [METADATA_KEY.TRANSFER_CALLBACK]: payload },
         rawPayload: payload as unknown as Record<string, unknown>,
       },
     };

@@ -8,10 +8,13 @@ import {
   assertUpstreamSchema,
   UpstreamException,
   UpstreamTransferRequestDto,
-  UpstreamTransferAccountInquiryResponseDto,
   UpstreamTransferStatusRequestDto,
   UpstreamTransferStatusResponseDto,
-  UpstreamTransferPaymentResponseDto,
+  UpstreamTransferResponseDto,
+  UpstreamTransferBeneficiary,
+  UpstreamTransferException,
+  UpstreamTransferStep,
+  isUpstreamTransportFailure,
 } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
 import { AxiosError } from 'axios';
@@ -93,6 +96,125 @@ export class MotionPayBillerService {
     MOTIONPAY_BILLER_PAYMENT_SUFFIX.length;
 
   /**
+   * Send an e-wallet payout: inquiry, then payment, as one operation.
+   *
+   * **This is the entry point the business layer uses.** Same *contract* as the
+   * Transfer rail's `createTransfer` - one call, and an
+   * `UpstreamTransferException` naming the leg on failure - so the disbursement
+   * domain picks a service and never learns how many round trips it took.
+   *
+   * The sequence itself is deliberately **not** shared with the Transfer rail,
+   * because it is not the same sequence:
+   *
+   * - **The inquiry is not a free validation.** It opens a transaction at the
+   *   provider and prices the product, so a failure between the legs leaves
+   *   provider-side state behind. That is why the exception carries the inquiry
+   *   result rather than discarding it.
+   * - **The payment leg cannot run without the inquiry's reference.** MotionPay
+   *   keys the biller payment by the `transaction_id` the inquiry returned, so
+   *   `providerReference` has to be threaded from one leg into the next. The
+   *   Transfer rail keys its payment by our own `external_id` and needs no such
+   *   thing.
+   * - **The payment's `external_id` is not the inquiry's.** The spec requires
+   *   them to differ, which is what `MOTIONPAY_BILLER_PAYMENT_SUFFIX` is for.
+   */
+  async createTransfer(
+    dto: UpstreamTransferRequestDto,
+  ): Promise<UpstreamTransferResponseDto> {
+    let inquiry: MotionPayBillerInquiryPrepaidResponseDto;
+    try {
+      inquiry = await this.inquiry(dto);
+    } catch (error) {
+      // An inquiry failure leaves a priced-but-unpaid transaction at the
+      // provider, not money in flight - so it is still safe to call failed.
+      //
+      // Unlike the Transfer rail there is no `valid` flag to check afterwards:
+      // this leg throws on a rejection rather than reporting one, so a
+      // successful return already means the wallet resolved.
+      throw new UpstreamTransferException({
+        provider: ProviderNameEnum.MOTIONPAY,
+        message: 'biller inquiry failed',
+        step: UpstreamTransferStep.INQUIRY,
+        outcomeUnknown: false,
+        cause: error,
+        context: error instanceof Error ? { cause: error.message } : {},
+      });
+    }
+
+    // A failed biller call answers `"data": {}` rather than the documented
+    // object, so the envelope's `data` is a union until this narrows it. The
+    // inquiry leg has already proved it is populated; this is the type-level
+    // half of the same guarantee.
+    const inquiryData = this.assertData(
+      'billerInquiry',
+      inquiry,
+      dto.systemReference,
+    );
+
+    const beneficiary: UpstreamTransferBeneficiary = {
+      // `bankCode` carries the wallet name on this rail - see the note on
+      // DisbursementTransaction.bankCode.
+      bankCode: dto.bankCode,
+      accountNumber: dto.accountNumber,
+      // A wallet top-up may resolve no name at all, so an empty string is the
+      // honest answer rather than echoing back the merchant's guess.
+      accountHolderName: inquiryData.customer_name ?? '',
+    };
+
+    // `providerReference` is the provider's `transaction_id`, and threading it
+    // into the payment leg is the one thing that makes this rail's sequence
+    // different from the Transfer rail's - that leg is keyed by it.
+    const confirmed: UpstreamTransferRequestDto = {
+      ...dto,
+      accountHolderName: beneficiary.accountHolderName,
+      providerReference: inquiryData.transaction_id,
+    };
+
+    let payment: MotionPayBillerPaymentPrepaidResponseDto;
+    try {
+      payment = await this.payment(confirmed);
+    } catch (error) {
+      // Past this point the provider may have debited our deposit and credited
+      // the wallet. A call that got no answer must not be called failed.
+      throw new UpstreamTransferException({
+        provider: ProviderNameEnum.MOTIONPAY,
+        message: 'biller payment failed',
+        step: UpstreamTransferStep.PAYMENT,
+        outcomeUnknown: isUpstreamTransportFailure(error),
+        beneficiary,
+        cause: error,
+        context: error instanceof Error ? { cause: error.message } : {},
+      });
+    }
+
+    const paymentData = this.assertData(
+      'billerPayment',
+      payment,
+      dto.systemReference,
+    );
+
+    return {
+      providerReference: paymentData.transaction_id,
+      bankReference: null,
+
+      ...beneficiary,
+
+      status: mapMotionPayBillerStatus(payment.status),
+      nominal: dto.amount,
+      message: payment.description || payment.message || null,
+
+      // Both legs' raw payloads under their own keys. The inquiry's is worth
+      // keeping beside the payment's: it carries the product code and the price
+      // this payout was quoted at, which is what a cost comparison against the
+      // Transfer rail is actually made on.
+      metadata: {
+        [METADATA_KEY.TRANSFER_ACCOUNT_INQUIRY]: inquiry,
+        [METADATA_KEY.TRANSFER_PAYMENT]: payment,
+      },
+    };
+  }
+
+  /**
    * Price the top-up and open a transaction at the provider.
    *
    * Throws rather than returning a "not valid" flag, unlike the transfer
@@ -101,7 +223,7 @@ export class MotionPayBillerService {
    */
   async inquiry(
     dto: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferAccountInquiryResponseDto> {
+  ): Promise<MotionPayBillerInquiryPrepaidResponseDto> {
     const context = 'billerInquiry';
     const productCode = motionPayEWalletProductCode(
       dto.bankCode as EWalletEnum,
@@ -140,17 +262,18 @@ export class MotionPayBillerService {
       );
     }
 
-    return {
-      valid: true,
-      bankCode: dto.bankCode,
-      accountNumber: dto.accountNumber,
-      accountHolderName: parsed!.data?.customer_name ?? '',
-      providerReference: data.transaction_id,
-      message: parsed!.message,
-      metadata: {
-        [METADATA_KEY.TRANSFER_EWALLET_ACCOUNT_INQUIRY]: parsed,
-      } as Record<string, unknown>,
-    };
+    // Proven here rather than left to the caller: the payment leg is keyed by
+    // this `transaction_id`, so an inquiry that came back without one cannot be
+    // paid against and is better refused at the leg that produced it.
+    if (!data.transaction_id) {
+      throw new UpstreamException(
+        ProviderNameEnum.MOTIONPAY,
+        'billerInquiry returned no transaction_id to pay against',
+        { systemReference: dto.systemReference },
+      );
+    }
+
+    return parsed;
   }
 
   /**
@@ -166,7 +289,7 @@ export class MotionPayBillerService {
    */
   async payment(
     dto: UpstreamTransferRequestDto,
-  ): Promise<UpstreamTransferPaymentResponseDto> {
+  ): Promise<MotionPayBillerPaymentPrepaidResponseDto> {
     const context = 'billerPayment';
 
     const productCode = motionPayEWalletProductCode(
@@ -194,10 +317,11 @@ export class MotionPayBillerService {
         raw,
       );
 
-    const status = mapMotionPayBillerStatus(parsed.status);
-
-    // Only an outright rejection is an exception. PENDING is the normal result.
-    if (status === TransactionStatusEnum.FAILED) {
+    // Only an outright rejection is an exception. PENDING is the normal result -
+    // top-ups settle asynchronously, with the final state arriving by callback.
+    if (
+      mapMotionPayBillerStatus(parsed.status) === TransactionStatusEnum.FAILED
+    ) {
       throw new UpstreamException(
         ProviderNameEnum.MOTIONPAY,
         `billerPayment rejected: ${parsed.description || parsed.message}`,
@@ -205,17 +329,11 @@ export class MotionPayBillerService {
       );
     }
 
-    const data = this.assertData(context, parsed, dto.systemReference);
+    // Asserted here, not in `createTransfer`: a payment accepted with no data
+    // block has nothing the row can be reconciled by.
+    this.assertData(context, parsed, dto.systemReference);
 
-    return {
-      providerReference: data.transaction_id,
-      status,
-      nominal: new Decimal(data.amount).toFixed(2),
-      message: parsed.description || parsed.message || null,
-      metadata: {
-        [METADATA_KEY.TRANSFER_EWALLET_PAYMENT]: parsed,
-      } as Record<string, unknown>,
-    };
+    return parsed;
   }
 
   /**
@@ -254,7 +372,7 @@ export class MotionPayBillerService {
       status: mapMotionPayBillerStatus(parsed.status),
       message: parsed.description || parsed.message || null,
       metadata: {
-        [METADATA_KEY.TRANSFER_EWALLET_STATUS]: parsed,
+        [METADATA_KEY.TRANSFER_STATUS]: parsed,
       } as Record<string, unknown>,
     };
   }

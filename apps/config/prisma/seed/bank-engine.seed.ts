@@ -17,6 +17,11 @@ import { logSeeded } from './seed.helper';
  * corrected in the database.
  */
 const BANKS: { code: string; name: string }[] = [
+  { code: 'DANA', name: 'DANA' },
+  { code: 'GOPAY', name: 'GOPAY' },
+  { code: 'OVO', name: 'OVO' },
+  { code: 'SHOPEEPAY', name: 'SHOPEEPAY' },
+
   // Bank Umum Nasional (30)
   { code: '014', name: 'BCA' },
   { code: '008', name: 'MANDIRI' },

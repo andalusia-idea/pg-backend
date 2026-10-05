@@ -2,6 +2,7 @@ import {
   FeeCalculateConfigClient,
   FeeCalculationResultDto,
   FeeTypeEnum,
+  isEWalletPaymentMethod,
   MerchantSignatureAuthClient,
   PaymentMethodNameEnum,
   ProviderNameEnum,
@@ -293,8 +294,7 @@ export class DisbursementWebhookService {
     // The payment method decides which rail carried this payout, and therefore
     // which status endpoint knows about it. A wallet top-up sent over the
     // biller rails is invisible to the transfer status endpoint and vice versa.
-    const isEWallet =
-      paymentMethodName === PaymentMethodNameEnum.TRANSFEREWALLET;
+    const isEWallet = isEWalletPaymentMethod(paymentMethodName);
 
     try {
       switch (providerName) {
