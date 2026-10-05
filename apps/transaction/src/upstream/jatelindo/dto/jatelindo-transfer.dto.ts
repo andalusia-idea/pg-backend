@@ -143,7 +143,7 @@ export const JatelindoTransactionStatusRequestSchema = Type.Object({
 export type JatelindoTransactionStatusRequestDto = Static<
   typeof JatelindoTransactionStatusRequestSchema
 >;
-export const JatelindoTransactionStatuResponseSchema = Type.Object({
+export const JatelindoTransactionStatusResponseSchema = Type.Object({
   traceNumber: Type.String(),
   jpaReferenceNo: Type.String(),
   TransactionStatusResponse: Type.Array(
@@ -166,6 +166,6 @@ export const JatelindoTransactionStatuResponseSchema = Type.Object({
     description: Type.String(),
   }),
 });
-export type JatelindoTransactionStatuResponseDto = Static<
-  typeof JatelindoTransactionStatuResponseSchema
+export type JatelindoTransactionStatusResponseDto = Static<
+  typeof JatelindoTransactionStatusResponseSchema
 >;

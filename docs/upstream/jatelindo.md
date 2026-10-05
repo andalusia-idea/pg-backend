@@ -292,7 +292,6 @@ Request: `traceNumber`. Response mirrors Single Transfer but with
 | Gap | Where |
 |---|---|
 | **No status resolution path.** `callback.service.ts` is empty and the webhook's `confirmWithProvider` switches on MotionPay only | §7 |
-| `transactionStatus` validates against `JatelindoBalanceInquiryResponseSchema` and labels its errors `balanceInquiry` | `jatelindo-transfer.other.service.ts` |
 | `TRANSACTION_HISTORY` absent from `JATELINDO_ENDPOINT` | `jatelindo.constant.ts` |
 | Bank channel map covers 2 of 142 | same file |
 
@@ -307,6 +306,7 @@ Request: `traceNumber`. Response mirrors Single Transfer but with
 | The refresh path could not fire **at all**: it only ran in a `catch`, and A90 arrives in a 200 | `send()` now raises an internal signal when it sees A90 in a successful envelope, so both arrival shapes take the one retry path |
 | `send()` spread `...config` before `headers`, dropping caller headers | headers merged; `Content-Type` overridable, `APIKey`/`Authorization`/`RequestAuth` and `baseURL` are not |
 | `JatelindoTransferOtherService` not registered in `JatelindoModule` | registered and exported |
+| `transactionStatus` validated against the *balance* schema, under the *balance* label, over **GET** | validates `JatelindoTransactionStatusResponseSchema`, labels itself, and POSTs — the two shapes share no field, so the method could not return at all |
 
 Covered by `jatelindo-transfer.auth.service.spec.ts`, which asserts the call
 *count* and which token each attempt carries — the original bug was a silent
@@ -332,6 +332,21 @@ polling job is required either way, because **MotionPay needs it too**: its
 callbacks are unauthenticated and therefore only triggers, and a callback that
 never arrives — dropped, provider outage, our endpoint down during a deploy —
 leaves a MotionPay payout PENDING with nothing to resolve it.
+
+**`transactionState` is not a response code.** The status response carries two
+unrelated verdicts, and conflating them is the easy mistake:
+
+| Field | Says | Vocabulary |
+|---|---|---|
+| `status.responseCode` | whether the *lookup* worked | `A00`, `S84`, … — §4's table |
+| `TransactionStatusResponse[].transactionState` | what happened to the *payout* | `PROCESSED`, … — its own set |
+
+So `A00` on a status call means "we found your transaction", not "the payout
+succeeded". **Do not put `transactionState` through
+`jatelindoMapperResponseCode`** — it needs its own map, and that map's values
+have not been enumerated yet, which is one of §9's questions. `S84
+NO_TRANSACTION` on a lookup is the useful terminal signal: Jatelindo has no
+record of it, so a payout we left PENDING never reached them.
 
 Design notes for whenever it is built:
 
@@ -381,13 +396,22 @@ repository — keep it that way.
 
 ## 9. Questions for Jatelindo
 
+0. **What are the possible values of `transactionState`?** Only `PROCESSED`
+   appears in the spec's example, and the status call cannot resolve a payout
+   without the complete set — in particular which values are terminal failures
+   and which mean "still in flight".
+
 1. **Is there a callback/webhook**, or is `Transaction/Status` the only way to
    resolve `A01`? (§7 — the answer changes how soon the poller is needed, not
    whether.)
 2. **Which host serves which endpoint?** Is `10.254.254.12` required for Login /
    Inquiry / SingleTransfer, or does the public host serve all six? (§1)
-3. **Transaction Status: `GET` or `POST`, port 14890 or 14991?** The spec and the
-   collection disagree. (§1)
+3. **Transaction Status: `GET` or `POST`, port 14890 or 14991?** The spec
+   disagrees with *itself*: the Configuration block says `Method GET`, while the
+   Request Example immediately below is `--data-urlencode` — a POST — and both
+   collections POST it. **We implement POST**, following the two artifacts over
+   the table. If they confirm GET, the `traceNumber` has to move to the query
+   string; changing the method alone would send an empty request. (§1)
 4. **Recommended poll interval**, given `T40 TRANSACTION_BLOCKED` is
    rate-limit-driven. (§4)
 5. **Is `Transaction History` genuinely unsigned**, or is the collection missing
