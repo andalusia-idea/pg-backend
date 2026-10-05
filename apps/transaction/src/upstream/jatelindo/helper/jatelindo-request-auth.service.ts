@@ -1,5 +1,5 @@
 import { JatelindoConfig } from '@app/configuration';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import {
   JatelindoInquiryRequestDto,
@@ -10,18 +10,18 @@ import { JatelindoTransferAuthService } from '../transfer';
 
 @Injectable()
 export class JatelindoRequestAuthService {
-  private readonly logger = new Logger(JatelindoRequestAuthService.name);
-
   private secretHash: string = '';
 
   constructor(
     private readonly authService: JatelindoTransferAuthService,
     private readonly jatelindoConfig: JatelindoConfig,
   ) {
+    // Every signature in this class is built from this hash, which makes it a
+    // credential in its own right: anyone holding it can sign requests without
+    // ever seeing TRANSFER_SECRET. It is never logged and never leaves the class.
     this.secretHash = createHash('md5')
       .update(this.jatelindoConfig.TRANSFER_SECRET)
       .digest('hex');
-    console.log(this.secretHash);
   }
 
   async inquiry(dto: JatelindoInquiryRequestDto) {

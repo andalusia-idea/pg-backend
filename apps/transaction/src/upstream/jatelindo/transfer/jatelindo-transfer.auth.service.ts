@@ -15,7 +15,6 @@ import {
   JatelindoLoginResponseDto,
   JatelindoLoginResponseSchema,
 } from '../dto';
-import { createHash } from 'crypto';
 
 const TOKEN_CONTEXT = TokenContext.TRANSFER;
 
@@ -25,18 +24,12 @@ export class JatelindoTransferAuthService {
 
   private cachedToken: UpstreamToken | null = null;
   private inFlight: Promise<string> | null = null;
-  private secretHash: string = '';
 
   constructor(
     private readonly httpService: HttpService,
     private readonly jatelindoConfig: JatelindoConfig,
     private readonly tokenRedis: TokenRedis,
-  ) {
-    this.secretHash = createHash('md5')
-      .update(this.jatelindoConfig.TRANSFER_SECRET)
-      .digest('hex');
-    console.log(this.secretHash);
-  }
+  ) {}
 
   async request(
     context: string,
@@ -149,18 +142,15 @@ export class JatelindoTransferAuthService {
   }
 
   private async mintToken(): Promise<UpstreamToken> {
-    this.logger.log('MintToken');
     const context = 'transfer token';
-    const basicAuthRaw =
-      this.jatelindoConfig.TRANSFER_USERNAME +
-      ':' +
-      this.jatelindoConfig.TRANSFER_PASSWORD;
-    // const basicAuthRaw = '1112143:123456';
-    // // MTExMjE0MzoxMjM0NTY=
-    // // MTExMjE0MzoxMjM0NTY=
-    const basicAuth = Buffer.from(basicAuthRaw).toString('base64');
-    this.logger.log(basicAuthRaw);
-    this.logger.log(basicAuth);
+
+    // Base64 is an encoding, not encryption: `basicAuth` is exactly as sensitive
+    // as the password it is built from. Neither it nor the raw pair may be logged,
+    // and neither is kept in a field - both live only for this one call.
+    const basicAuth = Buffer.from(
+      `${this.jatelindoConfig.TRANSFER_USERNAME}:${this.jatelindoConfig.TRANSFER_PASSWORD}`,
+    ).toString('base64');
+
     let raw: unknown;
     try {
       const response = await firstValueFrom(
@@ -175,11 +165,17 @@ export class JatelindoTransferAuthService {
         }),
       );
       raw = response.data;
-      this.logger.log(response);
-      this.logger.log(raw);
     } catch (error) {
       const axiosError = error as AxiosError;
-      this.logger.log(error);
+
+      // Never log `error` itself, and never the whole axios response: both carry
+      // `config.headers`, and this call's headers hold the Basic credential.
+      // Routing facts only - the provider's own body travels in the exception
+      // context below, where the error filter decides what is safe to surface.
+      this.logger.error({
+        msg: 'Jatelindo token request failed',
+        status: axiosError.response?.status,
+      });
       throw new UpstreamException(
         ProviderNameEnum.JATELINDO,
         `${context} request failed`,
@@ -210,8 +206,9 @@ export class JatelindoTransferAuthService {
     const token: string = parsed.LoginResponse[0].token;
     const expiresAtSeconds = this.resolveExpiry(token);
 
+    // Expiry only - the token is a live credential and must never reach a log
+    // line, a log file, or the log shipper.
     this.logger.log({
-      token: token,
       msg: 'Jatelindo token acquired',
       expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
     });
