@@ -144,13 +144,13 @@ export const JATELINDO_CHANNEL = {
   '535': '125', // Seabank = PT BANK SEABANK INDONESIA
 
   // Syariah (9)
-  '451': '7', // Bank Suariah Indonesia (BSI) = PT BANK SYARIAH INDONESIA TBK
+  '451': '7', // Bank Syariah Indonesia (BSI) = PT BANK SYARIAH INDONESIA TBK
   '147': '18', // Bank Muamalat = PT. BANK MUAMALAT INDONESIA
   '536': '21', // BCA Syariah = PT. BANK BCA SYARIAH
   '506': '23', // Bank Mega Syariah = PT. BANK SYARIAH MEGA INDONESIA
   '517': '22', // Bank Panin Dubai Syariah = PT. Bank Panin Syariah
   '425': '35', // Bank BJB Syariah = PT. BANK JABAR BANTEN SYARIAH
-  '116': '29', // BPD Aceh Suariah = PT. Bank Aceh Syariah
+  '116': '29', // BPD Aceh Syariah = PT. Bank Aceh Syariah
   '521': '27', // KB Bukopin Syariah = PT BANK SYARIAH BUKOPIN
   '947': '25', // Bank Aladin Syariah = PT BANK ALADIN SYARIAH Tbk
 

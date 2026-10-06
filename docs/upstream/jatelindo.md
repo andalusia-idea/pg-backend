@@ -206,10 +206,20 @@ Syariah", but `022` is the clearing code for CIMB Niaga itself, and the spec
 offers both `9` (conventional) and `40` (syariah). Our catalogue has no plain
 CIMB Niaga entry at all, which is the real gap.
 
-> Two misspellings in `bank-engine.seed.ts` found while matching: `451` is
-> "Bank Suariah Indonesia (BSI)" and `116` is "BPD Aceh Suariah" — *Suariah* for
-> *Syariah*. Display names only, shown in the dashboard's `BANK` dropdown, so
-> they affect nothing but the UI.
+> Two misspellings in `bank-engine.seed.ts` were found while matching — `451`
+> "Bank **Suariah** Indonesia (BSI)" and `116` "BPD Aceh **Suariah**" — and are
+> fixed in the seed. Display names only, shown in the dashboard's `BANK`
+> dropdown; nothing routes on them.
+>
+> **An existing database still holds the old spelling.** That seed upserts with
+> `update: {}`, on purpose, so re-running it never overwrites a name someone
+> corrected by hand — which also means it never corrects one. Any environment
+> already seeded needs a one-off statement:
+>
+> ```sql
+> UPDATE "Bank" SET name = 'Bank Syariah Indonesia (BSI)' WHERE code = '451';
+> UPDATE "Bank" SET name = 'BPD Aceh Syariah'             WHERE code = '116';
+> ```
 
 #### The full channel list, spec v1.7
 

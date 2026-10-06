@@ -64,7 +64,7 @@ const BANKS: { code: string; name: string }[] = [
   { code: '947', name: 'Bank Aladin Syariah' },
 
   // Bank Syariah (10)
-  { code: '451', name: 'Bank Suariah Indonesia (BSI)' },
+  { code: '451', name: 'Bank Syariah Indonesia (BSI)' },
   { code: '147', name: 'Bank Muamalat' },
   { code: '536', name: 'BCA Syariah' },
   { code: '547', name: 'BTPN Syariah' },
@@ -73,7 +73,7 @@ const BANKS: { code: string; name: string }[] = [
   { code: '425', name: 'Bank BJB Syariah' },
   { code: '517', name: 'Bank Panin Dubai Syariah' },
   { code: '506', name: 'Bank Mega Syariah' },
-  { code: '116', name: 'BPD Aceh Suariah' },
+  { code: '116', name: 'BPD Aceh Syariah' },
 
   // Bank Pembangunan Daerah (26)
   { code: '110', name: 'Bank BJB' },
