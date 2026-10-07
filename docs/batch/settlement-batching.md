@@ -474,19 +474,22 @@ code is written.
 `batchSettlementId` is **kept** but finally gets a real table behind it, and
 `merchantSettledAt` stays as the fast flag for dashboard filtering.
 
-### Migrating existing balances
+### No balance migration
 
-Legacy is live and the log tables have real rows. Opening balance is one entry
-per holder per bucket, with `reason = MANUAL_ADJUSTMENT` and a note saying it is
-the migration:
+**Decided 7 Oct 2026: this build does not carry legacy production balances.**
+Every holder starts at zero, and the first entry anyone gets is a
+`PAYIN_CAPTURED`. There is no opening-balance script.
 
-```
-merchant 27 | AVAILABLE | CREDIT | <their balanceActive>  | MANUAL_ADJUSTMENT
-merchant 27 | PENDING   | CREDIT | <their balancePending> | MANUAL_ADJUSTMENT
-```
+Nor are empty snapshot rows created when a merchant registers. The
+`INSERT ... ON CONFLICT` in the posting service creates a row on first touch, and
+that path cannot be removed — `INTERNAL:0` has no registration event, and a
+`RESERVED` row only appears on a first payout attempt. Pre-creating rows would
+add a second way for one row to come into existence without removing the first.
+Implementation doc Step 3 has the full reasoning.
 
-Dated, visible, reversible. Then the snapshot is built from the entries, and from
-that moment forward the nightly check in §2 is meaningful.
+`OPENING_BALANCE` and `BalanceSourceTypeEnum.OPENING` stay in the enums. They
+cost nothing, and they are the right reason code the day a balance has to be
+established by hand.
 
 ---
 
@@ -495,7 +498,7 @@ that moment forward the nightly check in §2 is meaningful.
 | Step | What | Why here |
 |---|---|---|
 | 1 | `BalanceEntry` + `BalanceSnapshot` + the posting service | Everything else needs it |
-| 2 | Opening balances from the existing logs | Real numbers to test against |
+| 2 | Dev fixtures through the posting service | Something to test the next steps against |
 | 3 | `PAYIN_CAPTURED` from the purchase webhook | Closes one of the two `TODO(balance-ledger)` gaps |
 | 4 | `PAYOUT_RESERVED` / `COMPLETED` / `FAILED` | Closes D17 — the overdraw bug |
 | 5 | Nightly entries-vs-snapshot check | Makes the rest trustworthy |

@@ -390,44 +390,77 @@ on first touch and incremented on second.
 
 ---
 
-## Step 3 — Opening balances
+## Step 3 — Dev fixtures
 
-A one-off script reading the legacy log tables and writing the starting
-position. Put it in `apps/transaction/prisma/` next to the seeds, not in
-application code — it runs once.
+> **Changed 7 Oct 2026.** This step was "opening balances" — a one-off script
+> reading the legacy log tables and posting each holder's starting position.
+> **Dropped: this build does not carry legacy production data**, so there is
+> nothing to migrate. `OPENING_BALANCE` and `BalanceSourceTypeEnum.OPENING` stay
+> in the enums; they cost nothing and are the right reason code if a balance ever
+> has to be established by hand.
+>
+> Balances therefore start at zero for everyone, and the first real entry any
+> holder gets is a `PAYIN_CAPTURED` from Step 5.
 
-For each distinct holder in `MerchantBalanceLog`, `AgentBalanceLog` and
-`InternalBalanceLog`, take the newest row by `(createdAt desc, id desc)` — the
-same ordering `LATEST_FIRST` uses in
-[apps/dashboard/src/modules/balance/balance.service.ts](../../apps/dashboard/src/modules/balance/balance.service.ts:34)
-— and post one movement:
+### Do balance rows need creating when a merchant registers? No.
 
-```ts
-{
-  reason: OPENING_BALANCE,
-  sourceType: OPENING,
-  sourceId: <holderId>,   // unique per holder within OPENING
-  legs: [
-    { holder, AVAILABLE, CREDIT, row.balanceActive  },
-    { holder, PENDING,   CREDIT, row.balancePending },
-  ],
-}
-```
+The natural instinct is to create three empty snapshot rows in
+[`registerMerchant`](../../apps/dashboard/src/modules/user/user.service.ts:32).
+It is not needed, and it is worth understanding why rather than just skipping it:
 
-Skip zero-amount legs — a holder with no pending balance should not get a zero
-row.
+`applyToSnapshot` is an `INSERT ... ON CONFLICT DO UPDATE`, so the row is created
+on first touch. That lazy path **cannot be removed**, because not every holder
+has a registration event to hang initialisation off — `INTERNAL:0` has none at
+all, and a holder's `RESERVED` row only ever appears when they first attempt a
+payout. So pre-creating rows adds a *second* way for them to come into existence
+without removing the first: two code paths writing one row, two places to be
+wrong.
 
-**Make it idempotent and re-runnable.** The unique constraint already does most
-of that; run it twice on purpose in testing and confirm the second run changes
-nothing.
+Three smaller reasons it is the wrong trade:
 
-**Print a reconciliation summary at the end**: total available, total pending,
-holder count, per holder type. Keep that output. It is the number every later
-question about "was the migration right?" gets compared against.
+- `BalanceSnapshot.lastEntryId` is NOT NULL, so a pre-created row needs a
+  sentinel (`0`) meaning "no entry yet" — a magic value in a money table.
+- Anyone registered *before* such code shipped would still have no rows, so you
+  would need a backfill. Which is the migration this step just dropped.
+- The dashboard already handles an absent row:
+  [balance.service.ts](../../apps/dashboard/src/modules/balance/balance.service.ts:55)
+  does `?? ZERO`, with a comment saying no rows means no movement rather than a
+  missing merchant.
 
-**Verify**: run on a copy of production data, then for ten random merchants
-confirm `BalanceSnapshot.amount` equals what the current dashboard endpoint
-returns for them.
+And `reserve()` returning `INSUFFICIENT_BALANCE` for a holder with no snapshot
+row is already the right answer — they have no money.
+
+> **`registerMerchant` does need changing, but at Step 9, not here.** It
+> currently writes `settlementInterval: dto.settlementInterval ?? 120`, and that
+> column is deleted in Step 15. The replacement is a default
+> `MerchantSettlementPolicy` row. `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
+> `CreateMerchantDto.settlementInterval` go with it.
+
+### What to build instead
+
+Fixtures, so Step 4 has something to verify and Step 12 has something to render.
+`apps/transaction/prisma/seed/transaction-dev.seed.ts` exists and is empty by
+decision — this is what goes in it.
+
+Seed through `BalanceService.post()`, not with raw inserts. Writing rows directly
+would let a fixture express a state the real code cannot produce, and then the
+first bug you chase will be in the fixture.
+
+Worth covering:
+
+- a merchant with money in `PENDING` only — captured, not yet settled
+- a merchant with money in `AVAILABLE` — settled, spendable
+- a merchant mid-payout, with a non-zero `RESERVED`
+- an agent with a share, and `INTERNAL:0` with the house cut
+- a holder with **zero** balance, so the `?? ZERO` path gets exercised
+
+Note the existing doc comment in that file describes constraints on the *old*
+`*BalanceLog` tables (item 2, about running totals). That becomes stale here and
+should be rewritten for the entry/snapshot model.
+
+**Verify**: run the seed twice. The second run must change nothing — the unique
+constraint on `(holder, bucket, reason, sourceType, sourceId)` makes that free as
+long as fixture `sourceId`s are fixed rather than generated.
 
 ---
 
@@ -786,6 +819,25 @@ whole basis of Step 7.0.
 The dashboard still edits both through its merged schema; that is a read/write
 of settlement's tables by the admin UI, not a reason to move them.
 
+### `registerMerchant` changes here
+
+[user.service.ts](../../apps/dashboard/src/modules/user/user.service.ts:88)
+currently creates the config row with
+`settlementInterval: dto.settlementInterval ?? DEFAULT_SETTLEMENT_INTERVAL_MINUTES`.
+That column is deleted in Step 15, so a registration path still writing it would
+break the moment it goes.
+
+In the same transaction, create a default `MerchantSettlementPolicy` instead:
+`paymentMethodName: null`, `mode: FOLLOW_UPSTREAM`, `effectiveFrom: now()`. Then
+remove `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
+`CreateMerchantDto.settlementInterval`, and give the frontend the mode enum in
+their place.
+
+The `isEligible` fallback still treats a merchant with no policy row as
+`FOLLOW_UPSTREAM`, so a merchant registered before this lands is not stranded —
+but an explicit row is what makes their terms visible and editable in the admin
+UI rather than implied by a default buried in code.
+
 **Resolution is most-specific-first**: a row matching
 `(merchantId, paymentMethodName)` wins over `(merchantId, null)`. If neither
 exists, fall back to a system default of `FOLLOW_UPSTREAM` rather than settling
@@ -1031,7 +1083,7 @@ entries reference figures that came from them.
 |---|---|---|
 | `feat(transaction): balance entry + snapshot schema` | 1 | yes, dormant |
 | `feat(balance): posting library` | 2 | yes, dormant |
-| `feat(transaction): opening balances from legacy logs` | 3 | yes — data only, nothing reads it |
+| `feat(transaction): balance dev fixtures` | 3 | yes — dev-only data |
 | `feat(transaction): nightly balance verification` | 4 | yes |
 | `feat(transaction): credit merchant balance on payin` | 5 | **behavior change** |
 | `feat(transaction): reserve balance before payout` | 6 | **behavior change** — closes D17 |

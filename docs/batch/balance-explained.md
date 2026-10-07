@@ -125,7 +125,7 @@ have a fixed shape:
 |---|---|---|
 | `PAYIN_REVERSED` | refund or chargeback | reverses a `PAYIN_CAPTURED` — out of whichever bucket the money reached |
 | `MANUAL_ADJUSTMENT` | someone found a problem and an admin is correcting it | anything, by definition. Requires a written reason and an approver |
-| `OPENING_BALANCE` | the one-off migration from the legacy tables | creates a starting balance out of nothing |
+| `OPENING_BALANCE` | unused today — kept for the day a balance has to be established by hand, since this build starts everyone at zero | creates a starting balance out of nothing |
 
 So the enum has **nine** reasons: six arrows above, plus these three.
 
