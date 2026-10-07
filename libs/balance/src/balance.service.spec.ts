@@ -314,7 +314,11 @@ describe('BalanceService', () => {
      * would do it silently.
      */
     it('refuses a root client', async () => {
-      const rootClient = { ...tx, $transaction: jest.fn() } as never;
+      const rootClient = {
+        ...tx,
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+      } as never;
 
       await expect(service.post(rootClient, movement())).rejects.toThrow(
         /\$transaction/,
@@ -379,7 +383,11 @@ describe('BalanceService', () => {
     });
 
     it('refuses a root client', async () => {
-      const rootClient = { ...tx, $transaction: jest.fn() } as never;
+      const rootClient = {
+        ...tx,
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+      } as never;
 
       await expect(service.reserve(rootClient, params)).rejects.toThrow(
         /\$transaction/,

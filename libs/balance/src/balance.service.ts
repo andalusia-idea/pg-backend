@@ -272,13 +272,27 @@ export class BalanceService {
 /**
  * Refuse a root client.
  *
- * `Prisma.TransactionClient` omits `$transaction`, but TypeScript allows extra
- * properties when assigning a variable, so a full `PrismaClient` still type
- * checks here. Passing one would let the entries and the snapshot commit
- * separately and silently - worth two lines to make unshippable.
+ * `Prisma.TransactionClient` is a type-level `Omit`, and TypeScript allows extra
+ * properties when assigning a variable, so a full `PrismaClient` type checks
+ * here. Passing one would let the entries and the snapshot commit separately and
+ * silently - worth a check to make unshippable.
+ *
+ * **It checks `$connect`, not `$transaction`**, and that is not arbitrary.
+ * Prisma 7's interactive-transaction client is a Proxy that still exposes
+ * `$transaction` at runtime even though the type omits it - measured on 7.8:
+ *
+ * ```
+ *          $transaction  $connect  $disconnect  $extends
+ *   root   present       present   present      present
+ *   tx     present       absent    absent       absent
+ * ```
+ *
+ * So the one property the type removes is the one that does not discriminate.
+ * `$connect` is the honest test: only a client that owns a connection can open
+ * one.
  */
 function assertTransactionClient(tx: BalanceTx): void {
-  if ('$transaction' in tx) {
+  if ('$connect' in tx) {
     throw new Error(
       'balance: a root PrismaClient was passed. These methods must run inside ' +
         'prisma.$transaction(...) so the entries and the snapshot commit together.',

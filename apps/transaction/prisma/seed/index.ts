@@ -10,21 +10,19 @@ import { transactionEngineSeed } from './transaction-engine.seed';
  *   npm run prisma:seed:transaction        engine data only (safe anywhere)
  *   npm run prisma:seed:transaction:dev    engine + development fixtures
  *
- * **A frame. Both tiers are currently empty**, matching the structure of the auth
- * and config seeders so that this app behaves the same way as the other two:
- * `prisma migrate reset` completes without a missing-seed error, and the scripts
- * exist where anyone would look for them.
- *
  * Two tiers, same contract as the other apps:
  *   - ENGINE   data the system cannot boot without. Safe in any environment,
  *              including production. Nothing qualifies here - this schema holds
  *              only recorded activity, so an empty production schema is correct.
- *   - DEV      sample transactions and balance history. None chosen yet.
+ *   - DEV      balance fixtures across all three buckets. Transaction fixtures
+ *              are still unchosen.
  *
- * Every step must stay idempotent as it is filled in, so re-running only fills in
- * what is missing. Note that the transaction tables make this harder than it was
- * for auth and config: `code` defaults to a uuid, so upserting requires supplying
- * a deterministic code rather than letting the default fire.
+ * Every step must stay idempotent, so re-running only fills in what is missing.
+ * The dev tier achieves that by **skipping** fixtures already present rather
+ * than upserting them: `BalanceEntry` is append-only, so there is nothing to
+ * upsert into, and `BalanceService.post()` deliberately throws on a repeat -
+ * that strictness is what stops a replayed webhook double-crediting a merchant.
+ * A seed therefore has to ask what exists before writing.
  *
  * ---
  * `--dev` reaches this script the same way it does the other two seeders: Prisma
