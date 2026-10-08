@@ -469,6 +469,38 @@ long as fixture `sourceId`s are fixed rather than generated.
 Small, and the reason the rest is trustworthy. `apps/transaction`, a nightly
 `@Cron`.
 
+### Why this does not wait for `apps/settlement`
+
+The settlement app is meant to own the scheduled work, so a cron landing here
+first looks like something that will need moving. It is worth being explicit
+about why it does not justify creating that app yet: **this job writes nothing.**
+
+| | This job (Step 4) | The batch runner (Steps 10–11) |
+|---|---|---|
+| Writes? | No — reads, compares, alerts | Yes, moves merchant money |
+| Needs a scheduler account? | **No.** `createdBy` is never set, so none of Step 7.1 applies | Yes — `BalanceEntry.createdBy` is NOT NULL |
+| Two pods both running it? | Harmless — two identical reads, duplicate log lines | Double-settles without the claim table |
+| Runtime | Seconds | Minutes, in 500-row batches |
+| Independent scaling? | No | Yes |
+
+Everything in the right-hand column is the settlement app's reason to exist.
+None of it is in the left.
+
+So this needs exactly one thing `apps/transaction` does not have today:
+`ScheduleModule.forRoot()` in its `app.module.ts` — `apps/auth` is currently the
+only app with it. And when `apps/settlement` does exist, moving this is a
+one-file move *because* it is read-only: no identity plumbing, no CLS wrapper and
+no claim row travel with it.
+
+> Creating the app now is cheaper than it looks — the `Dockerfile` is already
+> parameterised by `SERVICE_NAME`, so it is a word in the CI matrix
+> ([ci-cd.yml:17](../../.github/workflows/ci-cd.yml:17)), a
+> `k8s/settlement-deployment.yaml`, a `kubectl set image` line, and an env file.
+> Defensible if you would rather have it tidy. But it means a fifth deployed
+> container whose only job is a nightly `SELECT`, and note `apps/dashboard` has
+> no k8s manifest and is not in the CI matrix either — so there is already
+> precedent for an app existing before it is deployed.
+
 For each snapshot row:
 
 ```sql
@@ -720,7 +752,7 @@ entry attributed to the export job is a bug you would otherwise never find.
 | `scheduler01` | Settlement batch runner (Step 10) |
 | `scheduler02` | Settlement enqueuer (Step 11) |
 | `scheduler03` | Stuck-run sweeper (Step 11) |
-| `scheduler04` | Balance verification (Step 4) |
+| `scheduler04` | *Unallocated.* Step 4's balance verification writes nothing, so it needs no identity at all — see Step 4 |
 | `scheduler05` | Export runner (Step 13) |
 | `scheduler06` | Export / MinIO cleanup (Step 13) |
 | `scheduler07` | Merchant secret cleanup (exists; currently leaves a stale `updatedBy` beside a fresh `updatedAt`) |

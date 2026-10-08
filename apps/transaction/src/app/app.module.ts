@@ -14,6 +14,8 @@ import { ClsModule } from 'nestjs-cls';
 import { Apiv1Module } from '../api-v1/api.v1.module';
 import { CallbackModule } from '../callback';
 import { UpstreamModule } from '../upstream/upstream.module';
+import { BalanceVerificationModule } from '../balance-verification';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   controllers: [AppController],
@@ -33,6 +35,8 @@ import { UpstreamModule } from '../upstream/upstream.module';
     }),
     MicroserviceModule,
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
+    ScheduleModule.forRoot(),
+    BalanceVerificationModule,
 
     Apiv1Module,
     CallbackModule,

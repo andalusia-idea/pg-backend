@@ -43,6 +43,7 @@ export class MerchantSecretCleanupService {
    */
   @Cron(CronExpression.EVERY_HOUR, { name: 'merchant-secret-cleanup' })
   async clearExpiredPreviousSecrets(): Promise<void> {
+    this.logger.log('merchant-secret-cleanup started');
     const cutoff = new Date(
       Date.now() - this.merchantSignatureConfig.SECRET_KEY_GRACE_SECONDS * 1000,
     );
@@ -66,6 +67,7 @@ export class MerchantSecretCleanupService {
           cutoff: cutoff.toISOString(),
         });
       }
+      this.logger.log('merchant-secret-cleanup ended successfully');
     } catch (error) {
       // Swallowed on purpose: an unhandled rejection in a cron takes the
       // process down, and this job failing is not urgent - the data it removes
