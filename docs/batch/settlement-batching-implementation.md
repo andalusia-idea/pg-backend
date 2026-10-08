@@ -537,32 +537,96 @@ credits the merchant.
 
 ## Step 6 — Payout reserve, complete, fail
 
-This is the step that closes D17.
+This is the step that closes D17. **Read 6.0 first** — the disbursement flow was
+revamped on 30 Sep 2026 and this step needs more than it looks.
 
-**On create** — in the same `$transaction` as the disbursement row, **before**
-the upstream is called:
+### 6.0 What the flow looks like now, and the one thing that blocks this
+
+Audited 7 Oct 2026 against
+`apps/transaction/src/api-v1/disbursement/`. The good news first: the
+reserve-before-call ordering survived the revamp intact —
+`DisbursementService.create` still does
+`common.reserveTransaction()` → `send()` → `common.recordUpstreamResult()`, so the
+row exists before any provider is asked to move anything.
+
+**The blocker: fees are computed in the webhook, not at create time.**
+`reserveTransaction` writes `nominal` and nothing else — no `netNominal`, no
+`feeDetails`. Those are written later, by
+`DisbursementWebhookService` calling `FeeCalculateConfigClient.disbursement()`.
+So at the moment we need to reserve, we do not know the amount to reserve.
+
+And that amount is *not* `nominal`. The existing `TODO(balance-ledger)` flags an
+open question — whether `netNominal` is bigger or smaller than `nominal` for a
+payout, warning that "backwards, it leaks the fee on every payout". **That
+question is now answered.** From the two fee services in `apps/config/src/fee/`:
+
+| Flow | Merchant net | Meaning |
+|---|---|---|
+| `purchase-fee.service.ts` | `nominal.minus(fees)` | merchant **receives** less than the customer paid |
+| `disbursement-fee.service.ts` | `nominal.plus(fees)` | merchant **pays** more than the recipient receives |
+
+So for a payout `netNominal > nominal`, and **the reserve must be `netNominal`.**
+Reserving `nominal` would leak the fee on every single payout — precisely the
+failure that TODO feared.
+
+### 6.1 Fee calculation has to move to the create path
+
+It already has every input it needs there — `merchantId`, `providerName`,
+`paymentMethodName`, `nominal` are all in hand before `reserveTransaction` is
+called. Moving it earns a second benefit beyond making the reserve correct: a
+merchant with insufficient balance is rejected **before** the provider is called,
+rather than discovering it after the money has gone.
+
+> ⚠️ **This forces an availability decision, and it is yours to make.** Today a
+> fee-service outage still lets payouts through: the webhook tolerates
+> `fee === null`, logs *"Completed payout settled with no fee detail - needs the
+> settlement sweep"*, and records the transaction without fees. With
+> reserve-at-create that is no longer possible — **you cannot reserve an unknown
+> amount**, so a fee-calculation failure has to reject the payout.
+>
+> Trading availability for correctness is the right call on a debit path, but it
+> is a behaviour change on a live endpoint and should be a decision rather than a
+> side effect.
+
+### 6.2 Two structural fixes needed first
+
+**`reserveTransaction` is not in a transaction.** It is a bare
+`prismaMaster.disbursementTransaction.create(...)`. The row and the balance
+reserve must commit together, so it needs wrapping in `$transaction` — and
+`BalanceService.post()` will refuse the root client if it is not (Step 2.4).
+
+**Two senses of "reserve" meet in one call path.**
+`DisbursementCommonService.reserveTransaction` means *reserve the transaction
+row*; `BalanceService.reserve` means *hold the merchant's funds*. Having both in
+`DisbursementService.create` is a genuine readability trap. Rename the former —
+`createPendingTransaction` says what it does — before adding the latter.
+
+### 6.3 Then the movements
+
+**On create**, inside one `$transaction` with the row, before the upstream call:
 
 ```
-MERCHANT 27 | AVAILABLE | DEBIT  | amount    (via reserve(), Step 2.4)
-MERCHANT 27 | RESERVED  | CREDIT | amount
+MERCHANT 27 | AVAILABLE | DEBIT  | netNominal    (via reserve(), Step 2.4)
+MERCHANT 27 | RESERVED  | CREDIT | netNominal
 ```
 
 If `reserve()` returns `INSUFFICIENT_BALANCE`, throw before the provider call.
-That ordering is the whole point: reserve-before-call, the same rule already
-governing the transaction row itself.
 
-**On callback SUCCESS**: `RESERVED | DEBIT | amount`.
+**On callback SUCCESS**: `RESERVED | DEBIT | netNominal`.
 
 **On callback FAILED**: `RESERVED | DEBIT` + `AVAILABLE | CREDIT` — the money
 comes back.
 
-Applies to `apps/transaction/src/api-v1/disbursement/` today. Withdraw and topup
-live in `apps/dashboard` and are still stubs — they consume the same
-`libs/balance` when they are built, which is why the lib is a lib.
+Withdraw and topup live in `apps/dashboard` and are still D17-blocked stubs. They
+consume the same `libs/balance` when they are built, which is why it is a lib —
+but note withdraw will need the same fee-direction answer, since
+`WithdrawTransaction` has the same `nominal` / `netNominal` pair.
 
 **Verify**: two concurrent disbursements for more than the balance — exactly one
 succeeds. Write this as a real concurrent test, not a sequential one; a
-sequential test passes against the broken implementation too.
+sequential test passes against the broken implementation too. Then check the
+reserved amount equals `netNominal` and not `nominal`, because that is the bug
+this step exists to avoid.
 
 ---
 
