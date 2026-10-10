@@ -22,8 +22,12 @@ datasource db {
 ////////////////////
 
 model Role {
-  id   Int    @id @default(autoincrement()) @db.Integer
-  name String @db.VarChar(100)
+  id Int @id @default(autoincrement()) @db.Integer
+  /// Unique because role ids are pinned by migration and referenced as
+  /// constants - a second row named SYSTEM would make "which one is the SYSTEM
+  /// role" ambiguous, and the seed used to need lookup-then-create precisely
+  /// because this constraint was missing.
+  name String @unique @db.VarChar(100)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -508,10 +512,26 @@ model DisbursementTransaction {
   providerReference String? @unique
   bankReference     String? //reff id from bank
 
-  recipientName     String // bisa merchant, agent, atau pihak ketiga
-  recipientAccount  String
-  recipientBankCode String
-  recipientBankName String?
+  /// Where the money goes. Named to match `auth.MerchantDetail` /
+  /// `auth.AgentDetail` and `config.Bank.code`, which is where these values are
+  /// copied from.
+  ///
+  /// `bankCode` is **polymorphic, and deliberately not a foreign key**: it holds
+  /// a `config.Bank.code` when `paymentMethodName` is TRANSFERBANK, and an
+  /// `EWalletEnum` value (OVO / DANA / GOPAY / SHOPEEPAY) when it is
+  /// TRANSFEREWALLET. `accountNumber` likewise holds a wallet phone number in
+  /// the e-wallet case.
+  ///
+  /// So check `paymentMethodName` before joining on either. A bare
+  /// `JOIN config."Bank" ON code = "bankCode"` silently drops every e-wallet
+  /// payout instead of failing - there is no constraint to catch it, since the
+  /// two tables live in different Postgres schemas.
+  ///
+  /// The bank's *name* is not stored: it is derivable from `bankCode`, and a
+  /// stored copy goes stale when a bank is renamed.
+  accountHolderName String // bisa merchant, agent, atau pihak ketiga
+  accountNumber     String
+  bankCode          String
 
   providerName      String
   paymentMethodName String
@@ -675,10 +695,17 @@ model WithdrawTransaction {
   nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
   netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
-  recipientName     String? // bisa merchant, agent, atau pihak ketiga
-  recipientAccount  String?
-  recipientBankCode String?
-  recipientBankName String?
+  /// Nullable, unlike the same three on DisbursementTransaction, because
+  /// `paymentMethodName` here can be USDT - which has no bank, no account
+  /// number and no account holder. NOT NULL would force a placeholder, and an
+  /// empty string in a bank-code column is how a bad join eventually finds a
+  /// match.
+  ///
+  /// Same polymorphism caveat as DisbursementTransaction: not a foreign key,
+  /// and the meaning depends on `paymentMethodName`.
+  accountHolderName String? // bisa merchant, agent, atau pihak ketiga
+  accountNumber     String?
+  bankCode          String?
 
   status TransactionStatusEnum
 

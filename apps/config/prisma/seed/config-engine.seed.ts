@@ -68,8 +68,32 @@ const PAYMENT_METHODS: {
     ],
   },
   {
-    name: PaymentMethodNameEnum.TRANSFEREWALLET,
-    explain: 'TRANSFER_E_WALLET',
+    name: PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
+    explain: 'TRANSFEREWALLET_DANA',
+    transactionTypes: [
+      TransactionTypeEnum.DISBURSEMENT,
+      TransactionTypeEnum.WITHDRAW,
+    ],
+  },
+  {
+    name: PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY,
+    explain: 'TRANSFEREWALLET_GOPAY',
+    transactionTypes: [
+      TransactionTypeEnum.DISBURSEMENT,
+      TransactionTypeEnum.WITHDRAW,
+    ],
+  },
+  {
+    name: PaymentMethodNameEnum.TRANSFEREWALLET_OVO,
+    explain: 'TRANSFEREWALLET_OVO',
+    transactionTypes: [
+      TransactionTypeEnum.DISBURSEMENT,
+      TransactionTypeEnum.WITHDRAW,
+    ],
+  },
+  {
+    name: PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY,
+    explain: 'TRANSFEREWALLET_SHOPEEPAY',
     transactionTypes: [
       TransactionTypeEnum.DISBURSEMENT,
       TransactionTypeEnum.WITHDRAW,

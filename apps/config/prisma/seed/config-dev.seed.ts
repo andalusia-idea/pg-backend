@@ -95,7 +95,28 @@ const DEV_BASE_FEES = [
    */
   {
     providerName: ProviderNameEnum.MOTIONPAY,
-    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_OVO,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY,
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     feeProviderFixed: '300',
     feeProviderPercentage: '0',

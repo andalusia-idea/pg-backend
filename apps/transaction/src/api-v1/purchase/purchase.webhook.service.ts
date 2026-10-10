@@ -5,6 +5,7 @@ import {
   MerchantSignatureAuthClient,
   PaymentMethodNameEnum,
   ProviderNameEnum,
+  SYSTEM_USER_ID,
   TransactionStatusEnum,
   TransactionTypeEnum,
 } from '@app/microservice';
@@ -20,6 +21,17 @@ import Decimal from 'decimal.js';
 import { firstValueFrom, timeout } from 'rxjs';
 import { MotionPayQrisService } from '../../upstream/motionpay';
 import { WebhookPayinDto } from './purchase.dto';
+import {
+  BalanceBucketEnum,
+  BalanceDirectionEnum,
+  BalanceHolderTypeEnum,
+  BalanceLeg,
+  BalanceMovement,
+  BalanceReasonEnum,
+  BalanceService,
+  BalanceSourceTypeEnum,
+  INTERNAL_HOLDER_ID,
+} from '@app/balance';
 
 /**
  * What the caller should answer the provider with.
@@ -52,6 +64,7 @@ export class PurchaseWebhookService {
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
+    private readonly balanceService: BalanceService,
 
     private readonly httpService: HttpService,
     private readonly feeCalculateClient: FeeCalculateConfigClient,
@@ -165,24 +178,32 @@ export class PurchaseWebhookService {
       ? new Decimal(fee.merchantFee.netNominal)
       : purchase.nominal;
 
-    await this.prismaMaster.purchaseTransaction.update({
-      where: { id: purchase.id },
-      data: {
-        status: confirmed.status,
-        // Null unless the provider says money arrived. Defaulting to "now"
-        // would stamp a payment time on a transaction nobody ever paid.
-        paidAt: payload.paidAt,
-        ...(fee
-          ? {
-              netNominal,
-              feeDetails: { create: this.feeDetails(fee) },
-            }
-          : {}),
-        metadata: this.mergeMetadata(purchase.metadata, {
-          ...payload.metadata,
-          ...confirmed.metadata,
-        }),
-      },
+    await this.prismaMaster.$transaction(async (tx) => {
+      await tx.purchaseTransaction.update({
+        where: { id: purchase.id },
+        data: {
+          status: confirmed.status,
+          // Null unless the provider says money arrived. Defaulting to "now"
+          // would stamp a payment time on a transaction nobody ever paid.
+          paidAt: payload.paidAt,
+          ...(fee
+            ? {
+                netNominal,
+                feeDetails: { create: this.feeDetails(fee) },
+              }
+            : {}),
+          metadata: this.mergeMetadata(purchase.metadata, {
+            ...payload.metadata,
+            ...confirmed.metadata,
+          }),
+        },
+      });
+
+      if (isPaid)
+        await this.balanceService.post(
+          tx,
+          this.buildPayinMovement(purchase, fee),
+        );
     });
 
     this.logger.log({
@@ -205,12 +226,80 @@ export class PurchaseWebhookService {
     }
 
     await this.notifyMerchant(purchase, confirmed, netNominal, payload.paidAt);
+  }
 
-    // TODO(balance-ledger): on SUCCESS, append MerchantBalanceLog /
-    // AgentBalanceLog / InternalBalanceLog rows inside one transaction with
-    // advisory locks. Blocked on D17 in docs/dashboard-migration.md - the
-    // legacy write path has three defects and porting it faithfully would
-    // reproduce them. Until that lands, balances are not moved here.
+  /**
+   * Credit everyone their share of a captured payment, into PENDING.
+   *
+   * **The provider's cut gets no leg.** MotionPay deducts it upstream, so it
+   * never lands in a balance we track - it stays recorded on the fee detail row
+   * for the export and nothing more.
+   *
+   * With no fee breakdown the merchant is credited the gross. That is wrong by
+   * the width of the fees, and deliberately preferred to recording nothing:
+   * money did arrive, and the caller logs the missing breakdown for the
+   * settlement sweep to re-derive. Correcting it later is a reversing entry;
+   * never recording it is money that silently does not exist.
+   */
+  private buildPayinMovement(
+    purchase: PurchaseRow,
+    fee: FeeCalculationResultDto | null,
+  ): BalanceMovement {
+    // `purchase.merchantId`, never `fee.merchantFee.merchantId`. The fee service
+    // echoes the id back and they should agree, but trusting a remote echo over
+    // the row already in hand means a disagreement sends money to the wrong
+    // merchant with nothing to catch it.
+    const toPending = (
+      holderType: BalanceHolderTypeEnum,
+      holderId: number,
+      amount: Decimal.Value,
+    ): BalanceLeg => ({
+      holderId,
+      holderType,
+      bucket: BalanceBucketEnum.PENDING,
+      direction: BalanceDirectionEnum.CREDIT,
+      amount: new Decimal(amount),
+    });
+
+    const legs: BalanceLeg[] = fee
+      ? [
+          toPending(
+            BalanceHolderTypeEnum.MERCHANT,
+            purchase.merchantId,
+            fee.merchantFee.netNominal,
+          ),
+          toPending(
+            BalanceHolderTypeEnum.INTERNAL,
+            INTERNAL_HOLDER_ID,
+            fee.internalFee.nominal,
+          ),
+          ...fee.agentFee.agents.map((agent) =>
+            toPending(
+              BalanceHolderTypeEnum.AGENT,
+              agent.agentId,
+              agent.nominal,
+            ),
+          ),
+        ]
+      : [
+          toPending(
+            BalanceHolderTypeEnum.MERCHANT,
+            purchase.merchantId,
+            purchase.nominal,
+          ),
+        ];
+
+    return {
+      reason: BalanceReasonEnum.PAYIN_CAPTURED,
+      sourceType: BalanceSourceTypeEnum.PURCHASE,
+      sourceId: purchase.id,
+      // The provider's callback triggered this, not a person and not a cron, so
+      // the audit identity is the SYSTEM principal. Pinned by the
+      // `machine_principals` migration, so it is a constant rather than a
+      // lookup - see libs/microservice/src/microservice.constant.ts.
+      createdBy: SYSTEM_USER_ID,
+      legs,
+    };
   }
 
   /**

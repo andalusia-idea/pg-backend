@@ -17,8 +17,11 @@ export function hashPassword(password: string): Promise<string> {
 /** Every seeded account shares one password - these are non-production logins. */
 export const SEED_PASSWORD = 'password123';
 
-/** Machine accounts (scheduler / system / reserved) use their own. */
-export const ENGINE_PASSWORD = 'hesoyam';
+// ENGINE_PASSWORD is gone. The machine principals it hashed are now inserted by
+// the `machine_principals` migration with a password value that is not a valid
+// argon2 hash, so verification always rejects and those 20 accounts are
+// structurally unable to sign in. Previously they carried working hashes of a
+// shared literal, despite the seed documenting them as unable to log in.
 
 export function logSeeded(label: string, count: number | string): void {
   console.log(`  ${label.padEnd(28)} ${count}`);

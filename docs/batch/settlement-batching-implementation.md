@@ -736,9 +736,10 @@ That omission behaves differently on the two paths, and the difference matters:
 The existing `MerchantSecretCleanupService` is the second kind. Wrapping jobs in
 a CLS context fixes both at once.
 
-[auth-engine.seed.ts](../../apps/auth/prisma/seed/auth-engine.seed.ts:11) already
-seeds `scheduler01@pg.id` … `scheduler10@pg.id` with `ROLE.SCHEDULER`, plus five
-`reserved*` spares. This is what they are for.
+The `machine_principals` migration pins 6 roles and 20 machine users at fixed
+ids, exposed as `ROLE_ID`, `MACHINE_USER_ID` and `SYSTEM_USER_ID` in
+[microservice.constant.ts](../../libs/microservice/src/microservice.constant.ts).
+This is what those accounts are for.
 
 **Allocate one scheduler account per job, not per pod.** Which pod did the work
 is already answered by `SettlementRun.claimedBy`, and pod names are ephemeral —
@@ -758,26 +759,74 @@ entry attributed to the export job is a bug you would otherwise never find.
 | `scheduler07` | Merchant secret cleanup (exists; currently leaves a stale `updatedBy` beside a fresh `updatedAt`) |
 | `scheduler08`–`10` | Unallocated — transaction expiry, webhook retry, import processing |
 
-**Resolve the ids at boot, never hardcode them.** `User.id` is autoincrement, so
-the numeric ids differ between a fresh database and production. The settlement
-app's Prisma client does not span the `auth` schema — deliberately, since that
-would also hand it merchant secrets — so resolve over TCP with a new
-`AUTH_CMD.FIND_SCHEDULER_USER`, once at startup, cached for the process
-lifetime. **Fail startup if an account is missing**, rather than silently
-falling back to null and discovering it in an audit six months later.
+### 7.2 The ids are constants, not a lookup
+
+> **Resolved 9 Oct 2026.** Earlier drafts of this section said to resolve the
+> ids at boot over a new `AUTH_CMD.FIND_SCHEDULER_USER`, because `User.id` is
+> autoincrement and a hardcoded number is wrong in any environment where the
+> insert order differed. That reasoning was sound; the premise is now gone.
+
+The `machine_principals` migration inserts the 6 roles and 20 machine users with
+**explicit ids**, so they are the same in every database that has ever run the
+migration:
+
+```ts
+import { MACHINE_USER_ID, SYSTEM_USER_ID } from '@app/microservice';
+
+createdBy: MACHINE_USER_ID.SCHEDULER_01   // the batch runner
+createdBy: SYSTEM_USER_ID                 // a webhook, no person behind it
+```
+
+No TCP command, no boot-time resolution, no caching, and nothing has to reach
+across a schema boundary at runtime.
+
+Three things made that safe to do, and all three matter:
+
+**Roles moved too, and had to.** Migrations run before seeds, so a user row
+inserted by a migration cannot reference a role the seed has not created yet.
+`Role.name` also gained a unique constraint — the seed previously used
+lookup-then-create specifically because it lacked one.
+
+**The sequence is advanced in the same migration.** Explicit ids do not move it,
+so without `setval('"User_id_seq"', 20, true)` the next real signup would be
+handed id 1 and collide on the primary key. This is the step to not forget if
+the block is ever extended.
+
+**The migration refuses to complete if the ids disagree.** Both inserts are
+`ON CONFLICT DO NOTHING`, which is what makes it safe against a database the
+seed already populated — but skipping is only correct if the existing rows are
+already where the constants claim. A `DO` block compares every pinned role and
+user and raises with the exact mismatch, so a database built in some other order
+fails the migration instead of shipping wrong attribution.
+
+**`superadmin` and `agentinternal` stay in the seed**, at ids 21 and 22. They are
+real login credentials, and a hardcoded argon2 hash in a migration would put the
+production admin password in version control — identical everywhere and
+unchangeable without a new migration.
+
+A side effect worth having: the 20 machine accounts now carry a password value
+that is not a valid argon2 hash, so `AuthHelper.verifyPassword` rejects every
+attempt and they are structurally unable to sign in. Previously they held
+working hashes of a shared `ENGINE_PASSWORD` literal, despite the seed
+documenting them as unable to log in.
 
 **Then wrap each job run in a CLS context** and the existing audit extension does
 the rest — no identity parameter has to be threaded through `libs/balance`:
 
 ```ts
 await this.cls.run(async () => {
-  this.cls.set('authInfo.userId', this.schedulerIds.settlementRunner);
+  this.cls.set('authInfo.userId', MACHINE_USER_ID.SCHEDULER_01);
   await this.runOnce();
 });
 ```
 
+Note `libs/balance` does **not** rely on that — `BalanceMovement.createdBy` is
+passed explicitly, precisely so a money write cannot depend on an ambient value
+somebody forgot to set. The CLS wrapper is for everything *else* a job writes:
+`PurchaseTransaction.updatedBy` and friends, which the audit extension stamps.
+
 **Verify**: run the batch job and confirm `BalanceEntry.createdBy` is
-`scheduler01`'s id, not null.
+`MACHINE_USER_ID.SCHEDULER_01` (11), not null.
 
 **Verify**: `npx nest build settlement`; the app boots and `/health` answers.
 
