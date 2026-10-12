@@ -109,6 +109,15 @@
         "tsConfigPath": "libs/redis/tsconfig.lib.json"
       }
     },
+    "settlement": {
+      "type": "application",
+      "root": "apps/settlement",
+      "entryFile": "main",
+      "sourceRoot": "apps/settlement/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/settlement/tsconfig.app.json"
+      }
+    },
     "signature": {
       "type": "library",
       "root": "libs/signature",
