@@ -9,6 +9,7 @@ import { MerchantSignatureConfig } from './merchant-signature.config';
 import { FeeConfig } from './fee.config';
 import { ProfileConfig } from './profile.config';
 import { JatelindoConfig } from './jatelindo.config';
+import { SettlementConfig } from './settlement.config';
 
 @Global()
 @Module({})
@@ -31,6 +32,7 @@ export class ConfigurationModule {
         MerchantSignatureConfig,
         FeeConfig,
         ProfileConfig,
+        SettlementConfig,
 
         /// Upstream
         MotionPayConfig,
@@ -45,6 +47,7 @@ export class ConfigurationModule {
         MerchantSignatureConfig,
         FeeConfig,
         ProfileConfig,
+        SettlementConfig,
 
         /// Upstream
         MotionPayConfig,

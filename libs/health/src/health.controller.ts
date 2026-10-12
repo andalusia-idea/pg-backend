@@ -6,8 +6,9 @@ import {
 import { Controller, Get, Inject } from '@nestjs/common';
 import { TcpClientOptions, Transport } from '@nestjs/microservices';
 import {
+  HealthCheck,
+  HealthCheckResult,
   HealthCheckService,
-  HttpHealthIndicator,
   MicroserviceHealthIndicator,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
@@ -23,12 +24,18 @@ interface PingablePrismaClient {
   $queryRawUnsafe: (query: string) => Promise<unknown>;
 }
 
+/**
+ * **Only things this process genuinely needs.** An earlier version also pinged
+ * `https://docs.nestjs.com`, which made every app's liveness probe depend on a
+ * third-party site being reachable from the pod - so a DNS hiccup or blocked
+ * egress got a healthy process restarted by Kubernetes. A probe that fails for
+ * reasons outside the process it is probing is worse than no probe.
+ */
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly tcpConfig: TCPConfig,
     private readonly health: HealthCheckService,
-    private readonly http: HttpHealthIndicator,
     private readonly microservice: MicroserviceHealthIndicator,
     private readonly prismaHealth: PrismaHealthIndicator,
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
@@ -38,11 +45,9 @@ export class HealthController {
   ) {}
 
   @Get()
-  check() {
+  @HealthCheck()
+  check(): Promise<HealthCheckResult> {
     return this.health.check([
-      () => {
-        return this.http.pingCheck('nestjs-docs', 'https://docs.nestjs.com');
-      },
       () => {
         return this.microservice.pingCheck<TcpClientOptions>('tcp-auth', {
           transport: Transport.TCP,

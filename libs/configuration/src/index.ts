@@ -7,6 +7,7 @@ export * from './jwt.config';
 export * from './merchant-signature.config';
 export * from './fee.config';
 export * from './profile.config';
+export * from './settlement.config';
 
 /// Upstream
 export * from './motionpay.config';

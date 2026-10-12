@@ -6,6 +6,7 @@ const services = [
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:auth' },
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:config' },
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:transaction' },
+  { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:settlement' },
 ];
 
 console.log('🚀 Starting all services in Windows Terminal...\n');
