@@ -1,7 +1,12 @@
 import {
+  FeeCalculateConfigClient,
+  FeeCalculationResultDto,
+  FeeTypeEnum,
+  FilterDisbursementFeeDto,
   PaymentMethodNameEnum,
   ProfileClient,
   ProviderNameEnum,
+  SYSTEM_USER_ID,
   TransactionException,
   TransactionStatusEnum,
   TransactionTypeEnum,
@@ -22,9 +27,28 @@ import {
 import { DEFAULT_SYSTEM_REFERENCE_LENGTH } from '../transaction.helper';
 import { CreateTransferRequestDto } from './disbursement.dto';
 import Decimal from 'decimal.js';
+import {
+  BalanceBucketEnum,
+  BalanceDirectionEnum,
+  BalanceHolderTypeEnum,
+  BalanceLeg,
+  BalanceMovement,
+  BalanceReasonEnum,
+  BalanceService,
+  BalanceTx,
+  BalanceSourceTypeEnum,
+  INTERNAL_HOLDER_ID,
+} from '@app/balance';
 
 /** Prisma's unique-constraint violation. */
 const UNIQUE_VIOLATION = 'P2002';
+
+/** Just enough of a `DisbursementFeeDetail` row to build the payout legs from. */
+type PayoutFeeDetail = {
+  type: FeeTypeEnum;
+  nominal: Decimal;
+  agentId: number | null;
+};
 
 /**
  * What a disbursement means, independent of which rail carries it.
@@ -49,6 +73,8 @@ export class DisbursementCommonService {
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
     private readonly profileClient: ProfileClient,
+    private readonly feeCalculateClient: FeeCalculateConfigClient,
+    private readonly balanceService: BalanceService,
 
     private readonly motionPayTransferService: MotionPayTransferService,
     private readonly motionPayBillerService: MotionPayBillerService,
@@ -89,6 +115,336 @@ export class DisbursementCommonService {
     }
 
     return DEFAULT_SYSTEM_REFERENCE_LENGTH;
+  }
+
+  async calculateFee({
+    merchantId,
+    providerName,
+    paymentMethodName,
+    nominal,
+  }: FilterDisbursementFeeDto): Promise<FeeCalculationResultDto | null> {
+    try {
+      return await this.feeCalculateClient.disbursement({
+        merchantId,
+        providerName,
+        paymentMethodName,
+        nominal,
+      });
+    } catch (error) {
+      this.logger.error({
+        msg: 'Fee calculation failed',
+        merchantId,
+        error,
+      });
+      return null;
+    }
+  }
+
+  async reserveTransactionAndBalance({
+    userId,
+    systemReference,
+    providerName,
+    paymentMethodName,
+    dto,
+  }: {
+    userId: number;
+    systemReference: string;
+    providerName: ProviderNameEnum;
+    paymentMethodName: PaymentMethodNameEnum;
+    dto: CreateTransferRequestDto;
+  }): Promise<number> {
+    const fee = await this.calculateFee({
+      merchantId: userId,
+      providerName,
+      paymentMethodName,
+      nominal: dto.amount.value,
+    });
+
+    // Refused, not tolerated. The pay-in path records a capture with no fee
+    // breakdown because the money already moved and recording nothing would be
+    // worse. A payout is the opposite: nothing has moved yet, and the amount to
+    // reserve *is* the fee calculation - `netNominal` is `nominal` plus fees for
+    // a disbursement. Reserving `nominal` instead would let every payout
+    // overdraw the merchant by exactly the fee.
+    //
+    // `serviceUnavailable`, not `internalError`: a fee-service outage is a
+    // dependency being down, and "retry later" is correct advice. An internal
+    // error tells the merchant their request was malformed, which it was not.
+    if (!fee) {
+      this.logger.error({
+        msg: `Cannot reserve ${paymentMethodName} payout: fee calculation unavailable`,
+        userId,
+        systemReference,
+        merchantReference: dto.merchantReference,
+      });
+      throw TransactionException.serviceUnavailable();
+    }
+    try {
+      return await this.prismaMaster.$transaction(async (tx) => {
+        const row = await tx.disbursementTransaction.create({
+          data: {
+            merchantId: userId,
+            systemReference,
+            merchantReference: dto.merchantReference,
+
+            accountHolderName: '',
+            accountNumber: dto.accountNumber,
+            bankCode: dto.bankCode,
+
+            providerName,
+            paymentMethodName: paymentMethodName,
+            nominal: new Decimal(dto.amount.value),
+            netNominal: new Decimal(fee.merchantFee.netNominal),
+
+            status: TransactionStatusEnum.PENDING,
+
+            feeDetails: { create: this.buildFeeDetails(fee) },
+          },
+          select: { id: true },
+        });
+
+        // Only the merchant moves here, and only between their own buckets.
+        // Internal and agent fees are credited on PAYOUT_COMPLETED, not now -
+        // the fee is not earned until the payout actually works, and crediting
+        // early would mean PAYOUT_FAILED had to reverse those credits too.
+        //
+        // `userId`, not `fee.merchantFee.merchantId`: the fee service echoes the
+        // id back and they should agree, but trusting a remote echo over the
+        // value in hand means a disagreement reserves against the wrong
+        // merchant with nothing to catch it.
+        const reserved = await this.balanceService.reserve(tx, {
+          holderType: BalanceHolderTypeEnum.MERCHANT,
+          holderId: userId,
+          amount: new Decimal(fee.merchantFee.netNominal),
+          sourceType: BalanceSourceTypeEnum.DISBURSEMENT,
+          sourceId: row.id,
+          createdBy: SYSTEM_USER_ID,
+        });
+
+        // Rolls the row back with it, so a merchant who cannot afford the payout
+        // ends up with no transaction at all rather than a PENDING one nobody
+        // will ever settle. `reserve` returns rather than throws precisely so
+        // the caller picks the merchant-facing error.
+        if (!reserved.ok) throw TransactionException.insufficientBalance();
+
+        return row.id;
+      });
+    } catch (error) {
+      this.reserveFailure({
+        error,
+        userId,
+        systemReference,
+        merchantReference: dto.merchantReference,
+        rail: paymentMethodName,
+      });
+    }
+  }
+
+  /**
+   * Release the merchant's reservation the way the outcome demands.
+   *
+   * The single entry point for a settled payout's balance effect - the webhook
+   * says what happened and this owns what that means, so leg shapes stay in one
+   * file. Runs on the caller's transaction, so it commits with the status
+   * update or not at all.
+   */
+  async postPayoutOutcome(
+    tx: BalanceTx,
+    {
+      disbursementId,
+      merchantId,
+      netNominal,
+      isPaid,
+    }: {
+      disbursementId: number;
+      merchantId: number;
+      netNominal: Decimal;
+      isPaid: boolean;
+    },
+  ): Promise<void> {
+    if (!isPaid) {
+      await this.balanceService.post(
+        tx,
+        this.buildPayoutFailed(disbursementId, merchantId, netNominal),
+      );
+      return;
+    }
+
+    // Only read on the paid path: a failed payout earns nobody anything, so the
+    // fee rows have nothing to say about it.
+    const feeDetails = await tx.disbursementFeeDetail.findMany({
+      where: { disbursementId },
+      select: { type: true, nominal: true, agentId: true },
+    });
+
+    await this.balanceService.post(
+      tx,
+      this.buildPayoutCompleted(
+        disbursementId,
+        merchantId,
+        netNominal,
+        feeDetails,
+      ),
+    );
+  }
+
+  /**
+   * The payout worked: consume the merchant's reservation, and pay out the fees
+   * that were earned by it.
+   *
+   * ```
+   * MERCHANT | RESERVED  | DEBIT  | netNominal
+   * INTERNAL | AVAILABLE | CREDIT | internalFee
+   * AGENT    | AVAILABLE | CREDIT | agentFee      (one per agent)
+   * ```
+   *
+   * **`netNominal` comes from the row, not from the fee details.** It has to be
+   * the exact figure `reserve()` credited to RESERVED, or the debit leaves a
+   * residue stuck in that bucket forever - and the nightly check would not
+   * notice, because entries and snapshot would still agree. The merchant fee
+   * detail carries `nominal`, a *different* number on the same DTO, so reading
+   * it from there is the one mistake this signature exists to prevent.
+   *
+   * **The fees land in AVAILABLE, not PENDING.** PENDING models "waiting for an
+   * upstream to settle", and this money came out of the merchant's already
+   * settled balance - there is nothing to wait for. It would also strand there:
+   * the settlement batch claims purchases, never disbursements.
+   *
+   * **The provider fee gets no leg**, same as a pay-in: the upstream keeps it
+   * and it never reaches a balance we track. Net across the holders is
+   * therefore `-(nominal + providerFee)` - exactly the money that left.
+   */
+  private buildPayoutCompleted(
+    disbursementId: number,
+    merchantId: number,
+    netNominal: Decimal,
+    feeDetails: PayoutFeeDetail[],
+  ): BalanceMovement {
+    const legs: BalanceLeg[] = [
+      {
+        holderType: BalanceHolderTypeEnum.MERCHANT,
+        holderId: merchantId,
+        amount: netNominal,
+        bucket: BalanceBucketEnum.RESERVED,
+        direction: BalanceDirectionEnum.DEBIT,
+      },
+    ];
+
+    for (const feeDetail of feeDetails) {
+      if (FeeTypeEnum.INTERNAL === feeDetail.type) {
+        legs.push({
+          holderType: BalanceHolderTypeEnum.INTERNAL,
+          holderId: INTERNAL_HOLDER_ID,
+          amount: new Decimal(feeDetail.nominal),
+          bucket: BalanceBucketEnum.AVAILABLE,
+          direction: BalanceDirectionEnum.CREDIT,
+        });
+      }
+
+      if (FeeTypeEnum.AGENT === feeDetail.type) {
+        // An agent fee with no agent cannot be credited to anyone. Without this
+        // the id reaches Prisma as null and surfaces as a foreign-key error
+        // several frames away from the row that caused it.
+        if (feeDetail.agentId === null) {
+          this.logger.error({
+            msg: 'Agent fee detail has no agentId; cannot credit it',
+            disbursementId,
+            nominal: feeDetail.nominal.toFixed(2),
+          });
+          throw TransactionException.internalError();
+        }
+
+        legs.push({
+          holderType: BalanceHolderTypeEnum.AGENT,
+          holderId: feeDetail.agentId,
+          amount: new Decimal(feeDetail.nominal),
+          bucket: BalanceBucketEnum.AVAILABLE,
+          direction: BalanceDirectionEnum.CREDIT,
+        });
+      }
+    }
+
+    return {
+      reason: BalanceReasonEnum.PAYOUT_COMPLETED,
+      sourceType: BalanceSourceTypeEnum.DISBURSEMENT,
+      sourceId: disbursementId,
+      createdBy: SYSTEM_USER_ID,
+      legs,
+    };
+  }
+
+  /**
+   * The payout did not happen: give the reservation back, whole.
+   *
+   * ```
+   * MERCHANT | RESERVED  | DEBIT  | netNominal
+   * MERCHANT | AVAILABLE | CREDIT | netNominal
+   * ```
+   *
+   * No fee legs. The fee is earned by a payout that works, so there is nothing
+   * to credit and - because nothing was credited at reservation time - nothing
+   * to reverse either. `PAYOUT_FAILED` is a transfer reason, so `post()`
+   * asserts these two net to zero for the merchant.
+   */
+  private buildPayoutFailed(
+    disbursementId: number,
+    merchantId: number,
+    netNominal: Decimal,
+  ): BalanceMovement {
+    const legs: BalanceLeg[] = [
+      {
+        holderType: BalanceHolderTypeEnum.MERCHANT,
+        holderId: merchantId,
+        amount: netNominal,
+        bucket: BalanceBucketEnum.RESERVED,
+        direction: BalanceDirectionEnum.DEBIT,
+      },
+      {
+        holderType: BalanceHolderTypeEnum.MERCHANT,
+        holderId: merchantId,
+        amount: netNominal,
+        bucket: BalanceBucketEnum.AVAILABLE,
+        direction: BalanceDirectionEnum.CREDIT,
+      },
+    ];
+    return {
+      reason: BalanceReasonEnum.PAYOUT_FAILED,
+      sourceType: BalanceSourceTypeEnum.DISBURSEMENT,
+      sourceId: disbursementId,
+      createdBy: SYSTEM_USER_ID,
+      legs,
+    };
+  }
+
+  /** One row per party. Agents are itemised rather than collapsed to a total. */
+  private buildFeeDetails(
+    fee: FeeCalculationResultDto,
+  ): Prisma.DisbursementFeeDetailCreateWithoutDisbursementTransactionInput[] {
+    return [
+      {
+        type: FeeTypeEnum.MERCHANT,
+        nominal: new Decimal(fee.merchantFee.netNominal),
+        feePercentage: new Decimal(fee.merchantFee.feePercentage),
+      },
+      {
+        type: FeeTypeEnum.PROVIDER,
+        nominal: new Decimal(fee.providerFee.nominal),
+        feeFixed: new Decimal(fee.providerFee.feeFixed),
+        feePercentage: new Decimal(fee.providerFee.feePercentage),
+      },
+      {
+        type: FeeTypeEnum.INTERNAL,
+        nominal: new Decimal(fee.internalFee.nominal),
+        feeFixed: new Decimal(fee.internalFee.feeFixed),
+        feePercentage: new Decimal(fee.internalFee.feePercentage),
+      },
+      ...fee.agentFee.agents.map((agent) => ({
+        type: FeeTypeEnum.AGENT,
+        agentId: agent.agentId,
+        nominal: new Decimal(agent.nominal),
+        feePercentage: new Decimal(agent.feePercentage),
+      })),
+    ];
   }
 
   async recordUpstreamResult(
@@ -169,50 +525,6 @@ export class DisbursementCommonService {
     }
   }
 
-  async reserveTransaction({
-    userId,
-    systemReference,
-    providerName,
-    paymentMethodName,
-    dto,
-  }: {
-    userId: number;
-    systemReference: string;
-    providerName: ProviderNameEnum;
-    paymentMethodName: PaymentMethodNameEnum;
-    dto: CreateTransferRequestDto;
-  }): Promise<number> {
-    try {
-      const row = await this.prismaMaster.disbursementTransaction.create({
-        data: {
-          merchantId: userId,
-          systemReference,
-          merchantReference: dto.merchantReference,
-
-          accountHolderName: '',
-          accountNumber: dto.accountNumber,
-          bankCode: dto.bankCode,
-
-          providerName,
-          paymentMethodName: paymentMethodName,
-          nominal: new Decimal(dto.amount.value),
-
-          status: TransactionStatusEnum.PENDING,
-        },
-        select: { id: true },
-      });
-      return row.id;
-    } catch (error) {
-      this.reserveFailure({
-        error,
-        userId,
-        systemReference,
-        merchantReference: dto.merchantReference,
-        rail: paymentMethodName,
-      });
-    }
-  }
-
   /**
    * Turn a failed reservation into the right merchant-facing error.
    *
@@ -235,6 +547,12 @@ export class DisbursementCommonService {
     merchantReference: string;
     rail: string;
   }): never {
+    // Already a merchant-facing error - an insufficient balance, say - so let
+    // it through untouched. Without this, a deliberate rejection raised inside
+    // the reservation transaction falls through to `serviceUnavailable` below
+    // and the merchant is told to retry something that can never succeed.
+    if (error instanceof TransactionException) throw error;
+
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === UNIQUE_VIOLATION

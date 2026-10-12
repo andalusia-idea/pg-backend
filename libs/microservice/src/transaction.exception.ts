@@ -148,6 +148,11 @@ const TRANSACTION_FAILURE: Record<TransactionFailureEnum, MerchantFailure> = {
     CASE.GENERAL,
     'Internal server error',
   ),
+  INSUFFICIENT_BALANCE: disbursement(
+    HttpStatus.BAD_REQUEST,
+    CASE.INSUFFICIENT_FUNDS,
+    'Insufficient Balance',
+  ),
 };
 
 /**
@@ -245,6 +250,12 @@ export class TransactionException extends MerchantException {
   static insufficientDeposit(): TransactionException {
     return new TransactionException(
       TransactionFailureEnum.INSUFFICIENT_DEPOSIT,
+    );
+  }
+
+  static insufficientBalance(): TransactionException {
+    return new TransactionException(
+      TransactionFailureEnum.INSUFFICIENT_BALANCE,
     );
   }
 }

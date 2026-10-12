@@ -85,7 +85,7 @@ export class DisbursementService {
       ),
     });
 
-    const disbursementId = await this.common.reserveTransaction({
+    const disbursementId = await this.common.reserveTransactionAndBalance({
       userId,
       systemReference,
       providerName,

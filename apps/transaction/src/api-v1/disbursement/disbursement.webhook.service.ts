@@ -1,7 +1,4 @@
 import {
-  FeeCalculateConfigClient,
-  FeeCalculationResultDto,
-  FeeTypeEnum,
   isEWalletPaymentMethod,
   MerchantSignatureAuthClient,
   PaymentMethodNameEnum,
@@ -24,6 +21,7 @@ import {
   MotionPayTransferService,
 } from '../../upstream/motionpay';
 import { WebhookPayoutDto } from './disbursement.dto';
+import { DisbursementCommonService } from './disbursement-common.service';
 
 /**
  * What the caller should answer the provider with. Mirrors the pay-in flow:
@@ -52,9 +50,12 @@ export class DisbursementWebhookService {
   constructor(
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
+    // No BalanceService here on purpose: the balance effect of a settled payout
+    // goes through `common.postPayoutOutcome`, so the leg shapes live in one
+    // file rather than being half-known by the webhook.
+    private readonly common: DisbursementCommonService,
 
     private readonly httpService: HttpService,
-    private readonly feeCalculateClient: FeeCalculateConfigClient,
     private readonly merchantSignatureClient: MerchantSignatureAuthClient,
     private readonly motionPayTransferService: MotionPayTransferService,
     private readonly motionPayBillerService: MotionPayBillerService,
@@ -89,9 +90,7 @@ export class DisbursementWebhookService {
       return done('unknown transaction');
     }
 
-    if (
-      TERMINAL_STATUSES.includes(disbursement.status as TransactionStatusEnum)
-    ) {
+    if (TERMINAL_STATUSES.includes(disbursement.status)) {
       this.logger.debug({
         msg: 'Transfer callback for an already-settled transaction, ignoring',
         disbursementId: disbursement.id,
@@ -143,69 +142,48 @@ export class DisbursementWebhookService {
   ): Promise<void> {
     const isPaid = confirmed.status === TransactionStatusEnum.SUCCESS;
 
-    // Fees only for money that actually moved. A rejected payout earns nothing.
-    const fee = isPaid
-      ? await this.calculateFee({
-          merchantId: disbursement.merchantId,
-          providerName: disbursement.providerName as ProviderNameEnum,
-          // The fee schedule differs per rail - which is the whole reason the
-          // e-wallet path exists - so the method has to reach the calculator.
-          paymentMethodName:
-            disbursement.paymentMethodName as PaymentMethodNameEnum,
-          nominal: disbursement.nominal.toFixed(2),
-        })
-      : null;
-
-    const netNominal = fee
-      ? new Decimal(fee.merchantFee.netNominal)
-      : disbursement.nominal;
-
     // The provider's callback has no timestamp of its own, so the moment we
     // confirmed settlement is the best record we have of when it happened.
     const paidAt = isPaid ? new Date() : null;
 
-    await this.prismaMaster.disbursementTransaction.update({
-      where: { id: disbursement.id },
-      data: {
-        status: confirmed.status,
-        paidAt,
-        providerReference:
-          (disbursement.providerReference ?? confirmed.providerReference) ||
-          null,
-        ...(fee
-          ? { netNominal, feeDetails: { create: this.feeDetails(fee) } }
-          : {}),
-        metadata: this.mergeMetadata(disbursement.metadata, {
-          ...payload.metadata,
-          ...confirmed.metadata,
-        }),
-      },
+    await this.prismaMaster.$transaction(async (tx) => {
+      await tx.disbursementTransaction.update({
+        where: { id: disbursement.id },
+        data: {
+          status: confirmed.status,
+          paidAt,
+          providerReference:
+            payload.providerReference ?? confirmed.providerReference,
+          metadata: this.mergeMetadata(disbursement.metadata, {
+            ...payload.metadata,
+            ...confirmed.metadata,
+          }),
+        },
+      });
+      await this.common.postPayoutOutcome(tx, {
+        disbursementId: disbursement.id,
+        merchantId: disbursement.merchantId,
+        netNominal: disbursement.netNominal,
+        isPaid,
+      });
     });
 
     this.logger.log({
       msg: 'Payout settled from callback',
       disbursementId: disbursement.id,
       status: confirmed.status,
-      feesWritten: fee !== null,
     });
 
-    if (!isPaid) return;
-
-    if (!fee) {
-      this.logger.error({
-        msg: 'Completed payout settled with no fee detail - needs the settlement sweep',
-        disbursementId: disbursement.id,
-      });
-    }
-
-    await this.notifyMerchant(disbursement, confirmed, netNominal, paidAt);
-
-    // TODO(balance-ledger): on SUCCESS, append MerchantBalanceLog /
-    // AgentBalanceLog / InternalBalanceLog rows inside one transaction with
-    // advisory locks. Blocked on D17 in docs/dashboard-migration.md. Note the
-    // payout direction also depends on the open question there about whether
-    // netNominal is greater or smaller than nominal for a WITHDRAW/DISBURSEMENT
-    // - backwards, it leaks the fee on every payout.
+    // From the row, not recomputed. It is the figure the merchant was actually
+    // charged - fees are priced and reserved at create time now, so a second
+    // call to the fee service here could return a different number under a
+    // changed config and report the merchant something that never happened.
+    await this.notifyMerchant(
+      disbursement,
+      confirmed,
+      disbursement.netNominal,
+      paidAt,
+    );
   }
 
   /**
@@ -331,7 +309,7 @@ export class DisbursementWebhookService {
 
   private async findDisbursement(systemReference: string) {
     try {
-      return await this.prismaMaster.disbursementTransaction.findUnique({
+      return await this.prismaMaster.disbursementTransaction.findUniqueOrThrow({
         where: { systemReference },
         select: {
           id: true,
@@ -343,6 +321,10 @@ export class DisbursementWebhookService {
           providerReference: true,
           status: true,
           nominal: true,
+          // The amount reserved at create time. Both the balance posting and the
+          // merchant notification have to use this exact figure, never a
+          // recomputed one.
+          netNominal: true,
           accountHolderName: true,
           accountNumber: true,
           bankCode: true,
@@ -383,65 +365,6 @@ export class DisbursementWebhookService {
     }
   }
 
-  private async calculateFee({
-    merchantId,
-    providerName,
-    paymentMethodName,
-    nominal,
-  }: {
-    merchantId: number;
-    providerName: ProviderNameEnum;
-    paymentMethodName: PaymentMethodNameEnum;
-    nominal: string;
-  }): Promise<FeeCalculationResultDto | null> {
-    try {
-      return await this.feeCalculateClient.disbursement({
-        merchantId,
-        providerName,
-        paymentMethodName,
-        nominal,
-      });
-    } catch (error) {
-      this.logger.error({
-        msg: 'Fee calculation failed while settling a completed payout',
-        merchantId,
-        error,
-      });
-      return null;
-    }
-  }
-
-  /** One row per party. Agents are itemised rather than collapsed to a total. */
-  private feeDetails(
-    fee: FeeCalculationResultDto,
-  ): Prisma.DisbursementFeeDetailCreateWithoutDisbursementTransactionInput[] {
-    return [
-      {
-        type: FeeTypeEnum.MERCHANT,
-        nominal: new Decimal(fee.merchantFee.nominal),
-        feePercentage: new Decimal(fee.merchantFee.feePercentage),
-      },
-      {
-        type: FeeTypeEnum.PROVIDER,
-        nominal: new Decimal(fee.providerFee.nominal),
-        feeFixed: new Decimal(fee.providerFee.feeFixed),
-        feePercentage: new Decimal(fee.providerFee.feePercentage),
-      },
-      {
-        type: FeeTypeEnum.INTERNAL,
-        nominal: new Decimal(fee.internalFee.nominal),
-        feeFixed: new Decimal(fee.internalFee.feeFixed),
-        feePercentage: new Decimal(fee.internalFee.feePercentage),
-      },
-      ...fee.agentFee.agents.map((agent) => ({
-        type: FeeTypeEnum.AGENT,
-        agentId: agent.agentId,
-        nominal: new Decimal(agent.nominal),
-        feePercentage: new Decimal(agent.feePercentage),
-      })),
-    ];
-  }
-
   /** Merge new evidence into `metadata` without discarding what is there. */
   private mergeMetadata(
     existing: Prisma.JsonValue,
@@ -466,6 +389,7 @@ type DisbursementRow = {
   providerReference: string | null;
   status: string;
   nominal: Decimal;
+  netNominal: Decimal;
   accountHolderName: string;
   accountNumber: string;
   bankCode: string;

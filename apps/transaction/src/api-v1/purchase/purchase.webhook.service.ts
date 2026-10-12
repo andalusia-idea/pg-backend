@@ -249,45 +249,41 @@ export class PurchaseWebhookService {
     // echoes the id back and they should agree, but trusting a remote echo over
     // the row already in hand means a disagreement sends money to the wrong
     // merchant with nothing to catch it.
-    const toPending = (
-      holderType: BalanceHolderTypeEnum,
-      holderId: number,
-      amount: Decimal.Value,
-    ): BalanceLeg => ({
-      holderId,
-      holderType,
-      bucket: BalanceBucketEnum.PENDING,
-      direction: BalanceDirectionEnum.CREDIT,
-      amount: new Decimal(amount),
-    });
+    const legs: BalanceLeg[] = [];
 
-    const legs: BalanceLeg[] = fee
-      ? [
-          toPending(
-            BalanceHolderTypeEnum.MERCHANT,
-            purchase.merchantId,
-            fee.merchantFee.netNominal,
-          ),
-          toPending(
-            BalanceHolderTypeEnum.INTERNAL,
-            INTERNAL_HOLDER_ID,
-            fee.internalFee.nominal,
-          ),
-          ...fee.agentFee.agents.map((agent) =>
-            toPending(
-              BalanceHolderTypeEnum.AGENT,
-              agent.agentId,
-              agent.nominal,
-            ),
-          ),
-        ]
-      : [
-          toPending(
-            BalanceHolderTypeEnum.MERCHANT,
-            purchase.merchantId,
-            purchase.nominal,
-          ),
-        ];
+    if (fee) {
+      legs.push(
+        {
+          holderType: BalanceHolderTypeEnum.MERCHANT,
+          holderId: purchase.merchantId,
+          amount: new Decimal(fee.merchantFee.netNominal),
+          bucket: BalanceBucketEnum.PENDING,
+          direction: BalanceDirectionEnum.CREDIT,
+        },
+        {
+          holderType: BalanceHolderTypeEnum.INTERNAL,
+          holderId: INTERNAL_HOLDER_ID,
+          amount: new Decimal(fee.internalFee.nominal),
+          bucket: BalanceBucketEnum.PENDING,
+          direction: BalanceDirectionEnum.CREDIT,
+        },
+        ...fee.agentFee.agents.map<BalanceLeg>((agent) => ({
+          holderType: BalanceHolderTypeEnum.AGENT,
+          holderId: agent.agentId,
+          amount: new Decimal(agent.nominal),
+          bucket: BalanceBucketEnum.PENDING,
+          direction: BalanceDirectionEnum.CREDIT,
+        })),
+      );
+    } else {
+      legs.push({
+        holderType: BalanceHolderTypeEnum.MERCHANT,
+        holderId: purchase.merchantId,
+        amount: new Decimal(purchase.nominal),
+        bucket: BalanceBucketEnum.PENDING,
+        direction: BalanceDirectionEnum.CREDIT,
+      });
+    }
 
     return {
       reason: BalanceReasonEnum.PAYIN_CAPTURED,

@@ -43,6 +43,8 @@ export const TransactionFailureEnum = {
    * payout is not happening rather than assume it is in flight.
    */
   INSUFFICIENT_DEPOSIT: 'INSUFFICIENT_DEPOSIT',
+
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   /** Our bug. Never a description of anything the merchant did. */
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;

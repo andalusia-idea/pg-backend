@@ -9,8 +9,8 @@ import {
 
 /** One side of a movement: one holder, one bucket, one direction. */
 export type BalanceLeg = {
-  holderId: number;
   holderType: BalanceHolderTypeEnum;
+  holderId: number;
   bucket: BalanceBucketEnum;
   direction: BalanceDirectionEnum;
   /** Always positive. `direction` carries the sign. */
