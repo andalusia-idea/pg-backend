@@ -718,7 +718,15 @@ model SettlementRun {
   /// That second case is the whole reason this column is worth having - it is
   /// what separates "the cron did this" from "someone clicked the button at 2am"
   /// on an operation that moves money.
-  createdBy Int? @db.Integer()
+  ///
+  /// NOT NULL, like `BalanceEntry` and `BalanceAdjustment` and unlike the older
+  /// `*BalanceLog` tables. Those are nullable because `AUDITED_MODELS` fills them
+  /// opportunistically and may have no userId in CLS; this one is written
+  /// explicitly, and only two things ever write it, both of which always know
+  /// their principal. Nullable here would buy nothing and cost the compile error
+  /// that catches a forgotten `createdBy` - the same error that is the stated
+  /// reason `libs/balance` types against `@transaction/prisma` at all.
+  createdBy Int @db.Integer()
 
   // No updatedAt/updatedBy/deletedAt/deletedBy, and this model is deliberately
   // absent from AUDITED_MODELS. Two reasons, both load-bearing:

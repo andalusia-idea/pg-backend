@@ -252,7 +252,7 @@ export type SettlementRunGroupByOutputType = {
   failureReason: string | null
   attempts: number
   createdAt: Date
-  createdBy: number | null
+  createdBy: number
   _count: SettlementRunCountAggregateOutputType | null
   _avg: SettlementRunAvgAggregateOutputType | null
   _sum: SettlementRunSumAggregateOutputType | null
@@ -290,7 +290,7 @@ export type SettlementRunWhereInput = {
   failureReason?: Prisma.StringNullableFilter<"SettlementRun"> | string | null
   attempts?: Prisma.IntFilter<"SettlementRun"> | number
   createdAt?: Prisma.DateTimeFilter<"SettlementRun"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"SettlementRun"> | number | null
+  createdBy?: Prisma.IntFilter<"SettlementRun"> | number
   settlementBatches?: Prisma.SettlementBatchListRelationFilter
 }
 
@@ -306,7 +306,7 @@ export type SettlementRunOrderByWithRelationInput = {
   failureReason?: Prisma.SortOrderInput | Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdBy?: Prisma.SortOrder
   settlementBatches?: Prisma.SettlementBatchOrderByRelationAggregateInput
 }
 
@@ -326,7 +326,7 @@ export type SettlementRunWhereUniqueInput = Prisma.AtLeast<{
   failureReason?: Prisma.StringNullableFilter<"SettlementRun"> | string | null
   attempts?: Prisma.IntFilter<"SettlementRun"> | number
   createdAt?: Prisma.DateTimeFilter<"SettlementRun"> | Date | string
-  createdBy?: Prisma.IntNullableFilter<"SettlementRun"> | number | null
+  createdBy?: Prisma.IntFilter<"SettlementRun"> | number
   settlementBatches?: Prisma.SettlementBatchListRelationFilter
 }, "id" | "merchantId_paymentMethodName_dueAt">
 
@@ -342,7 +342,7 @@ export type SettlementRunOrderByWithAggregationInput = {
   failureReason?: Prisma.SortOrderInput | Prisma.SortOrder
   attempts?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdBy?: Prisma.SortOrder
   _count?: Prisma.SettlementRunCountOrderByAggregateInput
   _avg?: Prisma.SettlementRunAvgOrderByAggregateInput
   _max?: Prisma.SettlementRunMaxOrderByAggregateInput
@@ -365,7 +365,7 @@ export type SettlementRunScalarWhereWithAggregatesInput = {
   failureReason?: Prisma.StringNullableWithAggregatesFilter<"SettlementRun"> | string | null
   attempts?: Prisma.IntWithAggregatesFilter<"SettlementRun"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SettlementRun"> | Date | string
-  createdBy?: Prisma.IntNullableWithAggregatesFilter<"SettlementRun"> | number | null
+  createdBy?: Prisma.IntWithAggregatesFilter<"SettlementRun"> | number
 }
 
 export type SettlementRunCreateInput = {
@@ -379,7 +379,7 @@ export type SettlementRunCreateInput = {
   failureReason?: string | null
   attempts?: number
   createdAt?: Date | string
-  createdBy?: number | null
+  createdBy: number
   settlementBatches?: Prisma.SettlementBatchCreateNestedManyWithoutRunInput
 }
 
@@ -395,7 +395,7 @@ export type SettlementRunUncheckedCreateInput = {
   failureReason?: string | null
   attempts?: number
   createdAt?: Date | string
-  createdBy?: number | null
+  createdBy: number
   settlementBatches?: Prisma.SettlementBatchUncheckedCreateNestedManyWithoutRunInput
 }
 
@@ -410,7 +410,7 @@ export type SettlementRunUpdateInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
   settlementBatches?: Prisma.SettlementBatchUpdateManyWithoutRunNestedInput
 }
 
@@ -426,7 +426,7 @@ export type SettlementRunUncheckedUpdateInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
   settlementBatches?: Prisma.SettlementBatchUncheckedUpdateManyWithoutRunNestedInput
 }
 
@@ -442,7 +442,7 @@ export type SettlementRunCreateManyInput = {
   failureReason?: string | null
   attempts?: number
   createdAt?: Date | string
-  createdBy?: number | null
+  createdBy: number
 }
 
 export type SettlementRunUpdateManyMutationInput = {
@@ -456,7 +456,7 @@ export type SettlementRunUpdateManyMutationInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type SettlementRunUncheckedUpdateManyInput = {
@@ -471,7 +471,7 @@ export type SettlementRunUncheckedUpdateManyInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type SettlementRunMerchantIdPaymentMethodNameDueAtCompoundUniqueInput = {
@@ -573,7 +573,7 @@ export type SettlementRunCreateWithoutSettlementBatchesInput = {
   failureReason?: string | null
   attempts?: number
   createdAt?: Date | string
-  createdBy?: number | null
+  createdBy: number
 }
 
 export type SettlementRunUncheckedCreateWithoutSettlementBatchesInput = {
@@ -588,7 +588,7 @@ export type SettlementRunUncheckedCreateWithoutSettlementBatchesInput = {
   failureReason?: string | null
   attempts?: number
   createdAt?: Date | string
-  createdBy?: number | null
+  createdBy: number
 }
 
 export type SettlementRunCreateOrConnectWithoutSettlementBatchesInput = {
@@ -618,7 +618,7 @@ export type SettlementRunUpdateWithoutSettlementBatchesInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type SettlementRunUncheckedUpdateWithoutSettlementBatchesInput = {
@@ -633,7 +633,7 @@ export type SettlementRunUncheckedUpdateWithoutSettlementBatchesInput = {
   failureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdBy?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 
@@ -787,8 +787,16 @@ export type $SettlementRunPayload<ExtArgs extends runtime.Types.Extensions.Inter
      * That second case is the whole reason this column is worth having - it is
      * what separates "the cron did this" from "someone clicked the button at 2am"
      * on an operation that moves money.
+     * 
+     * NOT NULL, like `BalanceEntry` and `BalanceAdjustment` and unlike the older
+     * `*BalanceLog` tables. Those are nullable because `AUDITED_MODELS` fills them
+     * opportunistically and may have no userId in CLS; this one is written
+     * explicitly, and only two things ever write it, both of which always know
+     * their principal. Nullable here would buy nothing and cost the compile error
+     * that catches a forgotten `createdBy` - the same error that is the stated
+     * reason `libs/balance` types against `@transaction/prisma` at all.
      */
-    createdBy: number | null
+    createdBy: number
   }, ExtArgs["result"]["settlementRun"]>
   composites: {}
 }
