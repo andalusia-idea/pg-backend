@@ -93,5 +93,21 @@ export type MACHINE_USER_ID =
  */
 export const SYSTEM_USER_ID = MACHINE_USER_ID.SYSTEM_01;
 
+/**
+ * Per-job identities over the `SCHEDULER_*` slots.
+ *
+ * One alias per cron, rather than every job sharing `SYSTEM_USER_ID`: the point
+ * of pinning ten slots was that an audit row can say *which* job wrote it. The
+ * ids themselves exist already, so adding a job here is naming, not migrating.
+ *
+ * Keep the assignment in code. While these lived only in prose, two different
+ * passages could - and briefly did - hand the same slot to different jobs.
+ *
+ * `SCHEDULER_01` is reserved for `apps/settlement`'s enqueuer and runner, which
+ * Step 11 of docs/batch/settlement-batching-implementation.md will claim. Do not
+ * take it for something else.
+ */
+export const MERCHANT_SECRET_CLEANUP_USER_ID = MACHINE_USER_ID.SCHEDULER_02;
+
 /** The id the first non-machine account receives. Everything below is pinned. */
 export const FIRST_HUMAN_USER_ID = 21;

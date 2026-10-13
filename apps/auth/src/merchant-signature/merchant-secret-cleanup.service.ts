@@ -1,8 +1,11 @@
 import { MerchantSignatureConfig } from '@app/configuration';
+import { MERCHANT_SECRET_CLEANUP_USER_ID } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
+import { AUDIT_USER_ID_PATH } from '../database/audit.constant';
 import type { PrismaClient } from '@auth/prisma';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ClsService } from 'nestjs-cls';
 
 /**
  * Clears retired secrets once their rotation grace window has closed.
@@ -25,6 +28,7 @@ export class MerchantSecretCleanupService {
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClient,
     private readonly merchantSignatureConfig: MerchantSignatureConfig,
+    private readonly cls: ClsService,
   ) {}
 
   /**
@@ -43,6 +47,22 @@ export class MerchantSecretCleanupService {
    */
   @Cron(CronExpression.EVERY_HOUR, { name: 'merchant-secret-cleanup' })
   async clearExpiredPreviousSecrets(): Promise<void> {
+    // `MerchantSignature` is in AUDITED_MODELS, so the extension stamps the
+    // `updateMany` below - but it reads the actor out of CLS, and a @Cron has no
+    // request to have put one there. Without this wrapper it sets `updatedAt`
+    // and leaves `updatedBy` null, and because that column is nullable it fails
+    // silently: the row simply forgets who touched it.
+    //
+    // The context has to be opened here rather than relying on middleware.
+    // apps/auth answers TCP messages, so `ClsModule` is registered without
+    // `middleware: { mount: true }` and nothing populates a context on its own.
+    await this.cls.run(async () => {
+      this.cls.set(AUDIT_USER_ID_PATH, MERCHANT_SECRET_CLEANUP_USER_ID);
+      await this.clearOnce();
+    });
+  }
+
+  private async clearOnce(): Promise<void> {
     this.logger.log('merchant-secret-cleanup started');
     const cutoff = new Date(
       Date.now() - this.merchantSignatureConfig.SECRET_KEY_GRACE_SECONDS * 1000,

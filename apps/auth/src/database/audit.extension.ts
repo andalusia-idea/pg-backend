@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Prisma } from '@auth/prisma';
 import { ClsServiceManager } from 'nestjs-cls';
+import { AUDIT_USER_ID_PATH } from './audit.constant';
 
 const AUDITED_MODELS = new Set<string>([
   'Role',
@@ -12,7 +13,6 @@ const AUDITED_MODELS = new Set<string>([
   'MerchantSignature',
 ]);
 
-const AUDIT_USER_ID_PATH = 'authInfo.userId';
 
 type MutableRecord = Record<string, unknown>;
 

@@ -1,19 +1,63 @@
+import { MERCHANT_SECRET_CLEANUP_USER_ID } from '@app/microservice';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { AUDIT_USER_ID_PATH } from '../database/audit.constant';
 import { MerchantSecretCleanupService } from './merchant-secret-cleanup.service';
 
 const GRACE_SECONDS = 86_400;
 
 describe('MerchantSecretCleanupService', () => {
   let updateMany: jest.Mock;
+  let clsSet: jest.Mock;
+  /** Set while the `cls.run` callback is on the stack, cleared after. */
+  let userIdDuringRun: unknown;
   let service: MerchantSecretCleanupService;
 
   beforeEach(() => {
     updateMany = jest.fn(async () => ({ count: 0 }));
+    userIdDuringRun = undefined;
+    clsSet = jest.fn((key: string, value: unknown) => {
+      if (key === AUDIT_USER_ID_PATH) userIdDuringRun = value;
+    });
+
+    // Stands in for ClsService. `run` invokes the callback so the work still
+    // happens, and `set` records what the audit extension would have read.
+    const cls = {
+      run: async (callback: () => Promise<void>) => callback(),
+      set: clsSet,
+    };
 
     service = new MerchantSecretCleanupService(
       { merchantSignature: { updateMany } } as never,
       { SECRET_KEY_GRACE_SECONDS: GRACE_SECONDS } as never,
+      cls as never,
     );
+  });
+
+  /**
+   * The audit extension reads the actor from CLS, and a cron has no request to
+   * have put one there. Without the wrapper the update stamps `updatedAt` and
+   * leaves `updatedBy` null - silently, since the column is nullable.
+   */
+  it('runs inside a CLS context carrying the cleanup principal', async () => {
+    await service.clearExpiredPreviousSecrets();
+
+    expect(clsSet).toHaveBeenCalledWith(
+      AUDIT_USER_ID_PATH,
+      MERCHANT_SECRET_CLEANUP_USER_ID,
+    );
+    expect(userIdDuringRun).toBe(MERCHANT_SECRET_CLEANUP_USER_ID);
+  });
+
+  it('sets the principal before touching the database', async () => {
+    let userIdAtUpdate: unknown;
+    updateMany.mockImplementation((async () => {
+      userIdAtUpdate = userIdDuringRun;
+      return { count: 0 };
+    }) as never);
+
+    await service.clearExpiredPreviousSecrets();
+
+    expect(userIdAtUpdate).toBe(MERCHANT_SECRET_CLEANUP_USER_ID);
   });
 
   it('clears only rows whose grace window has closed', async () => {
