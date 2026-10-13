@@ -4,3 +4,4 @@ export * from './merchant-signature.redis';
 export * from './fee.redis';
 export * from './profile.redis';
 export * from './token.redis';
+export * from './redis.health';

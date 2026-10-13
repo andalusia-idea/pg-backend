@@ -6,6 +6,8 @@ import { FeeRedis } from './fee.redis';
 import { ConfigModule } from '@nestjs/config';
 import { ProfileRedis } from './profile.redis';
 import { TokenRedis } from './token.redis';
+import { TerminusModule } from '@nestjs/terminus';
+import { RedisHealthIndicator } from './redis.health';
 
 @Global()
 @Module({
@@ -16,6 +18,7 @@ import { TokenRedis } from './token.redis';
     FeeRedis,
     ProfileRedis,
     TokenRedis,
+    RedisHealthIndicator,
   ],
   exports: [
     RedisProvider,
@@ -23,7 +26,9 @@ import { TokenRedis } from './token.redis';
     FeeRedis,
     ProfileRedis,
     TokenRedis,
+    RedisHealthIndicator,
   ],
-  imports: [ConfigModule],
+  // TerminusModule for HealthIndicatorService, which RedisHealthIndicator needs.
+  imports: [ConfigModule, TerminusModule],
 })
 export class RedisModule {}

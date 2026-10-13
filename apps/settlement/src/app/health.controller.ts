@@ -10,6 +10,7 @@ import {
   PRISMA_SLAVE_TRANSACTION_PROVIDER_KEY,
 } from '../database';
 import { PrismaClient as PrismaClientTransaction } from '@transaction/prisma';
+import { RedisHealthIndicator } from '@app/redis';
 
 /** How long a pool gets to answer before it counts as down. */
 const PING_TIMEOUT_MS = 1000;
@@ -36,6 +37,7 @@ const PING_TIMEOUT_MS = 1000;
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
+    private readonly redisHealth: RedisHealthIndicator,
     private readonly prismaHealth: PrismaHealthIndicator,
     @Inject(PRISMA_MASTER_TRANSACTION_PROVIDER_KEY)
     private readonly prismaMaster: PrismaClientTransaction,
@@ -47,6 +49,8 @@ export class HealthController {
   @HealthCheck()
   check(): Promise<HealthCheckResult> {
     return this.health.check([
+      () => this.redisHealth.pingCheck('redis', PING_TIMEOUT_MS),
+
       () =>
         this.prismaHealth.pingCheck(
           'prisma-transaction-master',
