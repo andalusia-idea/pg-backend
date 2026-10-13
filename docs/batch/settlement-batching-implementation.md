@@ -1346,6 +1346,25 @@ purchase is still unclaimed afterwards.
 no work itself. Both pods firing it is harmless because of
 `@@unique([merchantId, paymentMethodName, dueAt])` — catch `P2002` and move on.
 
+`SettlementRun.createdBy` is NOT NULL, so this insert will not compile without a
+principal. Use the one Step 7.2 already pins for this job —
+`MACHINE_USER_ID.SCHEDULER_01`, id 11 — not `SYSTEM_USER_ID`, which is for
+webhooks. Worth giving it a name rather than repeating the trailing comment at
+every call site:
+
+```ts
+/** apps/settlement's enqueuer and runner - the id Step 7.2 calls the batch runner. */
+export const SETTLEMENT_RUNNER_USER_ID = MACHINE_USER_ID.SCHEDULER_01;
+```
+
+Pass it explicitly on the insert. This model is out of `AUDITED_MODELS` (see
+Step 8), so nothing fills the column for you — and a `@Cron` has no CLS context
+to fill it from anyway, which is the same reason Step 7.2 wraps each job run in
+`cls.run()` for everything *else* it writes.
+
+A human-triggered run from the dashboard (Step 12) passes that person's real
+`auth.User.id` instead. That distinction is the whole point of the column.
+
 **The runner** claims one run at a time:
 
 ```sql
