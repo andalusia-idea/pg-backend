@@ -2,6 +2,29 @@
 import { Prisma } from '@transaction/prisma';
 import { ClsServiceManager } from 'nestjs-cls';
 
+/**
+ * Models whose `createdBy` / `updatedBy` / `deletedBy` this extension fills in
+ * from the CLS request context. Mutable, human- or webhook-driven records only.
+ *
+ * **Deliberately absent**, and not an oversight to tidy up: `BalanceEntry`,
+ * `BalanceSnapshot`, `BalanceAdjustment`, `SettlementRun`, `SettlementBatch`.
+ *
+ * Adding any of them would throw on the first insert, because
+ * `creationAuditFields` injects `createdAt` unconditionally and the balance
+ * tables have no such column. But the real reasons are upstream of that:
+ *
+ * - The append-only tables are never updated or soft-deleted. The *absence* of
+ *   update columns is the integrity statement - a ledger entry is reversed by a
+ *   new entry, never edited - so adding them would weaken a guarantee rather
+ *   than add an audit.
+ * - These rows are written by crons and webhooks, which have no HTTP request and
+ *   therefore no CLS context unless explicitly wrapped in `cls.run()`. Without
+ *   it `getAuditUserId()` returns undefined and `createdBy` is silently dropped:
+ *   a crash on a NOT NULL column, an unnoticed NULL otherwise. Those writers
+ *   pass `createdBy` explicitly - see `SYSTEM_USER_ID` and `MACHINE_USER_ID`.
+ * - `SettlementRun` is mutable, but its transitions are raw SQL that this
+ *   extension cannot intercept at all.
+ */
 const AUDITED_MODELS = new Set<string>([
   'TopUpTransaction',
   'TopupFeeDetail',

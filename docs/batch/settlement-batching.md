@@ -238,7 +238,7 @@ of the cases you described, and `FIXED_DELAY` is the separate "T+N" one.
 model MerchantSettlementPolicy {
   id                Int     @id @default(autoincrement())
   merchantId        Int
-  paymentMethodName String? // null = the merchant's default for everything
+  paymentMethodName String  @default("*") // '*' = the merchant's default for everything
 
   mode SettlementModeEnum
 
@@ -274,7 +274,7 @@ merchant settlement to that would be a worse promise than we make today.
 
 ```sql
 -- settle everything paid between 08:00 and 10:00
-WHERE paid_at >= '08:00' AND paid_at < '10:00'
+WHERE "paidAt" >= '08:00' AND "paidAt" < '10:00'
 ```
 
 A customer pays at **09:59**. The provider's webhook reaches us at **10:05** —
@@ -287,17 +287,17 @@ merchant's money, or write extra code just for stragglers.
 ### The claim way
 
 ```sql
-UPDATE transaction.purchase_transaction
-SET settlement_batch_id = $batchId,
-    merchant_settled_at = now()
-WHERE merchant_id = $merchantId
-  AND status = 'SUCCESS'
-  AND settlement_batch_id IS NULL        -- <<< this line is the whole trick
+UPDATE "transaction"."PurchaseTransaction"
+SET "batchSettlementId" = $batchId,
+    "settlementAt" = now()
+WHERE "merchantId" = $merchantId
+  AND "status" = 'SUCCESS'
+  AND "batchSettlementId" IS NULL        -- <<< this line is the whole trick
   AND <eligible under the merchant's policy>
-RETURNING id, net_nominal;
+RETURNING "id", "netNominal";
 ```
 
-`settlement_batch_id IS NULL` means **"has nobody settled this yet?"** A row can
+`batchSettlementId IS NULL` means **"has nobody settled this yet?"** A row can
 only be claimed once, ever, because claiming it fills in the column. Run the same
 statement twice and the second run claims nothing and returns no rows.
 
@@ -519,10 +519,19 @@ All five resolved 21 Sep 2026. Build details in
 [settlement-batching-implementation.md](settlement-batching-implementation.md).
 
 1. **Per-method batches: supported, but per-merchant is the normal case.**
-   `MerchantSettlementPolicy.paymentMethodName` stays nullable; `null` is the
-   merchant's default and most merchants will only ever have that row. A
-   per-method override is resolved most-specific-first, and produces its own
-   batch. Build the resolution properly, expect it to be rarely used.
+   `MerchantSettlementPolicy.paymentMethodName` is `'*'` for the merchant's
+   default, and most merchants will only ever have that row. A per-method
+   override is resolved most-specific-first, and produces its own batch. Build
+   the resolution properly, expect it to be rarely used.
+
+   It was going to be nullable, with `null` as the default. Don't: any
+   `@@unique([merchantId, paymentMethodName])` on this table would then fail to
+   stop a second default policy for the same merchant, because Postgres counts
+   NULLs as distinct — and two default policies make most-specific-first
+   resolution ambiguous. `SettlementRun` had the identical bug and the same fix;
+   the measurement is in
+   [settlement-batching-implementation.md](settlement-batching-implementation.md),
+   Step 8.
 
 2. **Agents settle on the merchant's schedule.** Agents have no transactions of
    their own — an agent's income is a profit share on *merchant* transactions,

@@ -112,3 +112,13 @@ export const BalanceSourceTypeEnum = {
 } as const
 
 export type BalanceSourceTypeEnum = (typeof BalanceSourceTypeEnum)[keyof typeof BalanceSourceTypeEnum]
+
+
+export const SettlementRunStatusEnum = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  DONE: 'DONE',
+  FAILED: 'FAILED'
+} as const
+
+export type SettlementRunStatusEnum = (typeof SettlementRunStatusEnum)[keyof typeof SettlementRunStatusEnum]

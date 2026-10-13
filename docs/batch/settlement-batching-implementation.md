@@ -24,8 +24,9 @@ for it to run.
 | 5 | `PAYIN_CAPTURED` from the purchase webhook | ✅ `e7aadc5` |
 | 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
 | 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
-| 8 | `SettlementRun` + `SettlementBatch` | next |
-| 9–15 | Policy, the claim, enqueuer, dashboard, export, comparison, cleanup | planned |
+| 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ pending commit |
+| 9 | Policy and eligibility | next |
+| 10–15 | The claim, enqueuer, dashboard, export, comparison, cleanup | planned |
 
 Both `TODO(balance-ledger)` markers are gone, and the overdraw race
 ([D17](../engine/dashboard-migration.md)) is closed structurally rather than by
@@ -1039,10 +1040,11 @@ migrations live outside the app that owns the tables:
 model SettlementRun {
   id                Int      @id @default(autoincrement())
   merchantId        Int
-  paymentMethodName String?  /// null = the merchant's default policy
+  /// `*` = the merchant's default policy, i.e. every payment method at once.
+  paymentMethodName String   @default("*")
   dueAt             DateTime @db.Timestamptz(6)
 
-  status SettlementRunStatusEnum /// PENDING | RUNNING | DONE | FAILED
+  status SettlementRunStatusEnum @default(PENDING) /// PENDING | RUNNING | DONE | FAILED
 
   claimedBy     String?   @db.VarChar(100) /// pod identity
   claimedAt     DateTime? @db.Timestamptz(6)
@@ -1053,6 +1055,7 @@ model SettlementRun {
   batches SettlementBatch[]
 
   /// Makes the enqueuer safe to run on both pods - the second insert loses.
+  /// Load-bearing only because `paymentMethodName` is NOT NULL; see below.
   @@unique([merchantId, paymentMethodName, dueAt])
   @@index([status, dueAt])
   @@schema("settlement")
@@ -1085,6 +1088,43 @@ One run can produce several batches because of the 500-transaction cap.
 `SettlementRunStatusEnum` needs `@@schema("settlement")` too — Prisma requires
 every enum in a multi-schema datasource to declare one.
 
+### Why `paymentMethodName` is `'*'` and not `NULL`
+
+`null = the merchant's default policy` reads better, and it was written that way
+first. It makes the `@@unique` above a lie.
+
+Postgres counts NULLs as **distinct** in a unique index, so two rows that agree
+on `merchantId` and `dueAt` and are both NULL on the method do not collide —
+they both insert. And the default policy is the common case, so the constraint
+was inert for precisely the rows it existed to protect. Measured on 17.4 before
+the fix:
+
+```
+pg=17.4  indnullsnotdistinct=f
+rowsWithNullMethod=2        <- both inserts succeeded
+nonNullDup=REJECTED         <- the same pair with 'QRIS' collided correctly
+```
+
+The damage would have been mild rather than financial — a second run claims
+`batchSettlementId IS NULL` rows the first already holds, finds none under
+`SKIP LOCKED`, and finishes `DONE` with no batch — but duplicate runs for one
+merchant-day are exactly the kind of thing the constraint was supposed to make
+impossible.
+
+Postgres 15+ can express this as `NULLS NOT DISTINCT`. Prisma cannot, so taking
+that route means a hand-written unique index and a constraint the generator no
+longer owns. A non-nullable sentinel keeps it all in `schema.prisma`, at the
+cost of one magic string. After the change, the duplicate is rejected and both
+defaults land:
+
+```
+paymentMethodName=*  status=PENDING
+duplicate default-policy run: REJECTED
+```
+
+Anything reading `paymentMethodName` must now compare against `'*'` rather than
+test for NULL — see the claim query in Step 10.
+
 ### Housekeeping — two strings that are easy to miss
 
 **The dashboard merge script hardcodes its schema list.**
@@ -1108,18 +1148,45 @@ npm run prisma:merge:dashboard && npm run prisma:generate:dashboard
 
 ### The claim index
 
-The claim query in Step 10 filters on `settlementBatchId IS NULL`. A partial
+The claim query in Step 10 filters on `batchSettlementId IS NULL`. A partial
 index stays small forever, because rows leave it as they are settled:
 
 ```sql
-CREATE INDEX purchase_unsettled_idx
-  ON transaction.purchase_transaction (merchant_id, payment_method_name)
-  WHERE settlement_batch_id IS NULL
-    AND status = 'SUCCESS'
-    AND deleted_at IS NULL;
+CREATE INDEX "PurchaseTransaction_unsettled_idx"
+  ON "transaction"."PurchaseTransaction" ("merchantId", "paymentMethodName")
+  WHERE
+    "batchSettlementId" IS NULL
+    AND "status" = 'SUCCESS'
+    AND "deletedAt" IS NULL;
 ```
 
 Write this as raw SQL in the migration — Prisma cannot express a partial index.
+There is no schema change to diff, so `migrate dev` generates nothing; get an
+empty migration and fill it in:
+
+```bash
+npx dotenv -e apps/transaction/.env.local -- prisma migrate dev \
+  --create-only --name claim_index --config ./apps/transaction/prisma.config.ts
+```
+
+**Quote every identifier.** This repo uses no `@map`, so the table really is
+`"PurchaseTransaction"` with camelCase columns, and Postgres folds anything
+unquoted to lower case — an unquoted `merchantId` fails with `column
+"merchantid" does not exist`. The first draft of this section had both the
+snake_case names and the column spelled `settlement_batch_id`; the real column
+is **`batchSettlementId`**, and the settled-at timestamp is **`settlementAt`**.
+
+**Prisma will not drop it.** Raw DDL in a migration often gets reverted by the
+next `migrate dev`, since the diff runs from the migration history towards
+`schema.prisma` and the index appears only in the former. Checked by replaying
+every migration into a throwaway shadow database and diffing that state against
+the schema: `-- This is an empty migration.`, with the index confirmed present
+in the shadow. Safe to leave out of `schema.prisma`.
+
+`ORDER BY "paidAt"` in Step 10 is *not* covered by this index, so expect a sort
+node. Whether that is worth a third index column depends on how many unsettled
+rows a real merchant accumulates — settle it with an `EXPLAIN` at Step 10 rather
+than guessing the column order now.
 
 ---
 
@@ -1149,7 +1216,7 @@ That column is deleted in Step 15, so a registration path still writing it would
 break the moment it goes.
 
 In the same transaction, create a default `MerchantSettlementPolicy` instead:
-`paymentMethodName: null`, `mode: FOLLOW_UPSTREAM`, `effectiveFrom: now()`. Then
+`paymentMethodName: '*'`, `mode: FOLLOW_UPSTREAM`, `effectiveFrom: now()`. Then
 remove `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
 `CreateMerchantDto.settlementInterval`, and give the frontend the mode enum in
 their place.
@@ -1160,9 +1227,14 @@ but an explicit row is what makes their terms visible and editable in the admin
 UI rather than implied by a default buried in code.
 
 **Resolution is most-specific-first**: a row matching
-`(merchantId, paymentMethodName)` wins over `(merchantId, null)`. If neither
+`(merchantId, paymentMethodName)` wins over `(merchantId, '*')`. If neither
 exists, fall back to a system default of `FOLLOW_UPSTREAM` rather than settling
 nothing — a merchant with no policy row should still get paid.
+
+Give this table the same `'*'` sentinel and the same `@@unique([merchantId,
+paymentMethodName])` as `SettlementRun`, for the same reason: nullable means two
+default policies can coexist for one merchant, and most-specific-first then has
+no single answer. See *Why `paymentMethodName` is `'*'` and not `NULL`* in Step 8.
 
 Also filter on `effectiveFrom <= now < effectiveTo`.
 
@@ -1203,22 +1275,35 @@ Inside one `$transaction`:
 **1. Claim, capped.**
 
 ```sql
-UPDATE transaction.purchase_transaction
-SET settlement_batch_id = $batchId, merchant_settled_at = now()
-WHERE id IN (
-  SELECT id FROM transaction.purchase_transaction
-  WHERE merchant_id = $merchantId
-    AND status = 'SUCCESS'
-    AND settlement_batch_id IS NULL
-    AND deleted_at IS NULL
-    AND ($paymentMethod::text IS NULL OR payment_method_name = $paymentMethod)
+UPDATE "transaction"."PurchaseTransaction"
+SET "batchSettlementId" = $batchId, "settlementAt" = now()
+WHERE "id" IN (
+  SELECT "id" FROM "transaction"."PurchaseTransaction"
+  WHERE "merchantId" = $merchantId
+    AND "status" = 'SUCCESS'
+    AND "batchSettlementId" IS NULL
+    AND "deletedAt" IS NULL
+    AND ($paymentMethod = '*' OR "paymentMethodName" = $paymentMethod)
     AND <eligibility predicate from Step 9>
-  ORDER BY paid_at
+  ORDER BY "paidAt"
   LIMIT 500
   FOR UPDATE SKIP LOCKED
 )
-RETURNING id, paid_at, nominal, net_nominal;
+RETURNING "id", "paidAt", "nominal", "netNominal";
 ```
+
+Three things in there are easy to get wrong:
+
+- **Quote every identifier.** No `@map` in this repo means PascalCase tables and
+  camelCase columns, and Postgres folds unquoted names to lower case. Alias any
+  computed column explicitly too (`AS "amount"`) — the same trap that produced
+  `holdertype` and `coalesce` in Step 4.
+- **The claim column is `batchSettlementId`**, and the timestamp beside it is
+  `settlementAt`. Earlier drafts of this document called them
+  `settlement_batch_id` and `merchant_settled_at`; neither exists.
+- **`$paymentMethod` is compared to `'*'`, not tested for NULL.** The run's
+  method is NOT NULL since Step 8 — see *Why `paymentMethodName` is `'*'` and
+  not `NULL`* there.
 
 Claiming zero rows is normal and not an error — most runs for most merchants
 will find nothing. Finish the run as `DONE` with no batch.
@@ -1239,7 +1324,7 @@ Two things worth being deliberate about:
 **Why the eligibility predicate is in SQL.** Fetching candidates and filtering
 in JavaScript means reading every unsettled row of a busy merchant into memory
 to discard most of them. For `FIXED_DELAY` and `SCHEDULED` the predicate is
-plain date arithmetic on `paid_at`. For `FOLLOW_UPSTREAM` it is a lookup per
+plain date arithmetic on `paidAt`. For `FOLLOW_UPSTREAM` it is a lookup per
 (provider, method) — resolve those to concrete cutoff timestamps in JavaScript
 *before* the query, then pass them in as parameters.
 
@@ -1264,17 +1349,26 @@ no work itself. Both pods firing it is harmless because of
 **The runner** claims one run at a time:
 
 ```sql
-UPDATE settlement.settlement_run
-SET status = 'RUNNING', claimed_by = $1, claimed_at = now(), attempts = attempts + 1
-WHERE id = (
-  SELECT id FROM settlement.settlement_run
-  WHERE status = 'PENDING' AND due_at <= now()
-  ORDER BY due_at
+UPDATE "settlement"."SettlementRun"
+SET "status"    = 'RUNNING',
+    "claimedBy" = $1,
+    "claimedAt" = now(),
+    "attempts"  = "attempts" + 1
+WHERE "id" = (
+  SELECT "id" FROM "settlement"."SettlementRun"
+  WHERE "status" = 'PENDING' AND "dueAt" <= now()
+  ORDER BY "dueAt"
   FOR UPDATE SKIP LOCKED
   LIMIT 1
 )
 RETURNING *;
 ```
+
+`$1` is a **pod identity**, not a `MACHINE_USER_ID` — see the note below.
+
+Note also that this statement is raw SQL, so the Prisma audit extension does
+not see it. Nothing here populates `updatedAt` / `updatedBy`, which is why
+`SettlementRun` is deliberately absent from `AUDITED_MODELS`.
 
 Loop until it returns nothing.
 
@@ -1285,6 +1379,27 @@ settled is no longer `NULL`, so a re-run picks up only what is left.
 
 Give up after `attempts >= 3` and mark it `FAILED` with the reason, so a
 genuinely broken merchant does not spin forever.
+
+### `claimedBy` is a pod identity, not a `MACHINE_USER_ID`
+
+Tempting to reach for `MACHINE_USER_ID` here, since that is what every other
+"who did this" column in the repo holds. It cannot work: a machine principal
+identifies a *role*, and every settlement pod authenticates as the same one. Run
+three pods and all three would write the identical id, leaving the column unable
+to answer the only question anyone asks of it — *which process was holding this
+run when it died, and whose logs do I read?* A lease column has to distinguish
+instances, so it holds something per-process: the Kubernetes pod name, or
+`hostname:pid` outside Kubernetes.
+
+Note what this means for the sweeper: it resets on `claimedAt` age alone and
+never reads `claimedBy`, so `claimedBy` is diagnostic rather than load-bearing.
+Nothing in the repo exposes a pod identity yet; this step has to add it to
+configuration, defaulting to `os.hostname()`.
+
+The audit question underneath this is real, though: `SettlementRun` has no
+`createdAt` or `createdBy` at all, so there is nowhere to record that a human
+triggered a run from the dashboard rather than the enqueuer. That belongs on the
+model in Step 8, not in this column.
 
 **Verify**: kill the pod mid-run (or throw deliberately after the first batch),
 confirm the sweeper resets it and the retry settles only the remainder.

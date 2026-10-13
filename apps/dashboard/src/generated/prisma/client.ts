@@ -230,3 +230,20 @@ export type BalanceSnapshot = Prisma.BalanceSnapshotModel
  * 
  */
 export type BalanceAdjustment = Prisma.BalanceAdjustmentModel
+/**
+ * Model SettlementRun
+ * Tables owned by apps/settlement, in their own Postgres schema so it is
+ * obvious at a glance which app writes them.
+ * 
+ * Their MIGRATIONS live here rather than in apps/settlement, deliberately:
+ * the DSN's default schema is `transaction`, so `transaction._prisma_migrations`
+ * is the one history covering both. That also lets apps/settlement import
+ * `@transaction/prisma` instead of maintaining a merged copy of these models -
+ * see Step 7.0. Do not look for apps/settlement/prisma/; there isn't one.
+ */
+export type SettlementRun = Prisma.SettlementRunModel
+/**
+ * Model SettlementBatch
+ * 
+ */
+export type SettlementBatch = Prisma.SettlementBatchModel

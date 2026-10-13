@@ -8,7 +8,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["transaction"]
+  schemas  = ["transaction", "settlement"]
 }
 
 model PurchaseTransaction {
@@ -38,6 +38,12 @@ model PurchaseTransaction {
   // the QR does, and a fabricated expiry would be a lie we then serve back.
   expiresAt DateTime? @db.Timestamptz(6)
 
+  // settlement.SettlementBatch.id, but a plain Int rather than a relation: the
+  // claim in apps/settlement selects on `IS NULL` and never traverses the link,
+  // and the dashboard reads a batch's rows by this same column. The cost is
+  // that nothing stops a batch row being deleted out from under these, which is
+  // acceptable only because batches are append-only records. Kept consistent
+  // with batchReconciliationId below, which has no table behind it yet.
   batchSettlementId     Int?
   settlementAt          DateTime? @db.Timestamptz(6)
   batchReconciliationId Int?
@@ -535,60 +541,6 @@ enum TransactionTypeEnum {
   @@schema("transaction")
 }
 
-enum BalanceHolderTypeEnum {
-  MERCHANT
-  AGENT
-  INTERNAL
-
-  @@schema("transaction")
-}
-
-enum BalanceBucketEnum {
-  PENDING /// Payment succeeded; not settled to the holder yet
-  AVAILABLE /// Spendable now
-  RESERVED /// Committed to a payout that is in flight
-
-  @@schema("transaction")
-}
-
-enum BalanceDirectionEnum {
-  CREDIT
-  DEBIT
-
-  @@schema("transaction")
-}
-
-enum BalanceReasonEnum {
-  PAYIN_CAPTURED
-  /// Refund or chargeback: a new entry reversing PAYIN_CAPTURED, never an edit.
-  /// Note the spelling - REVERSED, not RESERVED. Reservation is a payout
-  /// concept (PAYOUT_RESERVED below); there is no such thing as reserving a
-  /// payin, and the two words transpose easily enough to type-check silently.
-  PAYIN_REVERSED
-
-  PAYOUT_RESERVED
-  PAYOUT_COMPLETED
-  PAYOUT_FAILED
-
-  MERCHANT_SETTLED
-  TOPUP_APPROVED
-  MANUAL_ADJUSTMENT
-  OPENING_BALANCE
-
-  @@schema("transaction")
-}
-
-enum BalanceSourceTypeEnum {
-  PURCHASE
-  DISBURSEMENT
-  WITHDRAW
-  TOPUP
-  ADJUSTMENT
-  OPENING
-
-  @@schema("transaction")
-}
-
 model BalanceEntry {
   id BigInt @id @default(autoincrement())
 
@@ -659,4 +611,166 @@ model BalanceAdjustment {
 
   @@index([holderType, holderId])
   @@schema("transaction")
+}
+
+enum BalanceHolderTypeEnum {
+  MERCHANT
+  AGENT
+  INTERNAL
+
+  @@schema("transaction")
+}
+
+enum BalanceBucketEnum {
+  PENDING /// Payment succeeded; not settled to the holder yet
+  AVAILABLE /// Spendable now
+  RESERVED /// Committed to a payout that is in flight
+
+  @@schema("transaction")
+}
+
+enum BalanceDirectionEnum {
+  CREDIT
+  DEBIT
+
+  @@schema("transaction")
+}
+
+enum BalanceReasonEnum {
+  PAYIN_CAPTURED
+  /// Refund or chargeback: a new entry reversing PAYIN_CAPTURED, never an edit.
+  /// Note the spelling - REVERSED, not RESERVED. Reservation is a payout
+  /// concept (PAYOUT_RESERVED below); there is no such thing as reserving a
+  /// payin, and the two words transpose easily enough to type-check silently.
+  PAYIN_REVERSED
+
+  PAYOUT_RESERVED
+  PAYOUT_COMPLETED
+  PAYOUT_FAILED
+
+  MERCHANT_SETTLED
+  TOPUP_APPROVED
+  MANUAL_ADJUSTMENT
+  OPENING_BALANCE
+
+  @@schema("transaction")
+}
+
+enum BalanceSourceTypeEnum {
+  PURCHASE
+  DISBURSEMENT
+  WITHDRAW
+  TOPUP
+  ADJUSTMENT
+  OPENING
+
+  @@schema("transaction")
+}
+
+/// Tables owned by apps/settlement, in their own Postgres schema so it is
+/// obvious at a glance which app writes them.
+///
+/// Their MIGRATIONS live here rather than in apps/settlement, deliberately:
+/// the DSN's default schema is `transaction`, so `transaction._prisma_migrations`
+/// is the one history covering both. That also lets apps/settlement import
+/// `@transaction/prisma` instead of maintaining a merged copy of these models -
+/// see Step 7.0. Do not look for apps/settlement/prisma/; there isn't one.
+model SettlementRun {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  /// `*` means the merchant's default policy - every payment method at once.
+  ///
+  /// A sentinel rather than NULL, deliberately. Postgres counts NULLs as
+  /// distinct in a unique index, so while this was `String?` the `@@unique`
+  /// below was inert for exactly the common case: two pods enqueueing the same
+  /// default-policy run both inserted. Measured on 17.4 - two identical NULL
+  /// rows accepted, the same pair with 'QRIS' rejected. Postgres 15+ can say
+  /// NULLS NOT DISTINCT, but Prisma cannot express it, which would mean a
+  /// hand-written index and a constraint the generator no longer owns.
+  paymentMethodName String                  @default("*")
+  dueAt             DateTime                @db.Timestamptz(6)
+  status            SettlementRunStatusEnum @default(PENDING)
+
+  /// Which *process instance* holds the lease - a pod name, or `hostname:pid`
+  /// outside Kubernetes. Not a `MACHINE_USER_ID`: a machine principal names a
+  /// role, and every settlement pod authenticates as the same one, so storing it
+  /// here would write an identical value on every row and answer nothing. The
+  /// question this column exists for is "which process died holding this run,
+  /// and whose logs do I read", which only an instance identity can answer.
+  ///
+  /// Deliberately disposable. Pod names change on every deploy, nothing joins on
+  /// it, and the sweeper resets on `claimedAt` age without ever reading it - so a
+  /// name that no longer resolves to a living pod is itself the useful signal.
+  claimedBy         String?           @db.VarChar(100)
+  claimedAt         DateTime?         @db.Timestamptz(6)
+  finishedAt        DateTime?         @db.Timestamptz(6)
+  failureReason     String?           @db.VarChar(1000)
+  attempts          Int               @default(0)
+  settlementBatches SettlementBatch[]
+
+  /// When the run was *enqueued*, which is not `dueAt` - the gap between them is
+  /// how you spot an enqueuer that stopped firing.
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  /// The principal that caused this run to exist: a `MACHINE_USER_ID` for the
+  /// enqueuer, a real `auth.User.id` once the dashboard can trigger one by hand.
+  /// That second case is the whole reason this column is worth having - it is
+  /// what separates "the cron did this" from "someone clicked the button at 2am"
+  /// on an operation that moves money.
+  createdBy Int? @db.Integer()
+
+  // No updatedAt/updatedBy/deletedAt/deletedBy, and this model is deliberately
+  // absent from AUDITED_MODELS. Two reasons, both load-bearing:
+  //
+  // 1. The claim and the sweeper in apps/settlement are raw SQL, which the
+  //    Prisma audit extension cannot see - it hooks `query.$allModels`. Generic
+  //    update columns would go stale on every status transition, and a row whose
+  //    `updatedAt` lies is worse than one that never claimed to have it. The
+  //    lifecycle is already recorded, and better, by claimedAt / finishedAt /
+  //    attempts / failureReason.
+  // 2. Auto-injection needs `authInfo.userId` in CLS. A @Cron has no request, so
+  //    without a cls.run() wrapper `getAuditUserId()` returns undefined and
+  //    `creationAuditFields` silently drops `createdBy`. Settlement writes are
+  //    all machine-driven, so createdBy is passed explicitly instead - the same
+  //    call the balance tables make, for the same reason.
+  //
+  // Adding this model to AUDITED_MODELS without the columns would throw outright:
+  // `creationAuditFields` injects `createdAt` unconditionally.
+
+  /// Makes the enqueuer safe to run on both pods - the second insert loses.
+  /// Load-bearing only because `paymentMethodName` is NOT NULL; see its comment.
+  @@unique([merchantId, paymentMethodName, dueAt])
+  @@index([status, dueAt])
+  @@schema("settlement")
+}
+
+model SettlementBatch {
+  id    Int @id @default(autoincrement())
+  runId Int
+
+  /// Descriptive, derived from what was claimed - never used to select.
+  sweptFrom DateTime? @db.Timestamptz(6)
+  sweptTo   DateTime? @db.Timestamptz(6)
+
+  transactionCount Int     @default(0)
+  grossAmount      Decimal @default(0) @db.Decimal(18, 2)
+  feeAmount        Decimal @default(0) @db.Decimal(18, 2)
+  netAmount        Decimal @default(0) @db.Decimal(18, 2)
+
+  postedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  run SettlementRun @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+  @@schema("settlement")
+}
+
+enum SettlementRunStatusEnum {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+
+  @@schema("settlement")
 }

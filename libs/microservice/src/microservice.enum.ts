@@ -206,3 +206,12 @@ export const FeeTypeEnum = {
   MERCHANT: 'MERCHANT',
 } as const;
 export type FeeTypeEnum = (typeof FeeTypeEnum)[keyof typeof FeeTypeEnum];
+
+export const SettlementRunStatusEnum = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  DONE: 'DONE',
+  FAILED: 'FAILED',
+} as const;
+export type SettlementRunStatusEnum =
+  (typeof SettlementRunStatusEnum)[keyof typeof SettlementRunStatusEnum];

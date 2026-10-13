@@ -82,7 +82,9 @@ export const ModelName = {
   InternalBalanceLog: 'InternalBalanceLog',
   BalanceEntry: 'BalanceEntry',
   BalanceSnapshot: 'BalanceSnapshot',
-  BalanceAdjustment: 'BalanceAdjustment'
+  BalanceAdjustment: 'BalanceAdjustment',
+  SettlementRun: 'SettlementRun',
+  SettlementBatch: 'SettlementBatch'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -735,6 +737,39 @@ export const BalanceAdjustmentScalarFieldEnum = {
 } as const
 
 export type BalanceAdjustmentScalarFieldEnum = (typeof BalanceAdjustmentScalarFieldEnum)[keyof typeof BalanceAdjustmentScalarFieldEnum]
+
+
+export const SettlementRunScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  paymentMethodName: 'paymentMethodName',
+  dueAt: 'dueAt',
+  status: 'status',
+  claimedBy: 'claimedBy',
+  claimedAt: 'claimedAt',
+  finishedAt: 'finishedAt',
+  failureReason: 'failureReason',
+  attempts: 'attempts',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type SettlementRunScalarFieldEnum = (typeof SettlementRunScalarFieldEnum)[keyof typeof SettlementRunScalarFieldEnum]
+
+
+export const SettlementBatchScalarFieldEnum = {
+  id: 'id',
+  runId: 'runId',
+  sweptFrom: 'sweptFrom',
+  sweptTo: 'sweptTo',
+  transactionCount: 'transactionCount',
+  grossAmount: 'grossAmount',
+  feeAmount: 'feeAmount',
+  netAmount: 'netAmount',
+  postedAt: 'postedAt'
+} as const
+
+export type SettlementBatchScalarFieldEnum = (typeof SettlementBatchScalarFieldEnum)[keyof typeof SettlementBatchScalarFieldEnum]
 
 
 export const SortOrder = {
