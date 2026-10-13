@@ -1,7 +1,9 @@
 import { MerchantSignatureConfig } from '@app/configuration';
-import { MERCHANT_SECRET_CLEANUP_USER_ID } from '@app/microservice';
+import {
+  AUDIT_USER_ID_PATH,
+  MERCHANT_SECRET_CLEANUP_USER_ID,
+} from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
-import { AUDIT_USER_ID_PATH } from '../database/audit.constant';
 import type { PrismaClient } from '@auth/prisma';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';

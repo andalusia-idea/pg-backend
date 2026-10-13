@@ -5,6 +5,7 @@ import {
   MerchantSignatureAuthClient,
   PaymentMethodNameEnum,
   ProviderNameEnum,
+  getAuditUserId,
   SYSTEM_USER_ID,
   TransactionStatusEnum,
   TransactionTypeEnum,
@@ -487,28 +488,50 @@ export class PurchaseWebhookService {
   }
 
   /** One row per party. Agents are itemised rather than collapsed to a total. */
+  /**
+   * `createdBy` is set here, on every row, rather than left to the audit
+   * extension.
+   *
+   * These go in as a **nested** create under the parent's `update`, and the
+   * extension only merges audit fields into the top level - it sees one `update`
+   * on `PurchaseTransaction` and never walks into the relation payload. So the
+   * parent row gets stamped and these do not, which is especially easy to miss
+   * because `PurchaseFeeDetail` *is* in `AUDITED_MODELS` and therefore looks
+   * covered.
+   *
+   * The principal comes from CLS so this does not care which path it is on: the
+   * callback interceptor puts the provider's id there, `MerchantSignatureGuard`
+   * puts the merchant's. `SYSTEM_USER_ID` only if neither did, which would mean
+   * a caller with no context at all rather than a fee attributable to anyone.
+   */
   private feeDetails(
     fee: FeeCalculationResultDto,
   ): Prisma.PurchaseFeeDetailCreateWithoutTransactionInput[] {
+    const createdBy = getAuditUserId() ?? SYSTEM_USER_ID;
+
     return [
       {
+        createdBy,
         type: FeeTypeEnum.MERCHANT,
         nominal: new Decimal(fee.merchantFee.nominal),
         feePercentage: new Decimal(fee.merchantFee.feePercentage),
       },
       {
+        createdBy,
         type: FeeTypeEnum.PROVIDER,
         nominal: new Decimal(fee.providerFee.nominal),
         feeFixed: new Decimal(fee.providerFee.feeFixed),
         feePercentage: new Decimal(fee.providerFee.feePercentage),
       },
       {
+        createdBy,
         type: FeeTypeEnum.INTERNAL,
         nominal: new Decimal(fee.internalFee.nominal),
         feeFixed: new Decimal(fee.internalFee.feeFixed),
         feePercentage: new Decimal(fee.internalFee.feePercentage),
       },
       ...fee.agentFee.agents.map((agent) => ({
+        createdBy,
         type: FeeTypeEnum.AGENT,
         agentId: agent.agentId,
         nominal: new Decimal(agent.nominal),

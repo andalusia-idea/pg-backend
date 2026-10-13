@@ -1,6 +1,8 @@
-import { MERCHANT_SECRET_CLEANUP_USER_ID } from '@app/microservice';
+import {
+  AUDIT_USER_ID_PATH,
+  MERCHANT_SECRET_CLEANUP_USER_ID,
+} from '@app/microservice';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { AUDIT_USER_ID_PATH } from '../database/audit.constant';
 import { MerchantSecretCleanupService } from './merchant-secret-cleanup.service';
 
 const GRACE_SECONDS = 86_400;
@@ -13,7 +15,7 @@ describe('MerchantSecretCleanupService', () => {
   let service: MerchantSecretCleanupService;
 
   beforeEach(() => {
-    updateMany = jest.fn(async () => ({ count: 0 }));
+    updateMany = jest.fn(() => Promise.resolve({ count: 0 }));
     userIdDuringRun = undefined;
     clsSet = jest.fn((key: string, value: unknown) => {
       if (key === AUDIT_USER_ID_PATH) userIdDuringRun = value;
@@ -50,9 +52,9 @@ describe('MerchantSecretCleanupService', () => {
 
   it('sets the principal before touching the database', async () => {
     let userIdAtUpdate: unknown;
-    updateMany.mockImplementation((async () => {
+    updateMany.mockImplementation((() => {
       userIdAtUpdate = userIdDuringRun;
-      return { count: 0 };
+      return Promise.resolve({ count: 0 });
     }) as never);
 
     await service.clearExpiredPreviousSecrets();

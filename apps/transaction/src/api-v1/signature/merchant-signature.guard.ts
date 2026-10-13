@@ -1,5 +1,6 @@
 import { MerchantSignatureConfig } from '@app/configuration';
 import {
+  AUDIT_USER_ID_PATH,
   FilterMerchantSignatureValidationDto,
   HttpMethodEnum,
   isHttpMethodEnum,
@@ -91,6 +92,15 @@ export class MerchantSignatureGuard implements CanActivate {
     }
 
     this.cls.set(MERCHANT_USER_ID_KEY, result.userId);
+
+    // Same id, second key, on purpose. `MERCHANT_USER_ID_KEY` is read by the
+    // `@MerchantUserId()` parameter decorator; `AUDIT_USER_ID_PATH` is what the
+    // Prisma audit extension looks for when it stamps `createdBy`/`updatedBy`.
+    // Until this line existed the extension found nothing here, so every row the
+    // merchant API wrote - `PurchaseTransaction`, `DisbursementTransaction` and
+    // their fee details - was attributed to nobody, while the merchant's real
+    // `userId` sat in CLS one key away. Nullable columns, so it failed silently.
+    this.cls.set(AUDIT_USER_ID_PATH, result.userId);
     return true;
   }
 

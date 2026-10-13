@@ -7,12 +7,15 @@ import {
   Post,
   Req,
   Res,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Value } from '@sinclair/typebox/value';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { DisbursementWebhookService } from '../api-v1/disbursement';
 import { PurchaseWebhookService } from '../api-v1/purchase';
+import { ProviderNameEnum } from '@app/microservice';
+import { ProviderPrincipalInterceptor } from './provider-principal.interceptor';
 import {
   MotionPayBillerCallbackDto,
   MotionPayBillerCallbackSchema,
@@ -27,6 +30,10 @@ import {
 
 @ApiTags('Upstream Callback')
 @Controller('callback/motionpay')
+// These routes are unauthenticated, so no guard puts a principal in CLS and
+// everything they write would be attributed to nobody. Named per provider so
+// the audit trail says whose callback moved a row. See the interceptor.
+@UseInterceptors(new ProviderPrincipalInterceptor(ProviderNameEnum.MOTIONPAY))
 export class MotionPayCallbackController {
   private readonly logger = new Logger(MotionPayCallbackController.name);
 

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
+  AUDIT_USER_ID_PATH,
   MerchantException,
   MerchantSignatureFailureEnum,
 } from '@app/microservice';
@@ -73,6 +74,18 @@ describe('MerchantSignatureGuard', () => {
   it('accepts a well-formed request and records the merchant', async () => {
     await expect(guard.canActivate(httpContext(request()))).resolves.toBe(true);
     expect(clsSet).toHaveBeenCalledWith(MERCHANT_USER_ID_KEY, USER_ID);
+  });
+
+  /**
+   * The id goes into CLS twice under two keys, and the second one is easy to
+   * drop in a refactor because nothing on the merchant API reads it directly -
+   * the Prisma audit extension does, when it stamps `createdBy`/`updatedBy`.
+   * Without it every row the merchant API writes is attributed to nobody, and
+   * because those columns are nullable nothing complains.
+   */
+  it('records the merchant under the key the audit extension reads', async () => {
+    await expect(guard.canActivate(httpContext(request()))).resolves.toBe(true);
+    expect(clsSet).toHaveBeenCalledWith(AUDIT_USER_ID_PATH, USER_ID);
   });
 
   /**
