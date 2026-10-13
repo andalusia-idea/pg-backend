@@ -3,22 +3,45 @@
 Companion to [settlement-batching.md](settlement-batching.md), which covers
 *why*. This one is the build order.
 
-Written 22 Sep 2026 against the monorepo's actual state: `apps/transaction/src/api-v1/`
-has `purchase`, `disbursement`, `ping` and `signature` (no withdraw or topup —
-those are dashboard-side and stubbed), both webhook services carry a
-`TODO(balance-ledger)`, and no balance row is written anywhere in the monorepo
-today.
+Written 22 Sep 2026, **and kept current as each step lands** — where a step was
+built differently from how it was planned, the section says so rather than
+quietly reading as though it was always that way.
 
 Steps are ordered so each is independently verifiable and nothing is left
-half-wired between them. **Steps 1–6 need no new app** — they land in
-`apps/transaction` and `libs/`, and they are the ones that fix money bugs. The
-new `apps/settlement` does not appear until Step 7, when there is actually
-something for it to run.
+half-wired between them. **Steps 1–6 needed no new app** — they landed in
+`apps/transaction` and `libs/`, and they are the ones that fix money bugs.
+`apps/settlement` does not appear until Step 7, when there is finally something
+for it to run.
 
-> **Three corrections to the design doc, found while planning the build.** Each
-> is explained where it comes up: there are **no advisory locks** (Step 2), there
-> is **no `CHECK (amount >= 0)`** (Step 2), and `sourceType` is **its own enum**
-> rather than `TransactionTypeEnum` (Step 1).
+## Status
+
+| Step | What | State |
+|---|---|---|
+| 1 | `BalanceEntry` + `BalanceSnapshot` + `BalanceAdjustment` | ✅ `f7af945` |
+| 2 | `libs/balance` — `post()` and `reserve()` | ✅ `1f334d7` |
+| 3 | Dev fixtures through the posting service | ✅ `3150b7d` |
+| 4 | Nightly snapshot-versus-entries verification | ✅ `d5d7613` |
+| 5 | `PAYIN_CAPTURED` from the purchase webhook | ✅ `e7aadc5` |
+| 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
+| 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
+| 8 | `SettlementRun` + `SettlementBatch` | next |
+| 9–15 | Policy, the claim, enqueuer, dashboard, export, comparison, cleanup | planned |
+
+Both `TODO(balance-ledger)` markers are gone, and the overdraw race
+([D17](../engine/dashboard-migration.md)) is closed structurally rather than by
+locking — see Step 6.
+
+Also pinned along the way, because `BalanceEntry.createdBy` is NOT NULL and a
+webhook has no person behind it: the 6 roles and 20 machine principals now have
+fixed ids from the `machine_principals` migration, exposed as `ROLE_ID`,
+`MACHINE_USER_ID` and `SYSTEM_USER_ID` (Step 7.2).
+
+> **Corrections this document has absorbed**, each explained where it comes up:
+> there are **no advisory locks** (Step 2), there is **no `CHECK (amount >= 0)`**
+> (Step 2), `sourceType` is **its own enum** rather than `TransactionTypeEnum`
+> (Step 1), `PAYOUT_COMPLETED` **credits the internal and agent fees** rather
+> than being a bare reservation debit (Step 6.3), and the settlement app has a
+> **client per schema** rather than one borrowed client (Step 7.0).
 
 ---
 
@@ -297,12 +320,38 @@ are made rather than in a report a month later.
 ### 2.2 `post()`
 
 ```ts
-async post(tx: PrismaTransactionClient, movement: BalanceMovement): Promise<void>
+async post(tx: BalanceTx, movement: BalanceMovement): Promise<void>
 ```
 
 Takes an existing transaction client rather than opening its own — the caller
 decides the transaction boundary, because the whole point is that a balance
 write and the row that caused it commit together.
+
+`BalanceTx` is a one-line alias for `Prisma.TransactionClient` from
+`@transaction/prisma` — `Omit<PrismaClient, ITXClientDenyList>`, exactly what
+`prisma.$transaction(async (tx) => …)` hands the callback. That points a lib at
+an app, which is backwards, and `apps/dashboard` uses a different generated
+client over these same tables (Step 12). Deliberate for now: real Prisma types
+give the compile error when `createdBy` is missing, which is the enforcement
+these tables are absent from `AUDITED_MODELS` for. **Widening that single alias
+is the whole change** when a second client needs to call in.
+
+A root client still type-checks here, because TypeScript permits extra
+properties when assigning a variable — and passing one would let the entries and
+the snapshot commit separately, silently. So there is a runtime guard, and it
+checks **`$connect`, not `$transaction`**. Measured on Prisma 7.8:
+
+```
+         $transaction  $connect  $disconnect  $extends
+  root   present       present   present      present
+  tx     present       absent    absent       absent
+```
+
+The one property the type removes is the one that does not discriminate — the
+interactive-transaction client is a Proxy that still exposes `$transaction`.
+`$connect` is the honest test: only a client that owns a connection can open
+one. Worth knowing because the obvious guard is the broken one, and the spec
+written against the wrong assumption passed.
 
 For each leg, **sorted by `(holderType, holderId, bucket)`**:
 
@@ -635,6 +684,13 @@ row*; `BalanceService.reserve` means *hold the merchant's funds*. Having both in
 
 ### 6.3 Then the movements
 
+> **Corrected 12 Oct 2026.** Earlier drafts of this section showed
+> `PAYOUT_COMPLETED` as a bare `RESERVED | DEBIT`, which **loses the fee**. The
+> merchant pays `netNominal` and the recipient gets `nominal`; the difference is
+> the provider's cut plus our cut plus the agent's. Debiting the reservation
+> without crediting anyone made the internal and agent share vanish on every
+> payout. Caught during implementation, not by this document.
+
 **On create**, inside one `$transaction` with the row, before the upstream call:
 
 ```
@@ -643,11 +699,75 @@ MERCHANT 27 | RESERVED  | CREDIT | netNominal
 ```
 
 If `reserve()` returns `INSUFFICIENT_BALANCE`, throw before the provider call.
+Note `reserve()` **returns** that rather than throwing, so the result has to be
+checked — see 6.4.
 
-**On callback SUCCESS**: `RESERVED | DEBIT | netNominal`.
+**On callback SUCCESS** — the reservation is consumed *and* the fees it earned
+are paid out:
 
-**On callback FAILED**: `RESERVED | DEBIT` + `AVAILABLE | CREDIT` — the money
-comes back.
+```
+MERCHANT 27 | RESERVED  | DEBIT  | netNominal
+INTERNAL  0 | AVAILABLE | CREDIT | internalFee
+AGENT     5 | AVAILABLE | CREDIT | agentFee      (one leg per agent)
+```
+
+Three things make that the right shape:
+
+**`AVAILABLE`, not `PENDING`.** `PENDING` models "waiting for an upstream to
+settle", and this money came out of the merchant's *already settled* balance -
+there is nothing to wait for. It would also strand there: the settlement batch
+claims purchases and never disbursements, so a payout fee in `PENDING` would
+never be promoted.
+
+**The provider fee gets no leg**, same as a pay-in - the upstream keeps it and
+it never reaches a balance we track. Net across the holders is therefore
+`-(nominal + providerFee)`, exactly the money that left the system.
+
+**`PAYOUT_COMPLETED` is not a transfer reason**, so `post()` does not assert the
+legs net to zero - correct, because money genuinely leaves.
+
+**On callback FAILED** — the reservation comes back whole, and **no fee legs**:
+
+```
+MERCHANT 27 | RESERVED  | DEBIT  | netNominal
+MERCHANT 27 | AVAILABLE | CREDIT | netNominal
+```
+
+That asymmetry is the reason to credit the fees at completion rather than at
+reservation: the fee is earned by a payout that *works*, so the failure path has
+nothing to reverse. `PAYOUT_FAILED` **is** a transfer reason, so `post()`
+asserts these two net to zero for the merchant.
+
+Verified against the seeded fixtures, all three paths, rolled back:
+
+```
+start      mAVAIL 245,000.00  mRESV       0.00  INTERNAL 7,500.00  AGENT   500.00
+reserved   mAVAIL 141,000.00  mRESV 104,000.00  INTERNAL 7,500.00  AGENT   500.00
+completed  mAVAIL 141,000.00  mRESV       0.00  INTERNAL 9,500.00  AGENT 1,000.00
+```
+
+`RESERVED` returning to exactly `0.00` is the invariant to watch: credit it with
+`netNominal` and debit it with anything else and the difference is stranded in
+that bucket forever - and the Step 4 check will *not* flag it, because entries
+and snapshot stay consistent. The money is simply in the wrong bucket.
+
+### 6.4 What implementing it turned up
+
+- **`reserve()` returns rather than throws**, so ignoring the result lets a
+  payout reach the provider with nothing reserved - silently. Check
+  `reserved.ok` and raise `TransactionException.insufficientBalance()`.
+- **`reserveFailure` must pass a `TransactionException` through untouched.** It
+  exists to classify Prisma errors; without a passthrough, a deliberate
+  rejection raised inside the reservation transaction falls through to
+  `serviceUnavailable()` and the merchant is told to retry something that can
+  never succeed.
+- **The fee DTO has both `nominal` and `netNominal`** on `merchantFee`. Reading
+  the wrong one is how `RESERVED` acquires a residue; `netNominal` lives on the
+  disbursement row so the reserve and the debit are the same number by
+  construction.
+- **A fee-service outage answers `serviceUnavailable()`, not
+  `internalError()`** - a dependency being down makes "retry later" correct
+  advice, where an internal error implies a malformed request.
 
 Withdraw and topup live in `apps/dashboard` and are still D17-blocked stubs. They
 consume the same `libs/balance` when they are built, which is why it is a lib —
@@ -670,47 +790,103 @@ Only now is there something to run. Scaffold it like the existing apps:
 - a `projects` entry in [nest-cli.json](../../nest-cli.json)
 - `build:settlement` / `start:settlement` in `package.json`. **No
   `prisma:*:settlement` scripts** — see below
-- `PrismaModule`, `ConfigModule`, `LoggerModule`, `HealthModule`,
-  `RedisModule`, `ScheduleModule.forRoot()`
+- `ConfigurationModule.forRoot()`, `LoggerModule`, `RedisModule`,
+  `TerminusModule`, `DatabaseModule`, `ScheduleModule.forRoot()`
 
-### 7.0 This app has no Prisma schema of its own
+Built in `61d20a9`. Two things the app deliberately does **not** import, both
+commented in its `app.module.ts`: `MicroserviceModule`, because it reaches the
+schemas directly rather than over TCP, and `ClsModule`, because nothing here
+runs in a request context.
 
-It imports the transaction app's client:
+### 7.0 No Prisma schema of its own, but a client per schema
 
-```ts
-import { PrismaClient } from '@transaction/prisma';
-```
+It still has **no `schema.prisma`, no `prisma.config.ts`, no `migrations/`, no
+`src/generated/` and no merge step.** Every table it touches is declared in
+`apps/transaction/prisma/schema.prisma` — the `transaction` schema's transaction
+and balance tables, and the `settlement` schema's run, batch and policy tables
+(Steps 8 and 9). One schema file, one migration history.
 
-`@transaction/prisma` is a **root-level** path alias in
-[tsconfig.json](../../tsconfig.json:82), so every app in the monorepo can import
-it. Pass the ctor to the existing `createPrismaMasterProvider` /
-`createPrismaSlaveProvider` from `@app/prisma` exactly as
-`apps/transaction` does.
-
-This works because **every table this app touches is declared in
-`apps/transaction/prisma/schema.prisma`** — the `transaction` schema's
-transaction and balance tables, and the `settlement` schema's run, batch and
-policy tables (Steps 8 and 9). One schema file, one migration history, one
-generated client.
-
-**What that avoids is the whole point.** The earlier plan gave this app its own
-merged schema, which meant a copy of the transaction models, a merge script to
-produce it, a CI check to catch it going stale, and a second generated client
-committed to the repo. All of that machinery existed only to keep a copy in
-sync with an original. Remove the copy and it all goes — and the drift that
-`apps/dashboard` accumulated over several migrations (its merged schema claimed
-a uniqueness constraint and a relation that no longer existed) becomes
+What that avoids is the point: the first plan gave this app its own merged
+schema, which meant a copy of the transaction models, a merge script, a CI check
+to catch it going stale, and a second generated client in the repo. All of it
+existed only to keep a copy in sync with an original. No copy, none of it — and
+the drift `apps/dashboard` accumulated over several migrations becomes
 impossible here rather than merely guarded against.
 
-So: no `schema.prisma`, no `prisma.config.ts`, no `migrations/`, no
-`src/generated/`, no merge step.
+> **Where the implementation diverged from this plan.** Earlier drafts said to
+> pass `@transaction/prisma` to `createPrismaMasterProvider` from `@app/prisma`
+> and be done. That does not fit: `PrismaModule.forRoot()` builds exactly **one**
+> master/slave pair from **one** client class, and this app reaches more than one
+> schema. So it wires its own `DatabaseModule` with a pair per schema.
 
-> **The trade.** `apps/settlement` now build-depends on `apps/transaction`'s
-> generated client, and its deploy depends on transaction's migrations having
-> run. Both are desirable — the two apps are *meant* to agree on these tables,
-> and settlement's tables carry foreign keys into transaction's, so the ordering
-> requirement exists in the database whether or not the build expresses it.
-> `apps/dashboard` already works this way.
+```
+apps/settlement/src/database/
+  database.module.ts            PrismaConnectionRegistry + the active pairs
+  prisma-transaction.provider.ts  master + slave   (active)
+  prisma-auth.provider.ts         master + slave   (commented out)
+  prisma-config.provider.ts       master + slave   (commented out)
+```
+
+Each provider builds its own `Pool`, hands it to `PrismaPg`, and registers it:
+
+```ts
+const pool = new Pool({ connectionString: dsn });
+const client = new PrismaClient({ adapter: new PrismaPg(pool), log: [...] });
+registry.register('transaction-master', client, pool);
+```
+
+Four things that are load-bearing rather than stylistic:
+
+**`PrismaConnectionRegistry` must be in this module's `providers`,** not merely
+imported. Nest only runs `onApplicationShutdown` on providers it instantiates,
+and that hook is the only thing that closes these pools — `$disconnect()` leaves
+an externally-created pool open, which is why the registry exists at all.
+Without it the process ignores SIGTERM and gets SIGKILLed on every deploy.
+
+**A `Pool` instance, not a connection string.** The registry's own doc explains
+the adapter only closes pools it created itself, so handing it an instance is
+what puts closing under our control.
+
+**Auth and config stay commented out until something consumes them.** Each pair
+is two more connection pools, and the registry documents the budget as roughly
+80 of a default `max_connections` of 100 across the other four apps. Their DSNs
+are commented out of `.env.example` to match, so `getOrThrow` cannot fire for a
+key nothing reads.
+
+**Give every pool a distinct registry label** — `transaction-master`,
+`transaction-slave`. Both halves of a pair under one name means a shutdown
+failure cannot be attributed to either.
+
+> **The trade is unchanged.** `apps/settlement` build-depends on
+> `apps/transaction`'s generated client, and its deploy depends on transaction's
+> migrations having run. Both are desirable: the apps are *meant* to agree on
+> these tables, and settlement's carry foreign keys into transaction's, so the
+> ordering requirement exists in the database whether or not the build expresses
+> it. `apps/dashboard` already works this way.
+>
+> And the split does **not** cost atomicity for the batch. Once Step 8 declares
+> `schemas = ["transaction", "settlement"]`, the transaction client covers the
+> claim, the balance entries *and* `SettlementBatch` — so one provider does the
+> whole thing in one transaction. The split would only bite if something needed
+> to *write* across two of them.
+
+### 7.0.1 Health is local, not `@app/health`
+
+`@app/health`'s controller injects `PRISMA_MASTER_PROVIDER_KEY` /
+`PRISMA_SLAVE_PROVIDER_KEY`, tokens only `PrismaModule.forRoot()` provides. With
+a client per schema there is nothing to bind them to, so the app has its own
+`HealthController` pinging the transaction pools by their own tokens — a smaller
+change than teaching a lib four apps share about a second naming scheme.
+
+`TerminusModule` has to be imported directly as a result; it previously arrived
+via `@app/health`.
+
+While doing this, the `https://docs.nestjs.com` ping was dropped from
+`@app/health` too, so **no app's liveness probe depends on a third-party site**
+any more. A DNS hiccup or blocked egress was enough to get a healthy process
+restarted — worse here than for an API, since a restart can kill a settlement
+batch mid-transaction and manufacture exactly the stuck run the Step 11 sweeper
+exists to clean up. `HttpModule` went with it, unused in both places.
 
 ### 7.1 Machine identity — who is `createdBy` on a cron's writes?
 
