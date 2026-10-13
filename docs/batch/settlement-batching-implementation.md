@@ -24,7 +24,7 @@ for it to run.
 | 5 | `PAYIN_CAPTURED` from the purchase webhook | ✅ `e7aadc5` |
 | 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
 | 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
-| 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ pending commit |
+| 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ `4215a4f` |
 | 9 | Policy and eligibility | next |
 | 10–15 | The claim, enqueuer, dashboard, export, comparison, cleanup | planned |
 
