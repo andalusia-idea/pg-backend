@@ -423,7 +423,7 @@ Add up the entries:
 ```sql
 SELECT COALESCE(SUM(
   CASE WHEN "direction" = 'CREDIT' THEN "amount" ELSE -"amount" END
-), 0) AS computed
+), 0) AS "computed"
 FROM transaction."BalanceEntry"
 WHERE "holderType" = 'MERCHANT'
   AND "holderId"   = 27
@@ -433,7 +433,7 @@ WHERE "holderType" = 'MERCHANT'
 Compare against what the snapshot claims:
 
 ```sql
-SELECT "amount" AS stored
+SELECT "amount" AS "stored"
 FROM transaction."BalanceSnapshot"
 WHERE "holderType" = 'MERCHANT'
   AND "holderId"   = 27
@@ -464,7 +464,7 @@ Every `MERCHANT_SETTLED` movement should sum to zero per holder:
 
 ```sql
 SELECT "holderType", "holderId",
-       SUM(CASE WHEN "direction" = 'CREDIT' THEN "amount" ELSE -"amount" END) AS net
+       SUM(CASE WHEN "direction" = 'CREDIT' THEN "amount" ELSE -"amount" END) AS "net"
 FROM transaction."BalanceEntry"
 WHERE "reason" = 'MERCHANT_SETTLED'
 GROUP BY "holderType", "holderId"

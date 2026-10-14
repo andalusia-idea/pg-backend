@@ -128,8 +128,8 @@ model BalanceSnapshot {
   bucket      BalanceBucketEnum
   amount      Decimal  @db.Decimal(18, 2)
   lastEntryId BigInt
-  version     Int      @default(0)
   updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  updatedBy   Int      // NOT NULL - and raw SQL must set it; see below
 
   @@id([holderType, holderId, bucket])
   @@schema("transaction")
@@ -141,6 +141,15 @@ model BalanceSnapshot {
 Widened to `(18,2)` because snapshots accumulate where transaction amounts do
 not.
 
+Two notes on what was actually built, since the first draft of this block said
+otherwise. There is **no `version` column** — an optimistic-locking counter was
+sketched here and dropped, because the conditional `UPDATE ... WHERE amount >=
+$1` below is a single atomic statement with no read-then-write window to
+protect. And `updatedBy` is **NOT NULL**, which matters because the snapshot is
+written by raw SQL: `@updatedAt` is a Prisma client feature rather than a
+database trigger, so a raw statement fires neither it nor the audit extension
+and must set both columns itself.
+
 ### Why the snapshot is safe here but was not before
 
 Today's "balance" is the newest log row, and that row's number was computed from
@@ -149,9 +158,9 @@ the row before it. One wrong row is inherited forever and nothing notices.
 With entries and a snapshot, the snapshot is a **cache of something provable**:
 
 ```sql
-SELECT SUM(CASE WHEN direction = 'CREDIT' THEN amount ELSE -amount END)
-FROM balance_entry
-WHERE holder_type = 'MERCHANT' AND holder_id = 27 AND bucket = 'AVAILABLE';
+SELECT SUM(CASE WHEN "direction" = 'CREDIT' THEN "amount" ELSE -"amount" END)
+FROM transaction."BalanceEntry"
+WHERE "holderType" = 'MERCHANT' AND "holderId" = 27 AND "bucket" = 'AVAILABLE';
 ```
 
 Run that nightly, compare to the snapshot, alert on any difference. That single
@@ -173,12 +182,12 @@ would block *recording* it rather than preventing it — the money already moved
 Guard the payout path instead, with a conditional update:
 
 ```sql
-UPDATE transaction.balance_snapshot
-SET amount = amount - $1
-WHERE holder_type = $2 AND holder_id = $3
-  AND bucket = 'AVAILABLE'
-  AND amount >= $1
-RETURNING amount;
+UPDATE transaction."BalanceSnapshot"
+SET "amount" = "amount" - $1
+WHERE "holderType" = $2 AND "holderId" = $3
+  AND "bucket" = 'AVAILABLE'
+  AND "amount" >= $1
+RETURNING "amount";
 ```
 
 Zero rows back means insufficient balance, and it means it *reliably*, because
@@ -341,20 +350,22 @@ But it has three problems **for this particular job**:
 Instead of asking *"who gets to run?"*, write the work down as rows first:
 
 ```
-settlement_run
- id | merchant_id | due_at | status  | claimed_by | claimed_at | result
- 41 | 27          | 10:00  | PENDING | null       | null       | null
+SettlementRun
+ id | merchantId | dueAt | status  | claimedBy | claimedAt | finishedAt
+ 41 | 27         | 10:00 | PENDING | null      | null      | null
 ```
 
 A pod takes work by **changing the row**:
 
 ```sql
-UPDATE settlement.settlement_run
-SET status = 'RUNNING', claimed_by = $podName, claimed_at = now()
-WHERE id = (
-  SELECT id FROM settlement.settlement_run
-  WHERE status = 'PENDING' AND due_at <= now()
-  ORDER BY due_at
+UPDATE "settlement"."SettlementRun"
+SET "status"    = 'RUNNING',
+    "claimedBy" = $podName,
+    "claimedAt" = now()
+WHERE "id" = (
+  SELECT "id" FROM "settlement"."SettlementRun"
+  WHERE "status" = 'PENDING' AND "dueAt" <= now()
+  ORDER BY "dueAt"
   FOR UPDATE SKIP LOCKED
   LIMIT 1
 )
@@ -432,7 +443,7 @@ What the other department actually asked for. Straightforward:
   gross, provider fee, internal fee, agent fee, net.
 - Generated in the background, written to MinIO, downloadable from the
   dashboard, deleted after 1–2 days.
-- The job itself is a `settlement_run`-style row, for the same reasons as §6.
+- The job itself is a `SettlementRun`-style row, for the same reasons as §6.
 
 ### Upstream comparison
 
@@ -467,12 +478,13 @@ code is written.
 | `changeAmount`, `balanceActive`, `balancePending` | Buckets as separate rows |
 | `batchReconciliationId`, `reconciliationAt` | Reconciliation writes nothing now |
 | `TransactionTypeEnum.SETTLEMENT_PURCHASE` | `BalanceReasonEnum.MERCHANT_SETTLED` |
-| `Merchant.settlementInterval`, `lastSettlementAt` | `MerchantSettlementPolicy` + `settlement_run` |
+| `Merchant.settlementInterval`, `lastSettlementAt` | `MerchantSettlementPolicy` + `SettlementRun` |
 | `Provider.reconciliationTime`, `lastReconciliationAt` | Nothing — not our job any more |
 | `TODO(balance-ledger)` in both webhook services | §3 reasons, written by the batch and the payout path |
 
 `batchSettlementId` is **kept** but finally gets a real table behind it, and
-`merchantSettledAt` stays as the fast flag for dashboard filtering.
+`settlementAt` stays as the fast flag for dashboard filtering. (An earlier draft
+called that column `merchantSettledAt`; no such column exists.)
 
 ### No balance migration
 
@@ -495,21 +507,34 @@ established by hand.
 
 ## 10. Build order
 
-| Step | What | Why here |
-|---|---|---|
-| 1 | `BalanceEntry` + `BalanceSnapshot` + the posting service | Everything else needs it |
-| 2 | Dev fixtures through the posting service | Something to test the next steps against |
-| 3 | `PAYIN_CAPTURED` from the purchase webhook | Closes one of the two `TODO(balance-ledger)` gaps |
-| 4 | `PAYOUT_RESERVED` / `COMPLETED` / `FAILED` | Closes D17 — the overdraw bug |
-| 5 | Nightly entries-vs-snapshot check | Makes the rest trustworthy |
-| 6 | `settlement_run` + the claim query (§5, §6) | The batch itself |
-| 7 | `MerchantSettlementPolicy` + the four modes | Replaces `settlementInterval` |
-| 8 | Excel export to MinIO | What the other department asked for |
-| 9 | Upstream comparison tool | Assistive, lowest risk |
+**The order and its progress live in one place:** the Status table at the top of
+[settlement-batching-implementation.md](settlement-batching-implementation.md).
+This section used to carry a competing nine-step list of its own, which drifted
+into saying something different from the guide; what is left here is the
+reasoning behind the shape, not a second set of step numbers.
 
-Steps 1–5 are the ones that fix money bugs. 6–7 are the batching feature. 8–9 are
-the reporting features. If work stops after step 5, the system is already more
-correct than it is today.
+**Money bugs first, feature second, reporting last.** The balance tables, the
+posting library, its dev fixtures, the nightly verification job, and the payin
+and payout movements all come before anything that batches. They are what close
+the two `TODO(balance-ledger)` gaps and D17, the overdraw bug — so if work stops
+right after them, the system is already more correct than it is today, with no
+batching in sight. Then the settlement app, its tables, the policy, the claim
+and the enqueuer. Then the Excel export and the comparison tool, which are
+assistive and carry the least risk.
+
+Two orderings inside that are worth knowing, because the first draft of this
+section had them the other way round:
+
+**The verification job comes before the movements, not after.** It reads
+entries against snapshots and alerts; it writes nothing. Having it in place
+first means every movement built afterwards is checked from its first night,
+rather than trusting them until something looks wrong later.
+
+**The policy comes before the claim, not after.** The claim's `WHERE` carries an
+eligibility predicate derived from the merchant's policy — `FIXED_DELAY` and
+`SCHEDULED` resolve to date arithmetic, `FOLLOW_UPSTREAM` to a cutoff looked up
+per provider and method. Without the policy there is nothing to filter on, so
+building the claim first means building it twice.
 
 ---
 

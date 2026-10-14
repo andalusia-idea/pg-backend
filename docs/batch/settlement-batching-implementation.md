@@ -24,9 +24,12 @@ for it to run.
 | 5 | `PAYIN_CAPTURED` from the purchase webhook | ✅ `e7aadc5` |
 | 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
 | 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
-| 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ `4215a4f` |
+| 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ `4215a4f`, `d4ade10` |
 | 9 | Policy and eligibility | next |
 | 10–15 | The claim, enqueuer, dashboard, export, comparison, cleanup | planned |
+
+Step 8 took two commits because `SettlementRun.createdBy` went in nullable and
+had to be corrected — the reasoning is under *Audit columns* in that step.
 
 Both `TODO(balance-ledger)` markers are gone, and the overdraw race
 ([D17](../engine/dashboard-migration.md)) is closed structurally rather than by
@@ -223,7 +226,7 @@ it belongs.
 ### Attribution — do NOT add these to `AUDITED_MODELS`
 
 The instinct is to add all three to `AUDITED_MODELS` in
-[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:5),
+[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:28),
 next to `MerchantBalanceLog`. **Don't** — it breaks two ways, both found by
 doing it:
 
@@ -318,6 +321,23 @@ is a pure transfer between buckets, so its legs must sum to zero for each
 holder. That one assertion catches most arithmetic mistakes at the point they
 are made rather than in a report a month later.
 
+**Assert every amount is positive, and no finer than the column.**
+`assertPositiveMoney` rejects two things on every leg, and on `reserve()`'s
+amount:
+
+- **Zero, negative, or non-finite.** `direction` carries the sign; the amount
+  never does. A negative CREDIT and a positive DEBIT would mean the same thing,
+  and once both spellings exist in the table every query has to handle both.
+- **More than two decimal places.** The columns are `Decimal(18,2)`, so a third
+  decimal would be rounded by Postgres on the way in — silently, and in a
+  direction nobody chose. The error says to round at the fee split instead,
+  which is the one place a residual can be assigned to a specific party
+  deliberately rather than scattered across legs by the database.
+
+Both throw rather than coerce. A movement that cannot be expressed exactly is a
+bug upstream, and rounding it here would hide which party absorbed the
+difference.
+
 ### 2.2 `post()`
 
 ```ts
@@ -411,13 +431,23 @@ A payout must not proceed unless the balance is there. That check cannot be
 Do it as a conditional update, which is one atomic statement:
 
 ```sql
-UPDATE transaction.balance_snapshot
-SET amount = amount - $1, last_entry_id = GREATEST(last_entry_id, $2)
-WHERE holder_type = $3 AND holder_id = $4
-  AND bucket = 'AVAILABLE'
-  AND amount >= $1
-RETURNING amount;
+UPDATE "transaction"."BalanceSnapshot"
+SET "amount"      = "amount" - $1,
+    "lastEntryId" = GREATEST("lastEntryId", $2),
+    "updatedAt"   = now(),
+    "updatedBy"   = $3
+WHERE "holderType" = $4 AND "holderId" = $5
+  AND "bucket" = 'AVAILABLE'
+  AND "amount" >= $1
+RETURNING "amount";
 ```
+
+**Quote every identifier.** This repo uses no `@map`, so the table is
+`"BalanceSnapshot"` with camelCase columns and Postgres folds anything unquoted
+to lower case — unquoted `holderType` fails with `column "holdertype" does not
+exist`. The same applies to any computed column, which needs an explicit
+`AS "name"`: Step 4 spent a debugging round on an alert that read
+`undefined:undefined:PENDING` for exactly this reason.
 
 Zero rows back means insufficient balance — and it means it *reliably*, because
 the comparison and the decrement are the same statement. Only then write the
@@ -429,8 +459,8 @@ transactions interleave; Step 4 depends on it being monotonic.
 > **Raw SQL bypasses `@updatedAt`.** That attribute is a Prisma *client*
 > feature, not a database default or trigger, so this statement fires neither it
 > nor the audit extension. `BalanceSnapshot.updatedBy` is NOT NULL, so an update
-> to an existing row will succeed while quietly leaving both columns stale.
-> **Set `updated_at` and `updated_by` explicitly in this statement.**
+> to an existing row will succeed while quietly leaving both columns stale —
+> which is why `"updatedAt"` and `"updatedBy"` are set explicitly above.
 
 **Verify**: `npx jest libs/balance`. Cover — legs applied in sorted order; a
 duplicate movement throws rather than double-posting; `reserve` returns
@@ -551,18 +581,42 @@ no claim row travel with it.
 > no k8s manifest and is not in the CI matrix either — so there is already
 > precedent for an app existing before it is deployed.
 
-For each snapshot row:
+One statement, joining each snapshot to its own entries, rather than a query per
+row:
 
 ```sql
-SELECT COALESCE(SUM(CASE WHEN direction = 'CREDIT' THEN amount ELSE -amount END), 0)
-FROM transaction.balance_entry
-WHERE holder_type = $1 AND holder_id = $2 AND bucket = $3
-  AND id <= $4;                            -- the snapshot's lastEntryId
+SELECT
+  s."holderType" AS "holderType",
+  s."holderId"   AS "holderId",
+  s."bucket"     AS "bucket",
+  s."amount"     AS "stored",
+  COALESCE(SUM(CASE WHEN e."direction" = 'CREDIT' THEN e."amount" ELSE -e."amount" END), 0) AS "computed"
+FROM transaction."BalanceSnapshot" s
+  LEFT JOIN transaction."BalanceEntry" e
+  ON  e."holderType" = s."holderType"
+  AND e."holderId"   = s."holderId"
+  AND e."bucket"     = s."bucket"
+  AND e."id"        <= s."lastEntryId"
+GROUP BY 1, 2, 3, 4
+HAVING s."amount" <> COALESCE(SUM(CASE WHEN e."direction" = 'CREDIT' THEN e."amount" ELSE -e."amount" END), 0);
 ```
 
-**`id <= lastEntryId` is what makes this exact.** Without it the sum races
-against concurrent writes and produces false mismatches at 2am, which is the
-fastest way to get an alert ignored.
+**`e."id" <= s."lastEntryId"` is what makes this exact.** Without it the sum
+races against concurrent writes and produces false mismatches at 2am, which is
+the fastest way to get an alert ignored.
+
+Three things this statement learned the hard way:
+
+- **Quote every identifier, and alias every computed column.** Unquoted names
+  fold to lower case, so the first version came back as `holdertype` and the
+  alert read `undefined:undefined:PENDING`. The `AS "computed"` matters for the
+  same reason — without it the column arrives as `coalesce`.
+- **`LEFT JOIN`, not an inner one.** A snapshot whose entries have all been
+  rolled past, or a snapshot written for a holder with no entries yet, is
+  exactly the disagreement worth alerting on; an inner join hides it.
+- **`COALESCE` needs the second argument.** `COALESCE(SUM(x))` with one
+  argument returns NULL for an empty group rather than zero, so every
+  entry-less snapshot would compare `amount <> NULL`, which is never true.
 
 On a mismatch: log at error with holder, bucket, both figures and the
 difference. **Never auto-correct.** A snapshot that disagrees with its entries
@@ -891,7 +945,7 @@ exists to clean up. `HttpModule` went with it, unused in both places.
 
 ### 7.1 Machine identity — who is `createdBy` on a cron's writes?
 
-[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:37)
+[audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:173)
 stamps `createdBy` / `updatedBy` from `nestjs-cls` at `authInfo.userId`. A cron
 has no request, so no CLS context, so `getAuditUserId()` returns `undefined` —
 and the extension then **omits the field** rather than writing null:
@@ -1125,6 +1179,41 @@ duplicate default-policy run: REJECTED
 Anything reading `paymentMethodName` must now compare against `'*'` rather than
 test for NULL — see the claim query in Step 10.
 
+### Audit columns
+
+`SettlementRun` gets `createdAt` and `createdBy`. `SettlementBatch` gets
+neither, and **neither model goes into `AUDITED_MODELS`**.
+
+`createdAt` is when the run was *enqueued*, which is not `dueAt` — the gap
+between them is how you notice an enqueuer that stopped firing. `createdBy` is
+the principal that caused the run to exist: the enqueuer's machine id normally,
+a real `auth.User.id` once the dashboard can trigger one by hand. That second
+case is what makes the column worth having, because it separates "the cron did
+this" from "someone clicked the button at 2am" on an operation that moves money.
+
+`createdBy` is **NOT NULL**, like `BalanceEntry` and `BalanceAdjustment` and
+unlike the older `*BalanceLog` tables. Those are nullable because the audit
+extension fills them opportunistically and may find no userId in CLS; this one
+is written explicitly, and only two things ever write it, both of which always
+know their principal. It went in nullable first by matching
+`PurchaseTransaction`'s audit quartet — the wrong neighbour — and was corrected
+in a second migration while the table was still empty. Nullable would have cost
+the compile error that catches a forgotten `createdBy`, which is the stated
+reason `libs/balance` types against `@transaction/prisma` at all.
+
+`SettlementBatch` needs none of it: rows are written once inside the claim
+transaction and never edited, and a batch's creator is reachable through
+`runId`.
+
+Staying out of `AUDITED_MODELS` is deliberate twice over. The claim and the
+sweeper are raw SQL, which the extension cannot see — it hooks
+`query.$allModels` — so generic `updatedAt`/`updatedBy` would go stale on every
+status transition, and `claimedAt` / `finishedAt` / `attempts` /
+`failureReason` already record the lifecycle far better. And auto-injection
+needs `authInfo.userId` in CLS, which a `@Cron` has no request to supply.
+Adding either model to the set without the columns throws outright:
+`creationAuditFields` injects `createdAt` unconditionally.
+
 ### Housekeeping — two strings that are easy to miss
 
 **The dashboard merge script hardcodes its schema list.**
@@ -1209,7 +1298,7 @@ of settlement's tables by the admin UI, not a reason to move them.
 
 ### `registerMerchant` changes here
 
-[user.service.ts](../../apps/dashboard/src/modules/user/user.service.ts:88)
+[user.service.ts](../../apps/dashboard/src/modules/user/user.service.ts:91)
 currently creates the config row with
 `settlementInterval: dto.settlementInterval ?? DEFAULT_SETTLEMENT_INTERVAL_MINUTES`.
 That column is deleted in Step 15, so a registration path still writing it would
@@ -1520,7 +1609,7 @@ the Step 4 check has been quiet.
 1. Drop `MerchantBalanceLog`, `AgentBalanceLog`, `InternalBalanceLog` — and
    remove them from `AUDITED_MODELS`.
 2. Remove `TransactionTypeEnum.SETTLEMENT_PURCHASE` from the Prisma enums **and**
-   from [libs/microservice/src/microservice.enum.ts](../../libs/microservice/src/microservice.enum.ts:112).
+   from [libs/microservice/src/microservice.enum.ts](../../libs/microservice/src/microservice.enum.ts:168).
 3. Drop `Merchant.settlementInterval` and `lastSettlementAt`; drop
    `Provider.reconciliationTime` and `lastReconciliationAt`; drop
    `batchReconciliationId` and `reconciliationAt` from both transaction models.
@@ -1532,18 +1621,13 @@ entries reference figures that came from them.
 
 ---
 
-## Suggested commit boundaries
+## Commit boundaries for what is left
 
-| Commit | Steps | Independently shippable? |
+Steps 1–8 have landed; their commits are in the Status table at the top, which
+is the record. This covers only what remains, one commit per step:
+
+| Commit | Step | Independently shippable? |
 |---|---|---|
-| `feat(transaction): balance entry + snapshot schema` | 1 | yes, dormant |
-| `feat(balance): posting library` | 2 | yes, dormant |
-| `feat(transaction): balance dev fixtures` | 3 | yes — dev-only data |
-| `feat(transaction): nightly balance verification` | 4 | yes |
-| `feat(transaction): credit merchant balance on payin` | 5 | **behavior change** |
-| `feat(transaction): reserve balance before payout` | 6 | **behavior change** — closes D17 |
-| `feat(settlement): app skeleton on the transaction client` | 7 | yes, empty |
-| `feat(transaction): settlement schema - run and batch` | 8 | yes, dormant |
 | `feat(transaction): settlement policy and upstream windows` | 9 | yes, dormant |
 | `feat(settlement): claim and post batches` | 10 | yes — nothing schedules it yet |
 | `feat(settlement): enqueuer and stuck-run sweeper` | 11 | **behavior change** — the cutover |
@@ -1552,10 +1636,19 @@ entries reference figures that came from them.
 | `feat(settlement): statement comparison placeholder` | 14 | yes |
 | `chore: drop legacy balance logs` | 15 | yes, after a full cycle |
 
-Steps 1–4 are dormant — nothing changes behaviour until Step 5. Step 11 is the
-real cutover: it is the first moment settlement happens on the new schedule, and
-it is worth telling merchants about beforehand, because `FOLLOW_UPSTREAM` means
-waiting until T+1 15:00 instead of the 120 minutes they get today.
+**Step 11 is the real cutover.** It is the first moment settlement happens on
+the new schedule, and it is worth telling merchants about beforehand, because
+`FOLLOW_UPSTREAM` means waiting until T+1 15:00 instead of the 120 minutes they
+get today.
+
+**Step 15 waits for a full cycle.** Dropping the legacy balance logs is
+irreversible, and the thing that proves the new tables are right is a complete
+settlement cycle having run against them in production — not a passing test.
+
+One note on the messages above: they are the shape, not the wording. The commits
+for steps 1–8 did not use `feat(scope):` prefixes, because the recent history in
+this repo does not — it uses a plain imperative subject with the reasoning in
+the body. Match the history, not this table.
 
 ---
 
