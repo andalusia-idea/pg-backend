@@ -1420,6 +1420,14 @@ directions and a payment made at 23:59.
 
 `apps/settlement/src/settlement/settlement.service.ts`. The core.
 
+> **Build the mental picture first.**
+> [settlement-explained.md](settlement-explained.md) walks the whole thing
+> end to end - why claiming replaces time windows, the two senses of the
+> word "claim", a worked example with real rows, and the transaction
+> ordering this step glosses over (the batch row has to exist before the
+> claim can reference its id). This step is the specification; that one is
+> the explanation.
+
 Inside one `$transaction`:
 
 **1. Claim, capped.**
@@ -1565,10 +1573,11 @@ never reads `claimedBy`, so `claimedBy` is diagnostic rather than load-bearing.
 Nothing in the repo exposes a pod identity yet; this step has to add it to
 configuration, defaulting to `os.hostname()`.
 
-The audit question underneath this is real, though: `SettlementRun` has no
-`createdAt` or `createdBy` at all, so there is nowhere to record that a human
-triggered a run from the dashboard rather than the enqueuer. That belongs on the
-model in Step 8, not in this column.
+The audit question underneath this is answered elsewhere, not here:
+`SettlementRun.createdAt` and `createdBy` record *who caused the run to exist* —
+the enqueuer's machine id normally, a real `auth.User.id` when a human triggers
+one from the dashboard. Both landed in Step 8 (see *Audit columns* there), which
+is why the insert above cannot compile without a principal.
 
 **Verify**: kill the pod mid-run (or throw deliberately after the first batch),
 confirm the sweeper resets it and the retry settles only the remainder.
