@@ -25,8 +25,9 @@ for it to run.
 | 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
 | 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
 | 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ `4215a4f`, `d4ade10` |
-| 9 | Policy and eligibility | next |
-| 10–15 | The claim, enqueuer, dashboard, export, comparison, cleanup | planned |
+| 9 | Policy and eligibility | ✅ `0896962` |
+| 10 | The claim and the batch | next |
+| 11–15 | Enqueuer, dashboard, export, comparison, cleanup | planned |
 
 Step 8 took two commits because `SettlementRun.createdBy` went in nullable and
 had to be corrected — the reasoning is under *Audit columns* in that step.
