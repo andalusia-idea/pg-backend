@@ -355,12 +355,13 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Twenty-three entries (D1–D23), each a real defect or ambiguity found while reading the legacy code. Most are settled and need nothing from you; nine do. Sorted by number below — this table is the triage.
+Twenty-four entries (D1–D24), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; ten do. Sorted by number below — this table is the triage.
 
 ### Open — needs a decision or action
 
 | # | What | Who acts | Why it matters |
 |---|---|---|---|
+| **D24** | Settlement timing is now a policy model. `CreateMerchantDto.settlementInterval` **is already gone**, and `whitelist: true` means a request still sending it gets a 201 with the field silently stripped. The read endpoints still return the dead column | **Frontend** — stop sending the field. **You** — decide whether the GETs drop it now or at Step 15 | The one shipped breaking change fails *silently*, so nothing will tell you. And any UI showing "settles every 120 minutes" is now stating something untrue for every merchant created after 2026-10-16 |
 | **D22** | The dashboard's own 3 deferred write endpoints (rows 31–33, 35) still aren't implemented, and `apps/dashboard`'s balance module reads tables that **nothing will ever write to again** now that the live ledger has fully moved to `BalanceSnapshot` — see the 2026-10-12 update below | **You** — prioritize porting `apps/dashboard`'s balance reads and writes to the now-proven library | **Rows 24–28 will show stale/zero figures forever, not just "until someone wires it in"**, until the dashboard itself is ported. The pattern is proven and live elsewhere (D17) — what's left here is implementation, not design |
 | **D23** | A hand-written migration (`20260930134813`, 2026-09-30) renamed/dropped columns `apps/dashboard`'s withdraw and disbursement listings query. **As of 2026-10-12, the schema side is fixed** — see the update below; one DTO still needs a matching fix | **Backend** — mechanical, not a decision | **Downgraded, not closed.** Row 34 is clear. Row 36 no longer 500s, but now silently drops 4 fields instead — the same failure mode as D19, just on different columns |
 | **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
@@ -928,6 +929,338 @@ The migration (`20260930134813_rename_payout_destination_columns`) is a hand-wri
 > Net: this entry is no longer urgent. What remains is a contained DTO rename plus a decision on `recipientBankName`'s replacement — a smaller, well-understood piece of the original scope, not tracked separately since it's literally this entry's own step 2.
 
 **Partially fixed, 2026-10-12** (the schema sync — by accident, not by anyone working this entry). **Not yet implemented**: the `DisbursementTransactionDto` field-name fix (step 2). Tracked here rather than as a new entry, since it's unchanged scope from this one. Separately from D19 (same root pattern — source schema evolves, dashboard's copy doesn't) and from D21 (D21 is the business decision on how to *model* bank/USDT; this entry was always just getting the dashboard back to compiling-and-querying against columns that already exist under a new name).
+
+---
+
+### D24 — Settlement timing moved from a minutes integer to a policy model; `settlementInterval` is already gone from merchant registration → one breaking change shipped silently, one decision needed
+
+Backend work 2026-10-13 → 2026-10-16, commits `4215a4f`, `d4ade10`, `0896962` (plus `476f1c7` and `e1d7be1`, which are the attribution half below). This is the backend's Steps 8–9 in
+[docs/batch/settlement-batching-implementation.md](../batch/settlement-batching-implementation.md);
+nothing in `apps/dashboard/src` changed, so every effect below is either a
+contract change you will feel or a table the dashboard now owns the UI for.
+
+**The model.** `Merchant.settlementInterval` was a single integer — minutes
+between settlement runs, defaulting to 120. It cannot express what merchants
+actually get, so it is replaced by `settlement.MerchantSettlementPolicy` with
+four modes:
+
+| Mode | When a payment becomes available |
+|---|---|
+| `INSTANT` | the moment the payment succeeds |
+| `FOLLOW_UPSTREAM` | once the upstream's own settlement time for that method has passed — **the default** |
+| `FIXED_DELAY` | N days after the payment, at one time of day ("T+2, released 10:00") |
+| `SCHEDULED` | at set times of day ("06:00, 12:00, 18:00, 23:00") |
+
+#### Already shipped, breaking, and silent — act on this one
+
+`CreateMerchantDto.settlementInterval` **no longer exists** (`0896962`).
+`CustomValidationPipe` runs `whitelist: true` **without**
+`forbidNonWhitelisted`, so a request still sending it gets a **201 with the
+field quietly stripped** — no 400, no warning, nothing in a log. If the merchant
+registration form still posts `settlementInterval`, it already stopped having
+any effect and will not tell you.
+
+There is nothing to send in its place yet: `registerMerchant` now creates a
+default policy row itself — `paymentMethodName: '*'`, `mode: FOLLOW_UPSTREAM`,
+`effectiveFrom: now()` — in the same transaction as the user and merchant rows.
+So the correct frontend change today is to **stop sending the field**, not to
+send a mode. A mode selector belongs with the policy screens below.
+
+#### Needs a decision — the read endpoints still serve the dead column
+
+`config-merchant.service.ts` still selects and returns `settlementInterval` and
+`lastSettlementAt` ([lines 45–52, 65, 111–112](../../apps/dashboard/src/modules/config-merchant/config-merchant.service.ts:45)),
+and `MerchantConfigDto` still declares both ([lines 74, 78, 101, 105](../../apps/dashboard/src/modules/config-merchant/dto/merchant-config.dto.ts:74)).
+
+Those responses are now actively misleading. Registration no longer writes the
+column, so **every merchant created from 2026-10-16 onward carries the database
+default of 120** regardless of their real terms, and any UI showing "settles
+every 120 minutes" is stating something untrue. Step 15 then drops the column
+outright, at which point these endpoints break the way D23's did.
+
+Two options, and it is your call which:
+
+- **Strip both fields now.** Breaking for whatever renders them, but it stops
+  the API asserting something false, and it is the same work Step 15 forces
+  anyway.
+- **Leave them until the policy screens exist**, accepting that the number is
+  meaningless in the meantime, and do one change that removes the old fields and
+  adds the new ones together.
+
+Either way the fields cannot survive Step 15. The second option only defers the
+frontend change; it does not avoid it.
+
+#### New tables the dashboard owns the UI for
+
+Five tables now live in a `settlement` Postgres schema, all present in the
+merged dashboard schema and reachable from `@dashboard/prisma`:
+
+| Table | What it holds | Who edits it |
+|---|---|---|
+| `MerchantSettlementPolicy` | per-merchant, per-method terms | **admin, through this dashboard** |
+| `UpstreamSettlementWindow` | what each partner published about when *they* pay *us* | **admin, through this dashboard** |
+| `BusinessDayCalendar` | holiday overrides, national or per partner | **admin**, once Pakailink is live |
+| `SettlementRun` | one unit of scheduled work, claimed by a pod | the settlement app only — read-only here |
+| `SettlementBatch` | what one run actually settled | the settlement app only — read-only here |
+
+#### `MerchantSettlementPolicy` — the full shape
+
+```prisma
+id                Int       @id @default(autoincrement())
+merchantId        Int                                  // auth.User.id, no FK across schemas
+paymentMethodName String    @default("*")              // '*' or a PaymentMethodNameEnum value
+mode              SettlementModeEnum                   // INSTANT | FOLLOW_UPSTREAM | FIXED_DELAY | SCHEDULED
+delayDays         Int?                                 // FIXED_DELAY only
+releaseTimes      String[]                             // zero-padded "HH:mm", 24-hour
+businessDaysOnly  Boolean   @default(false)            // see the warning below
+effectiveFrom     DateTime  @db.Timestamptz(6)
+effectiveTo       DateTime? @db.Timestamptz(6)
+createdAt/createdBy/updatedAt/updatedBy/deletedAt/deletedBy
+@@unique([merchantId, paymentMethodName, effectiveFrom])
+```
+
+Per §4.1 and §4.2 of this document, a response DTO types `effectiveFrom` /
+`effectiveTo` as `string` carrying ISO 8601 with an explicit `+07:00` offset, and
+there is no money on this table.
+
+**`'*'` is a sentinel, not a wildcard search.** `'*'` means "this merchant's
+default, every method"; a real method name is an override. It is **NOT NULL**
+deliberately — nullable let two default policies coexist for one merchant,
+because Postgres treats NULLs as distinct in a unique index, and "most specific
+wins" then had no single answer. A form must submit `'*'`, not an empty field.
+
+**Changing a policy means a new row, not an edit.** `effectiveFrom` /
+`effectiveTo` exist so changing a merchant's terms today does not rewrite how
+last month's batches should have behaved. An edit screen that `UPDATE`s in place
+destroys exactly that. Retire the old row by setting `effectiveTo`, then insert
+the new one — in one transaction, or a reader can briefly see two active
+policies.
+
+#### Validation the schema cannot express — and the backend will throw on
+
+`delayDays` is nullable and `releaseTimes` is an unconstrained array, so the
+database will happily accept a `FIXED_DELAY` policy with neither. The settlement
+runner then **throws** when it reaches that merchant. These are the real
+messages, from
+[policy.eligibility.ts](../../apps/settlement/src/policy/policy.eligibility.ts):
+
+| Mode | `delayDays` | `releaseTimes` | Refusal if wrong |
+|---|---|---|---|
+| `INSTANT` | ignored | ignored | — |
+| `FOLLOW_UPSTREAM` | ignored | ignored | `FOLLOW_UPSTREAM needs the UpstreamSettlementWindow for this payment's provider and method` |
+| `FIXED_DELAY` | **required**, whole number, ≥ 0 | **exactly one** entry | `FIXED_DELAY needs a whole-number delayDays, got null` · `delayDays cannot be negative` · `FIXED_DELAY needs one entry in releaseTimes, got none` |
+| `SCHEDULED` | ignored | **one or more** | `SCHEDULED needs at least one entry in releaseTimes, got none` |
+
+Two more that apply to every mode:
+
+- **Times must be zero-padded 24-hour `HH:mm`.** `"7:00"`, `"24:00"`, `"12:60"`,
+  `"10:00:00"` are all rejected: `must be zero-padded HH:mm in 24-hour form, got
+  "7:00"`. The form should enforce the same pattern rather than letting a 2am
+  batch discover it.
+- **`businessDaysOnly: true` refuses outright today**: `businessDaysOnly is set
+  on this policy, but the business-day calendar is not implemented`. The holiday
+  rules only matter once Pakailink is live and no partner has stated their
+  policy yet, so the backend fails loudly rather than silently releasing funds on
+  a holiday. **Do not expose that checkbox yet** — ticking it stops that
+  merchant settling.
+
+`releaseTimes` order does not matter; the backend sorts it.
+
+#### How a policy is chosen, so a screen can show the one that applies
+
+Most specific first, then effective dating:
+
+```sql
+SELECT * FROM "settlement"."MerchantSettlementPolicy"
+WHERE "merchantId" = $1
+  AND "paymentMethodName" IN ($2, '*')      -- the method, or the default
+  AND "effectiveFrom" <= now()
+  AND ("effectiveTo" IS NULL OR "effectiveTo" > now())
+  AND "deletedAt" IS NULL
+ORDER BY ("paymentMethodName" = '*'), "effectiveFrom" DESC
+LIMIT 1;
+```
+
+An exact method match beats `'*'`. A merchant with no row at all is treated as
+`FOLLOW_UPSTREAM` by the runner, so a merchant registered before this landed is
+not stranded — but an explicit row is what makes their terms visible and
+editable here rather than implied by a default in code.
+
+#### Worked examples, for UI copy and fixtures
+
+A payment captured **2026-10-14 at 23:59** Jakarta, under each mode:
+
+| Policy | Funds available |
+|---|---|
+| `INSTANT` | 2026-10-14 23:59 — immediately |
+| `FIXED_DELAY`, `delayDays: 1`, `releaseTimes: ["10:00"]` | 2026-10-15 10:00 |
+| `FIXED_DELAY`, `delayDays: 0`, `releaseTimes: ["10:00"]` | 2026-10-14 10:00 — already past, so immediately |
+| `SCHEDULED`, `["06:00","12:00","18:00","23:00"]` | 2026-10-15 06:00 — past the last batch, rolls to tomorrow |
+| `FOLLOW_UPSTREAM`, MotionPay QRIS | 2026-10-15 15:00 |
+| `FOLLOW_UPSTREAM`, MotionPay E-Wallet | 2026-10-17 23:59:59.999 |
+
+Two behaviours worth reading twice:
+
+- **`FIXED_DELAY` counts calendar days, not 24-hour multiples.** T+1 at 10:00
+  means tomorrow at 10:00 whether the payment was at 00:01 or 23:59. A merchant
+  paid at 23:59 does **not** wait until the day after.
+- **A payment landing exactly on a `SCHEDULED` batch time goes out in that
+  batch**, not the next one.
+
+#### `UpstreamSettlementWindow` — several rows per method is normal
+
+```prisma
+id, providerName, paymentMethodName
+label                String        // "DAILY", "BATCH_1", "BATCH_2"
+windowStart          String        // "18:00"   — not consumed yet, see below
+windowStartDayOffset Int  @default(0)   // -1 when the window opens the previous day
+windowEnd            String        // "12:00"   — not consumed yet
+settlementOffset     Int           // 0 same day, 1 = H+1, 3 = H+3
+settlementTime       String?       // "15:00", or null when the partner gives no time
+businessDaysOnly     Boolean @default(false)
+timezone             String  @default("Asia/Jakarta")
+effectiveFrom/effectiveTo + the audit six
+@@unique([providerName, paymentMethodName, label, effectiveFrom])
+```
+
+**Teleanjar settles batch 1 at 13:00 and batch 2 at 19:00, both in force from
+the same date** — which is why `label` is in the unique key. A screen assuming
+one window per provider + method will not fit them, and the backend will reject
+the second row if `label` is left blank on both.
+
+**`settlementTime: null` means end of day, not start.** MotionPay's E-Wallet is
+published as "H+3" with no hour; releasing at 00:00 on H+3 would pay the merchant
+before the upstream plausibly paid us, so the backend assumes 23:59:59.999.
+Worth saying in a tooltip if the field is editable, because "no time" reading as
+"latest" is not the obvious interpretation.
+
+**`timezone` is the partner's, not ours.** A partner publishing a schedule in
+their own timezone is theirs to state; the day arithmetic for that window is
+done in it. Everything on `MerchantSettlementPolicy` is `Asia/Jakarta`, with no
+timezone column, because a merchant's terms are a local contractual matter.
+
+**`windowStart` / `windowEnd` are recorded but not yet read.** Eligibility
+derives the release moment from the payment's own calendar day plus
+`settlementOffset`; choosing *which* window a payment falls into is deferred,
+because the boundary rules are still open questions with the partners — Teleanjar
+has 18:00 appearing in both batches and 12:00:01–12:00:59 belonging to neither.
+Seeded rows carry `"00:00"` for both to mean "the full day"; writing MotionPay's
+own `"23:59"` would silently drop the final minute under the half-open
+`[start, end)` convention the column documents.
+
+Seeded so far: MotionPay QRIS (T+1, 15:00) and MotionPay E-Wallet /
+`DIRECTEWALLET` (H+3, no published time). Partner facts and the questions each
+one leaves open are in
+[docs/accounting/upstream-settlement-schedules.md](../accounting/upstream-settlement-schedules.md).
+
+#### `SettlementRun` / `SettlementBatch` — read-only here
+
+For the batch-history screen (backend Step 12). Neither is written by this
+dashboard; both are written by `apps/settlement`.
+
+```prisma
+SettlementRun    id, merchantId, paymentMethodName, dueAt, status, claimedBy,
+                 claimedAt, finishedAt, failureReason, attempts, createdAt, createdBy
+                 status: PENDING | RUNNING | DONE | FAILED
+SettlementBatch  id, runId, sweptFrom, sweptTo, transactionCount,
+                 grossAmount, feeAmount, netAmount  (all Decimal(18,2)), postedAt
+```
+
+- **One run can produce several batches** — the claim is capped at 500
+  transactions, so a busy merchant-day loops.
+- **A run finishing `DONE` with no batch is normal, not an error.** Most runs for
+  most merchants find nothing to settle.
+- **`claimedBy` is a pod identity, not a user id.** A free-text hostname that
+  changes on every deploy; do not try to resolve it to a person.
+- `grossAmount` / `feeAmount` / `netAmount` are money, so per §4.1 they go on the
+  wire as plain strings with two decimals — `"1250000.00"`, not a number.
+- `sweptFrom` / `sweptTo` are descriptive, derived from what was actually
+  claimed. They are *not* the window the claim selected on; the claim selects by
+  `batchSettlementId IS NULL`, never by a time range.
+
+#### `createdBy` / `updatedBy` now mean something — including on rows no person touched
+
+Separate backend work (`476f1c7`, `e1d7be1`) fixed attribution across the
+engine. Relevant here if any screen shows who changed a record:
+
+- **Ids 1–20 are machine principals, not people.** 1–10 are `SYSTEM` role,
+  11–20 `SCHEDULER`. They cannot log in — their stored password is not a valid
+  hash. **Real humans start at 21**, which is `superadmin`.
+- **Upstream callbacks are attributed per provider**: MotionPay writes as 2,
+  Teleanjar 3, Jatelindo 4. So a transaction row last touched by a payment
+  notification shows a machine id, not a person, and "MotionPay's callback" is
+  the honest label for it.
+- **Merchant API writes now carry the merchant's own `auth.User.id`.** They were
+  being written as `null` until `e1d7be1` — the guard put the id in CLS under one
+  key while the audit extension read another. Rows written before that fix keep
+  their `null`, so any UI must render an unattributed row rather than assume a
+  name resolves.
+- **Do not pass `createdBy` yourself when writing the three admin-editable
+  settlement tables.** They are in the dashboard's `AUDITED_MODELS`, so the
+  Prisma extension stamps the signed-in admin from the request context
+  automatically. Writing it by hand overrides the real actor.
+
+#### What this does *not* change — D22 is still exactly where it was
+
+No file under `apps/dashboard/src/modules/{balance,topup,withdraw}` was touched.
+Rows 24–28 still read `MerchantBalanceLog` / `AgentBalanceLog` /
+`InternalBalanceLog`, which still have no writer anywhere in the repo.
+
+It does make the port more urgent rather than less. Settlement is the thing that
+moves a merchant's money from `PENDING` to `AVAILABLE`, and once Steps 10–11
+land, balances will move between buckets on a schedule. `BalanceDto`'s
+`balanceActive` / `balancePending` pair has no field for `RESERVED` today; after
+settlement is live it will also have no way to express "settled and spendable"
+versus "captured but not yet released", which is the distinction merchants will
+start asking about the moment their money stops arriving every 120 minutes.
+
+#### One thing we could hand you, if it is useful
+
+`settlementReleaseAt(payment, policy, window)` already computes the exact moment
+a given payment's funds become available — the same function the settlement
+runner uses, so a "funds available at" column would agree with reality by
+construction rather than by a second implementation. It is pure, timezone-correct
+in `Asia/Jakarta`, and covered by 51 tests.
+
+It currently lives in `apps/settlement/src/policy/`, so the dashboard cannot
+import it. Moving it to a `libs/` package is small work — say the word if a
+per-transaction release time is something the UI wants, and it is worth doing
+before two implementations of the arithmetic exist.
+
+#### What to do, in order
+
+**Frontend, now — the only thing that is actually broken:**
+
+1. Stop sending `settlementInterval` from the merchant registration form. It is
+   already being discarded silently; removing it changes no behaviour, it just
+   stops the payload lying.
+2. Check whether anything renders `settlementInterval` or `lastSettlementAt`
+   from `GET` merchant config. If it does, that number is wrong for every
+   merchant created after 2026-10-16 and the field disappears entirely at Step
+   15. Flag what you find so the decision below can be made with the full list.
+
+**You — one decision, then one scheduling call:**
+
+3. **Decide** whether `config-merchant`'s read DTOs drop `settlementInterval` /
+   `lastSettlementAt` now or at Step 15. Dropping now is a small breaking change
+   and stops the API asserting something untrue; deferring means one combined
+   change later, with a wrong number shown until then.
+4. **Sequence** the policy admin screens. Nothing settles on the new schedule
+   until backend Step 11, so there is real slack — but every merchant registered
+   between now and then gets a default `FOLLOW_UPSTREAM` policy that nobody can
+   see or change through the UI.
+
+**Backend, already done, listed so you can verify rather than trust:**
+
+5. Schema, migration (`20261015074210_settlement_policy_and_windows`), the
+   policy row on registration, the MotionPay window seed, and
+   `settlementReleaseAt` with 51 tests. The dashboard's merged schema and
+   generated client are regenerated, so `@dashboard/prisma` already types all
+   five tables — you can start a screen against them today without waiting on us.
+
+**Not in scope of this entry, still open from before:** D22 (port the balance
+module off the abandoned log tables) remains the highest-value dashboard work,
+and settlement landing makes it more visible, not less.
 
 ---
 
