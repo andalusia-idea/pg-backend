@@ -37,6 +37,9 @@ const AUDITED_MODELS = new Set<string>([
   'MerchantBalanceLog',
   'AgentBalanceLog',
   'InternalBalanceLog',
+  'MerchantSettlementPolicy',
+  'UpstreamSettlementWindow',
+  'BusinessDayCalendar',
 ]);
 
 type MutableRecord = Record<string, unknown>;

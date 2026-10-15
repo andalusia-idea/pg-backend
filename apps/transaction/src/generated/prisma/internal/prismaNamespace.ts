@@ -401,7 +401,10 @@ export const ModelName = {
   BalanceSnapshot: 'BalanceSnapshot',
   BalanceAdjustment: 'BalanceAdjustment',
   SettlementRun: 'SettlementRun',
-  SettlementBatch: 'SettlementBatch'
+  SettlementBatch: 'SettlementBatch',
+  MerchantSettlementPolicy: 'MerchantSettlementPolicy',
+  UpstreamSettlementWindow: 'UpstreamSettlementWindow',
+  BusinessDayCalendar: 'BusinessDayCalendar'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog" | "balanceEntry" | "balanceSnapshot" | "balanceAdjustment" | "settlementRun" | "settlementBatch"
+    modelProps: "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog" | "balanceEntry" | "balanceSnapshot" | "balanceAdjustment" | "settlementRun" | "settlementBatch" | "merchantSettlementPolicy" | "upstreamSettlementWindow" | "businessDayCalendar"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1753,6 +1756,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MerchantSettlementPolicy: {
+      payload: Prisma.$MerchantSettlementPolicyPayload<ExtArgs>
+      fields: Prisma.MerchantSettlementPolicyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MerchantSettlementPolicyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MerchantSettlementPolicyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        findFirst: {
+          args: Prisma.MerchantSettlementPolicyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MerchantSettlementPolicyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        findMany: {
+          args: Prisma.MerchantSettlementPolicyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>[]
+        }
+        create: {
+          args: Prisma.MerchantSettlementPolicyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        createMany: {
+          args: Prisma.MerchantSettlementPolicyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MerchantSettlementPolicyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>[]
+        }
+        delete: {
+          args: Prisma.MerchantSettlementPolicyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        update: {
+          args: Prisma.MerchantSettlementPolicyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        deleteMany: {
+          args: Prisma.MerchantSettlementPolicyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MerchantSettlementPolicyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MerchantSettlementPolicyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>[]
+        }
+        upsert: {
+          args: Prisma.MerchantSettlementPolicyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantSettlementPolicyPayload>
+        }
+        aggregate: {
+          args: Prisma.MerchantSettlementPolicyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMerchantSettlementPolicy>
+        }
+        groupBy: {
+          args: Prisma.MerchantSettlementPolicyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MerchantSettlementPolicyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MerchantSettlementPolicyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MerchantSettlementPolicyCountAggregateOutputType> | number
+        }
+      }
+    }
+    UpstreamSettlementWindow: {
+      payload: Prisma.$UpstreamSettlementWindowPayload<ExtArgs>
+      fields: Prisma.UpstreamSettlementWindowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UpstreamSettlementWindowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UpstreamSettlementWindowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        findFirst: {
+          args: Prisma.UpstreamSettlementWindowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UpstreamSettlementWindowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        findMany: {
+          args: Prisma.UpstreamSettlementWindowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>[]
+        }
+        create: {
+          args: Prisma.UpstreamSettlementWindowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        createMany: {
+          args: Prisma.UpstreamSettlementWindowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UpstreamSettlementWindowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>[]
+        }
+        delete: {
+          args: Prisma.UpstreamSettlementWindowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        update: {
+          args: Prisma.UpstreamSettlementWindowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        deleteMany: {
+          args: Prisma.UpstreamSettlementWindowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UpstreamSettlementWindowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UpstreamSettlementWindowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>[]
+        }
+        upsert: {
+          args: Prisma.UpstreamSettlementWindowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UpstreamSettlementWindowPayload>
+        }
+        aggregate: {
+          args: Prisma.UpstreamSettlementWindowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUpstreamSettlementWindow>
+        }
+        groupBy: {
+          args: Prisma.UpstreamSettlementWindowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UpstreamSettlementWindowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UpstreamSettlementWindowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UpstreamSettlementWindowCountAggregateOutputType> | number
+        }
+      }
+    }
+    BusinessDayCalendar: {
+      payload: Prisma.$BusinessDayCalendarPayload<ExtArgs>
+      fields: Prisma.BusinessDayCalendarFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BusinessDayCalendarFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BusinessDayCalendarFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        findFirst: {
+          args: Prisma.BusinessDayCalendarFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BusinessDayCalendarFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        findMany: {
+          args: Prisma.BusinessDayCalendarFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>[]
+        }
+        create: {
+          args: Prisma.BusinessDayCalendarCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        createMany: {
+          args: Prisma.BusinessDayCalendarCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BusinessDayCalendarCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>[]
+        }
+        delete: {
+          args: Prisma.BusinessDayCalendarDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        update: {
+          args: Prisma.BusinessDayCalendarUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        deleteMany: {
+          args: Prisma.BusinessDayCalendarDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BusinessDayCalendarUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BusinessDayCalendarUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>[]
+        }
+        upsert: {
+          args: Prisma.BusinessDayCalendarUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BusinessDayCalendarPayload>
+        }
+        aggregate: {
+          args: Prisma.BusinessDayCalendarAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBusinessDayCalendar>
+        }
+        groupBy: {
+          args: Prisma.BusinessDayCalendarGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BusinessDayCalendarGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BusinessDayCalendarCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BusinessDayCalendarCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2174,6 +2399,66 @@ export const SettlementBatchScalarFieldEnum = {
 export type SettlementBatchScalarFieldEnum = (typeof SettlementBatchScalarFieldEnum)[keyof typeof SettlementBatchScalarFieldEnum]
 
 
+export const MerchantSettlementPolicyScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  paymentMethodName: 'paymentMethodName',
+  mode: 'mode',
+  delayDays: 'delayDays',
+  releaseTimes: 'releaseTimes',
+  businessDaysOnly: 'businessDaysOnly',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type MerchantSettlementPolicyScalarFieldEnum = (typeof MerchantSettlementPolicyScalarFieldEnum)[keyof typeof MerchantSettlementPolicyScalarFieldEnum]
+
+
+export const UpstreamSettlementWindowScalarFieldEnum = {
+  id: 'id',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
+  label: 'label',
+  windowStart: 'windowStart',
+  windowStartDayOffset: 'windowStartDayOffset',
+  windowEnd: 'windowEnd',
+  settlementOffset: 'settlementOffset',
+  settlementTime: 'settlementTime',
+  businessDaysOnly: 'businessDaysOnly',
+  timezone: 'timezone',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type UpstreamSettlementWindowScalarFieldEnum = (typeof UpstreamSettlementWindowScalarFieldEnum)[keyof typeof UpstreamSettlementWindowScalarFieldEnum]
+
+
+export const BusinessDayCalendarScalarFieldEnum = {
+  date: 'date',
+  isBusinessDay: 'isBusinessDay',
+  providerName: 'providerName',
+  note: 'note',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BusinessDayCalendarScalarFieldEnum = (typeof BusinessDayCalendarScalarFieldEnum)[keyof typeof BusinessDayCalendarScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2439,6 +2724,27 @@ export type ListEnumSettlementRunStatusEnumFieldRefInput<$PrismaModel> = FieldRe
 
 
 /**
+ * Reference to a field of type 'SettlementModeEnum'
+ */
+export type EnumSettlementModeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SettlementModeEnum'>
+    
+
+
+/**
+ * Reference to a field of type 'SettlementModeEnum[]'
+ */
+export type ListEnumSettlementModeEnumFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SettlementModeEnum[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2579,6 +2885,9 @@ export type GlobalOmitConfig = {
   balanceAdjustment?: Prisma.BalanceAdjustmentOmit
   settlementRun?: Prisma.SettlementRunOmit
   settlementBatch?: Prisma.SettlementBatchOmit
+  merchantSettlementPolicy?: Prisma.MerchantSettlementPolicyOmit
+  upstreamSettlementWindow?: Prisma.UpstreamSettlementWindowOmit
+  businessDayCalendar?: Prisma.BusinessDayCalendarOmit
 }
 
 /* Types for Logging */

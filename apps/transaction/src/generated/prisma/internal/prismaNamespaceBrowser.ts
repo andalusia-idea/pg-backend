@@ -68,7 +68,10 @@ export const ModelName = {
   BalanceSnapshot: 'BalanceSnapshot',
   BalanceAdjustment: 'BalanceAdjustment',
   SettlementRun: 'SettlementRun',
-  SettlementBatch: 'SettlementBatch'
+  SettlementBatch: 'SettlementBatch',
+  MerchantSettlementPolicy: 'MerchantSettlementPolicy',
+  UpstreamSettlementWindow: 'UpstreamSettlementWindow',
+  BusinessDayCalendar: 'BusinessDayCalendar'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -463,6 +466,66 @@ export const SettlementBatchScalarFieldEnum = {
 } as const
 
 export type SettlementBatchScalarFieldEnum = (typeof SettlementBatchScalarFieldEnum)[keyof typeof SettlementBatchScalarFieldEnum]
+
+
+export const MerchantSettlementPolicyScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  paymentMethodName: 'paymentMethodName',
+  mode: 'mode',
+  delayDays: 'delayDays',
+  releaseTimes: 'releaseTimes',
+  businessDaysOnly: 'businessDaysOnly',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type MerchantSettlementPolicyScalarFieldEnum = (typeof MerchantSettlementPolicyScalarFieldEnum)[keyof typeof MerchantSettlementPolicyScalarFieldEnum]
+
+
+export const UpstreamSettlementWindowScalarFieldEnum = {
+  id: 'id',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
+  label: 'label',
+  windowStart: 'windowStart',
+  windowStartDayOffset: 'windowStartDayOffset',
+  windowEnd: 'windowEnd',
+  settlementOffset: 'settlementOffset',
+  settlementTime: 'settlementTime',
+  businessDaysOnly: 'businessDaysOnly',
+  timezone: 'timezone',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type UpstreamSettlementWindowScalarFieldEnum = (typeof UpstreamSettlementWindowScalarFieldEnum)[keyof typeof UpstreamSettlementWindowScalarFieldEnum]
+
+
+export const BusinessDayCalendarScalarFieldEnum = {
+  date: 'date',
+  isBusinessDay: 'isBusinessDay',
+  providerName: 'providerName',
+  note: 'note',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BusinessDayCalendarScalarFieldEnum = (typeof BusinessDayCalendarScalarFieldEnum)[keyof typeof BusinessDayCalendarScalarFieldEnum]
 
 
 export const SortOrder = {

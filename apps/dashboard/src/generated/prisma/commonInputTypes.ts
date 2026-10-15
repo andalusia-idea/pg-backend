@@ -545,6 +545,23 @@ export type EnumSettlementRunStatusEnumWithAggregatesFilter<$PrismaModel = never
   _max?: Prisma.NestedEnumSettlementRunStatusEnumFilter<$PrismaModel>
 }
 
+export type EnumSettlementModeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.SettlementModeEnum | Prisma.EnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel> | $Enums.SettlementModeEnum
+}
+
+export type EnumSettlementModeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SettlementModeEnum | Prisma.EnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSettlementModeEnumWithAggregatesFilter<$PrismaModel> | $Enums.SettlementModeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel>
+}
+
 export type NestedIntFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -1033,6 +1050,23 @@ export type NestedEnumSettlementRunStatusEnumWithAggregatesFilter<$PrismaModel =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumSettlementRunStatusEnumFilter<$PrismaModel>
   _max?: Prisma.NestedEnumSettlementRunStatusEnumFilter<$PrismaModel>
+}
+
+export type NestedEnumSettlementModeEnumFilter<$PrismaModel = never> = {
+  equals?: $Enums.SettlementModeEnum | Prisma.EnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel> | $Enums.SettlementModeEnum
+}
+
+export type NestedEnumSettlementModeEnumWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.SettlementModeEnum | Prisma.EnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  in?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  notIn?: $Enums.SettlementModeEnum[] | Prisma.ListEnumSettlementModeEnumFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumSettlementModeEnumWithAggregatesFilter<$PrismaModel> | $Enums.SettlementModeEnum
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumSettlementModeEnumFilter<$PrismaModel>
 }
 
 

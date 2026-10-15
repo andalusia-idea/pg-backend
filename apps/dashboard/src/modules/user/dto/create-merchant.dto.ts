@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { EmailUnique } from '../validator/email-unique.validator';
 
 export class CreateMerchantDto {
@@ -119,12 +111,4 @@ export class CreateMerchantDto {
   @IsOptional()
   @IsString()
   coordinate: string | null;
-
-  /** Minutes between settlement runs. Defaults to 120 when omitted. */
-  @ApiPropertyOptional({ type: Number, nullable: true, example: 120 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  settlementInterval: number | null;
 }

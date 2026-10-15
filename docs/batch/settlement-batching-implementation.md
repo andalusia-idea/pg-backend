@@ -1320,10 +1320,28 @@ UI rather than implied by a default buried in code.
 exists, fall back to a system default of `FOLLOW_UPSTREAM` rather than settling
 nothing — a merchant with no policy row should still get paid.
 
-Give this table the same `'*'` sentinel and the same `@@unique([merchantId,
-paymentMethodName])` as `SettlementRun`, for the same reason: nullable means two
-default policies can coexist for one merchant, and most-specific-first then has
-no single answer. See *Why `paymentMethodName` is `'*'` and not `NULL`* in Step 8.
+Give this table the same `'*'` sentinel as `SettlementRun`, for the same reason:
+nullable means two default policies can coexist for one merchant, and
+most-specific-first then has no single answer. See *Why `paymentMethodName` is
+`'*'` and not `NULL`* in Step 8.
+
+**The unique key must include `effectiveFrom`.** An earlier draft of this
+section said to copy `SettlementRun`'s `@@unique([merchantId,
+paymentMethodName])` exactly, and that is wrong — it contradicts the
+effective-dating two lines above it. Versioning a policy means **two rows** for
+the same merchant and method, the old one with `effectiveTo` set and the new one
+starting later. A unique on just those two columns permits one row, so the only
+way to change a policy becomes an `UPDATE` in place, which destroys the history
+those columns exist to keep:
+
+```prisma
+@@unique([merchantId, paymentMethodName, effectiveFrom])
+```
+
+"Only one *currently active* row per merchant and method" is then an
+application invariant. It could be a hand-written partial index
+(`WHERE "effectiveTo" IS NULL`, in the style of the claim index), but leave that
+until the dashboard can actually create a second version.
 
 Also filter on `effectiveFrom <= now < effectiveTo`.
 
@@ -1345,10 +1363,52 @@ three partners' known rules are in
 Seed MotionPay QRIS (T+1 15:00) and E-Wallet (H+3) and stop there; add partners
 as they go live.
 
+**`label` belongs in its unique key**, not just `(providerName,
+paymentMethodName, effectiveFrom)`. A partner can run several windows on one
+method from the same date — Teleanjar settles batch 1 at 13:00 and batch 2 at
+19:00, both effective from the same day — so leaving `label` out means the
+second insert loses and that schedule cannot be expressed at all:
+
+```prisma
+@@unique([providerName, paymentMethodName, label, effectiveFrom])
+@@index([providerName, paymentMethodName])
+```
+
 **Everything is `Asia/Jakarta`.** Do the day arithmetic in an explicit timezone,
 not in the container's local time, or the answer changes when the container
-moves. The `businessDaysOnly` flag and the holiday calendar are only needed once
+moves. Give `effectiveFrom`/`effectiveTo` `@db.Timestamptz(6)` like every other
+timestamp in this schema — a bare `DateTime` becomes `TIMESTAMP(3)` with no
+timezone, which is a strange thing for the one table whose whole job is
+timezone-sensitive scheduling, and the `timestamptz_consistency` migration
+exists because that drift happened before.
+
+The `businessDaysOnly` flag and the holiday calendar are only needed once
 Pakailink is live — leave the column, skip the calendar.
+
+### Audit columns on all three
+
+Unlike Step 8's run and batch, these **do** belong in `AUDITED_MODELS` — the
+dashboard edits them through Prisma on an authenticated request, so the
+extension actually fires. No raw SQL, no missing CLS context.
+
+They are hand-typed configuration that decides when merchants get paid, and
+`effectiveFrom`/`effectiveTo` record *when a term applied*, never *who set it*.
+An hour entered wrong in `UpstreamSettlementWindow` moves the payout time for
+every merchant on that rail, quietly; that table wants the trail at least as
+much as the policy does.
+
+Add the columns **before** adding a model to the set. The other order throws on
+the first write, because `creationAuditFields` injects `createdAt`
+unconditionally — the same way `BalanceSnapshot` would have in Step 1.
+
+One exception: **`BusinessDayCalendar` takes no `deletedAt`/`deletedBy`.** Its
+primary key is a natural one with no surrogate id, so a soft-deleted row would
+hold its own key forever — enter a date by mistake, retire it, and entering it
+correctly collides on the primary key with no way out but un-deleting. Hard
+delete there. `MerchantSettlementPolicy` has the same shape in milder form,
+since a soft-deleted row keeps its `(merchantId, paymentMethodName,
+effectiveFrom)` slot, but `effectiveFrom` is a timestamp that will not usually
+repeat exactly.
 
 **Verify**: a table-driven spec per mode, including the boundary minute in both
 directions and a payment made at 23:59.

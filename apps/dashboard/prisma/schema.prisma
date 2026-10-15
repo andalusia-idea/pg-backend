@@ -1187,3 +1187,110 @@ enum SettlementRunStatusEnum {
 
   @@schema("settlement")
 }
+
+model MerchantSettlementPolicy {
+  id                Int    @id @default(autoincrement())
+  merchantId        Int
+  paymentMethodName String @default("*")
+
+  mode SettlementModeEnum
+
+  // FIXED_DELAY: 1 = T + 1
+  delayDays Int?
+
+  // SCHEDULED: ["06:00", "12:00","18:00","23:00"]
+  // FIXED_DELAY: a single entry
+  releaseTimes String[]
+
+  businessDaysOnly Boolean @default(false)
+
+  effectiveFrom DateTime  @db.Timestamptz(6)
+  effectiveTo   DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Settlement configuration, not general merchant configuration - nothing
+  // outside the settlement app reads it. Keeping it here means that app
+  // borrows nothing from the `config` schema.
+  @@unique([merchantId, paymentMethodName, effectiveFrom])
+  @@schema("settlement")
+}
+
+enum SettlementModeEnum {
+  INSTANT
+  FOLLOW_UPSTREAM
+  FIXED_DELAY
+  SCHEDULED
+
+  @@schema("settlement")
+}
+
+model UpstreamSettlementWindow {
+  id                Int    @id @default(autoincrement())
+  providerName      String
+  paymentMethodName String
+  label             String // "DAILY", "BATCH_1", "BATCH_2"
+
+  // Transaction window, as a half-open interval [start, end) in `timezone`.
+  windowStart          String // "18:00"
+  windowStartDayOffset Int    @default(0) // -1 when the window opens the previous day
+  windowEnd            String // "12:00"
+
+  // When the upstream releases it.
+  settlementOffset Int // 0 same day, 1 = H+1, 3 = H+3
+  settlementTime   String? // "13:00"; null when the partner gives no time
+  businessDaysOnly Boolean @default(false)
+
+  timezone String @default("Asia/Jakarta")
+
+  effectiveFrom DateTime  @db.Timestamptz(6)
+  effectiveTo   DateTime? @db.Timestamptz(6) // schedules change; keep the history
+
+  // Audited for the same reason as MerchantSettlementPolicy, and arguably more
+  // urgently: these rows are hand-typed from a partner's notice, and an hour
+  // entered wrong here moves the payout time for *every* merchant on that rail,
+  // quietly, until somebody notices. A holiday typed wrong shifts one payout.
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  /// `label` is in the key because a partner can run several windows on one
+  /// method from the same date - Teleanjar settles batch 1 at 13:00 and batch 2
+  /// at 19:00, both effective from the same day. Without it the second insert
+  /// loses, and the schedule becomes unrepresentable rather than merely wrong.
+  @@unique([providerName, paymentMethodName, label, effectiveFrom])
+  @@index([providerName, paymentMethodName])
+  @@schema("settlement")
+}
+
+model BusinessDayCalendar {
+  date          DateTime @db.Date
+  isBusinessDay Boolean
+  providerName  String   @default("*") /// `*` = the national calendar; a provider name overrides it for that partner
+  note          String? // "International Labor Day 2026, per Pakailink notice"
+
+  /// No `deletedAt`/`deletedBy`, unlike the other two settlement tables, and
+  /// this one is the exception on purpose.
+  ///
+  /// The primary key is a natural one with no surrogate id, so a soft-deleted
+  /// row would occupy its own key forever: enter 2026-05-01 by mistake, retire
+  /// it, then try to enter it correctly and the insert collides on the primary
+  /// key with no way round it but un-deleting. A mistaken holiday is a
+  /// correction, not a tombstone - delete it, and `updatedBy` still records who
+  /// last touched the rows that survive.
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+
+  @@id([date, providerName])
+  @@schema("settlement")
+}

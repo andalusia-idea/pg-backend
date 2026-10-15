@@ -102,3 +102,13 @@ export const SettlementRunStatusEnum = {
 } as const
 
 export type SettlementRunStatusEnum = (typeof SettlementRunStatusEnum)[keyof typeof SettlementRunStatusEnum]
+
+
+export const SettlementModeEnum = {
+  INSTANT: 'INSTANT',
+  FOLLOW_UPSTREAM: 'FOLLOW_UPSTREAM',
+  FIXED_DELAY: 'FIXED_DELAY',
+  SCHEDULED: 'SCHEDULED'
+} as const
+
+export type SettlementModeEnum = (typeof SettlementModeEnum)[keyof typeof SettlementModeEnum]

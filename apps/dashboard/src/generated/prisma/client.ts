@@ -247,3 +247,18 @@ export type SettlementRun = Prisma.SettlementRunModel
  * 
  */
 export type SettlementBatch = Prisma.SettlementBatchModel
+/**
+ * Model MerchantSettlementPolicy
+ * 
+ */
+export type MerchantSettlementPolicy = Prisma.MerchantSettlementPolicyModel
+/**
+ * Model UpstreamSettlementWindow
+ * 
+ */
+export type UpstreamSettlementWindow = Prisma.UpstreamSettlementWindowModel
+/**
+ * Model BusinessDayCalendar
+ * 
+ */
+export type BusinessDayCalendar = Prisma.BusinessDayCalendarModel
