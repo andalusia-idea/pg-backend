@@ -5,7 +5,9 @@ No background assumed. This is the "what is actually going on" document for
 they fit together.
 
 Companion to [balance-explained.md](balance-explained.md), which covers the
-money model this one moves. Read that first if `PENDING` / `AVAILABLE` /
+money model this one moves, and to
+[settlement-policy-explained.md](settlement-policy-explained.md), which covers
+the rules deciding *when* it should move. Read that first if `PENDING` / `AVAILABLE` /
 `RESERVED` are not yet solid, because settlement is **the only thing in the
 system that moves money from `PENDING` to `AVAILABLE`** — that is its entire
 job, and the rest of this document is the machinery around that one sentence.

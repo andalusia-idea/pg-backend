@@ -9,9 +9,11 @@ The design docs next to this one say *why* things were chosen.
 is the build order. This one is for building the mental picture, and §9 is for
 checking the code yourself without taking anyone's word for it.
 
-Its companion is [settlement-explained.md](settlement-explained.md), which
-covers the machinery that *moves* this money - the claim, the batch, the
-enqueuer and the sweeper. Read this one first: settlement is the only thing that
+Its companions are
+[settlement-policy-explained.md](settlement-policy-explained.md), the rules for
+*when* this money should move, and
+[settlement-explained.md](settlement-explained.md), the machinery that moves it -
+the claim, the batch, the enqueuer and the sweeper. Read this one first: settlement is the only thing that
 moves money from `PENDING` to `AVAILABLE`, so it makes little sense until the
 buckets do.
 

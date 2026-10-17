@@ -1282,6 +1282,13 @@ than guessing the column order now.
 
 ## Step 9 — Policy and eligibility
 
+> **Build the mental picture first.**
+> [settlement-policy-explained.md](settlement-policy-explained.md) walks the four
+> modes one at a time with timelines, the `'*'` sentinel, effective dating and
+> the in-force query that is easy to invert, the column-per-mode matrix, and how
+> a policy becomes the cutoff the claim compares against. This step is the
+> specification; that one is the explanation.
+
 `MerchantSettlementPolicy` goes in the **`settlement` schema**, beside the run
 and batch models from Step 8 — not in `apps/config`. Shape is in
 [settlement-batching.md §4](settlement-batching.md).
