@@ -32,6 +32,8 @@ export class EnqueuerService {
    * fail differently: if settling throws, the record that it was needed has
    * already been committed and another pod picks it up.
    */
+  // Kept on the :00 boundary deliberately: this is the reference the other two
+  // jobs offset themselves *from*, so moving it would move them. See RUNNER_CRON.
   @Cron(CronExpression.EVERY_10_MINUTES, {
     name: 'enqueuer',
     waitForCompletion: true,

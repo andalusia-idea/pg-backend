@@ -1,6 +1,6 @@
 import { SettlementConfig } from '@app/configuration';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaClient, SettlementRunStatusEnum } from '@transaction/prisma';
 import { PRISMA_MASTER_TRANSACTION_PROVIDER_KEY } from '../database';
 import { SettlementService } from './settlement.service';
@@ -15,6 +15,23 @@ import { SettlementService } from './settlement.service';
  * left is still `PENDING` and the next tick takes it.
  */
 const MAX_RUNS_PER_TICK = 200;
+
+/**
+ * 30 seconds past every second minute - **not** on the minute boundary, and
+ * deliberately not `CronExpression.EVERY_5_MINUTES`.
+ *
+ * Measured on a live run of all three crons: the enqueuer fires at :00 of every
+ * tenth minute, and a runner on any divisor of ten shares that instant and
+ * *loses*. The runner's claim query committed before the enqueuer's insert did,
+ * so two runs enqueued at 17:40:00.061 sat PENDING until the next runner tick at
+ * 17:45 - a full interval of latency, every single time, by construction rather
+ * than by chance.
+ *
+ * The 30-second offset means the runner always looks after the enqueuer has
+ * committed, which turns that worst case from one runner interval into about
+ * half a minute.
+ */
+const RUNNER_CRON = '30 */2 * * * *';
 
 /** The claim's result: the fields `settle()` needs, plus context for logs. */
 type ClaimedRun = {
@@ -49,10 +66,7 @@ export class RunnerService {
    * does not await the previous invocation, so without it a drain lasting
    * longer than the interval would have several copies running inside one pod.
    */
-  @Cron(CronExpression.EVERY_5_MINUTES, {
-    name: 'runner',
-    waitForCompletion: true,
-  })
+  @Cron(RUNNER_CRON, { name: 'runner', waitForCompletion: true })
   async drain(): Promise<void> {
     let settledRuns = 0;
     let settledPurchases = 0;

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaClient, SettlementRunStatusEnum } from '@transaction/prisma';
 import { PRISMA_MASTER_TRANSACTION_PROVIDER_KEY } from '../database';
 
@@ -26,6 +26,20 @@ const STALE_AFTER_MINUTES = 15;
  */
 const MAX_ATTEMPTS = 3;
 
+/**
+ * 45 seconds past every fifth minute.
+ *
+ * Shorter than STALE_AFTER_MINUTES so a crashed run gets three chances per
+ * staleness window rather than waiting out a whole one.
+ *
+ * Offset off the minute boundary for the same reason the runner is - see
+ * RUNNER_CRON - though it matters less here: the sweeper only touches runs
+ * whose `claimedAt` is already fifteen minutes old, so it cannot race a claim
+ * the runner just made. The offset is for tidiness and to keep three jobs from
+ * hitting the database on the same instant.
+ */
+const SWEEPER_CRON = '45 */5 * * * *';
+
 @Injectable()
 export class SweeperService {
   private readonly logger = new Logger(SweeperService.name);
@@ -48,10 +62,7 @@ export class SweeperService {
    * holds a pod name - diagnostic, and different on every deploy - so filtering
    * on it would break the first time a pod was replaced.
    */
-  @Cron(CronExpression.EVERY_5_MINUTES, {
-    name: 'sweeper',
-    waitForCompletion: true,
-  })
+  @Cron(SWEEPER_CRON, { name: 'sweeper', waitForCompletion: true })
   async sweep(): Promise<void> {
     const staleBefore = new Date(Date.now() - STALE_AFTER_MINUTES * 60 * 1000);
 
