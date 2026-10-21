@@ -563,7 +563,314 @@ one place that has to filter thousands of rows at once, and the two must agree.
 
 ---
 
-## 12. End-to-end scenarios
+## 12. From a policy to a `dueAt`
+
+The enqueuer's whole job. Every other document uses `dueAt`, indexes it, and
+depends on its uniqueness — none of them says how to compute it. This is that
+missing piece.
+
+### What `dueAt` has to be
+
+A **release boundary** — a scheduled moment, snapped to the policy — that has
+already passed. Three requirements, all load-bearing:
+
+1. **Deterministic.** The same logical boundary must always produce the same
+   timestamp. This is what makes `@@unique([merchantId, paymentMethodName,
+   dueAt])` work: the second pod computes the same value and loses the insert.
+2. **At or before `now`.** The runner only picks up `dueAt <= now()`, so
+   enqueueing a future boundary just creates a row nobody touches yet.
+3. **One per boundary, ever.** Re-running the enqueuer must not produce a second
+   run for the same boundary.
+
+### The trap
+
+```ts
+dueAt: new Date()   // ← breaks all three, silently
+```
+
+Every tick computes a different value, so the unique key never collides, so
+every tick inserts a new row. At a 10-minute cron that is **144 runs per
+merchant per day** — each one claiming nothing, because the first already took
+the work. Nothing errors. You just quietly accumulate junk and the real signal
+("did settlement happen for merchant 27?") drowns.
+
+`dueAt` for a `SCHEDULED` merchant at 15:07 is **today 12:00** — the boundary
+that passed — not 15:07.
+
+### The insight that collapses four cases into two
+
+> **`dueAt` depends only on the release *times*. Never on `delayDays` or
+> `settlementOffset`.**
+
+That looks wrong at first. Work through `FIXED_DELAY` with `delayDays: 2`,
+`releaseTimes: ["10:00"]`:
+
+- A payment from Monday releases Wednesday 10:00.
+- A payment from Tuesday releases Thursday 10:00.
+- A payment from Wednesday releases Friday 10:00.
+
+So **every day at 10:00, something becomes available.** The run fires daily at
+10:00 regardless of the delay. The delay decides *which* payments are ripe —
+and that is the eligibility cutoff's job (§11), not `dueAt`'s.
+
+Same for `FOLLOW_UPSTREAM`: `settlementOffset: 3` does not mean "look every
+three days". MotionPay settles *something* to us every day; the offset says the
+something is three days old.
+
+Which means:
+
+| Mode | Boundary times | Derivation |
+|---|---|---|
+| `SCHEDULED` | `releaseTimes` | most recent that has passed |
+| `FIXED_DELAY` | `releaseTimes` (exactly one) | **identical to `SCHEDULED`** |
+| `FOLLOW_UPSTREAM` | the window's `settlementTime` | same, in the **window's** timezone |
+| `INSTANT` | none — see below | a truncated slot |
+
+`FIXED_DELAY` and `SCHEDULED` share one code path. A single-entry list is just a
+list.
+
+### The derivation
+
+```ts
+/**
+ * The most recent release boundary at or before `now`, or null when the policy
+ * has no boundary yet (a brand-new policy whose first one is still ahead).
+ *
+ * Deterministic by construction: every branch returns a time snapped to the
+ * schedule, never `now` itself.
+ */
+export function mostRecentDueAt(
+  policy: EligibilityPolicy,
+  now: Date,
+  window?: EligibilityWindow,
+): Date | null {
+  switch (policy.mode) {
+    case SettlementModeEnum.SCHEDULED:
+    case SettlementModeEnum.FIXED_DELAY:
+      return lastBoundaryAtOrBefore(policy.releaseTimes, SETTLEMENT_TIMEZONE, now);
+
+    case SettlementModeEnum.FOLLOW_UPSTREAM: {
+      if (!window) return null;             // nobody seeded this method's window
+      // A null settlementTime means "end of day" - the same assumption
+      // settlementReleaseAt makes, so the two cannot disagree.
+      const times = [window.settlementTime ?? '23:59'];
+      return lastBoundaryAtOrBefore(times, window.timezone, now);
+    }
+
+    case SettlementModeEnum.INSTANT:
+      return currentSlot(now);              // see below
+  }
+}
+
+/** The latest of `times` that has already happened, today or yesterday. */
+function lastBoundaryAtOrBefore(
+  times: readonly string[],
+  zone: string,
+  now: Date,
+): Date | null {
+  if (times.length === 0) return null;
+
+  const sorted = [...times].sort();         // zero-padded HH:mm sorts correctly
+  const at = DateTime.fromJSDate(now, { zone });
+  const today = at.startOf('day');
+
+  const passedToday = sorted
+    .map((t) => atTimeOnDay(today, t))
+    .filter((b) => b.toMillis() <= at.toMillis());
+
+  if (passedToday.length > 0) {
+    return passedToday[passedToday.length - 1].toJSDate();   // the latest one
+  }
+
+  // Nothing today yet - so the most recent boundary was yesterday's last.
+  return atTimeOnDay(today.minus({ days: 1 }), sorted[sorted.length - 1]).toJSDate();
+}
+```
+
+Worked through, for `releaseTimes: ["06:00","12:00","18:00","23:00"]`:
+
+| `now` | boundaries passed today | `dueAt` |
+|---|---|---|
+| 05:30 | none | **yesterday 23:00** |
+| 06:00 | 06:00 | **today 06:00** |
+| 15:07 | 06:00, 12:00 | **today 12:00** |
+| 23:59 | all four | **today 23:00** |
+
+Notice 05:30 reaching back to yesterday. That is not an edge case to tolerate —
+it is the correct answer. At 05:30 the most recent thing that should have been
+settled is last night's 23:00 batch.
+
+### `INSTANT` — the honest answer is that it does not fit
+
+`INSTANT` means "available the moment the payment succeeds". There is **no
+schedule**, so there is no boundary, so there is nothing deterministic to use as
+`dueAt`. The model genuinely has no slot for it.
+
+Three ways out, and the trade is real:
+
+**A — Truncate `now` into fixed slots. Recommended.**
+
+```ts
+const INSTANT_SLOT_MINUTES = 10;
+
+function currentSlot(now: Date): Date {
+  const at = DateTime.fromJSDate(now, { zone: SETTLEMENT_TIMEZONE });
+  const minute = Math.floor(at.minute / INSTANT_SLOT_MINUTES) * INSTANT_SLOT_MINUTES;
+
+  return at.set({ minute, second: 0, millisecond: 0 }).toJSDate();
+}
+```
+
+Both pods in the same slot compute the same timestamp, so the unique key still
+works and the enqueuer stays idempotent. It is really `SCHEDULED` with a
+boundary every ten minutes.
+
+- ✅ one pipeline — batches, exports and audit all behave identically
+- ✅ no new code path to get wrong
+- ⚠️ "instant" is actually "within ten minutes", and 144 runs per merchant per
+  day. Fine for a handful of merchants, not for thousands. Shorten the slot for
+  a merchant who is genuinely paying for speed, and know it is a linear cost.
+
+**B — Settle inline at capture, no run at all.** The purchase webhook posts
+`PAYIN_CAPTURED` into `PENDING` and `MERCHANT_SETTLED` into `AVAILABLE` in the
+same transaction. Truly instant, and the honest reading of the word.
+
+- ⚠️ **Two settlement code paths**, one batched and one inline, doubling the
+  surface where money bugs live.
+- ⚠️ No `SettlementBatch` row, so instant merchants vanish from batch history
+  and from the Step 13 export.
+
+**C — Enqueue on demand**, a run inserted by the webhook. Event-driven, but
+`dueAt` has the determinism problem all over again, and now the webhook depends
+on settlement.
+
+**Recommendation: A, with the slot as a named constant.** It keeps one pipeline
+and one definition of "settled", and the ten minutes is a product decision you
+can revisit without touching the mechanism. Reach for B only if a merchant is
+contractually promised sub-minute settlement — and then accept the second code
+path deliberately rather than by accident.
+
+### `FOLLOW_UPSTREAM` has to fan out, and that is why the run has a method
+
+Here is the thing that explains a column you may have wondered about.
+
+A `'*'` policy means "all methods". For the other three modes that is fine — the
+boundary is merchant-wide, so one run with `paymentMethodName = '*'` covers
+everything, and the claim's `($method = '*' OR "paymentMethodName" = $method)`
+does the rest.
+
+`FOLLOW_UPSTREAM` cannot work that way. Boundaries come from the **window**, and
+windows are per `(provider, method)`:
+
+| Method | Window | Boundary |
+|---|---|---|
+| QRIS | T+1 at 15:00 | daily 15:00 |
+| DIRECTEWALLET | H+3, no time | daily end of day |
+
+One run cannot carry both, because the claim's cutoff is a single
+`AND "paidAt" < $cutoff`. Settle them together and you either release e-wallet
+money two days early or hold QRIS money back.
+
+So the enqueuer **expands a `'*'` FOLLOW_UPSTREAM policy into one run per
+method that has a window**:
+
+```
+SettlementRun
+ merchantId | paymentMethodName | dueAt
+ 27         | QRIS              | today 15:00
+ 27         | DIRECTEWALLET     | today 23:59:59.999
+```
+
+Each run then claims only its own method, with its own cutoff. That is what
+`paymentMethodName` on `SettlementRun` is *for* — it is not a copy of the
+policy's column, it is the resolved method the run is about.
+
+A policy naming a specific method produces one run for that method, unchanged.
+
+### No backfill, ever
+
+If the enqueuer is down for three days, it must **not** create three days of
+missed runs on restart. Only the most recent boundary.
+
+This is the payoff of claiming instead of windowing (§4 of
+[settlement-explained.md](settlement-explained.md)). A missed boundary is not
+lost work: the transactions it would have claimed are still `NULL`, so the next
+run sweeps up everything, including three days of backlog, in one go. Backfilling
+would create runs that each claim nothing and bury the real one.
+
+The same reasoning kills "catch-up" logic generally. The claim is cumulative, so
+being late costs nothing but latency.
+
+### Clamp to `effectiveFrom`
+
+`lastBoundaryAtOrBefore` can reach back to yesterday, which may be **before the
+policy came into force** — likely for a merchant who registered this morning.
+
+Skip those: a run dated before its policy existed is confusing to read and
+claims transactions under terms that were not yet agreed. One line:
+
+```ts
+if (dueAt && dueAt < policy.effectiveFrom) continue;
+```
+
+### Putting it together
+
+```ts
+@Cron(CronExpression.EVERY_10_MINUTES, { name: 'enqueuer', waitForCompletion: true })
+async enqueueDueRuns(): Promise<void> {
+  const now = new Date();
+  const policies = await this.prismaMaster.merchantSettlementPolicy.findMany({
+    where: {
+      deletedAt: null,
+      effectiveFrom: { lte: now },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+    },
+  });
+
+  const rows: { merchantId: number; paymentMethodName: string; dueAt: Date;
+                createdBy: number }[] = [];
+
+  for (const policy of policies) {
+    for (const { paymentMethodName, window } of await this.resolveTargets(policy)) {
+      const dueAt = mostRecentDueAt(policy, now, window);
+      if (!dueAt) continue;                        // no boundary yet
+      if (dueAt < policy.effectiveFrom) continue;  // predates the terms
+
+      rows.push({
+        merchantId: policy.merchantId,
+        paymentMethodName,
+        dueAt,
+        createdBy: SETTLEMENT_RUNNER_USER_ID,
+      });
+    }
+  }
+
+  if (rows.length === 0) return;
+
+  // One statement, and duplicates are the normal case rather than an error:
+  // the other pod's tick, and this pod's previous tick for an unchanged
+  // boundary, both collide on @@unique([merchantId, paymentMethodName, dueAt]).
+  const { count } = await this.prismaMaster.settlementRun.createMany({
+    data: rows,
+    skipDuplicates: true,
+  });
+
+  if (count > 0) this.logger.log({ msg: 'runs enqueued', count });
+}
+```
+
+`resolveTargets(policy)` is the fan-out: `[{ paymentMethodName: policy.paymentMethodName }]`
+for the three scheduled modes, and one entry per in-force window for
+`FOLLOW_UPSTREAM` on `'*'`.
+
+**`skipDuplicates: true` rather than catching `P2002` per row.** Step 11
+suggests the catch, which works but needs a loop of individual inserts.
+`createMany` does it in one statement, and here a duplicate is the *expected*
+outcome on most ticks — the boundary has not moved since the last one.
+
+---
+
+## 13. End-to-end scenarios
 
 A payment captured **Tue 14 Oct at 23:59**, 100,000 gross / 98,000 net to the
 merchant. What each policy does with it:
@@ -585,7 +892,7 @@ number.
 
 ---
 
-## 13. How to check it yourself
+## 14. How to check it yourself
 
 ### Who has what policy right now?
 
@@ -661,7 +968,7 @@ payment, so this query cannot judge them.)
 
 ---
 
-## 14. Vocabulary
+## 15. Vocabulary
 
 | Term | Meaning here |
 |---|---|

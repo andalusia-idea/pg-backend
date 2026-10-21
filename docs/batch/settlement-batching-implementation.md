@@ -1506,10 +1506,21 @@ purchase is still unclaimed afterwards.
 
 ## Step 11 — The enqueuer and the sweeper
 
-**The enqueuer** is a `@Cron` (every 5 minutes is plenty) that inserts
+**The enqueuer** is a `@Cron` (every 5-10 minutes is plenty) that inserts
 `SettlementRun` rows for merchants whose next release time has passed. It does
 no work itself. Both pods firing it is harmless because of
-`@@unique([merchantId, paymentMethodName, dueAt])` — catch `P2002` and move on.
+`@@unique([merchantId, paymentMethodName, dueAt])` — `createMany({
+skipDuplicates: true })` makes a duplicate the expected outcome rather than an
+error to catch per row.
+
+> **`dueAt` is the part this step used to leave unsaid**, and it is the one
+> thing in the enqueuer that fails silently. It must be the release *boundary*
+> snapped to the schedule, never `new Date()` — a moving value never collides on
+> that unique key, so every tick inserts another run. The derivation per mode,
+> the `FOLLOW_UPSTREAM` fan-out into one run per method, why `INSTANT` does not
+> fit the model, and why a missed boundary must never be backfilled are all in
+> *From a policy to a `dueAt`* in
+> [settlement-policy-explained.md](settlement-policy-explained.md).
 
 `SettlementRun.createdBy` is NOT NULL, so this insert will not compile without a
 principal. Use the one Step 7.2 already pins for this job —
