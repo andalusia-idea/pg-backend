@@ -33,18 +33,23 @@ export class DisbursementTransactionDto {
   @ApiProperty()
   paymentMethodName: string;
 
-  /** May be a merchant, an agent, or an unrelated third party. */
+  /**
+   * May be a merchant, an agent, or an unrelated third party.
+   *
+   * `bankCode` is polymorphic: a `config.Bank.code` when `paymentMethodName`
+   * is TRANSFERBANK, an `EWalletEnum` value when it's TRANSFEREWALLET.
+   * `accountNumber` holds a wallet phone number in that case. The bank's
+   * display name isn't stored (it's derivable from `bankCode` via
+   * `config.Bank`, not exposed here) — see docs/dashboard-migration.md D23.
+   */
   @ApiProperty()
-  recipientName: string;
+  accountHolderName: string;
 
   @ApiProperty()
-  recipientBankCode: string;
-
-  @ApiProperty({ type: String, required: false, nullable: true })
-  recipientBankName: string | null;
+  accountNumber: string;
 
   @ApiProperty()
-  recipientAccount: string;
+  bankCode: string;
 
   @ApiMoneyProperty()
   @ToMoneyString()

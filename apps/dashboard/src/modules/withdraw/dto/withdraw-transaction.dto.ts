@@ -40,6 +40,21 @@ export class WithdrawTransactionDto {
   @ApiProperty()
   paymentMethodName: string;
 
+  /**
+   * Null when `paymentMethodName` is USDT, which has no bank, no account
+   * number and no account holder. `bankCode` is polymorphic for the BANK
+   * case: a `config.Bank.code`, not a display name — see
+   * docs/dashboard-migration.md D23.
+   */
+  @ApiProperty({ type: String, required: false, nullable: true })
+  accountHolderName: string | null;
+
+  @ApiProperty({ type: String, required: false, nullable: true })
+  accountNumber: string | null;
+
+  @ApiProperty({ type: String, required: false, nullable: true })
+  bankCode: string | null;
+
   @ApiMoneyProperty()
   @ToMoneyString()
   nominal: string;
