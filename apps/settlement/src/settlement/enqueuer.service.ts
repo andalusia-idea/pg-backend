@@ -6,7 +6,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@transaction/prisma';
 import { PRISMA_MASTER_TRANSACTION_PROVIDER_KEY } from '../database';
+import { CronHeartbeat } from './cron-heartbeat';
 import { mostRecentDueAt, type EligibilityWindow } from '../policy';
+
+/** Minutes between ticks. Must match the @Cron expression below. */
+const ENQUEUER_INTERVAL_MINUTES = 10;
 
 /** One run to create: a merchant, a resolved method, and the boundary it is for. */
 type PendingRun = {
@@ -19,6 +23,7 @@ type PendingRun = {
 @Injectable()
 export class EnqueuerService {
   private readonly logger = new Logger(EnqueuerService.name);
+  private readonly heartbeat = new CronHeartbeat(ENQUEUER_INTERVAL_MINUTES);
 
   constructor(
     @Inject(PRISMA_MASTER_TRANSACTION_PROVIDER_KEY)
@@ -68,7 +73,23 @@ export class EnqueuerService {
       }
     }
 
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      this.logger.debug({
+        msg: 'no boundaries due',
+        policies: policies.length,
+      });
+
+      const idleTicks = this.heartbeat.wasIdle();
+      if (idleTicks !== null) {
+        this.logger.log({
+          msg: 'enqueuer alive, no boundaries due',
+          idleTicks,
+          policies: policies.length,
+        });
+      }
+
+      return;
+    }
 
     // One statement, and a duplicate is the *expected* outcome rather than an
     // error: this pod's previous tick and the other pod's tick both compute the
@@ -79,9 +100,25 @@ export class EnqueuerService {
       skipDuplicates: true,
     });
 
-    if (count > 0) {
-      this.logger.log({ msg: 'runs enqueued', count, considered: rows.length });
+    // Every boundary already enqueued is the normal steady state - this pod's
+    // previous tick computed the same values - so a zero count is idle, not a
+    // failure.
+    if (count === 0) {
+      this.logger.debug({ msg: 'all due boundaries already enqueued' });
+
+      const idleTicks = this.heartbeat.wasIdle();
+      if (idleTicks !== null) {
+        this.logger.log({
+          msg: 'enqueuer alive, everything already enqueued',
+          idleTicks,
+        });
+      }
+
+      return;
     }
+
+    this.heartbeat.didWork();
+    this.logger.log({ msg: 'runs enqueued', count, considered: rows.length });
   }
 
   /**

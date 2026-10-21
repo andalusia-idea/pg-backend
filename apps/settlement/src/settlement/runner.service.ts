@@ -3,6 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaClient, SettlementRunStatusEnum } from '@transaction/prisma';
 import { PRISMA_MASTER_TRANSACTION_PROVIDER_KEY } from '../database';
+import { CronHeartbeat } from './cron-heartbeat';
 import { SettlementService } from './settlement.service';
 
 /**
@@ -15,6 +16,9 @@ import { SettlementService } from './settlement.service';
  * left is still `PENDING` and the next tick takes it.
  */
 const MAX_RUNS_PER_TICK = 200;
+
+/** Minutes between ticks. Must match RUNNER_CRON. */
+const RUNNER_INTERVAL_MINUTES = 2;
 
 /**
  * 30 seconds past every second minute - **not** on the minute boundary, and
@@ -45,6 +49,7 @@ type ClaimedRun = {
 @Injectable()
 export class RunnerService {
   private readonly logger = new Logger(RunnerService.name);
+  private readonly heartbeat = new CronHeartbeat(RUNNER_INTERVAL_MINUTES);
 
   constructor(
     @Inject(PRISMA_MASTER_TRANSACTION_PROVIDER_KEY)
@@ -113,7 +118,22 @@ export class RunnerService {
       }
     }
 
-    if (settledRuns + failed === 0) return;
+    // Idle is the common case, so it cannot log at `log` level every tick - but
+    // it must not be completely silent either, or a dead cron and a quiet one
+    // look identical. Debug every tick for a developer watching, and an
+    // occasional heartbeat at `log` so production can tell the difference.
+    if (settledRuns + failed === 0) {
+      this.logger.debug({ msg: 'nothing due' });
+
+      const idleTicks = this.heartbeat.wasIdle();
+      if (idleTicks !== null) {
+        this.logger.log({ msg: 'runner alive, nothing due', idleTicks });
+      }
+
+      return;
+    }
+
+    this.heartbeat.didWork();
 
     this.logger.log({
       msg: 'drain complete',

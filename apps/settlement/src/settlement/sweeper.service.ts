@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaClient, SettlementRunStatusEnum } from '@transaction/prisma';
 import { PRISMA_MASTER_TRANSACTION_PROVIDER_KEY } from '../database';
+import { CronHeartbeat } from './cron-heartbeat';
 
 /**
  * How long a run may sit in `RUNNING` before it is presumed abandoned.
@@ -26,6 +27,9 @@ const STALE_AFTER_MINUTES = 15;
  */
 const MAX_ATTEMPTS = 3;
 
+/** Minutes between ticks. Must match SWEEPER_CRON. */
+const SWEEPER_INTERVAL_MINUTES = 5;
+
 /**
  * 45 seconds past every fifth minute.
  *
@@ -43,6 +47,7 @@ const SWEEPER_CRON = '45 */5 * * * *';
 @Injectable()
 export class SweeperService {
   private readonly logger = new Logger(SweeperService.name);
+  private readonly heartbeat = new CronHeartbeat(SWEEPER_INTERVAL_MINUTES);
 
   constructor(
     @Inject(PRISMA_MASTER_TRANSACTION_PROVIDER_KEY)
@@ -101,6 +106,22 @@ export class SweeperService {
         claimedAt: null,
       },
     });
+
+    if (revived.count + abandoned.count === 0) {
+      // Finding nothing is the healthy case here, and the one that most needs
+      // proof of life: a sweeper that silently stopped would let crashed runs
+      // sit forever, and nothing else in the system would notice.
+      this.logger.debug({ msg: 'no stale runs' });
+
+      const idleTicks = this.heartbeat.wasIdle();
+      if (idleTicks !== null) {
+        this.logger.log({ msg: 'sweeper alive, no stale runs', idleTicks });
+      }
+
+      return;
+    }
+
+    this.heartbeat.didWork();
 
     if (revived.count > 0) {
       this.logger.warn({
