@@ -15,7 +15,7 @@ job, and the rest of this document is the machinery around that one sentence.
 The design docs beside this one say *why*:
 [settlement-batching.md](settlement-batching.md) is the shape,
 [settlement-batching-implementation.md](settlement-batching-implementation.md)
-is the build order. This one is for the mental picture, and §10 is for checking
+is the build order. This one is for the mental picture, and §11 is for checking
 the running system yourself.
 
 ---
@@ -82,7 +82,122 @@ lose both the work *and* the record that it was needed.
 
 ---
 
-## 3. The one idea everything rests on
+## 3. What actually triggers them
+
+Nothing pushes. The enqueuer inserting a `SettlementRun` row does not notify
+anybody — a Postgres row just sits there waiting to be noticed. So **each of the
+three parts needs its own cron.** Three jobs, not two:
+
+| Service | Suggested cron | What one tick does |
+|---|---|---|
+| `EnqueuerService` | every 10 min | read policies, write the `SettlementRun` rows now due |
+| `RunnerService` | every 1–2 min | claim a run, settle it, **repeat until no runs are left** |
+| sweeper | every 5 min | return runs stuck in `RUNNING` for >15 min to `PENDING` |
+
+### The runner's tick is "drain the queue", not "do one run"
+
+This is the part worth getting right. If one tick handled a single run, fifty
+merchants all due at 15:00 would take fifty ticks — nearly an hour at a
+one-minute cadence, for work that takes seconds.
+
+So the shape is: the cron **wakes** the runner, the runner **drains**, then it
+sleeps until the next tick.
+
+```ts
+@Cron(CronExpression.EVERY_MINUTE, { name: 'runner', waitForCompletion: true })
+async drain(): Promise<void> {
+  let settled = 0;
+
+  for (;;) {
+    const run = await this.claimOneRun();   // the UPDATE ... SKIP LOCKED in §5
+    if (!run) break;                        // nothing due - done for this tick
+
+    try {
+      await this.settlementService.settle(run);
+      await this.finish(run.id, 'DONE');
+    } catch (error) {
+      // Leave it RUNNING. The sweeper returns it to PENDING after 15 minutes,
+      // and `attempts` is what eventually marks it FAILED. Do not rethrow: one
+      // broken merchant must not stop the drain for everyone else.
+      this.logger.error({ msg: 'run failed', runId: run.id, error });
+    }
+
+    settled += 1;
+  }
+
+  if (settled > 0) this.logger.log({ msg: 'drain complete', settled });
+}
+```
+
+> **The cron interval sets the worst-case *latency*, not the throughput.** How
+> much work gets done per tick is decided by the loop, not the schedule.
+
+### `waitForCompletion`, or you overlap yourself
+
+`@Cron` does **not** wait for the previous invocation to finish. A drain taking
+three minutes on a one-minute cron would have three copies running inside the
+same pod.
+
+`cron@4.4.0`, which `@nestjs/schedule@12` wraps, takes a flag for exactly this:
+
+```ts
+{ name: 'runner', waitForCompletion: true }
+```
+
+> *"If true, no additional instances of cronjob will run until the current onTick
+> callback has completed. Any new scheduled executions that occur while the
+> current cronjob is running will be skipped entirely."*
+
+Worth putting on the sweeper too. The enqueuer is fast enough not to need it,
+and it costs nothing there either. Without the flag you need a manual
+`private isRunning = false` guard, which works and is one more thing to forget.
+
+### Picking the intervals
+
+Worst-case lateness is the two intervals added together:
+
+```
+15:00   merchant's money becomes due
+15:10   enqueuer tick writes the run        (+10 min — enqueuer interval)
+15:11   runner tick claims and settles it   (+1 min  — runner interval)
+```
+
+Eleven minutes late. For policies measured in **days**, that is irrelevant —
+which is why a ten-minute enqueuer is fine. Want it sharper? Shorten the
+enqueuer; the runner is already cheap because an empty drain is one indexed
+query that returns nothing.
+
+**The sweeper's interval must be shorter than the 15-minute stale threshold**,
+or a crashed run sits idle longer than it needs to. Every five minutes gives
+three chances per window.
+
+### "Could the enqueuer just call the runner directly?"
+
+It could, and it would mostly work. Two reasons not to:
+
+- **A run the sweeper rescues** would wait for the next *enqueuer* tick to be
+  retried, instead of being picked up on the next runner tick. Making crashes
+  heal quickly is the sweeper's entire purpose, and fusing the two blunts it.
+- **They fail differently**, which is §2's point. If settling throws inside the
+  enqueuer, you lose the record that the work was needed along with the work.
+
+Keeping them apart costs one decorator and buys independent failure.
+
+### All three run on both pods, and that is fine
+
+Worth restating, because "two pods both running the same cron" sounds like a
+bug:
+
+- **Enqueuer** — both pods insert the same run; the second loses on
+  `@@unique([merchantId, paymentMethodName, dueAt])`. Catch `P2002`, move on.
+- **Runner** — `FOR UPDATE SKIP LOCKED` means the second pod takes a *different*
+  run rather than queueing behind the first. Two pods draining in parallel is
+  the design working.
+- **Sweeper** — resetting an already-reset run is a no-op.
+
+---
+
+## 4. The one idea everything rests on
 
 ### The obvious way, and why it breaks
 
@@ -165,7 +280,7 @@ already does.
 
 ---
 
-## 4. Why a run *table* instead of a lock
+## 5. Why a run *table* instead of a lock
 
 The enqueuer could be skipped entirely: just have every pod run a cron at 15:00
 and use a Redis lock so only one wins. That is the usual answer, and it is worse
@@ -248,7 +363,7 @@ merchant who genuinely cannot be settled.
 Note what is **not** on this diagram: there is no transition for "settled some
 but not all". A run is `DONE` when the claim stops returning rows, and partial
 progress needs no state of its own because the progress is recorded on the
-transactions themselves (§3).
+transactions themselves (§4).
 
 ### `FOR UPDATE SKIP LOCKED`, plainly
 
@@ -265,7 +380,7 @@ and taking — it is one statement.
 
 ---
 
-## 5. Two different gates, and why you need both
+## 6. Two different gates, and why you need both
 
 This confused me when writing it, so it is worth being explicit.
 
@@ -296,7 +411,7 @@ rows to take*. That is why Step 9 had to come before Step 10.
 
 ---
 
-## 6. A full worked example
+## 7. A full worked example
 
 Merchant 27, policy `FOLLOW_UPSTREAM` on `'*'`, MotionPay QRIS (T+1 at 15:00).
 Agent 5 takes a share. It is **2026-10-15, 15:02**.
@@ -385,7 +500,7 @@ Purchase 123 (merchant 98,000 / internal 1,000 / agent 200):
 | AGENT 5 | AVAILABLE | CREDIT | 200.00 | MERCHANT_SETTLED | PURCHASE 123 |
 
 Purchase 124 gets its own six legs with its own numbers. **Note the `sourceId`
-is the purchase, not the batch** — that matters in §7.
+is the purchase, not the batch** — that matters in §8.
 
 Merchant 27's snapshot now: `PENDING` 68,600, `AVAILABLE` 147,000. Purchase
 125's money is still stuck in `PENDING`, which is correct — MotionPay has not
@@ -427,7 +542,7 @@ outcome, not an error.
 
 ---
 
-## 7. Three layers of protection against paying twice
+## 8. Three layers of protection against paying twice
 
 The design looks redundant. It is not — each layer catches a different failure,
 and they are listed here weakest-first:
@@ -452,7 +567,7 @@ movement's `sourceId` is the **purchase id**, a second attempt to post
 
 ---
 
-## 8. When things go wrong
+## 9. When things go wrong
 
 ### A pod dies mid-run
 
@@ -468,7 +583,7 @@ minutes`, and sets it back to `PENDING`. A pod claims it again (`attempts` → 2
 and runs the same claim query. The 500 already done are no longer `NULL`, so it
 takes the remaining 700. Nothing is settled twice and nothing is lost.
 
-**The sweeper is only safe because of §3.** It makes no attempt to work out what
+**The sweeper is only safe because of §4.** It makes no attempt to work out what
 the dead pod finished — it does not need to, because the claim column already
 records that.
 
@@ -517,7 +632,7 @@ so this is a legacy path, not the normal one.)
 
 ---
 
-## 9. The timestamps, because there are eight of them
+## 10. The timestamps, because there are eight of them
 
 Easy to mix up. Ordered by when they happen:
 
@@ -536,13 +651,13 @@ Two traps:
 
 - **`dueAt` is not `paidAt + delay`.** `dueAt` is a property of the *run* — "it
   is time to look at this merchant". Whether any individual transaction is ripe
-  is the eligibility predicate's job (§5).
+  is the eligibility predicate's job (§6).
 - **`sweptFrom`/`sweptTo` are outputs, not inputs.** Reading them as a window
-  the claim used is exactly the time-window thinking §3 exists to replace.
+  the claim used is exactly the time-window thinking §4 exists to replace.
 
 ---
 
-## 10. How to check it yourself
+## 11. How to check it yourself
 
 ### Did anything get settled twice?
 
@@ -618,7 +733,7 @@ ORDER BY b."id";
 
 ---
 
-## 11. Implementing Step 10 — the order that actually works
+## 12. Implementing Step 10 — the order that actually works
 
 One gap worth knowing before you start, because it bites immediately.
 
@@ -687,12 +802,12 @@ Other things the guide assumes you will work out:
   query parameters. The window lookup is per (provider, method) and does not
   belong inside the claim's `WHERE`.
 - **One movement per purchase, not one per batch.** It is what makes layer 3 of
-  §7 work, and it is what lets you answer "what did settlement do to purchase
+  §8 work, and it is what lets you answer "what did settlement do to purchase
   123" with a single query.
 
 ---
 
-## 12. Vocabulary
+## 13. Vocabulary
 
 | Term | Meaning here |
 |---|---|
