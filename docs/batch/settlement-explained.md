@@ -88,11 +88,18 @@ Nothing pushes. The enqueuer inserting a `SettlementRun` row does not notify
 anybody — a Postgres row just sits there waiting to be noticed. So **each of the
 three parts needs its own cron.** Three jobs, not two:
 
-| Service | Suggested cron | What one tick does |
+| Service | Cron | What one tick does |
 |---|---|---|
-| `EnqueuerService` | every 10 min | read policies, write the `SettlementRun` rows now due |
-| `RunnerService` | every 1–2 min | claim a run, settle it, **repeat until no runs are left** |
-| sweeper | every 5 min | return runs stuck in `RUNNING` for >15 min to `PENDING` |
+| `EnqueuerService` | `EVERY_10_MINUTES` (on `:00`) | read policies, write the `SettlementRun` rows now due |
+| `RunnerService` | `'30 */2 * * * *'` | claim a run, settle it, **repeat until no runs are left** |
+| `SweeperService` | `'45 */5 * * * *'` | return runs stuck in `RUNNING` for >15 min to `PENDING` |
+
+**Those offsets are load-bearing, not fussiness.** The runner started on
+`EVERY_5_MINUTES` and shared every single enqueuer tick — losing it every
+time, because its claim query committed before the enqueuer's insert did. Work
+enqueued at 17:40:00 sat `PENDING` until 17:45. Half a minute past the boundary
+fixed it: 18:10:00 enqueued, 18:10:30 settled. See *Why the schedules are
+offset* in Step 11 of the implementation guide for the measurements.
 
 ### The runner's tick is "drain the queue", not "do one run"
 
@@ -108,13 +115,15 @@ sleeps until the next tick.
 async drain(): Promise<void> {
   let settled = 0;
 
-  for (;;) {
+  // Bounded so one tick cannot hold the process indefinitely. Not a
+  // correctness bound: the loop ends on its own once the claim finds nothing.
+  for (let taken = 0; taken < MAX_RUNS_PER_TICK; taken += 1) {
     const run = await this.claimOneRun();   // the UPDATE ... SKIP LOCKED in §5
     if (!run) break;                        // nothing due - done for this tick
 
     try {
       await this.settlementService.settle(run);
-      await this.finish(run.id, 'DONE');
+      await this.markDone(run.id);
     } catch (error) {
       // Leave it RUNNING. The sweeper returns it to PENDING after 15 minutes,
       // and `attempts` is what eventually marks it FAILED. Do not rethrow: one
@@ -131,6 +140,16 @@ async drain(): Promise<void> {
 
 > **The cron interval sets the worst-case *latency*, not the throughput.** How
 > much work gets done per tick is decided by the loop, not the schedule.
+
+### Silence is not proof of life
+
+All three jobs return early when there is nothing to do, which over a quiet
+fifteen minutes produced exactly one log line — a dead cron and an idle one
+look identical. So each logs at `debug` every idle tick, and at `log` level once
+every thirty idle minutes. Both levels, because production runs at `info` and a
+debug-only heartbeat would be invisible exactly where "did it run?" matters.
+One `CronHeartbeat` derives each job's announce cadence from its tick interval,
+so all three go quiet for about the same wall-clock time.
 
 ### `waitForCompletion`, or you overlap yourself
 
@@ -787,8 +806,9 @@ zero-row batch on nearly every tick. Two ways out:
 - **`tx.settlementBatch.delete()`** before returning. One statement, no extra
   query, but easy for a later edit to skip past.
 
-Either is fine; pick one and say which in a comment, because an empty-batch leak
-is invisible until someone asks why there are 40,000 batches.
+**The implementation took the second.** One statement, no extra query on the
+common path, and the comment above it says so — an empty-batch leak is
+invisible until someone asks why there are 40,000 batches.
 
 Other things the guide assumes you will work out:
 

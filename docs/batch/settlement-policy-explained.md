@@ -561,6 +561,13 @@ of them is the alternative, and it does not scale.
 and anywhere you are checking one payment. The cutoff is an optimisation for the
 one place that has to filter thousands of rows at once, and the two must agree.
 
+That agreement is asserted rather than assumed: `policy.due-at.spec.ts` checks
+that `paidAt < cutoff` and `isEligible` partition every payment identically
+across eight policies, fourteen clock times and some three hundred payments,
+plus a one-directional check that anything claimed is genuinely eligible. A
+tight cutoff only delays a merchant; a generous one sends money that cannot be
+recovered.
+
 ---
 
 ## 12. From a policy to a `dueAt`
@@ -568,6 +575,12 @@ one place that has to filter thousands of rows at once, and the two must agree.
 The enqueuer's whole job. Every other document uses `dueAt`, indexes it, and
 depends on its uniqueness — none of them says how to compute it. This is that
 missing piece.
+
+> **Shipped, not proposed.** `mostRecentDueAt` and `settlementCutoff` live in
+> `apps/settlement/src/policy/policy.due-at.ts` (commit `eb88f32`), and the
+> enqueuer that calls them is `614c81f`. Read this section as a description of
+> what runs, with the reasoning kept because the reasoning is the part that is
+> hard to recover from the code.
 
 ### What `dueAt` has to be
 
@@ -744,11 +757,11 @@ same transaction. Truly instant, and the honest reading of the word.
 `dueAt` has the determinism problem all over again, and now the webhook depends
 on settlement.
 
-**Recommendation: A, with the slot as a named constant.** It keeps one pipeline
-and one definition of "settled", and the ten minutes is a product decision you
-can revisit without touching the mechanism. Reach for B only if a merchant is
-contractually promised sub-minute settlement — and then accept the second code
-path deliberately rather than by accident.
+**A is what shipped**, as `INSTANT_SLOT_MINUTES = 10` in `policy.due-at.ts`. It
+keeps one pipeline and one definition of "settled", and the ten minutes is a
+product decision that can be revisited without touching the mechanism. Reach for
+B only if a merchant is contractually promised sub-minute settlement — and
+then accept the second code path deliberately rather than by accident.
 
 ### `FOLLOW_UPSTREAM` has to fan out, and that is why the run has a method
 
@@ -772,7 +785,9 @@ One run cannot carry both, because the claim's cutoff is a single
 money two days early or hold QRIS money back.
 
 So the enqueuer **expands a `'*'` FOLLOW_UPSTREAM policy into one run per
-method that has a window**:
+method that has a window** — `runsFor` in `enqueuer.service.ts`. Two windows
+for one method is ambiguous rather than a choice to make, so it logs and skips;
+`SettlementService` refuses the same case from the other side:
 
 ```
 SettlementRun
@@ -862,6 +877,12 @@ async enqueueDueRuns(): Promise<void> {
 `resolveTargets(policy)` is the fan-out: `[{ paymentMethodName: policy.paymentMethodName }]`
 for the three scheduled modes, and one entry per in-force window for
 `FOLLOW_UPSTREAM` on `'*'`.
+
+Two details the shipped version adds. `mostRecentDueAt` can throw —
+`businessDaysOnly` is the live case — so each policy is wrapped individually:
+one misconfigured merchant must not stop every other merchant being enqueued.
+And the `@Cron` carries `waitForCompletion: true`, like the runner and sweeper,
+because `@Cron` does not await the previous invocation.
 
 **`skipDuplicates: true` rather than catching `P2002` per row.** Step 11
 suggests the catch, which works but needs a loop of individual inserts.
