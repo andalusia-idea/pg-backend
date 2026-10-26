@@ -18,11 +18,9 @@ export class TopupTransactionDto {
   @ApiProperty()
   id: number;
 
-  @ApiProperty({ type: String, required: false, nullable: true })
-  externalId: string | null;
-
+  /** Our transaction identifier (`transactionId` in the SNAP merchant API). */
   @ApiProperty()
-  referenceId: string;
+  systemReference: string;
 
   @ApiProperty()
   merchantId: number;

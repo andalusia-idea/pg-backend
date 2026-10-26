@@ -22,11 +22,17 @@ export class WithdrawTransactionDto {
   @ApiProperty()
   id: number;
 
-  @ApiProperty({ type: String, required: false, nullable: true })
-  externalId: string | null;
-
+  /** Our transaction identifier (`transactionId` in the SNAP merchant API). */
   @ApiProperty()
-  referenceId: string;
+  systemReference: string;
+
+  /** Provider supplied `referenceNo` in the SNAP API; absent until assigned upstream. */
+  @ApiProperty({ type: String, required: false, nullable: true })
+  providerReference: string | null;
+
+  /** Reference assigned by the bank, when available. */
+  @ApiProperty({ type: String, required: false, nullable: true })
+  bankReference: string | null;
 
   @ApiProperty()
   userId: number;
@@ -68,6 +74,9 @@ export class WithdrawTransactionDto {
 
   @ApiProperty({ enum: TransactionStatusEnum })
   status: TransactionStatusEnum;
+
+  @ApiProperty({ type: Object, required: false, nullable: true })
+  additionalInfo: Record<string, unknown> | null;
 
   @ApiProperty({ type: Object, required: false, nullable: true })
   metadata: Record<string, unknown> | null;
