@@ -22,8 +22,7 @@ export const TransactionTypeEnumConfig = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',
   DISBURSEMENT: 'DISBURSEMENT',
-  PURCHASE: 'PURCHASE',
-  SETTLEMENT_PURCHASE: 'SETTLEMENT_PURCHASE'
+  PURCHASE: 'PURCHASE'
 } as const
 
 export type TransactionTypeEnumConfig = (typeof TransactionTypeEnumConfig)[keyof typeof TransactionTypeEnumConfig]
@@ -54,8 +53,7 @@ export const TransactionTypeEnum = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',
   DISBURSEMENT: 'DISBURSEMENT',
-  PURCHASE: 'PURCHASE',
-  SETTLEMENT_PURCHASE: 'SETTLEMENT_PURCHASE'
+  PURCHASE: 'PURCHASE'
 } as const
 
 export type TransactionTypeEnum = (typeof TransactionTypeEnum)[keyof typeof TransactionTypeEnum]

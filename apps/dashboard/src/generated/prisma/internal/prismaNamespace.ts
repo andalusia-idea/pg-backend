@@ -410,9 +410,6 @@ export const ModelName = {
   WithdrawFeeDetail: 'WithdrawFeeDetail',
   WebhookLog: 'WebhookLog',
   TransactionAudit: 'TransactionAudit',
-  MerchantBalanceLog: 'MerchantBalanceLog',
-  AgentBalanceLog: 'AgentBalanceLog',
-  InternalBalanceLog: 'InternalBalanceLog',
   BalanceEntry: 'BalanceEntry',
   BalanceSnapshot: 'BalanceSnapshot',
   BalanceAdjustment: 'BalanceAdjustment',
@@ -436,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "role" | "permission" | "user" | "adminDetail" | "agentDetail" | "merchantDetail" | "merchantSignature" | "bank" | "merchant" | "agent" | "agentShareholder" | "provider" | "paymentMethod" | "baseFee" | "merchantFee" | "common" | "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "merchantBalanceLog" | "agentBalanceLog" | "internalBalanceLog" | "balanceEntry" | "balanceSnapshot" | "balanceAdjustment" | "settlementRun" | "settlementBatch" | "merchantSettlementPolicy" | "upstreamSettlementWindow" | "businessDayCalendar"
+    modelProps: "role" | "permission" | "user" | "adminDetail" | "agentDetail" | "merchantDetail" | "merchantSignature" | "bank" | "merchant" | "agent" | "agentShareholder" | "provider" | "paymentMethod" | "baseFee" | "merchantFee" | "common" | "purchaseTransaction" | "purchaseFeeDetail" | "disbursementTransaction" | "disbursementFeeDetail" | "topUpTransaction" | "topupFeeDetail" | "withdrawTransaction" | "withdrawFeeDetail" | "webhookLog" | "transactionAudit" | "balanceEntry" | "balanceSnapshot" | "balanceAdjustment" | "settlementRun" | "settlementBatch" | "merchantSettlementPolicy" | "upstreamSettlementWindow" | "businessDayCalendar"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2364,228 +2361,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    MerchantBalanceLog: {
-      payload: Prisma.$MerchantBalanceLogPayload<ExtArgs>
-      fields: Prisma.MerchantBalanceLogFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.MerchantBalanceLogFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.MerchantBalanceLogFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        findFirst: {
-          args: Prisma.MerchantBalanceLogFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.MerchantBalanceLogFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        findMany: {
-          args: Prisma.MerchantBalanceLogFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>[]
-        }
-        create: {
-          args: Prisma.MerchantBalanceLogCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        createMany: {
-          args: Prisma.MerchantBalanceLogCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.MerchantBalanceLogCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>[]
-        }
-        delete: {
-          args: Prisma.MerchantBalanceLogDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        update: {
-          args: Prisma.MerchantBalanceLogUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        deleteMany: {
-          args: Prisma.MerchantBalanceLogDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.MerchantBalanceLogUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.MerchantBalanceLogUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>[]
-        }
-        upsert: {
-          args: Prisma.MerchantBalanceLogUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MerchantBalanceLogPayload>
-        }
-        aggregate: {
-          args: Prisma.MerchantBalanceLogAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateMerchantBalanceLog>
-        }
-        groupBy: {
-          args: Prisma.MerchantBalanceLogGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MerchantBalanceLogGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.MerchantBalanceLogCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MerchantBalanceLogCountAggregateOutputType> | number
-        }
-      }
-    }
-    AgentBalanceLog: {
-      payload: Prisma.$AgentBalanceLogPayload<ExtArgs>
-      fields: Prisma.AgentBalanceLogFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.AgentBalanceLogFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.AgentBalanceLogFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        findFirst: {
-          args: Prisma.AgentBalanceLogFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.AgentBalanceLogFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        findMany: {
-          args: Prisma.AgentBalanceLogFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>[]
-        }
-        create: {
-          args: Prisma.AgentBalanceLogCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        createMany: {
-          args: Prisma.AgentBalanceLogCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.AgentBalanceLogCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>[]
-        }
-        delete: {
-          args: Prisma.AgentBalanceLogDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        update: {
-          args: Prisma.AgentBalanceLogUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        deleteMany: {
-          args: Prisma.AgentBalanceLogDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.AgentBalanceLogUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.AgentBalanceLogUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>[]
-        }
-        upsert: {
-          args: Prisma.AgentBalanceLogUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$AgentBalanceLogPayload>
-        }
-        aggregate: {
-          args: Prisma.AgentBalanceLogAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateAgentBalanceLog>
-        }
-        groupBy: {
-          args: Prisma.AgentBalanceLogGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AgentBalanceLogGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.AgentBalanceLogCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AgentBalanceLogCountAggregateOutputType> | number
-        }
-      }
-    }
-    InternalBalanceLog: {
-      payload: Prisma.$InternalBalanceLogPayload<ExtArgs>
-      fields: Prisma.InternalBalanceLogFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.InternalBalanceLogFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.InternalBalanceLogFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        findFirst: {
-          args: Prisma.InternalBalanceLogFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.InternalBalanceLogFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        findMany: {
-          args: Prisma.InternalBalanceLogFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>[]
-        }
-        create: {
-          args: Prisma.InternalBalanceLogCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        createMany: {
-          args: Prisma.InternalBalanceLogCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.InternalBalanceLogCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>[]
-        }
-        delete: {
-          args: Prisma.InternalBalanceLogDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        update: {
-          args: Prisma.InternalBalanceLogUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        deleteMany: {
-          args: Prisma.InternalBalanceLogDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.InternalBalanceLogUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.InternalBalanceLogUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>[]
-        }
-        upsert: {
-          args: Prisma.InternalBalanceLogUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$InternalBalanceLogPayload>
-        }
-        aggregate: {
-          args: Prisma.InternalBalanceLogAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateInternalBalanceLog>
-        }
-        groupBy: {
-          args: Prisma.InternalBalanceLogGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.InternalBalanceLogGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.InternalBalanceLogCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.InternalBalanceLogCountAggregateOutputType> | number
-        }
-      }
-    }
     BalanceEntry: {
       payload: Prisma.$BalanceEntryPayload<ExtArgs>
       fields: Prisma.BalanceEntryFieldRefs
@@ -3383,8 +3158,6 @@ export type BankScalarFieldEnum = (typeof BankScalarFieldEnum)[keyof typeof Bank
 
 export const MerchantScalarFieldEnum = {
   id: 'id',
-  settlementInterval: 'settlementInterval',
-  lastSettlementAt: 'lastSettlementAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -3429,8 +3202,6 @@ export type AgentShareholderScalarFieldEnum = (typeof AgentShareholderScalarFiel
 
 export const ProviderScalarFieldEnum = {
   name: 'name',
-  reconciliationTime: 'reconciliationTime',
-  lastReconciliationAt: 'lastReconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -3528,8 +3299,6 @@ export const PurchaseTransactionScalarFieldEnum = {
   expiresAt: 'expiresAt',
   batchSettlementId: 'batchSettlementId',
   settlementAt: 'settlementAt',
-  batchReconciliationId: 'batchReconciliationId',
-  reconciliationAt: 'reconciliationAt',
   additionalInfo: 'additionalInfo',
   metadata: 'metadata',
   createdAt: 'createdAt',
@@ -3580,8 +3349,6 @@ export const DisbursementTransactionScalarFieldEnum = {
   paidAt: 'paidAt',
   batchSettlementId: 'batchSettlementId',
   settlementAt: 'settlementAt',
-  batchReconciliationId: 'batchReconciliationId',
-  reconciliationAt: 'reconciliationAt',
   additionalInfo: 'additionalInfo',
   metadata: 'metadata',
   createdAt: 'createdAt',
@@ -3742,72 +3509,6 @@ export const TransactionAuditScalarFieldEnum = {
 } as const
 
 export type TransactionAuditScalarFieldEnum = (typeof TransactionAuditScalarFieldEnum)[keyof typeof TransactionAuditScalarFieldEnum]
-
-
-export const MerchantBalanceLogScalarFieldEnum = {
-  id: 'id',
-  merchantId: 'merchantId',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type MerchantBalanceLogScalarFieldEnum = (typeof MerchantBalanceLogScalarFieldEnum)[keyof typeof MerchantBalanceLogScalarFieldEnum]
-
-
-export const AgentBalanceLogScalarFieldEnum = {
-  id: 'id',
-  agentId: 'agentId',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type AgentBalanceLogScalarFieldEnum = (typeof AgentBalanceLogScalarFieldEnum)[keyof typeof AgentBalanceLogScalarFieldEnum]
-
-
-export const InternalBalanceLogScalarFieldEnum = {
-  id: 'id',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
-  merchantId: 'merchantId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type InternalBalanceLogScalarFieldEnum = (typeof InternalBalanceLogScalarFieldEnum)[keyof typeof InternalBalanceLogScalarFieldEnum]
 
 
 export const BalanceEntryScalarFieldEnum = {
@@ -4412,9 +4113,6 @@ export type GlobalOmitConfig = {
   withdrawFeeDetail?: Prisma.WithdrawFeeDetailOmit
   webhookLog?: Prisma.WebhookLogOmit
   transactionAudit?: Prisma.TransactionAuditOmit
-  merchantBalanceLog?: Prisma.MerchantBalanceLogOmit
-  agentBalanceLog?: Prisma.AgentBalanceLogOmit
-  internalBalanceLog?: Prisma.InternalBalanceLogOmit
   balanceEntry?: Prisma.BalanceEntryOmit
   balanceSnapshot?: Prisma.BalanceSnapshotOmit
   balanceAdjustment?: Prisma.BalanceAdjustmentOmit

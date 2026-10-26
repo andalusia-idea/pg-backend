@@ -15,6 +15,10 @@ export class BalanceDto {
   @ApiMoneyProperty()
   @ToMoneyString()
   balancePending: string;
+
+  @ApiMoneyProperty()
+  @ToMoneyString()
+  balanceReserved: string;
 }
 
 export class BalanceMerchantDto {
@@ -32,6 +36,10 @@ export class BalanceMerchantDto {
   @ApiMoneyProperty()
   @ToMoneyString()
   balancePending: string;
+
+  @ApiMoneyProperty()
+  @ToMoneyString()
+  balanceReserved: string;
 }
 
 export class BalanceAgentDto {
@@ -49,4 +57,8 @@ export class BalanceAgentDto {
   @ApiMoneyProperty()
   @ToMoneyString()
   balancePending: string;
+
+  @ApiMoneyProperty()
+  @ToMoneyString()
+  balanceReserved: string;
 }

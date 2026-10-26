@@ -58,10 +58,6 @@ export class PurchaseTransactionDto {
 
   @ApiDateProperty({ required: false, nullable: true })
   @ToJakartaISONullable()
-  reconciliationAt: string | null;
-
-  @ApiDateProperty({ required: false, nullable: true })
-  @ToJakartaISONullable()
   paidAt: string | null;
 
   @ApiDateProperty()

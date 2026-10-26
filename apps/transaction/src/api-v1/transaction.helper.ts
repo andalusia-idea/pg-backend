@@ -184,7 +184,6 @@ const transactionTypeMapper = (
   if (TransactionTypeEnum.TOPUP === transactionType) return 'T';
   if (TransactionTypeEnum.WITHDRAW === transactionType) return 'W';
   if (TransactionTypeEnum.DISBURSEMENT === transactionType) return 'D';
-  if (TransactionTypeEnum.SETTLEMENT_PURCHASE === transactionType) return 'S';
   return '0';
 };
 
@@ -193,8 +192,7 @@ const transactionTypeConvert = (value: string): TransactionTypeEnum => {
   if ('T' === value) return TransactionTypeEnum.TOPUP;
   if ('W' === value) return TransactionTypeEnum.WITHDRAW;
   if ('D' === value) return TransactionTypeEnum.DISBURSEMENT;
-  if ('S' === value) return TransactionTypeEnum.SETTLEMENT_PURCHASE;
-  else return TransactionTypeEnum.SETTLEMENT_PURCHASE;
+  return TransactionTypeEnum.TOPUP;
 };
 
 /**

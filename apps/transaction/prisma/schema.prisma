@@ -44,10 +44,8 @@ model PurchaseTransaction {
   // that nothing stops a batch row being deleted out from under these, which is
   // acceptable only because batches are append-only records. Kept consistent
   // with batchReconciliationId below, which has no table behind it yet.
-  batchSettlementId     Int?
-  settlementAt          DateTime? @db.Timestamptz(6)
-  batchReconciliationId Int?
-  reconciliationAt      DateTime? @db.Timestamptz(6)
+  batchSettlementId Int?
+  settlementAt      DateTime? @db.Timestamptz(6)
 
   additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
   metadata       Json? @db.JsonB // Store Response Upstream
@@ -60,10 +58,7 @@ model PurchaseTransaction {
   deletedBy Int?      @db.Integer()
 
   // Relasi
-  feeDetails         PurchaseFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
+  feeDetails PurchaseFeeDetail[]
 
   @@unique([merchantId, merchantReference])
   @@index([merchantId])
@@ -143,10 +138,8 @@ model DisbursementTransaction {
 
   paidAt DateTime? @db.Timestamptz(6)
 
-  batchSettlementId     Int?
-  settlementAt          DateTime? @db.Timestamptz(6)
-  batchReconciliationId Int?
-  reconciliationAt      DateTime? @db.Timestamptz(6)
+  batchSettlementId Int?
+  settlementAt      DateTime? @db.Timestamptz(6)
 
   additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
   metadata       Json? @db.JsonB // Store Response Upstream
@@ -159,10 +152,7 @@ model DisbursementTransaction {
   deletedBy Int?      @db.Integer()
 
   // Relasi
-  feeDetails         DisbursementFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
+  feeDetails DisbursementFeeDetail[]
 
   @@unique([merchantId, merchantReference])
   @@index([merchantId])
@@ -219,10 +209,7 @@ model TopUpTransaction {
   deletedAt DateTime? @db.Timestamptz(6)
   deletedBy Int?      @db.Integer()
 
-  merchantBalanceLog MerchantBalanceLog[]
-  agentBalanceLog    AgentBalanceLog[]
-  internalBalanceLog InternalBalanceLog[]
-  feeDetails         TopupFeeDetail[]
+  feeDetails TopupFeeDetail[]
 
   @@index([merchantId])
   @@schema("transaction")
@@ -325,10 +312,7 @@ model WithdrawTransaction {
   deletedBy Int?      @db.Integer()
 
   // Relasi
-  feeDetails         WithdrawFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
+  feeDetails WithdrawFeeDetail[]
 
   @@index([userId])
   @@index([status])
@@ -408,110 +392,6 @@ model TransactionAudit {
   @@schema("transaction")
 }
 
-model MerchantBalanceLog {
-  id         Int @id @default(autoincrement())
-  merchantId Int
-
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType TransactionTypeEnum
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([merchantId])
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
-model AgentBalanceLog {
-  id      Int @id @default(autoincrement())
-  agentId Int
-
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType TransactionTypeEnum
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([agentId])
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
-model InternalBalanceLog {
-  id Int @id @default(autoincrement())
-
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-  merchantId     Int?
-
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType TransactionTypeEnum
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
 enum TransactionStatusEnum {
   PENDING
   SUCCESS
@@ -536,7 +416,6 @@ enum TransactionTypeEnum {
   TOPUP
   DISBURSEMENT
   PURCHASE
-  SETTLEMENT_PURCHASE
 
   @@schema("transaction")
 }

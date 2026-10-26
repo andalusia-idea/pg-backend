@@ -6,7 +6,6 @@ import {
 import { PrismaClient } from '@config/prisma';
 import {
   AGENT_INTERNAL_EMAIL,
-  DEFAULT_RECONCILIATION_TIME,
   findAuthUserIdsByEmail,
   logSeeded,
 } from './seed.helper';
@@ -14,9 +13,6 @@ import {
 /** Must match the emails the auth dev seed creates. */
 const DEV_AGENT_EMAILS = [1, 2, 3, 4].map((n) => `agent${n}@example.com`);
 const DEV_MERCHANT_EMAILS = [1, 2, 3, 4].map((n) => `merchant${n}@example.com`);
-
-/** Legacy seeded its dev merchants at a 1-minute interval for fast testing. */
-const DEV_SETTLEMENT_INTERVAL_MINUTES = 1;
 
 /**
  * Third-party providers.
@@ -205,7 +201,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     merchantIds.map((id) =>
       prisma.merchant.upsert({
         where: { id },
-        create: { id, settlementInterval: DEV_SETTLEMENT_INTERVAL_MINUTES },
+        create: { id },
         update: {},
         select: { id: true },
       }),
@@ -218,7 +214,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     DEV_PROVIDERS.map((name) =>
       prisma.provider.upsert({
         where: { name },
-        create: { name, reconciliationTime: DEFAULT_RECONCILIATION_TIME },
+        create: { name },
         update: {},
         select: { name: true },
       }),

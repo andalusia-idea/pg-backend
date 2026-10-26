@@ -42,14 +42,12 @@ export class ConfigMerchantService {
   ): Promise<MerchantIntervalDto> {
     const merchant = await this.prismaSlave.merchant.findFirst({
       where: { id: merchantId, deletedAt: null },
-      select: { id: true, settlementInterval: true, lastSettlementAt: true },
+      select: { id: true },
     });
     if (!merchant) throw ApiError.notFound('Merchant config');
 
     return new MerchantIntervalDto({
       userId: merchant.id,
-      settlementInterval: merchant.settlementInterval,
-      lastSettlementAt: merchant.lastSettlementAt as unknown as string | null,
     });
   }
 
@@ -62,7 +60,6 @@ export class ConfigMerchantService {
   ): Promise<MerchantConfigDto> {
     const merchant = await this.prismaSlave.merchant.findFirst({
       where: { id: merchantId, deletedAt: null },
-      select: { settlementInterval: true, lastSettlementAt: true },
     });
     if (!merchant) throw ApiError.notFound('Merchant config');
 
@@ -108,8 +105,6 @@ export class ConfigMerchantService {
       });
 
     return new MerchantConfigDto({
-      settlementInterval: merchant.settlementInterval,
-      lastSettlementAt: merchant.lastSettlementAt as unknown as string | null,
       agentShareholders:
         agentShareholders.length === 0
           ? null

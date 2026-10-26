@@ -26,9 +26,7 @@ model Bank {
 }
 
 model Merchant {
-  id                 Int       @id @db.Integer
-  settlementInterval Int       @default(120) @db.SmallInt /// in minutes like 30, 60, 120 or 1
-  lastSettlementAt   DateTime?
+  id Int @id @db.Integer
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -85,9 +83,6 @@ model Provider {
   // id        Int      @id @default(autoincrement())
   // code      String   @unique
   name String @id
-
-  reconciliationTime   String //format: '02:00' (HH:mm)
-  lastReconciliationAt DateTime?
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -197,7 +192,6 @@ enum TransactionTypeEnum {
   TOPUP
   DISBURSEMENT
   PURCHASE
-  SETTLEMENT_PURCHASE
 
   @@schema("config")
 }
