@@ -1,60 +1,15 @@
 import { SettlementModeEnum } from '@app/microservice';
-import { DateTime } from 'luxon';
+import {
+  atTimeOnDay,
+  inZone,
+  SETTLEMENT_TIMEZONE,
+  sortedTimes,
+} from './policy.time';
 import type {
   EligibilityPayment,
   EligibilityPolicy,
   EligibilityWindow,
 } from './policy.type';
-
-/**
- * Every policy mode is answered in Jakarta time.
- *
- * A constant rather than `process.env.TIMEZONE`, unlike the dashboard's
- * `DateHelper`. A merchant's settlement schedule is a contractual term in local
- * Indonesian time; it does not change because a container was redeployed
- * somewhere else, and these functions are pure, so reading the environment
- * would make the same inputs produce different answers per deployment.
- *
- * `UpstreamSettlementWindow` carries its own `timezone` because a partner's
- * published schedule is in *their* timezone, which is theirs to state.
- */
-const SETTLEMENT_TIMEZONE = 'Asia/Jakarta';
-
-/** `HH:mm`, 24-hour, zero-padded - so lexicographic order is chronological. */
-const TIME_OF_DAY = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-function parseTimeOfDay(
-  value: string,
-  what: string,
-): { hour: number; minute: number } {
-  const match = TIME_OF_DAY.exec(value);
-
-  if (!match) {
-    throw new Error(
-      `settlement: ${what} must be zero-padded HH:mm in 24-hour form, got "${value}".`,
-    );
-  }
-
-  return { hour: Number(match[1]), minute: Number(match[2]) };
-}
-
-function atTimeOnDay(day: DateTime, time: string, what: string): DateTime {
-  const { hour, minute } = parseTimeOfDay(time, what);
-
-  return day.set({ hour, minute, second: 0, millisecond: 0 });
-}
-
-function inZone(when: Date, zone: string, what: string): DateTime {
-  const result = DateTime.fromJSDate(when, { zone });
-
-  if (!result.isValid) {
-    throw new Error(
-      `settlement: cannot read ${what} in zone "${zone}" - ${result.invalidReason ?? 'invalid'}.`,
-    );
-  }
-
-  return result;
-}
 
 /**
  * The moment a payment's funds become available to the merchant.
@@ -166,7 +121,7 @@ function scheduledRelease(
   }
 
   // Zero-padded HH:mm sorts chronologically as text, which the regex enforces.
-  const times = [...policy.releaseTimes].sort();
+  const times = sortedTimes(policy.releaseTimes);
   const paid = inZone(payment.paidAt, SETTLEMENT_TIMEZONE, 'paidAt');
   const startOfDay = paid.startOf('day');
 

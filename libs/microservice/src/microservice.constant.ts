@@ -93,6 +93,9 @@ export type MACHINE_USER_ID =
  */
 export const SYSTEM_USER_ID = MACHINE_USER_ID.SYSTEM_01;
 
+/** apps/settlement's enqueuer and runner - the id Step 7.2 calls the batch runner. */
+export const SETTLEMENT_RUNNER_USER_ID = MACHINE_USER_ID.SCHEDULER_01;
+
 /**
  * Per-job identities over the `SCHEDULER_*` slots.
  *

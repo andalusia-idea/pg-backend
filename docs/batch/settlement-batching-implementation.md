@@ -25,12 +25,29 @@ for it to run.
 | 6 | Payout reserve / complete / fail — **closes D17** | ✅ `ddb6778` |
 | 7 | `apps/settlement` skeleton | ✅ `61d20a9` |
 | 8 | `SettlementRun` + `SettlementBatch` + the claim index | ✅ `4215a4f`, `d4ade10` |
-| 9 | Policy and eligibility | ✅ `0896962` |
-| 10 | The claim and the batch | next |
-| 11–15 | Enqueuer, dashboard, export, comparison, cleanup | planned |
+| 9 | Policy and eligibility | ✅ `0896962`, `eb88f32` |
+| 10 | The claim and the batch | ✅ `b26916e` |
+| 11 | Enqueuer, runner and sweeper | ✅ `614c81f`, `4a5894b`, `50d1b29`, `3504be7`, `c368461` |
+| 12 | Dashboard | next — the other team's side, see [D24](../engine/dashboard-migration.md) |
+| 13–15 | Export, comparison, cleanup | planned |
 
 Step 8 took two commits because `SettlementRun.createdBy` went in nullable and
 had to be corrected — the reasoning is under *Audit columns* in that step.
+
+Step 9's second commit adds `mostRecentDueAt` and `settlementCutoff`, which the
+enqueuer and the claim need and `isEligible` cannot answer — see *From a policy
+to a `dueAt`* in
+[settlement-policy-explained.md](settlement-policy-explained.md).
+
+Step 11 took five because two defects only showed up once all three crons ran on
+their real schedules rather than being driven by hand: the runner shared the
+enqueuer's tick and lost it every time (`3504be7`), and all three jobs were
+silent when idle, so a dead cron looked exactly like a quiet one (`c368461`).
+Both are written up at the end of that step.
+
+**Settlement now runs end to end.** Verified on a booted `apps/settlement` with
+no hand-driving: policy → enqueuer → claim → balance movements → batch, 30
+seconds from `runs enqueued` to `drain complete`.
 
 Both `TODO(balance-ledger)` markers are gone, and the overdraw race
 ([D17](../engine/dashboard-migration.md)) is closed structurally rather than by
@@ -1282,6 +1299,13 @@ than guessing the column order now.
 
 ## Step 9 — Policy and eligibility
 
+> **Build the mental picture first.**
+> [settlement-policy-explained.md](settlement-policy-explained.md) walks the four
+> modes one at a time with timelines, the `'*'` sentinel, effective dating and
+> the in-force query that is easy to invert, the column-per-mode matrix, and how
+> a policy becomes the cutoff the claim compares against. This step is the
+> specification; that one is the explanation.
+
 `MerchantSettlementPolicy` goes in the **`settlement` schema**, beside the run
 and batch models from Step 8 — not in `apps/config`. Shape is in
 [settlement-batching.md §4](settlement-batching.md).
@@ -1434,21 +1458,51 @@ Inside one `$transaction`:
 
 ```sql
 UPDATE "transaction"."PurchaseTransaction"
-SET "batchSettlementId" = $batchId, "settlementAt" = now()
+SET "batchSettlementId" = $batchId,
+    "settlementAt"      = now(),
+    "updatedAt"         = now(),
+    "updatedBy"         = $runnerUserId
 WHERE "id" IN (
-  SELECT "id" FROM "transaction"."PurchaseTransaction"
-  WHERE "merchantId" = $merchantId
-    AND "status" = 'SUCCESS'
-    AND "batchSettlementId" IS NULL
-    AND "deletedAt" IS NULL
-    AND ($paymentMethod = '*' OR "paymentMethodName" = $paymentMethod)
-    AND <eligibility predicate from Step 9>
-  ORDER BY "paidAt"
+  SELECT p."id"
+  FROM "transaction"."PurchaseTransaction" p
+  WHERE p."merchantId" = $merchantId
+    AND p."status" = 'SUCCESS'
+    AND p."batchSettlementId" IS NULL
+    AND p."deletedAt" IS NULL
+    AND p."paidAt" < $cutoff
+    AND ($paymentMethod = '*' OR p."paymentMethodName" = $paymentMethod)
+    AND EXISTS (
+      SELECT 1 FROM "transaction"."PurchaseFeeDetail" fd
+      WHERE fd."purchaseId" = p."id" AND fd."deletedAt" IS NULL
+    )
+  ORDER BY p."paidAt"
   LIMIT 500
   FOR UPDATE SKIP LOCKED
 )
-RETURNING "id", "paidAt", "nominal", "netNominal";
+RETURNING "id",
+          "paidAt",
+          "nominal"::text    AS "nominal",
+          "netNominal"::text AS "netNominal";
 ```
+
+`$cutoff` is `settlementCutoff(policy, now, window)` from Step 9 - the
+eligibility predicate collapsed into one timestamp, because the claim filters
+thousands of rows with one comparison and cannot call a function per row.
+
+Three parts of that statement are not obvious and all three are load-bearing:
+
+- **`updatedAt` / `updatedBy` are set by hand.** `PurchaseTransaction` is in
+  `AUDITED_MODELS`, but the audit extension hooks the Prisma model API and
+  cannot see raw SQL, so without these the claim leaves both stale. Same lesson
+  as the snapshot upsert in Step 2.2.
+- **`EXISTS` on the fee detail excludes purchases that have none.**
+  `PAYIN_CAPTURED` credited such a purchase's *gross* to the merchant with no
+  internal or agent legs, so settling it from fee rows would move an amount that
+  was never in `PENDING`. Leaving it unclaimed delays that merchant and shows up
+  in the stuck-money query; the alternative over-credits them, and an
+  over-credit can be withdrawn.
+- **Amounts come back as `text` with quoted aliases**, parsed into `Decimal` in
+  JavaScript, rather than trusting how the driver renders `numeric`.
 
 Three things in there are easy to get wrong:
 
@@ -1469,13 +1523,33 @@ will find nothing. Finish the run as `DONE` with no batch.
 **2. Read the fee details** for the claimed ids, and build one movement per
 purchase — merchant, each agent, internal, each moving `PENDING → AVAILABLE`.
 
-**3. Post them** through `libs/balance`, still in the same transaction.
+> **The merchant's leg is `PurchaseTransaction.netNominal`, not a fee row.** A
+> `MERCHANT` fee detail holds the fee *charged* to the merchant, not what they
+> received. Reading their share from the fee rows moves the wrong amount and
+> strands a residue in `PENDING` permanently. Internal and agent legs do come
+> from the fee rows; `PROVIDER` rows get no leg, because that cut never landed
+> in a balance we track.
+
+**3. Post them** through `libs/balance`, still in the same transaction. One
+movement per purchase, not one per batch — that is what makes `BalanceEntry`'s
+unique key a third line of defence, and what keeps "what did settlement do to
+purchase 123" a single query.
 
 **4. Write the `SettlementBatch` row** with the totals and the min/max `paidAt`
 as `sweptFrom` / `sweptTo`.
 
+> **The row has to exist before step 1, not after.** The claim writes
+> `batchSettlementId`, so there is nothing to name until the batch row is there.
+> Insert it with zero totals, claim against its id, then correct the totals —
+> nothing outside the transaction observes the zero state. And if the claim
+> returns no rows, **delete the batch before returning**: returning from inside
+> `$transaction` commits rather than rolling back, and most ticks claim nothing,
+> so otherwise every quiet run leaves a zero-row batch behind.
+
 **5. If 500 rows came back, there may be more** — loop and create another batch
-until a claim returns fewer than the cap.
+until a claim returns fewer than the cap. Each batch gets its own transaction,
+so a crash between batches leaves the finished ones committed and their
+purchases non-NULL; the sweeper's retry then claims only the remainder.
 
 Two things worth being deliberate about:
 
@@ -1490,6 +1564,15 @@ plain date arithmetic on `paidAt`. For `FOLLOW_UPSTREAM` it is a lookup per
 the same merchant do not block each other; the second simply finds nothing. It
 is a second line of defence behind the run claim, not a replacement for it.
 
+**One limitation, made loud rather than silent.** `SettlementRun` carries a
+payment method but no provider, while `UpstreamSettlementWindow` is keyed by
+both - so `resolveWindow` matches on method alone. That is unambiguous while
+MotionPay is the only integrated upstream. The moment a second provider serves
+the same method, one run cannot express two cutoffs, and the service throws
+rather than picking one. A `FOLLOW_UPSTREAM` run on `'*'` throws immediately,
+saying the enqueuer must fan out per method. Fixing it properly means resolving
+a provider per run.
+
 **Verify**: settle a merchant with 1,200 eligible purchases → three batches,
 every purchase claimed exactly once, snapshot moves match the sum of
 `netNominal`. Re-run immediately → no new batches. And confirm an ineligible
@@ -1499,10 +1582,25 @@ purchase is still unclaimed afterwards.
 
 ## Step 11 — The enqueuer and the sweeper
 
-**The enqueuer** is a `@Cron` (every 5 minutes is plenty) that inserts
+**All three jobs need their own cron, and the expressions are not
+interchangeable** — see *Why the schedules are offset* at the end of this
+step before choosing one.
+
+**The enqueuer** is a `@Cron` (`EVERY_10_MINUTES`) that inserts
 `SettlementRun` rows for merchants whose next release time has passed. It does
 no work itself. Both pods firing it is harmless because of
-`@@unique([merchantId, paymentMethodName, dueAt])` — catch `P2002` and move on.
+`@@unique([merchantId, paymentMethodName, dueAt])` — `createMany({
+skipDuplicates: true })` makes a duplicate the expected outcome rather than an
+error to catch per row.
+
+> **`dueAt` is the part this step used to leave unsaid**, and it is the one
+> thing in the enqueuer that fails silently. It must be the release *boundary*
+> snapped to the schedule, never `new Date()` — a moving value never collides on
+> that unique key, so every tick inserts another run. The derivation per mode,
+> the `FOLLOW_UPSTREAM` fan-out into one run per method, why `INSTANT` does not
+> fit the model, and why a missed boundary must never be backfilled are all in
+> *From a policy to a `dueAt`* in
+> [settlement-policy-explained.md](settlement-policy-explained.md).
 
 `SettlementRun.createdBy` is NOT NULL, so this insert will not compile without a
 principal. Use the one Step 7.2 already pins for this job —
@@ -1542,12 +1640,34 @@ RETURNING *;
 ```
 
 `$1` is a **pod identity**, not a `MACHINE_USER_ID` — see the note below.
+It comes from `SettlementConfig.POD_IDENTITY`, which reads `POD_NAME` and falls
+back to `os.hostname()`. `get` rather than `getOrThrow`, deliberately: in
+Kubernetes a container's hostname already *is* the pod name, so this needs no
+manifest change to be useful. Truncated to 100 characters, because `claimedBy`
+is `VarChar(100)` and a longer hostname would fail the claim rather than just
+read oddly.
+
+`attempts` increments here, at the moment of claiming, rather than on failure. A
+pod that dies mid-run never gets to record anything, and that is exactly the
+case the attempt count exists to notice.
 
 Note also that this statement is raw SQL, so the Prisma audit extension does
 not see it. Nothing here populates `updatedAt` / `updatedBy`, which is why
 `SettlementRun` is deliberately absent from `AUDITED_MODELS`.
 
-Loop until it returns nothing.
+Loop until it returns nothing — **one tick drains the queue, it does not
+do one run.** A tick per run would mean fifty merchants due at 15:00 taking
+fifty ticks, most of an hour, for work that takes seconds. A
+`MAX_RUNS_PER_TICK` bound keeps one invocation from holding the process
+indefinitely; it is not a correctness bound, because the loop ends on its own
+once the claim finds nothing.
+
+**A failing run is left `RUNNING`, and the error is not rethrown.** Left
+`RUNNING` because that is precisely what the sweeper looks for — marking it
+`FAILED` here would skip the retries entirely. Not rethrown because one broken
+merchant must not stop the drain for everyone else due in the same tick. The
+reason is recorded on the row and survives the sweeper's reset, which clears
+only the lease columns.
 
 **The sweeper** resets runs stuck in `RUNNING` for more than 15 minutes back to
 `PENDING`. This is what makes a pod crash recoverable — and it is safe *only*
@@ -1579,8 +1699,52 @@ the enqueuer's machine id normally, a real `auth.User.id` when a human triggers
 one from the dashboard. Both landed in Step 8 (see *Audit columns* there), which
 is why the insert above cannot compile without a principal.
 
+### Why the schedules are offset
+
+Two defects that only appeared once all three jobs ran on their real schedules,
+rather than being driven by hand. Both are why the expressions look fussier than
+`CronExpression` constants.
+
+**The runner must not share the enqueuer's tick.** The enqueuer fires at `:00`
+of every tenth minute. With the runner on `EVERY_5_MINUTES`, every enqueuer tick
+shared an instant with a runner tick — and the runner lost, every time:
+
+```
+17:40:00.061  runs enqueued   count:2
+17:45:00.093  run settled              <- a full runner interval later
+```
+
+Its claim query committed before the enqueuer's insert did, so work enqueued at
+17:40 sat `PENDING` until 17:45. Not a race in the usual sense; it resolved the
+same way on every cycle, by construction. The fix is the **offset**, not a
+shorter interval — any divisor of ten shares the `:00` boundary:
+
+| Job | Expression | Why |
+|---|---|---|
+| enqueuer | `EVERY_10_MINUTES` (`:00`) | the reference the other two offset *from* |
+| runner | `'30 */2 * * * *'` | half a minute past the boundary, so it always looks after the enqueuer has committed |
+| sweeper | `'45 */5 * * * *'` | shorter than the staleness window; offset for tidiness, since it only touches leases already 15 minutes old |
+
+Re-measured: `18:10:00.079` enqueued, `18:10:30.102` settled. Thirty seconds
+where it was five minutes. Across a full hour of firings, no two of the three
+schedules share an instant.
+
+**And all three were silent when idle.** Over fifteen minutes the log held
+exactly one line, because each job returns early with nothing to say when there
+is nothing to do — so a quiet cron and a dead one look identical. For jobs
+that move money on a schedule those have to be distinguishable.
+
+Each now logs at `debug` every idle tick, and at `log` level once every thirty
+idle minutes. Both levels are needed: `libs/logger` uses `info` in production
+and `debug` in development, so a debug-only heartbeat would be invisible exactly
+where "did it run?" matters. The cadence lives in one `CronHeartbeat` taking
+each job's tick interval, so all three go quiet for about the same wall-clock
+time however often they fire.
+
 **Verify**: kill the pod mid-run (or throw deliberately after the first batch),
-confirm the sweeper resets it and the retry settles only the remainder.
+confirm the sweeper resets it and the retry settles only the remainder. **Not
+yet done** — the sweeper has been driven against hand-made stale rows, which
+proves the queries but not the crash path.
 
 ---
 
@@ -1693,23 +1857,21 @@ entries reference figures that came from them.
 
 ## Commit boundaries for what is left
 
-Steps 1–8 have landed; their commits are in the Status table at the top, which
+Steps 1–11 have landed; their commits are in the Status table at the top, which
 is the record. This covers only what remains, one commit per step:
 
 | Commit | Step | Independently shippable? |
 |---|---|---|
-| `feat(transaction): settlement policy and upstream windows` | 9 | yes, dormant |
-| `feat(settlement): claim and post batches` | 10 | yes — nothing schedules it yet |
-| `feat(settlement): enqueuer and stuck-run sweeper` | 11 | **behavior change** — the cutover |
 | `feat(dashboard): read balances from snapshot` | 12 | **behavior change** |
 | `feat(settlement): transaction export to minio` | 13 | yes |
 | `feat(settlement): statement comparison placeholder` | 14 | yes |
 | `chore: drop legacy balance logs` | 15 | yes, after a full cycle |
 
-**Step 11 is the real cutover.** It is the first moment settlement happens on
-the new schedule, and it is worth telling merchants about beforehand, because
-`FOLLOW_UPSTREAM` means waiting until T+1 15:00 instead of the 120 minutes they
-get today.
+**Step 11 was the real cutover**, and it has landed. It is the first moment
+settlement happens on the new schedule, and it is worth telling merchants about,
+because `FOLLOW_UPSTREAM` means waiting until T+1 15:00 instead of the 120
+minutes they used to get. Nothing enqueues for a merchant without a policy row,
+so the cutover is per merchant rather than all at once.
 
 **Step 15 waits for a full cycle.** Dropping the legacy balance logs is
 irreversible, and the thing that proves the new tables are right is a complete

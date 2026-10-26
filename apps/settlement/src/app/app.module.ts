@@ -8,6 +8,7 @@ import { DatabaseModule } from '../database';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
+import { SettlementModule } from '../settlement/settlement.module';
 
 @Module({
   controllers: [AppController, HealthController],
@@ -31,6 +32,8 @@ import { HealthController } from './health.controller';
     // No need MicroserviceModule, since this apps has access to all schema
     // No need ClsModule, since this apps handle everything manual
     ScheduleModule.forRoot(),
+
+    SettlementModule,
   ],
 })
 export class AppModule {}
