@@ -23,7 +23,6 @@ const AGGREGATE_TRANSACTION_TYPES = [
   TransactionTypeEnum.WITHDRAW,
   TransactionTypeEnum.TOPUP,
   TransactionTypeEnum.DISBURSEMENT,
-  TransactionTypeEnum.SETTLEMENT_PURCHASE,
 ];
 
 /**

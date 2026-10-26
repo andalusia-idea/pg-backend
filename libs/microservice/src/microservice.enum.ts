@@ -165,7 +165,6 @@ export const TransactionTypeEnum = {
   TOPUP: 'TOPUP',
   DISBURSEMENT: 'DISBURSEMENT',
   PURCHASE: 'PURCHASE',
-  SETTLEMENT_PURCHASE: 'SETTLEMENT_PURCHASE',
 } as const;
 export type TransactionTypeEnum =
   (typeof TransactionTypeEnum)[keyof typeof TransactionTypeEnum];
