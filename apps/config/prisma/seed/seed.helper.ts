@@ -3,9 +3,6 @@ import { PrismaClient } from '@config/prisma';
 /** Agent Internal, created by the auth engine seed. */
 export const AGENT_INTERNAL_EMAIL = 'agentinternal@pg.id';
 
-/** Reconciliation runs at 02:00 unless a provider dictates otherwise. */
-export const DEFAULT_RECONCILIATION_TIME = '02:00';
-
 export function logSeeded(label: string, count: number | string): void {
   console.log(`  ${label.padEnd(28)} ${count}`);
 }

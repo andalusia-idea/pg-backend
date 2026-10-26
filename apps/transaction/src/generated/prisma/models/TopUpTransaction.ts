@@ -336,9 +336,6 @@ export type TopUpTransactionWhereInput = {
   updatedBy?: Prisma.IntNullableFilter<"TopUpTransaction"> | number | null
   deletedAt?: Prisma.DateTimeNullableFilter<"TopUpTransaction"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"TopUpTransaction"> | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
-  agentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
-  internalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
   feeDetails?: Prisma.TopupFeeDetailListRelationFilter
 }
 
@@ -360,9 +357,6 @@ export type TopUpTransactionOrderByWithRelationInput = {
   updatedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedBy?: Prisma.SortOrderInput | Prisma.SortOrder
-  merchantBalanceLog?: Prisma.MerchantBalanceLogOrderByRelationAggregateInput
-  agentBalanceLog?: Prisma.AgentBalanceLogOrderByRelationAggregateInput
-  internalBalanceLog?: Prisma.InternalBalanceLogOrderByRelationAggregateInput
   feeDetails?: Prisma.TopupFeeDetailOrderByRelationAggregateInput
 }
 
@@ -387,9 +381,6 @@ export type TopUpTransactionWhereUniqueInput = Prisma.AtLeast<{
   updatedBy?: Prisma.IntNullableFilter<"TopUpTransaction"> | number | null
   deletedAt?: Prisma.DateTimeNullableFilter<"TopUpTransaction"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"TopUpTransaction"> | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
-  agentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
-  internalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
   feeDetails?: Prisma.TopupFeeDetailListRelationFilter
 }, "id" | "systemReference">
 
@@ -458,9 +449,6 @@ export type TopUpTransactionCreateInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutTopupTransactionInput
   feeDetails?: Prisma.TopupFeeDetailCreateNestedManyWithoutTopUpTransationInput
 }
 
@@ -482,9 +470,6 @@ export type TopUpTransactionUncheckedCreateInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
   feeDetails?: Prisma.TopupFeeDetailUncheckedCreateNestedManyWithoutTopUpTransationInput
 }
 
@@ -505,9 +490,6 @@ export type TopUpTransactionUpdateInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutTopupTransactionNestedInput
   feeDetails?: Prisma.TopupFeeDetailUpdateManyWithoutTopUpTransationNestedInput
 }
 
@@ -529,9 +511,6 @@ export type TopUpTransactionUncheckedUpdateInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
   feeDetails?: Prisma.TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationNestedInput
 }
 
@@ -679,11 +658,6 @@ export type TopUpTransactionScalarRelationFilter = {
   isNot?: Prisma.TopUpTransactionWhereInput
 }
 
-export type TopUpTransactionNullableScalarRelationFilter = {
-  is?: Prisma.TopUpTransactionWhereInput | null
-  isNot?: Prisma.TopUpTransactionWhereInput | null
-}
-
 export type TopUpTransactionCreateNestedOneWithoutFeeDetailsInput = {
   create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutFeeDetailsInput, Prisma.TopUpTransactionUncheckedCreateWithoutFeeDetailsInput>
   connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutFeeDetailsInput
@@ -696,54 +670,6 @@ export type TopUpTransactionUpdateOneRequiredWithoutFeeDetailsNestedInput = {
   upsert?: Prisma.TopUpTransactionUpsertWithoutFeeDetailsInput
   connect?: Prisma.TopUpTransactionWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.TopUpTransactionUpdateToOneWithWhereWithoutFeeDetailsInput, Prisma.TopUpTransactionUpdateWithoutFeeDetailsInput>, Prisma.TopUpTransactionUncheckedUpdateWithoutFeeDetailsInput>
-}
-
-export type TopUpTransactionCreateNestedOneWithoutMerchantBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutMerchantBalanceLogInput
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-}
-
-export type TopUpTransactionUpdateOneWithoutMerchantBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutMerchantBalanceLogInput
-  upsert?: Prisma.TopUpTransactionUpsertWithoutMerchantBalanceLogInput
-  disconnect?: Prisma.TopUpTransactionWhereInput | boolean
-  delete?: Prisma.TopUpTransactionWhereInput | boolean
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TopUpTransactionUpdateToOneWithWhereWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUpdateWithoutMerchantBalanceLogInput>, Prisma.TopUpTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-}
-
-export type TopUpTransactionCreateNestedOneWithoutAgentBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutAgentBalanceLogInput
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-}
-
-export type TopUpTransactionUpdateOneWithoutAgentBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutAgentBalanceLogInput
-  upsert?: Prisma.TopUpTransactionUpsertWithoutAgentBalanceLogInput
-  disconnect?: Prisma.TopUpTransactionWhereInput | boolean
-  delete?: Prisma.TopUpTransactionWhereInput | boolean
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TopUpTransactionUpdateToOneWithWhereWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUpdateWithoutAgentBalanceLogInput>, Prisma.TopUpTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-}
-
-export type TopUpTransactionCreateNestedOneWithoutInternalBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutInternalBalanceLogInput
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-}
-
-export type TopUpTransactionUpdateOneWithoutInternalBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  connectOrCreate?: Prisma.TopUpTransactionCreateOrConnectWithoutInternalBalanceLogInput
-  upsert?: Prisma.TopUpTransactionUpsertWithoutInternalBalanceLogInput
-  disconnect?: Prisma.TopUpTransactionWhereInput | boolean
-  delete?: Prisma.TopUpTransactionWhereInput | boolean
-  connect?: Prisma.TopUpTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TopUpTransactionUpdateToOneWithWhereWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUpdateWithoutInternalBalanceLogInput>, Prisma.TopUpTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
 }
 
 export type TopUpTransactionCreateWithoutFeeDetailsInput = {
@@ -763,9 +689,6 @@ export type TopUpTransactionCreateWithoutFeeDetailsInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutTopupTransactionInput
 }
 
 export type TopUpTransactionUncheckedCreateWithoutFeeDetailsInput = {
@@ -786,9 +709,6 @@ export type TopUpTransactionUncheckedCreateWithoutFeeDetailsInput = {
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
 }
 
 export type TopUpTransactionCreateOrConnectWithoutFeeDetailsInput = {
@@ -824,9 +744,6 @@ export type TopUpTransactionUpdateWithoutFeeDetailsInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutTopupTransactionNestedInput
 }
 
 export type TopUpTransactionUncheckedUpdateWithoutFeeDetailsInput = {
@@ -847,327 +764,6 @@ export type TopUpTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-}
-
-export type TopUpTransactionCreateWithoutMerchantBalanceLogInput = {
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  agentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
-  id?: number
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionCreateOrConnectWithoutMerchantBalanceLogInput = {
-  where: Prisma.TopUpTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-}
-
-export type TopUpTransactionUpsertWithoutMerchantBalanceLogInput = {
-  update: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  where?: Prisma.TopUpTransactionWhereInput
-}
-
-export type TopUpTransactionUpdateToOneWithWhereWithoutMerchantBalanceLogInput = {
-  where?: Prisma.TopUpTransactionWhereInput
-  data: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutMerchantBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-}
-
-export type TopUpTransactionUpdateWithoutMerchantBalanceLogInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUpdateManyWithoutTopUpTransationNestedInput
-}
-
-export type TopUpTransactionUncheckedUpdateWithoutMerchantBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationNestedInput
-}
-
-export type TopUpTransactionCreateWithoutAgentBalanceLogInput = {
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
-  id?: number
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionCreateOrConnectWithoutAgentBalanceLogInput = {
-  where: Prisma.TopUpTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-}
-
-export type TopUpTransactionUpsertWithoutAgentBalanceLogInput = {
-  update: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  where?: Prisma.TopUpTransactionWhereInput
-}
-
-export type TopUpTransactionUpdateToOneWithWhereWithoutAgentBalanceLogInput = {
-  where?: Prisma.TopUpTransactionWhereInput
-  data: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutAgentBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-}
-
-export type TopUpTransactionUpdateWithoutAgentBalanceLogInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUpdateManyWithoutTopUpTransationNestedInput
-}
-
-export type TopUpTransactionUncheckedUpdateWithoutAgentBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  internalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationNestedInput
-}
-
-export type TopUpTransactionCreateWithoutInternalBalanceLogInput = {
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
-  id?: number
-  merchantId: number
-  systemReference: string
-  providerName: string
-  paymentMethodName: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status: $Enums.TransactionStatusEnum
-  receiptImage: string
-  paidAt?: Date | string | null
-  settlementAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutTopupTransactionInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedCreateNestedManyWithoutTopUpTransationInput
-}
-
-export type TopUpTransactionCreateOrConnectWithoutInternalBalanceLogInput = {
-  where: Prisma.TopUpTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-}
-
-export type TopUpTransactionUpsertWithoutInternalBalanceLogInput = {
-  update: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
-  create: Prisma.XOR<Prisma.TopUpTransactionCreateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  where?: Prisma.TopUpTransactionWhereInput
-}
-
-export type TopUpTransactionUpdateToOneWithWhereWithoutInternalBalanceLogInput = {
-  where?: Prisma.TopUpTransactionWhereInput
-  data: Prisma.XOR<Prisma.TopUpTransactionUpdateWithoutInternalBalanceLogInput, Prisma.TopUpTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
-}
-
-export type TopUpTransactionUpdateWithoutInternalBalanceLogInput = {
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUpdateManyWithoutTopUpTransationNestedInput
-}
-
-export type TopUpTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  receiptImage?: Prisma.StringFieldUpdateOperationsInput | string
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  merchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  agentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutTopupTransactionNestedInput
-  feeDetails?: Prisma.TopupFeeDetailUncheckedUpdateManyWithoutTopUpTransationNestedInput
 }
 
 
@@ -1176,16 +772,10 @@ export type TopUpTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
  */
 
 export type TopUpTransactionCountOutputType = {
-  merchantBalanceLog: number
-  agentBalanceLog: number
-  internalBalanceLog: number
   feeDetails: number
 }
 
 export type TopUpTransactionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  merchantBalanceLog?: boolean | TopUpTransactionCountOutputTypeCountMerchantBalanceLogArgs
-  agentBalanceLog?: boolean | TopUpTransactionCountOutputTypeCountAgentBalanceLogArgs
-  internalBalanceLog?: boolean | TopUpTransactionCountOutputTypeCountInternalBalanceLogArgs
   feeDetails?: boolean | TopUpTransactionCountOutputTypeCountFeeDetailsArgs
 }
 
@@ -1197,27 +787,6 @@ export type TopUpTransactionCountOutputTypeDefaultArgs<ExtArgs extends runtime.T
    * Select specific fields to fetch from the TopUpTransactionCountOutputType
    */
   select?: Prisma.TopUpTransactionCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * TopUpTransactionCountOutputType without action
- */
-export type TopUpTransactionCountOutputTypeCountMerchantBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MerchantBalanceLogWhereInput
-}
-
-/**
- * TopUpTransactionCountOutputType without action
- */
-export type TopUpTransactionCountOutputTypeCountAgentBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AgentBalanceLogWhereInput
-}
-
-/**
- * TopUpTransactionCountOutputType without action
- */
-export type TopUpTransactionCountOutputTypeCountInternalBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.InternalBalanceLogWhereInput
 }
 
 /**
@@ -1246,9 +815,6 @@ export type TopUpTransactionSelect<ExtArgs extends runtime.Types.Extensions.Inte
   updatedBy?: boolean
   deletedAt?: boolean
   deletedBy?: boolean
-  merchantBalanceLog?: boolean | Prisma.TopUpTransaction$merchantBalanceLogArgs<ExtArgs>
-  agentBalanceLog?: boolean | Prisma.TopUpTransaction$agentBalanceLogArgs<ExtArgs>
-  internalBalanceLog?: boolean | Prisma.TopUpTransaction$internalBalanceLogArgs<ExtArgs>
   feeDetails?: boolean | Prisma.TopUpTransaction$feeDetailsArgs<ExtArgs>
   _count?: boolean | Prisma.TopUpTransactionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["topUpTransaction"]>
@@ -1315,9 +881,6 @@ export type TopUpTransactionSelectScalar = {
 
 export type TopUpTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "merchantId" | "systemReference" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "status" | "receiptImage" | "paidAt" | "settlementAt" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["topUpTransaction"]>
 export type TopUpTransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  merchantBalanceLog?: boolean | Prisma.TopUpTransaction$merchantBalanceLogArgs<ExtArgs>
-  agentBalanceLog?: boolean | Prisma.TopUpTransaction$agentBalanceLogArgs<ExtArgs>
-  internalBalanceLog?: boolean | Prisma.TopUpTransaction$internalBalanceLogArgs<ExtArgs>
   feeDetails?: boolean | Prisma.TopUpTransaction$feeDetailsArgs<ExtArgs>
   _count?: boolean | Prisma.TopUpTransactionCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1327,9 +890,6 @@ export type TopUpTransactionIncludeUpdateManyAndReturn<ExtArgs extends runtime.T
 export type $TopUpTransactionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "TopUpTransaction"
   objects: {
-    merchantBalanceLog: Prisma.$MerchantBalanceLogPayload<ExtArgs>[]
-    agentBalanceLog: Prisma.$AgentBalanceLogPayload<ExtArgs>[]
-    internalBalanceLog: Prisma.$InternalBalanceLogPayload<ExtArgs>[]
     feeDetails: Prisma.$TopupFeeDetailPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1744,9 +1304,6 @@ readonly fields: TopUpTransactionFieldRefs;
  */
 export interface Prisma__TopUpTransactionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  merchantBalanceLog<T extends Prisma.TopUpTransaction$merchantBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TopUpTransaction$merchantBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MerchantBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  agentBalanceLog<T extends Prisma.TopUpTransaction$agentBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TopUpTransaction$agentBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AgentBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  internalBalanceLog<T extends Prisma.TopUpTransaction$internalBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TopUpTransaction$internalBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InternalBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   feeDetails<T extends Prisma.TopUpTransaction$feeDetailsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TopUpTransaction$feeDetailsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TopupFeeDetailPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2184,78 +1741,6 @@ export type TopUpTransactionDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many TopUpTransactions to delete.
    */
   limit?: number
-}
-
-/**
- * TopUpTransaction.merchantBalanceLog
- */
-export type TopUpTransaction$merchantBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the MerchantBalanceLog
-   */
-  select?: Prisma.MerchantBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the MerchantBalanceLog
-   */
-  omit?: Prisma.MerchantBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MerchantBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.MerchantBalanceLogWhereInput
-  orderBy?: Prisma.MerchantBalanceLogOrderByWithRelationInput | Prisma.MerchantBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.MerchantBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.MerchantBalanceLogScalarFieldEnum | Prisma.MerchantBalanceLogScalarFieldEnum[]
-}
-
-/**
- * TopUpTransaction.agentBalanceLog
- */
-export type TopUpTransaction$agentBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AgentBalanceLog
-   */
-  select?: Prisma.AgentBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AgentBalanceLog
-   */
-  omit?: Prisma.AgentBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AgentBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.AgentBalanceLogWhereInput
-  orderBy?: Prisma.AgentBalanceLogOrderByWithRelationInput | Prisma.AgentBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.AgentBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.AgentBalanceLogScalarFieldEnum | Prisma.AgentBalanceLogScalarFieldEnum[]
-}
-
-/**
- * TopUpTransaction.internalBalanceLog
- */
-export type TopUpTransaction$internalBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the InternalBalanceLog
-   */
-  select?: Prisma.InternalBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the InternalBalanceLog
-   */
-  omit?: Prisma.InternalBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.InternalBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.InternalBalanceLogWhereInput
-  orderBy?: Prisma.InternalBalanceLogOrderByWithRelationInput | Prisma.InternalBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.InternalBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.InternalBalanceLogScalarFieldEnum | Prisma.InternalBalanceLogScalarFieldEnum[]
 }
 
 /**

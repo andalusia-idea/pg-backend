@@ -4,7 +4,7 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice';
 import { PrismaClient } from '@config/prisma';
-import { DEFAULT_RECONCILIATION_TIME, logSeeded } from './seed.helper';
+import { logSeeded } from './seed.helper';
 
 /**
  * The two auth engine accounts config depends on: `agentinternal@pg.id` gets a
@@ -137,7 +137,6 @@ export async function configEngineSeed(prisma: PrismaClient): Promise<void> {
         where: { name },
         create: {
           name,
-          reconciliationTime: DEFAULT_RECONCILIATION_TIME,
           createdBy: SYSTEM_01_USER_ID,
         },
         update: {},

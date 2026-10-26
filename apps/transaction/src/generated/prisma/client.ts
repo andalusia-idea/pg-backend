@@ -121,21 +121,6 @@ export type WebhookLog = Prisma.WebhookLogModel
  */
 export type TransactionAudit = Prisma.TransactionAuditModel
 /**
- * Model MerchantBalanceLog
- * 
- */
-export type MerchantBalanceLog = Prisma.MerchantBalanceLogModel
-/**
- * Model AgentBalanceLog
- * 
- */
-export type AgentBalanceLog = Prisma.AgentBalanceLogModel
-/**
- * Model InternalBalanceLog
- * 
- */
-export type InternalBalanceLog = Prisma.InternalBalanceLogModel
-/**
  * Model BalanceEntry
  * 
  */

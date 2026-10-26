@@ -94,8 +94,6 @@ export type BankScalarFieldEnum = (typeof BankScalarFieldEnum)[keyof typeof Bank
 
 export const MerchantScalarFieldEnum = {
   id: 'id',
-  settlementInterval: 'settlementInterval',
-  lastSettlementAt: 'lastSettlementAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -140,8 +138,6 @@ export type AgentShareholderScalarFieldEnum = (typeof AgentShareholderScalarFiel
 
 export const ProviderScalarFieldEnum = {
   name: 'name',
-  reconciliationTime: 'reconciliationTime',
-  lastReconciliationAt: 'lastReconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
