@@ -16,7 +16,6 @@ export const UpstreamTransferRequestSchema = Type.Object({
   accountNumber: Type.String(),
   accountHolderName: Type.Union([Type.String(), Type.Null()]),
   note: Type.String(),
-  providerReference: Type.Union([Type.String(), Type.Null()]), // TODO di hapus ketika revamp motionpay
 });
 export type UpstreamTransferRequestDto = Static<
   typeof UpstreamTransferRequestSchema

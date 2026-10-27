@@ -134,7 +134,7 @@ export class MotionPayTransferManualController {
         amount: { value: '0.00', currency: 'IDR' },
         accountHolderName: null,
         note: '',
-        providerReference: null,
+        // providerReference: null,
       }),
     );
   }
@@ -198,7 +198,7 @@ export class MotionPayTransferManualController {
 
         // MotionPay's transfer leg is keyed by our own `external_id`, not by a
         // reference it hands back on inquiry - unlike the Biller rail.
-        providerReference: null,
+        // providerReference: null,
       }),
     );
   }

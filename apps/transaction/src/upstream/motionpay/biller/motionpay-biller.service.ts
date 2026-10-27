@@ -167,7 +167,7 @@ export class MotionPayBillerService {
     const confirmed: UpstreamTransferRequestDto = {
       ...dto,
       accountHolderName: beneficiary.accountHolderName,
-      providerReference: inquiryData.transaction_id,
+      // providerReference: inquiryData.transaction_id,
     };
 
     let payment: MotionPayBillerPaymentPrepaidResponseDto;
@@ -298,7 +298,7 @@ export class MotionPayBillerService {
 
     const body: MotionPayBillerPaymentPrepaidRequestDto = {
       external_id: motionPayBillerPaymentReference(dto.systemReference),
-      transaction_id: dto.providerReference!,
+      transaction_id: '', //dto.providerReference!,
       product_code: productCode,
       customer_id: dto.accountNumber,
     };

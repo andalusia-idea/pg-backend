@@ -103,7 +103,6 @@ export class DisbursementService {
       accountNumber: dto.accountNumber,
       bankCode: dto.bankCode,
       note: dto.note ?? dto.merchantReference,
-      providerReference: null,
     };
 
     const transfer = await this.send(disbursementId, request);

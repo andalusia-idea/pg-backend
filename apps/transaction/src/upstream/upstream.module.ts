@@ -1,7 +1,9 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MotionPayModule } from './motionpay';
 import { JatelindoModule } from './jatelindo';
 
-@Global()
-@Module({ imports: [MotionPayModule, JatelindoModule] })
+@Module({
+  imports: [MotionPayModule, JatelindoModule],
+  exports: [MotionPayModule, JatelindoModule],
+})
 export class UpstreamModule {}

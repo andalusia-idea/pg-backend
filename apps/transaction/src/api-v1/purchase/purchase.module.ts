@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MotionPayModule } from '../../upstream/motionpay';
 import { PurchaseController } from './purchase.controller';
 import { PurchaseCommonService } from './purchase-common.service';
 import { PurchaseQrisService } from './purchase-qris.service';
 import { PurchaseWebhookService } from './purchase.webhook.service';
 import { HttpModule } from '@nestjs/axios';
+import { UpstreamModule } from '../../upstream/upstream.module';
 
 /**
  * `MotionPayModule` is imported rather than relying on the app module having
@@ -16,7 +16,7 @@ import { HttpModule } from '@nestjs/axios';
  * they need no import here.
  */
 @Module({
-  imports: [MotionPayModule, HttpModule],
+  imports: [HttpModule, UpstreamModule],
   controllers: [PurchaseController],
   providers: [
     PurchaseCommonService,

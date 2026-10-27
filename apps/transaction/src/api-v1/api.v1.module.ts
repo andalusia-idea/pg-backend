@@ -4,9 +4,10 @@ import { MerchantExceptionFilter } from './signature';
 import { PingModule } from './ping';
 import { DisbursementModule } from './disbursement';
 import { PurchaseModule } from './purchase';
+import { BalanceModule } from '@app/balance';
 
 @Module({
-  imports: [PingModule, PurchaseModule, DisbursementModule],
+  imports: [BalanceModule, PingModule, PurchaseModule, DisbursementModule],
   providers: [
     /**
      * Registered through APP_FILTER so it applies wherever a

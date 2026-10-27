@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const services = [
-  { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:dashboard' },
+  // { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:dashboard' },
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:auth' },
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:config' },
   { profile: 'PG', dir: 'C:\\le\\andalusia\\pg', script: 'start:transaction' },

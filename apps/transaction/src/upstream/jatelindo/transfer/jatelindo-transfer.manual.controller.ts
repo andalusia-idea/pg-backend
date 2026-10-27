@@ -1,16 +1,25 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
   Logger,
+  Param,
+  Post,
 } from '@nestjs/common';
 import { JatelindoTransferAuthService } from './jatelindo-transfer.auth.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AppConfig } from '@app/configuration';
-import { ProviderNameEnum } from '@app/microservice';
-import { UpstreamException } from '@app/upstream';
+import { AjvPipe, ProviderNameEnum } from '@app/microservice';
+import {
+  UpstreamException,
+  type UpstreamTransferRequestDto,
+  UpstreamTransferRequestSchema,
+} from '@app/upstream';
+import { JatelindoTransferOtherService } from './jatelindo-transfer.other.service';
+import { JatelindoTransferService } from './jatelindo-transfer.service';
 
 @ApiTags('Upstream - Jatelindo Transfer (Manual test)')
 @Controller('upstream/jatelindo/transfer')
@@ -18,8 +27,11 @@ export class JatelindoTransferManualController {
   private readonly logger = new Logger(JatelindoTransferManualController.name);
 
   constructor(
-    private readonly transferAuthService: JatelindoTransferAuthService,
     private readonly appConfig: AppConfig,
+
+    private readonly transferAuthService: JatelindoTransferAuthService,
+    private readonly transferService: JatelindoTransferService,
+    private readonly transferOtherService: JatelindoTransferOtherService,
   ) {}
 
   @Get('login')
@@ -32,6 +44,43 @@ export class JatelindoTransferManualController {
         ok: true,
         token: `${token}`,
       };
+    });
+  }
+
+  @Get('balance')
+  @ApiOperation({ summary: 'Check Balance' })
+  async balance() {
+    this.assertNotProduction();
+    return this.surfaceUpstreamErrors(async () => {
+      const balance = await this.transferOtherService.balanceInquiry();
+      return balance;
+    });
+  }
+
+  @Get('status/:systemReference')
+  @ApiOperation({ summary: 'Transaction Status by SystemReference' })
+  async transactionStatus(@Param('systemReference') systemReference: string) {
+    this.assertNotProduction();
+    return this.surfaceUpstreamErrors(async () => {
+      const status = await this.transferOtherService.transactionStatus({
+        systemReference,
+        providerReference: null,
+      });
+      return status;
+    });
+  }
+
+  @Post('create-transfer')
+  @ApiOperation({ summary: 'Create Transfer' })
+  @ApiBody({ schema: UpstreamTransferRequestSchema as Record<string, any> })
+  async createTransfer(
+    @Body(AjvPipe<UpstreamTransferRequestDto>(UpstreamTransferRequestSchema))
+    body: UpstreamTransferRequestDto,
+  ) {
+    this.assertNotProduction();
+    return this.surfaceUpstreamErrors(async () => {
+      const transfer = await this.transferService.createTransfer(body);
+      return transfer;
     });
   }
 

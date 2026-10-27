@@ -1,10 +1,10 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { MotionPayModule } from '../../upstream/motionpay';
 import { DisbursementController } from './disbursement.controller';
 import { DisbursementService } from './disbursement.service';
 import { DisbursementCommonService } from './disbursement-common.service';
 import { DisbursementWebhookService } from './disbursement.webhook.service';
+import { UpstreamModule } from '../../upstream/upstream.module';
 
 /**
  * `DisbursementWebhookService` is exported so `CallbackModule` can compose it
@@ -12,7 +12,7 @@ import { DisbursementWebhookService } from './disbursement.webhook.service';
  * that an inbound callback route exists - see `src/callback`.
  */
 @Module({
-  imports: [MotionPayModule, HttpModule],
+  imports: [HttpModule, UpstreamModule],
   controllers: [DisbursementController],
   providers: [
     DisbursementService,

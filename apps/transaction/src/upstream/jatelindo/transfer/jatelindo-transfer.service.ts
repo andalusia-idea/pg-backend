@@ -164,7 +164,7 @@ export class JatelindoTransferService {
       accountNo: isWallet ? '' : params.accountNumber,
       amount: params.amount.value,
       channelId: JATELINDO_CHANNEL[params.bankCode],
-      description: null,
+      description: params.note,
       phoneNo: isWallet ? params.accountNumber : '',
       name: params.accountHolderName ?? '',
       email: null,

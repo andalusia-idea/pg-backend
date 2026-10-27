@@ -62,10 +62,13 @@ import {
     MotionPayBillerCallbackService,
   ],
   exports: [
+    MotionPayQrisAuthService,
     MotionPayQrisService,
     MotionPayQrisCallbackService,
+    MotionPayTransferAuthService,
     MotionPayTransferService,
     MotionPayTransferCallbackService,
+    MotionPayBillerAuthService,
     MotionPayBillerService,
     MotionPayBillerCallbackService,
   ],
