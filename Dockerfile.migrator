@@ -1,0 +1,42 @@
+# Image untuk Job migrasi dan seed Prisma. Bukan image runtime aplikasi.
+#
+# Sengaja berdiri sebagai file terpisah, bukan sebagai stage di Dockerfile:
+# Cloud Build memakai docker builder klasik, yang menjalankan setiap stage
+# sampai target menurut urutan file — bukan hanya dependensi target. Sebagai
+# stage, image ini akan ikut menyeret stage builder dan runner, atau sebaliknya
+# ikut terbangun saat aplikasi dibangun.
+#
+#   docker build -f Dockerfile.migrator -t .../migrator:TAG .
+#
+# Dipakai oleh:
+#   prisma migrate deploy --config apps/<app>/prisma.config.ts
+#   prisma db seed        --config apps/<app>/prisma.config.ts -- --dev
+
+FROM node:22-alpine
+WORKDIR /app
+
+# devDependencies dibutuhkan: prisma CLI untuk migrate, tsx untuk seed.
+COPY package*.json ./
+RUN npm ci
+
+COPY apps/auth/prisma        ./apps/auth/prisma
+COPY apps/config/prisma      ./apps/config/prisma
+COPY apps/transaction/prisma ./apps/transaction/prisma
+COPY apps/auth/prisma.config.ts        ./apps/auth/
+COPY apps/config/prisma.config.ts      ./apps/config/
+COPY apps/transaction/prisma.config.ts ./apps/transaction/
+COPY tsconfig*.json ./
+
+# Berkas seed mengimpor @app/microservice dan @app/signature dari libs/.
+COPY libs ./libs
+
+# `prisma.config.ts` membaca env('POSTGRESQL_URL_MASTER') saat config dimuat dan
+# melempar kalau kosong. `generate` tidak pernah menyentuh basis data, jadi DSN
+# palsu cukup untuk melewatinya. Job menyuntikkan DSN asli saat runtime.
+ENV POSTGRESQL_URL_MASTER="postgresql://build:build@127.0.0.1:5432/build"
+
+RUN npx prisma generate --config apps/auth/prisma.config.ts \
+ && npx prisma generate --config apps/config/prisma.config.ts \
+ && npx prisma generate --config apps/transaction/prisma.config.ts
+
+ENTRYPOINT ["npx", "prisma"]

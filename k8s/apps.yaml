@@ -1,0 +1,245 @@
+# Deployment dan Service keempat aplikasi.
+#
+# Sumber kebenaran untuk apa yang berjalan di klaster. Sebelum file ini ada,
+# Deployment dibuat lewat skrip sekali-jalan — tidak terversi, tidak bisa
+# ditinjau, dan tidak bisa di-apply ulang oleh pipeline.
+#
+# Tag image sengaja tidak ditulis di sini; Kustomize yang mengisinya
+# (lihat k8s/kustomization.yaml). CI menjalankan `kustomize edit set image`
+# dengan SHA commit, jadi tidak ada tag mengambang seperti :latest.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+  namespace: andapay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: auth-service }
+  template:
+    metadata:
+      labels: { app: auth-service }
+    spec:
+      serviceAccountName: andapay-app
+      initContainers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          restartPolicy: Always
+          args: ["--private-ip", "--port=5432", "$(INSTANCE_CONNECTION_NAME)"]
+          envFrom:
+            - configMapRef: { name: andapay-common }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+      containers:
+        - name: auth-service
+          image: andapay/auth
+          ports:
+            - { name: http, containerPort: 3000 }
+            - { name: tcp,  containerPort: 4001 }
+          envFrom:
+            - configMapRef: { name: andapay-common }
+            - secretRef:    { name: andapay-secrets }
+          env:
+            - { name: APP_NAME, value: "auth" }
+            - { name: PORT,     value: "3000" }
+            # Menimpa entri miliknya sendiri. Nilai di ConfigMap adalah nama
+            # Service, dipakai peer untuk menyambung — tapi app ini memakai
+            # variabel yang sama untuk bind listener TCP-nya sendiri, dan proses
+            # tidak bisa bind ke nama DNS Service (EADDRNOTAVAIL).
+            - { name: CLIENT_AUTH_HOST, value: "0.0.0.0" }
+            - name: POSTGRESQL_URL_MASTER
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: auth-master }
+            # Sandbox tidak punya read replica; produksi menimpanya lewat overlay.
+            - name: POSTGRESQL_URL_SLAVE
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: auth-master }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: andapay
+spec:
+  selector: { app: auth-service }
+  ports:
+    - { name: http, port: 80,   targetPort: 3000 }
+    - { name: tcp,  port: 4001, targetPort: 4001 }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-deployment
+  namespace: andapay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: config-service }
+  template:
+    metadata:
+      labels: { app: config-service }
+    spec:
+      serviceAccountName: andapay-app
+      initContainers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          restartPolicy: Always
+          args: ["--private-ip", "--port=5432", "$(INSTANCE_CONNECTION_NAME)"]
+          envFrom:
+            - configMapRef: { name: andapay-common }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+      containers:
+        - name: config-service
+          image: andapay/config
+          ports:
+            - { name: http, containerPort: 3000 }
+            - { name: tcp,  containerPort: 4002 }
+          envFrom:
+            - configMapRef: { name: andapay-common }
+            - secretRef:    { name: andapay-secrets }
+          env:
+            - { name: APP_NAME, value: "config" }
+            - { name: PORT,     value: "3000" }
+            - { name: CLIENT_CONFIG_HOST, value: "0.0.0.0" }
+            - name: POSTGRESQL_URL_MASTER
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: config-master }
+            - name: POSTGRESQL_URL_SLAVE
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: config-master }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: andapay
+spec:
+  selector: { app: config-service }
+  ports:
+    - { name: http, port: 80,   targetPort: 3000 }
+    - { name: tcp,  port: 4002, targetPort: 4002 }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-deployment
+  namespace: andapay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: transaction-service }
+  template:
+    metadata:
+      labels: { app: transaction-service }
+    spec:
+      serviceAccountName: andapay-app
+      initContainers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          restartPolicy: Always
+          args: ["--private-ip", "--port=5432", "$(INSTANCE_CONNECTION_NAME)"]
+          envFrom:
+            - configMapRef: { name: andapay-common }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+      containers:
+        - name: transaction-service
+          image: andapay/transaction
+          ports:
+            - { name: http, containerPort: 3000 }
+            - { name: tcp,  containerPort: 4003 }
+          envFrom:
+            - configMapRef: { name: andapay-common }
+            - secretRef:    { name: andapay-secrets }
+          env:
+            - { name: APP_NAME, value: "transaction" }
+            - { name: PORT,     value: "3000" }
+            - { name: CLIENT_TRANSACTION_HOST, value: "0.0.0.0" }
+            - name: POSTGRESQL_URL_MASTER
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: transaction-master }
+            - name: POSTGRESQL_URL_SLAVE
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: transaction-master }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: transaction-service
+  namespace: andapay
+spec:
+  selector: { app: transaction-service }
+  ports:
+    - { name: http, port: 80,   targetPort: 3000 }
+    - { name: tcp,  port: 4003, targetPort: 4003 }
+
+---
+# Dashboard: tanpa listener TCP, dan tidak dirutekan ke publik.
+# Lihat catatan di k8s/gateway.yaml — ia mengekspos POST /login dan seed
+# membuat superadmin berpassword yang tertulis di repo.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-deployment
+  namespace: andapay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: dashboard-service }
+  template:
+    metadata:
+      labels: { app: dashboard-service }
+    spec:
+      serviceAccountName: andapay-app
+      initContainers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+          restartPolicy: Always
+          args: ["--private-ip", "--port=5432", "$(INSTANCE_CONNECTION_NAME)"]
+          envFrom:
+            - configMapRef: { name: andapay-common }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+      containers:
+        - name: dashboard-service
+          image: andapay/dashboard
+          ports:
+            - { name: http, containerPort: 3000 }
+          envFrom:
+            - configMapRef: { name: andapay-common }
+            - secretRef:    { name: andapay-secrets }
+          env:
+            - { name: APP_NAME, value: "dashboard" }
+            - { name: PORT,     value: "3000" }
+            - name: POSTGRESQL_URL_MASTER
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: dashboard-master }
+            - name: POSTGRESQL_URL_SLAVE
+              valueFrom:
+                secretKeyRef: { name: andapay-db, key: dashboard-master }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-service
+  namespace: andapay
+spec:
+  selector: { app: dashboard-service }
+  ports:
+    - { name: http, port: 80, targetPort: 3000 }
