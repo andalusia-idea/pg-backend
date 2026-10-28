@@ -2,6 +2,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import {
   JatelindoTransferAuthService,
+  JatelindoTransferCallbackService,
   JatelindoTransferManualController,
   JatelindoTransferOtherService,
   JatelindoTransferService,
@@ -16,12 +17,14 @@ import { JatelindoRequestAuthService } from './helper/jatelindo-request-auth.ser
     JatelindoTransferService,
     JatelindoRequestAuthService,
     JatelindoTransferOtherService,
+    JatelindoTransferCallbackService,
   ],
   exports: [
     JatelindoTransferAuthService,
     JatelindoTransferService,
     JatelindoRequestAuthService,
     JatelindoTransferOtherService,
+    JatelindoTransferCallbackService,
   ],
 })
 export class JatelindoModule {}

@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { DisbursementModule } from '../api-v1/disbursement';
 import { PurchaseModule } from '../api-v1/purchase';
-import { MotionPayModule } from '../upstream/motionpay';
 import { MotionPayCallbackController } from './motionpay.callback.controller';
+import { JatelindoCallbackController } from './jatelindo.callback.controller';
+import { UpstreamModule } from '../upstream/upstream.module';
 
 /**
  * Inbound notifications from upstream providers.
@@ -26,7 +27,7 @@ import { MotionPayCallbackController } from './motionpay.callback.controller';
  * merchants receive - MotionPay only reads the status.
  */
 @Module({
-  imports: [MotionPayModule, PurchaseModule, DisbursementModule],
-  controllers: [MotionPayCallbackController],
+  imports: [UpstreamModule, PurchaseModule, DisbursementModule],
+  controllers: [MotionPayCallbackController, JatelindoCallbackController],
 })
 export class CallbackModule {}

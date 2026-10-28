@@ -2,7 +2,6 @@ import { MotionPayConfig } from '@app/configuration';
 import { ProviderNameEnum, isIpAllowed } from '@app/microservice';
 import { METADATA_KEY, UpstreamWebhookQrisDto } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
-import Decimal from 'decimal.js';
 import { MotionPayQrisCallbackDto } from '../dto';
 import { mapMotionPayStatus, parseMotionPayTimestamp } from '../helper';
 
@@ -42,6 +41,7 @@ export class MotionPayQrisCallbackService {
     payload: MotionPayQrisCallbackDto,
     sourceIp: string | null,
   ): MotionPayQrisTranslation {
+    const systemReference = payload.external_id; // TODO Check lagi nanti
     const providerReference = payload.transaction_id;
 
     if (!this.isAllowedOrigin(sourceIp)) {
@@ -72,12 +72,11 @@ export class MotionPayQrisCallbackService {
     return {
       accepted: true,
       webhook: {
+        systemReference,
         providerReference,
         merchantReference: payload.external_id ?? null,
         providerName: ProviderNameEnum.MOTIONPAY,
         status,
-        // Whole rupiah on the wire; our money is fixed-2 everywhere.
-        nominal: new Decimal(payload.amount ?? 0).toFixed(2),
         paidAt,
         metadata: { [METADATA_KEY.QRIS_CALLBACK]: payload },
         // Kept separately and unaltered: the webhook log exists to hold what

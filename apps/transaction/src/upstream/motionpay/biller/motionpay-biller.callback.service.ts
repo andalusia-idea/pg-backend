@@ -41,6 +41,7 @@ export class MotionPayBillerCallbackService {
   ): MotionPayBillerTranslation {
     const data = payload.data as Record<string, string> | null;
     const paymentReference = data?.external_id ?? '';
+    const providerReference = data?.transaction_id ?? '';
 
     if (!this.isAllowedOrigin(sourceIp)) {
       this.logger.warn({
@@ -49,6 +50,15 @@ export class MotionPayBillerCallbackService {
         paymentReference,
       });
       return { accepted: false, reason: 'origin not allowed' };
+    }
+
+    if (!providerReference) {
+      this.logger.warn({
+        msg: 'Transfer callback carried no transaction_id - nothing to match',
+        sourceIp,
+        providerReference: providerReference,
+      });
+      return { accepted: false, reason: 'no transaction_id' };
     }
 
     if (!paymentReference) {
@@ -66,7 +76,7 @@ export class MotionPayBillerCallbackService {
         // systemReference plus a suffix. Stripping it here is what lets the
         // business layer look the row up by the reference it actually stores.
         systemReference: motionPayBillerSystemReference(paymentReference),
-        providerReference: data?.transaction_id ?? null,
+        providerReference: providerReference,
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayBillerStatus(payload.status),
         message: payload.description || payload.message || null,

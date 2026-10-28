@@ -128,7 +128,7 @@ export type MotionPayQrisStatusResponseDto = Static<
 export const MotionPayQrisCallbackSchema = Type.Object(
   {
     transaction_id: Type.String({ minLength: 1 }),
-    external_id: Type.Optional(Type.String()),
+    external_id: Type.String(),
     amount: Type.Optional(Type.Number()),
     qr_string: Type.Optional(Type.String()),
     /** `QRIS_DYNAMIC` or `QRIS_STATIC`. We only issue dynamic. */

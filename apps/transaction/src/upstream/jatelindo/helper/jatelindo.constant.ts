@@ -24,7 +24,7 @@ export const JATELINDO_RESPONSE_CODE = {
   TIMEOUT: 'E18',
   UNAUTHORIZED_ACCESS: 'A90',
   NO_TRANSACTION: 'S84',
-  /// TODO complete the rest
+  INVALID_DESTINATION: 'D14',
 } as const;
 export type JATELINDO_RESPONSE_CODE =
   (typeof JATELINDO_RESPONSE_CODE)[keyof typeof JATELINDO_RESPONSE_CODE];
@@ -68,6 +68,7 @@ const JATELINDO_STATUS_BY_RESPONSE_CODE = {
   S14: TransactionStatusEnum.FAILED,
   A90: TransactionStatusEnum.FAILED,
   S84: TransactionStatusEnum.FAILED,
+  D14: TransactionStatusEnum.FAILED,
 } as const satisfies Record<JATELINDO_RESPONSE_CODE, TransactionStatusEnum>;
 
 /**

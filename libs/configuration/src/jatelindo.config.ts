@@ -42,4 +42,13 @@ export class JatelindoConfig {
   get TRANSFER_SECRET(): string {
     return this.configService.getOrThrow<string>('JATELINDO_TRANSFER_SECRET');
   }
+
+  get CALLBACK_ALLOWED_IPS(): string[] {
+    const raw =
+      this.configService.get<string>('JATELINDO_CALLBACK_ALLOWED_IPS') ?? '';
+    return raw
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+  }
 }

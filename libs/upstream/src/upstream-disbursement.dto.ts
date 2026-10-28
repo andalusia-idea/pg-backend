@@ -58,7 +58,7 @@ export type UpstreamTransferStatusResponseDto = Static<
 
 export const UpstreamWebhookTransferSchema = Type.Object({
   systemReference: Type.String(),
-  providerReference: Type.Union([Type.String(), Type.Null()]),
+  providerReference: Type.String(),
   providerName: Type.Enum(ProviderNameEnum),
   status: Type.Enum(TransactionStatusEnum),
   message: Type.Union([Type.String(), Type.Null()]),

@@ -69,6 +69,7 @@ export type UpstreamQrisStatusResponseDto = Static<
  * exists.
  */
 export const UpstreamWebhookQrisSchema = Type.Object({
+  systemReference: Type.String(),
   /** The provider's identifier. What we look our transaction up by. */
   providerReference: Type.String(),
   /**
@@ -78,7 +79,6 @@ export const UpstreamWebhookQrisSchema = Type.Object({
   merchantReference: Type.Union([Type.String(), Type.Null()]),
   providerName: Type.Enum(ProviderNameEnum),
   status: Type.Enum(TransactionStatusEnum),
-  nominal: MoneyType,
   /**
    * Already parsed by the adapter, which is the only layer that knows what a
    * given provider's timestamps mean - see `parseMotionPayTimestamp` for why

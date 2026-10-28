@@ -1,5 +1,10 @@
 import { Static, Type } from '@sinclair/typebox';
 
+/**
+ * systemReference = traceNumber
+ * providerReferene = jpaReferenceNo
+ */
+
 /// Balance Inquiry
 export const JatelindoBalanceInquiryResponseSchema = Type.Object({
   BalanceInquiryResponse: Type.Array(
@@ -133,6 +138,30 @@ export const JatelindoSingleTransferResponseSchema = Type.Object({
   }),
 });
 export type JatelindoSingleTransferResponseDto = Static<
+  typeof JatelindoSingleTransferResponseSchema
+>;
+
+/// Single Transfer Asynchoronous
+export const JatelindoSingleTransferAsyncRequestSchema =
+  JatelindoSingleTransferRequestSchema;
+export type JatelindoSingleTransferAsyncRequestDto = Static<
+  typeof JatelindoSingleTransferAsyncRequestSchema
+>;
+export const JatelindoSingleTransferAsyncResponseSchema = Type.Object({
+  status: Type.Object({
+    responseCode: Type.String(),
+    message: Type.String(),
+    description: Type.String(),
+  }),
+});
+export type JatelindoSingleTransferAsyncResponseDto = Static<
+  typeof JatelindoSingleTransferAsyncResponseSchema
+>;
+
+/// Callback
+export const JatelindoTransferCallbackSchema =
+  JatelindoSingleTransferResponseSchema;
+export type JatelindoTransferCallbackDto = Static<
   typeof JatelindoSingleTransferResponseSchema
 >;
 

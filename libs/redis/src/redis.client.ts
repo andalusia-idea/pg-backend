@@ -33,7 +33,7 @@ export class RedisClient implements OnModuleInit, OnModuleDestroy {
         return Math.min(times * 50, 200); // Reconnect Logic
       },
       enableReadyCheck: true, // Ensures Redis is ready before proceeding
-      maxRetriesPerRequest: 3, // Limits retry attempts to avoid hanging
+      maxRetriesPerRequest: 1, // Limits retry attempts to avoid hanging
     });
 
     this.client.on('error', (error) => {

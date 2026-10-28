@@ -36,6 +36,7 @@ export class MotionPayTransferCallbackService {
     payload: MotionPayTransferCallbackDto,
     sourceIp: string | null,
   ): MotionPayTransferTranslation {
+    const providerReference = payload.data.transaction_id ?? '';
     const systemReference = payload.data.external_id ?? '';
 
     if (!this.isAllowedOrigin(sourceIp)) {
@@ -50,11 +51,20 @@ export class MotionPayTransferCallbackService {
     // Without our own reference there is nothing to look up. Unlike QRIS, the
     // provider's id is not our lookup key here - their status endpoint is keyed
     // by `external_id`, so a callback missing it is unusable.
+    if (!providerReference) {
+      this.logger.warn({
+        msg: 'Transfer callback carried no transaction_id - nothing to match',
+        sourceIp,
+        providerReference: payload.data.transaction_id,
+      });
+      return { accepted: false, reason: 'no transaction_id' };
+    }
+
     if (!systemReference) {
       this.logger.warn({
         msg: 'Transfer callback carried no external_id - nothing to match',
         sourceIp,
-        providerReference: payload.data.transaction_id,
+        systemReference: payload.data.external_id,
       });
       return { accepted: false, reason: 'no external_id' };
     }
@@ -63,7 +73,7 @@ export class MotionPayTransferCallbackService {
       accepted: true,
       webhook: {
         systemReference,
-        providerReference: payload.data.transaction_id ?? null,
+        providerReference,
         providerName: ProviderNameEnum.MOTIONPAY,
         status: mapMotionPayTransferStatus(payload.status.code),
         message: payload.status.message ?? null,

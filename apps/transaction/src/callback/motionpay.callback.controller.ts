@@ -9,7 +9,7 @@ import {
   Res,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Value } from '@sinclair/typebox/value';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { DisbursementWebhookService } from '../api-v1/disbursement';
@@ -38,10 +38,11 @@ export class MotionPayCallbackController {
   private readonly logger = new Logger(MotionPayCallbackController.name);
 
   constructor(
-    private readonly qrisCallbackService: MotionPayQrisCallbackService,
     private readonly purchaseWebhookService: PurchaseWebhookService,
-    private readonly transferCallbackService: MotionPayTransferCallbackService,
     private readonly disbursementWebhookService: DisbursementWebhookService,
+
+    private readonly qrisCallbackService: MotionPayQrisCallbackService,
+    private readonly transferCallbackService: MotionPayTransferCallbackService,
     private readonly billerCallbackService: MotionPayBillerCallbackService,
   ) {}
 
@@ -72,7 +73,7 @@ export class MotionPayCallbackController {
    */
   @Post('qris')
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint()
+  // @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'MotionPay QRIS payment notification' })
   async qris(
     @Body() body: unknown,
@@ -128,7 +129,7 @@ export class MotionPayCallbackController {
    */
   @Post('transfer')
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint()
+  // @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'MotionPay transfer payout notification' })
   async transfer(
     @Body() body: unknown,
@@ -181,7 +182,7 @@ export class MotionPayCallbackController {
    */
   @Post('biller')
   @HttpCode(HttpStatus.OK)
-  @ApiExcludeEndpoint()
+  // @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'MotionPay biller (e-wallet top-up) notification' })
   async biller(
     @Body() body: unknown,
