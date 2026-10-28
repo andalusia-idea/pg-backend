@@ -205,6 +205,7 @@ export const MerchantSignatureScalarFieldEnum = {
   secretKey: 'secretKey',
   secretKeyPrevious: 'secretKeyPrevious',
   secretKeyRotatedAt: 'secretKeyRotatedAt',
+  allowedIps: 'allowedIps',
   credentials: 'credentials',
   status: 'status',
   payinUrl: 'payinUrl',

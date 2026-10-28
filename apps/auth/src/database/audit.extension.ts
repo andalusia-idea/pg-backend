@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Prisma } from '@auth/prisma';
-import { ClsServiceManager } from 'nestjs-cls';
+import { getAuditUserId } from '@app/microservice';
 
 const AUDITED_MODELS = new Set<string>([
   'Role',
@@ -12,8 +12,6 @@ const AUDITED_MODELS = new Set<string>([
   'MerchantSignature',
 ]);
 
-const AUDIT_USER_ID_PATH = 'authInfo.userId';
-
 type MutableRecord = Record<string, unknown>;
 
 type QueryArguments = {
@@ -24,15 +22,6 @@ type QueryArguments = {
 
 function isRecord(value: unknown): value is MutableRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function getAuditUserId(): number | undefined {
-  const cls = ClsServiceManager.getClsService();
-  const value = cls.get(AUDIT_USER_ID_PATH);
-
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-    ? value
-    : undefined;
 }
 
 function isAuditedModel(model: string | undefined): model is string {

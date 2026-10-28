@@ -6,11 +6,19 @@ import {
   InternalFeeDto,
   MerchantFeeDto,
   FeeCalculationResultDto,
+  ProviderNameEnum,
+  PaymentMethodNameEnum,
 } from '@app/microservice';
 import {
   PRISMA_MASTER_PROVIDER_KEY,
   PRISMA_SLAVE_PROVIDER_KEY,
 } from '@app/prisma';
+import {
+  AgentShareholderRedisDto,
+  BaseFeeRedisDto,
+  FeeRedis,
+  MerchantFeeRedisDto,
+} from '@app/redis';
 import { PrismaClient, TransactionTypeEnum } from '@config/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 import Decimal from 'decimal.js';
@@ -22,6 +30,8 @@ export class DisbursementFeeService {
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+
+    private readonly feeRedis: FeeRedis,
   ) {}
 
   private readonly transactionType = TransactionTypeEnum.DISBURSEMENT;
@@ -41,14 +51,7 @@ export class DisbursementFeeService {
     /**
      * Find Base Fee
      */
-    const baseFee = await this.prismaMaster.baseFee.findFirstOrThrow({
-      where: {
-        providerName,
-        paymentMethodName,
-        transactionType: this.transactionType,
-      },
-    });
-    console.log({ baseFee });
+    const baseFee = await this.findBaseFee(providerName, paymentMethodName);
 
     /**
      * Provider Fee Calculate
@@ -61,15 +64,7 @@ export class DisbursementFeeService {
     /**
      * Find Merchant Fee
      */
-    const merchantFee = await this.prismaMaster.merchantFee.findUniqueOrThrow({
-      where: {
-        merchantId_baseFeeId: {
-          merchantId,
-          baseFeeId: baseFee.id,
-        },
-      },
-    });
-    console.log({ merchantFee });
+    const merchantFee = await this.findMerchantFee(merchantId, baseFee.id);
 
     /**
      * Internal Fee Calculate
@@ -102,9 +97,7 @@ export class DisbursementFeeService {
      */
     const agentDtos: AgentFeeEachDto[] = [];
     if (isMerchantHaveAgents) {
-      const shareholders = await this.prismaMaster.agentShareholder.findMany({
-        where: { merchantId },
-      });
+      const shareholders = await this.findAgentShareholder(merchantId);
       agentDtos.push(
         ...shareholders.map((shareholder) => {
           return {
@@ -165,5 +158,71 @@ export class DisbursementFeeService {
       agentFee: agentFeeDto,
       merchantFee: merchantFeeDto,
     } as FeeCalculationResultDto;
+  }
+
+  private async findBaseFee(
+    providerName: ProviderNameEnum,
+    paymentMethodName: PaymentMethodNameEnum,
+  ): Promise<BaseFeeRedisDto> {
+    const cached = await this.feeRedis.getBaseFee(
+      providerName,
+      paymentMethodName,
+      this.transactionType,
+    );
+    if (cached) return cached;
+    const baseFee = await this.prismaMaster.baseFee.findFirstOrThrow({
+      where: {
+        providerName,
+        paymentMethodName,
+        transactionType: this.transactionType,
+      },
+      select: { id: true, feeProviderFixed: true, feeProviderPercentage: true },
+    });
+
+    await this.feeRedis.setBaseFee(
+      providerName,
+      paymentMethodName,
+      this.transactionType,
+      baseFee,
+    );
+    return baseFee;
+  }
+
+  private async findMerchantFee(
+    merchantId: number,
+    baseFeeId: number,
+  ): Promise<MerchantFeeRedisDto> {
+    const cached = await this.feeRedis.getMerchantFee(merchantId, baseFeeId);
+    if (cached) return cached;
+
+    const merchantFee = await this.prismaMaster.merchantFee.findUniqueOrThrow({
+      where: {
+        merchantId_baseFeeId: {
+          merchantId,
+          baseFeeId: baseFeeId,
+        },
+      },
+      select: {
+        feeInternalFixed: true,
+        feeInternalPercentage: true,
+        feeAgentFixed: true,
+        feeAgentPercentage: true,
+      },
+    });
+    await this.feeRedis.setMerchantFee(merchantId, baseFeeId, merchantFee);
+    return merchantFee;
+  }
+
+  private async findAgentShareholder(
+    merchantId: number,
+  ): Promise<AgentShareholderRedisDto[]> {
+    const cached = await this.feeRedis.getAgentShareholder(merchantId);
+    if (cached) return cached;
+    const shareholders = await this.prismaMaster.agentShareholder.findMany({
+      where: { merchantId },
+      select: { agentId: true, percentagePerAgent: true },
+    });
+    await this.feeRedis.setAgentShareholder(merchantId, shareholders);
+    return shareholders;
   }
 }

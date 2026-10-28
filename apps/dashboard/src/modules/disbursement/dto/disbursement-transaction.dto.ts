@@ -18,11 +18,21 @@ export class DisbursementTransactionDto {
   @ApiProperty()
   id: number;
 
-  @ApiProperty({ type: String, required: false, nullable: true })
-  externalId: string | null;
+  /** Our transaction identifier (`transactionId` in the SNAP merchant API). */
+  @ApiProperty()
+  systemReference: string;
 
+  /** Merchant supplied `partnerReferenceNo` in the SNAP API. */
+  @ApiProperty()
+  merchantReference: string;
+
+  /** Provider supplied `referenceNo` in the SNAP API; absent until assigned upstream. */
   @ApiProperty({ type: String, required: false, nullable: true })
-  referenceId: string | null;
+  providerReference: string | null;
+
+  /** Reference assigned by the bank, when available. */
+  @ApiProperty({ type: String, required: false, nullable: true })
+  bankReference: string | null;
 
   @ApiProperty()
   merchantId: number;
@@ -33,18 +43,23 @@ export class DisbursementTransactionDto {
   @ApiProperty()
   paymentMethodName: string;
 
-  /** May be a merchant, an agent, or an unrelated third party. */
+  /**
+   * May be a merchant, an agent, or an unrelated third party.
+   *
+   * `bankCode` is polymorphic: a `config.Bank.code` when `paymentMethodName`
+   * is TRANSFERBANK, an `EWalletEnum` value when it's TRANSFEREWALLET.
+   * `accountNumber` holds a wallet phone number in that case. The bank's
+   * display name isn't stored (it's derivable from `bankCode` via
+   * `config.Bank`, not exposed here) — see docs/dashboard-migration.md D23.
+   */
   @ApiProperty()
-  recipientName: string;
+  accountHolderName: string;
 
   @ApiProperty()
-  recipientBankCode: string;
-
-  @ApiProperty({ type: String, required: false, nullable: true })
-  recipientBankName: string | null;
+  accountNumber: string;
 
   @ApiProperty()
-  recipientAccount: string;
+  bankCode: string;
 
   @ApiMoneyProperty()
   @ToMoneyString()
@@ -61,11 +76,10 @@ export class DisbursementTransactionDto {
   status: TransactionStatusEnum;
 
   @ApiProperty({ type: Object, required: false, nullable: true })
-  metadata: Record<string, unknown> | null;
+  additionalInfo: Record<string, unknown> | null;
 
-  @ApiDateProperty({ required: false, nullable: true })
-  @ToJakartaISONullable()
-  reconciliationAt: string | null;
+  @ApiProperty({ type: Object, required: false, nullable: true })
+  metadata: Record<string, unknown> | null;
 
   @ApiDateProperty({ required: false, nullable: true })
   @ToJakartaISONullable()

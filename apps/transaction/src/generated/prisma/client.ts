@@ -31,8 +31,8 @@ export * from "./enums.ts"
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more TopUpTransactions
- * const topUpTransactions = await prisma.topUpTransaction.findMany()
+ * // Fetch zero or more PurchaseTransactions
+ * const purchaseTransactions = await prisma.purchaseTransaction.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -41,6 +41,26 @@ export const PrismaClient = $Class.getPrismaClientClass()
 export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts extends Prisma.PrismaClientOptions["omit"] = Prisma.PrismaClientOptions["omit"], ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = $Class.PrismaClient<LogOpts, OmitOpts, ExtArgs>
 export { Prisma }
 
+/**
+ * Model PurchaseTransaction
+ * 
+ */
+export type PurchaseTransaction = Prisma.PurchaseTransactionModel
+/**
+ * Model PurchaseFeeDetail
+ * 
+ */
+export type PurchaseFeeDetail = Prisma.PurchaseFeeDetailModel
+/**
+ * Model DisbursementTransaction
+ * 
+ */
+export type DisbursementTransaction = Prisma.DisbursementTransactionModel
+/**
+ * Model DisbursementFeeDetail
+ * 
+ */
+export type DisbursementFeeDetail = Prisma.DisbursementFeeDetailModel
 /**
  * Model TopUpTransaction
  * 
@@ -53,7 +73,36 @@ export type TopUpTransaction = Prisma.TopUpTransactionModel
 export type TopupFeeDetail = Prisma.TopupFeeDetailModel
 /**
  * Model WithdrawTransaction
- * 
+ * *
+ *  * TRANSFER_BANK:
+ *  * - Can transfered into bank account at profile
+ *  * - Customize bank account number
+ *  * TRANSFER_BANK Local Manual:
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - Transfer manually by admin thorugh Bank Account operational into recipient bank account
+ *  * - Auto Settlement by the time admin approved
+ *  * TRANSFER_BANK Local API
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - System hit Upstream API
+ *  * - Auto settlement after waiting for webhook
+ *  * ################################
+ *  * USDT:
+ *  * - Merchant fill the form
+ *  * - Admin check the form
+ *  * - Approve / Reject the form
+ *  * - Admin must purchase USDT through Vendor
+ *  * - Vendor send USDT to destination account USDT
+ *  * - Auto Settlement by the time admin approved
+ *  * USDT Manual
+ *  * - Admin have the money to purchase USDT
+ *  * USDT API
+ *  * - Admin does not have money
+ *  * - So must withdraw from upstream balance
+ *  * - System hit Upstream Disbursement channel
  */
 export type WithdrawTransaction = Prisma.WithdrawTransactionModel
 /**
@@ -61,26 +110,6 @@ export type WithdrawTransaction = Prisma.WithdrawTransactionModel
  * 
  */
 export type WithdrawFeeDetail = Prisma.WithdrawFeeDetailModel
-/**
- * Model DisbursementTransaction
- * 
- */
-export type DisbursementTransaction = Prisma.DisbursementTransactionModel
-/**
- * Model DisbursementFeeDetail
- * 
- */
-export type DisbursementFeeDetail = Prisma.DisbursementFeeDetailModel
-/**
- * Model PurchaseTransaction
- * 
- */
-export type PurchaseTransaction = Prisma.PurchaseTransactionModel
-/**
- * Model PurchaseFeeDetail
- * 
- */
-export type PurchaseFeeDetail = Prisma.PurchaseFeeDetailModel
 /**
  * Model WebhookLog
  * 
@@ -92,17 +121,49 @@ export type WebhookLog = Prisma.WebhookLogModel
  */
 export type TransactionAudit = Prisma.TransactionAuditModel
 /**
- * Model MerchantBalanceLog
+ * Model BalanceEntry
  * 
  */
-export type MerchantBalanceLog = Prisma.MerchantBalanceLogModel
+export type BalanceEntry = Prisma.BalanceEntryModel
 /**
- * Model AgentBalanceLog
+ * Model BalanceSnapshot
  * 
  */
-export type AgentBalanceLog = Prisma.AgentBalanceLogModel
+export type BalanceSnapshot = Prisma.BalanceSnapshotModel
 /**
- * Model InternalBalanceLog
+ * Model BalanceAdjustment
  * 
  */
-export type InternalBalanceLog = Prisma.InternalBalanceLogModel
+export type BalanceAdjustment = Prisma.BalanceAdjustmentModel
+/**
+ * Model SettlementRun
+ * Tables owned by apps/settlement, in their own Postgres schema so it is
+ * obvious at a glance which app writes them.
+ * 
+ * Their MIGRATIONS live here rather than in apps/settlement, deliberately:
+ * the DSN's default schema is `transaction`, so `transaction._prisma_migrations`
+ * is the one history covering both. That also lets apps/settlement import
+ * `@transaction/prisma` instead of maintaining a merged copy of these models -
+ * see Step 7.0. Do not look for apps/settlement/prisma/; there isn't one.
+ */
+export type SettlementRun = Prisma.SettlementRunModel
+/**
+ * Model SettlementBatch
+ * 
+ */
+export type SettlementBatch = Prisma.SettlementBatchModel
+/**
+ * Model MerchantSettlementPolicy
+ * 
+ */
+export type MerchantSettlementPolicy = Prisma.MerchantSettlementPolicyModel
+/**
+ * Model UpstreamSettlementWindow
+ * 
+ */
+export type UpstreamSettlementWindow = Prisma.UpstreamSettlementWindowModel
+/**
+ * Model BusinessDayCalendar
+ * 
+ */
+export type BusinessDayCalendar = Prisma.BusinessDayCalendarModel

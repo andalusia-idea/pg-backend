@@ -3,14 +3,19 @@ import {
   PRISMA_MASTER_PROVIDER_KEY,
   PRISMA_SLAVE_PROVIDER_KEY,
 } from '@app/prisma';
+import { RedisHealthIndicator } from '@app/redis';
 import { Controller, Get, Inject } from '@nestjs/common';
 import { TcpClientOptions, Transport } from '@nestjs/microservices';
 import {
+  HealthCheck,
+  HealthCheckResult,
   HealthCheckService,
-  HttpHealthIndicator,
   MicroserviceHealthIndicator,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
+
+/** How long a pool gets to answer before it counts as down. */
+const PING_TIMEOUT_MS = 1000;
 
 /**
  * Matches what PrismaHealthIndicator.pingCheck() actually expects for a
@@ -23,12 +28,19 @@ interface PingablePrismaClient {
   $queryRawUnsafe: (query: string) => Promise<unknown>;
 }
 
+/**
+ * **Only things this process genuinely needs.** An earlier version also pinged
+ * `https://docs.nestjs.com`, which made every app's liveness probe depend on a
+ * third-party site being reachable from the pod - so a DNS hiccup or blocked
+ * egress got a healthy process restarted by Kubernetes. A probe that fails for
+ * reasons outside the process it is probing is worse than no probe.
+ */
 @Controller('health')
 export class HealthController {
   constructor(
-    private readonly tcpConfig: TCPConfig,
     private readonly health: HealthCheckService,
-    private readonly http: HttpHealthIndicator,
+    private readonly redisHealth: RedisHealthIndicator,
+    private readonly tcpConfig: TCPConfig,
     private readonly microservice: MicroserviceHealthIndicator,
     private readonly prismaHealth: PrismaHealthIndicator,
     @Inject(PRISMA_MASTER_PROVIDER_KEY)
@@ -38,11 +50,11 @@ export class HealthController {
   ) {}
 
   @Get()
-  check() {
+  @HealthCheck()
+  check(): Promise<HealthCheckResult> {
     return this.health.check([
-      () => {
-        return this.http.pingCheck('nestjs-docs', 'https://docs.nestjs.com');
-      },
+      () => this.redisHealth.pingCheck('redis', PING_TIMEOUT_MS),
+
       () => {
         return this.microservice.pingCheck<TcpClientOptions>('tcp-auth', {
           transport: Transport.TCP,
@@ -50,6 +62,7 @@ export class HealthController {
             host: this.tcpConfig.AUTH.HOST,
             port: this.tcpConfig.AUTH.PORT,
           },
+          timeout: PING_TIMEOUT_MS,
         });
       },
       () => {
@@ -59,6 +72,7 @@ export class HealthController {
             host: this.tcpConfig.CONFIG.HOST,
             port: this.tcpConfig.CONFIG.PORT,
           },
+          timeout: PING_TIMEOUT_MS,
         });
       },
       () => {
@@ -70,17 +84,19 @@ export class HealthController {
               host: this.tcpConfig.TRANSACTION.HOST,
               port: this.tcpConfig.TRANSACTION.PORT,
             },
+            timeout: PING_TIMEOUT_MS,
           },
         );
       },
+
       () => {
         return this.prismaHealth.pingCheck('prisma-master', this.prismaMaster, {
-          timeout: 1000,
+          timeout: PING_TIMEOUT_MS,
         });
       },
       () => {
         return this.prismaHealth.pingCheck('prisma-slave', this.prismaSlave, {
-          timeout: 1000,
+          timeout: PING_TIMEOUT_MS,
         });
       },
     ]);

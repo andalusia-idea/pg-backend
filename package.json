@@ -12,10 +12,12 @@
     "start:auth": "nest start auth --watch",
     "start:config": "nest start config --watch",
     "start:transaction": "nest start transaction --watch",
+    "start:settlement": "nest start settlement --watch",
     "build:dashboard": "nest build dashboard",
     "build:auth": "nest build auth",
     "build:config": "nest build config",
     "build:transaction": "nest build transaction",
+    "build:settlement": "nest build settlement",
     "prisma:merge:dashboard": "node apps/dashboard/prisma/merge-schema.js",
     "prisma:generate:dashboard": "dotenv -e apps/dashboard/.env.local -- prisma generate --config apps/dashboard/prisma.config.ts",
     "prisma:generate:auth": "dotenv -e apps/auth/.env.local -- prisma generate --config apps/auth/prisma.config.ts",
@@ -63,6 +65,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-fastify": "^11.1.28",
+    "@nestjs/schedule": "^12.0.1",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/terminus": "^11.1.1",
     "@prisma/adapter-pg": "^7.8.0",
@@ -142,7 +145,11 @@
       "<rootDir>/apps/",
       "<rootDir>/libs/"
     ],
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@nestjs/schedule)"
+    ],
     "moduleNameMapper": {
+      "^@app/balance(|/.*)$": "<rootDir>/libs/balance/src/$1",
       "^@app/configuration(|/.*)$": "<rootDir>/libs/configuration/src/$1",
       "^@app/health(|/.*)$": "<rootDir>/libs/health/src/$1",
       "^@app/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",

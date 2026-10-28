@@ -22,6 +22,7 @@ import {
   UpsertMerchantAgentShareholderDto,
   UpsertMerchantFeeDto,
 } from './dto/upsert-merchant-fee.dto';
+import { FeeRedis } from '@app/redis';
 
 const ZERO = '0';
 
@@ -32,6 +33,8 @@ export class ConfigMerchantService {
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+
+    private readonly feeRedis: FeeRedis,
   ) {}
 
   async findMerchantIntervalById(
@@ -39,14 +42,12 @@ export class ConfigMerchantService {
   ): Promise<MerchantIntervalDto> {
     const merchant = await this.prismaSlave.merchant.findFirst({
       where: { id: merchantId, deletedAt: null },
-      select: { id: true, settlementInterval: true, lastSettlementAt: true },
+      select: { id: true },
     });
     if (!merchant) throw ApiError.notFound('Merchant config');
 
     return new MerchantIntervalDto({
       userId: merchant.id,
-      settlementInterval: merchant.settlementInterval,
-      lastSettlementAt: merchant.lastSettlementAt as unknown as string | null,
     });
   }
 
@@ -59,7 +60,6 @@ export class ConfigMerchantService {
   ): Promise<MerchantConfigDto> {
     const merchant = await this.prismaSlave.merchant.findFirst({
       where: { id: merchantId, deletedAt: null },
-      select: { settlementInterval: true, lastSettlementAt: true },
     });
     if (!merchant) throw ApiError.notFound('Merchant config');
 
@@ -72,7 +72,11 @@ export class ConfigMerchantService {
       // merchantId+baseFeeId pair is unique, so at most one override per row.
       this.prismaSlave.baseFee.findMany({
         where: { isActive: true, deletedAt: null },
-        orderBy: { code: 'asc' },
+        orderBy: [
+          { providerName: 'asc' },
+          { paymentMethodName: 'asc' },
+          { transactionType: 'asc' },
+        ],
         include: {
           merchantFees: {
             where: { merchantId, deletedAt: null },
@@ -101,8 +105,6 @@ export class ConfigMerchantService {
       });
 
     return new MerchantConfigDto({
-      settlementInterval: merchant.settlementInterval,
-      lastSettlementAt: merchant.lastSettlementAt as unknown as string | null,
       agentShareholders:
         agentShareholders.length === 0
           ? null
@@ -148,6 +150,8 @@ export class ConfigMerchantService {
           create: { merchantId, baseFeeId, ...values },
           update: values,
         });
+
+        await this.feeRedis.deleteMerchantFee(merchantId, baseFeeId);
       }
     });
   }
@@ -174,6 +178,8 @@ export class ConfigMerchantService {
           create: { merchantId, agentId, percentagePerAgent },
           update: { percentagePerAgent },
         });
+
+        await this.feeRedis.deleteAgentShareholder(merchantId);
       }
     });
   }

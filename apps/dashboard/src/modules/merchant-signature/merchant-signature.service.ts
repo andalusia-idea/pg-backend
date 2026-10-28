@@ -8,7 +8,9 @@ import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
 import { ApiError } from '../../shared/exception';
 import { MerchantSignatureStatusDto } from './dto/merchant-signature-status.dto';
 import { RegisterWebhookUrlDto } from './dto/register-webhook-url.dto';
+import { UpdateAllowedIpsDto } from './dto/update-allowed-ips.dto';
 import { generateSecretKey } from '@app/signature';
+import { MerchantSignatureRedis } from '@app/redis';
 
 @Injectable()
 export class MerchantSignatureService {
@@ -17,6 +19,7 @@ export class MerchantSignatureService {
     private readonly prismaMaster: PrismaClient,
     @Inject(PRISMA_SLAVE_PROVIDER_KEY)
     private readonly prismaSlave: PrismaClient,
+    private readonly merchantSignatureRedis: MerchantSignatureRedis,
   ) {}
 
   /**
@@ -34,28 +37,40 @@ export class MerchantSignatureService {
    *
    * Read-then-write in one transaction: without it, two concurrent rotations
    * could both read the same current secret and the older one would be lost.
+   *
+   * The verifier's cache is invalidated afterwards. Skipping that would make
+   * the rotation invisible for a full cache TTL: the cached row still holds
+   * the pre-rotation secrets, so a merchant signing with the key they were
+   * just handed matches neither `secretKey` nor `secretKeyPrevious` and is
+   * rejected as INVALID_SIGNATURE - the opposite of the seamless changeover
+   * the grace window exists to provide.
    */
   async generateSharedSecretKey(authInfo: AuthInfoDto): Promise<string> {
     const { userId } = authInfo;
 
     const sharedSecretKey = generateSecretKey();
 
-    await this.prismaMaster.$transaction(async (tx) => {
+    const { clientId } = await this.prismaMaster.$transaction(async (tx) => {
       const signature = await tx.merchantSignature.findFirst({
         where: { userId, deletedAt: null },
         select: { secretKey: true },
       });
       if (!signature) throw ApiError.notFound('Merchant signature');
 
-      await tx.merchantSignature.update({
+      return tx.merchantSignature.update({
         where: { userId },
         data: {
           secretKey: sharedSecretKey,
           secretKeyPrevious: signature.secretKey,
           secretKeyRotatedAt: new Date(),
         },
+        select: { clientId: true },
       });
     });
+
+    // After the commit, never inside it: invalidating first would let a
+    // concurrent request re-populate the cache from the pre-rotation row.
+    await this.merchantSignatureRedis.deleteMerchantSignature(clientId);
 
     return sharedSecretKey;
   }
@@ -91,13 +106,57 @@ export class MerchantSignatureService {
 
     const signature = await this.prismaSlave.merchantSignature.findFirst({
       where: { userId, deletedAt: null },
-      select: { secretKeyRotatedAt: true, payinUrl: true, payoutUrl: true },
+      select: {
+        secretKeyRotatedAt: true,
+        payinUrl: true,
+        payoutUrl: true,
+        allowedIps: true,
+      },
     });
 
     return new MerchantSignatureStatusDto({
       secretKeyGeneratedAt: signature?.secretKeyRotatedAt ?? null,
       payinUrl: signature?.payinUrl ?? null,
       payoutUrl: signature?.payoutUrl ?? null,
+      allowedIps: signature?.allowedIps ?? [],
     } as unknown as MerchantSignatureStatusDto);
+  }
+
+  /**
+   * Replaces the caller's IP allowlist.
+   *
+   * Entries are trimmed and de-duplicated before storing, so the list the
+   * merchant reads back is the list that will be matched against - a stray
+   * space would otherwise be stored, skipped at verification time, and appear
+   * to be permitting an address it is not.
+   *
+   * The verifier's cache is invalidated afterwards for the same reason
+   * rotation does it: **removing an address is a revocation**, usually made
+   * because a machine is being decommissioned or is suspected compromised.
+   * Waiting out a cache TTL is the wrong behaviour for that.
+   */
+  async updateAllowedIps(
+    authInfo: AuthInfoDto,
+    dto: UpdateAllowedIpsDto,
+  ): Promise<void> {
+    const { userId } = authInfo;
+
+    const allowedIps = [
+      ...new Set(dto.allowedIps.map((entry) => entry.trim())),
+    ];
+
+    const signature = await this.prismaMaster.merchantSignature.findFirst({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!signature) throw ApiError.notFound('Merchant signature');
+
+    const { clientId } = await this.prismaMaster.merchantSignature.update({
+      where: { userId },
+      data: { allowedIps },
+      select: { clientId: true },
+    });
+
+    await this.merchantSignatureRedis.deleteMerchantSignature(clientId);
   }
 }

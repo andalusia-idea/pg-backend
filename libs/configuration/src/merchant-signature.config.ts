@@ -4,9 +4,10 @@ import { ConfigService } from '@nestjs/config';
 /**
  * Timing rules for merchant signature verification.
  *
- * All three values default, so nothing needs adding to `.env` to boot. They
- * are read by both `apps/auth` (verification) and `apps/transaction` (the
- * guard), which is why they live here rather than as constants in either.
+ * Every value defaults, so nothing needs adding to `.env` to boot. They are
+ * read by **two** apps - `apps/auth` verifies, `apps/transaction` runs the
+ * guard - which is why they live here rather than as constants inside either
+ * one.
  */
 @Injectable()
 export class MerchantSignatureConfig {
@@ -28,6 +29,11 @@ export class MerchantSignatureConfig {
    *
    * Applies in both directions - a merchant's clock can run fast as easily as
    * slow - so the accepted band is twice this wide in total.
+
+  # Merchant signature — verification timing
+  # TOLERANCE must be IDENTICAL in apps/auth and apps/transaction. The guard
+  # (transaction) enforces it; the nonce-TTL invariant below is validated against
+  # it here. If the two disagree, auth validates a window the guard never applies.
    */
   get TIMESTAMP_TOLERANCE_SECONDS(): number {
     return this.readInt('MERCHANT_SIGNATURE_TIMESTAMP_TOLERANCE_SECONDS', 300);
@@ -41,6 +47,10 @@ export class MerchantSignatureConfig {
    * is forgotten before that band closes, the request becomes replayable in
    * the gap. Enforced below rather than left as a comment, because the two
    * values are set independently and the failure is silent.
+   *
+  # Must be at least 2x TOLERANCE — a request stays acceptable for the whole
+  # ±tolerance band, so a nonce forgotten sooner leaves a replay gap. Enforced at
+  # startup: it throws rather than booting with a silent hole.
    */
   get NONCE_TTL_SECONDS(): number {
     const ttl = this.readInt('MERCHANT_SIGNATURE_NONCE_TTL_SECONDS', 600);
@@ -58,9 +68,47 @@ export class MerchantSignatureConfig {
   }
 
   /**
+   * How long a merchant's signature row stays cached, in seconds.
+   *
+   * Short on purpose. The cache is invalidated explicitly whenever the row is
+   * written, so this only bounds the damage if an invalidation is ever missed
+   * - a suspended merchant would keep authenticating, and a rotated key would
+   * keep failing, for at most this long.
+  # Signature-row cache. Short on purpose: it only bounds the damage if an
+  # explicit invalidation is ever missed.
+   */
+  get CACHE_TTL_SECONDS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_CACHE_TTL_SECONDS', 60);
+  }
+
+  /**
+   * Requests a single merchant may make per window.
+   *
+   * Counted only for requests whose signature already verified, so the budget
+   * belongs to whoever holds the secret and cannot be exhausted by a stranger
+   * spoofing the client id header.
+   */
+  get RATE_LIMIT_MAX_REQUESTS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_RATE_LIMIT_MAX_REQUESTS', 120);
+  }
+
+  /**
+   * Length of the rate-limit window, in seconds.
+   *
+   * This is a **fixed** window, so a merchant can spend a full budget at the
+   * very end of one window and another at the start of the next - briefly
+   * double the nominal rate. Set limits with headroom against whatever cap
+   * the upstream imposes, rather than exactly at it.
+   */
+  get RATE_LIMIT_WINDOW_SECONDS(): number {
+    return this.readInt('MERCHANT_SIGNATURE_RATE_LIMIT_WINDOW_SECONDS', 60);
+  }
+
+  /**
    * How long after a rotation `secretKeyPrevious` keeps being accepted, in
    * seconds. Long enough for a merchant to redeploy, short enough to bound
    * exposure of a retired key.
+  # How long the retired key keeps working after a rotation.
    */
   get SECRET_KEY_GRACE_SECONDS(): number {
     return this.readInt('MERCHANT_SIGNATURE_SECRET_KEY_GRACE_SECONDS', 86_400);

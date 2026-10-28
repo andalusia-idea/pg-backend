@@ -18,7 +18,11 @@ export function readJwtExpSeconds(token: string): number | null {
       Buffer.from(payloadSegment, 'base64url').toString('utf8'),
     );
 
-    if (typeof payload !== 'object' || payload === null || !('exp' in payload)) {
+    if (
+      typeof payload !== 'object' ||
+      payload === null ||
+      !('exp' in payload)
+    ) {
       return null;
     }
 

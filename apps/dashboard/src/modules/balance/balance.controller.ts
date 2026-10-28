@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -12,7 +12,6 @@ import {
   BalanceDto,
   BalanceMerchantDto,
 } from './dto/balance.dto';
-import { FilterAggregateBalanceInternalDto } from './dto/filter-balance.dto';
 
 /**
  * Legacy declared this `@Controller('Balance')` with a capital B and relied on
@@ -31,10 +30,8 @@ export class BalanceController {
   @CheckPolicies()
   @ApiOperation({ summary: 'Internal (house) balance' })
   @ApiOkResponse({ type: BalanceDto })
-  aggregateInternal(
-    @Query() filter: FilterAggregateBalanceInternalDto,
-  ): Promise<BalanceDto> {
-    return this.balanceService.aggregateBalanceInternal(filter.providerName);
+  aggregateInternal(): Promise<BalanceDto> {
+    return this.balanceService.aggregateBalanceInternal();
   }
 
   @Get('aggregate/merchant')

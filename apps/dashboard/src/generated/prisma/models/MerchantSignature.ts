@@ -84,6 +84,7 @@ export type MerchantSignatureCountAggregateOutputType = {
   secretKey: number
   secretKeyPrevious: number
   secretKeyRotatedAt: number
+  allowedIps: number
   credentials: number
   status: number
   payinUrl: number
@@ -157,6 +158,7 @@ export type MerchantSignatureCountAggregateInputType = {
   secretKey?: true
   secretKeyPrevious?: true
   secretKeyRotatedAt?: true
+  allowedIps?: true
   credentials?: true
   status?: true
   payinUrl?: true
@@ -263,6 +265,7 @@ export type MerchantSignatureGroupByOutputType = {
   secretKey: string | null
   secretKeyPrevious: string | null
   secretKeyRotatedAt: Date | null
+  allowedIps: string[]
   credentials: runtime.JsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl: string | null
@@ -305,6 +308,7 @@ export type MerchantSignatureWhereInput = {
   secretKey?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
   secretKeyPrevious?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
   secretKeyRotatedAt?: Prisma.DateTimeNullableFilter<"MerchantSignature"> | Date | string | null
+  allowedIps?: Prisma.StringNullableListFilter<"MerchantSignature">
   credentials?: Prisma.JsonFilter<"MerchantSignature">
   status?: Prisma.EnumMerchantSignatureStatusEnumFilter<"MerchantSignature"> | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
@@ -325,6 +329,7 @@ export type MerchantSignatureOrderByWithRelationInput = {
   secretKey?: Prisma.SortOrderInput | Prisma.SortOrder
   secretKeyPrevious?: Prisma.SortOrderInput | Prisma.SortOrder
   secretKeyRotatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  allowedIps?: Prisma.SortOrder
   credentials?: Prisma.SortOrder
   status?: Prisma.SortOrder
   payinUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -349,6 +354,7 @@ export type MerchantSignatureWhereUniqueInput = Prisma.AtLeast<{
   secretKey?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
   secretKeyPrevious?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
   secretKeyRotatedAt?: Prisma.DateTimeNullableFilter<"MerchantSignature"> | Date | string | null
+  allowedIps?: Prisma.StringNullableListFilter<"MerchantSignature">
   credentials?: Prisma.JsonFilter<"MerchantSignature">
   status?: Prisma.EnumMerchantSignatureStatusEnumFilter<"MerchantSignature"> | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.StringNullableFilter<"MerchantSignature"> | string | null
@@ -368,6 +374,7 @@ export type MerchantSignatureOrderByWithAggregationInput = {
   secretKey?: Prisma.SortOrderInput | Prisma.SortOrder
   secretKeyPrevious?: Prisma.SortOrderInput | Prisma.SortOrder
   secretKeyRotatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  allowedIps?: Prisma.SortOrder
   credentials?: Prisma.SortOrder
   status?: Prisma.SortOrder
   payinUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -395,6 +402,7 @@ export type MerchantSignatureScalarWhereWithAggregatesInput = {
   secretKey?: Prisma.StringNullableWithAggregatesFilter<"MerchantSignature"> | string | null
   secretKeyPrevious?: Prisma.StringNullableWithAggregatesFilter<"MerchantSignature"> | string | null
   secretKeyRotatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"MerchantSignature"> | Date | string | null
+  allowedIps?: Prisma.StringNullableListFilter<"MerchantSignature">
   credentials?: Prisma.JsonWithAggregatesFilter<"MerchantSignature">
   status?: Prisma.EnumMerchantSignatureStatusEnumWithAggregatesFilter<"MerchantSignature"> | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.StringNullableWithAggregatesFilter<"MerchantSignature"> | string | null
@@ -413,6 +421,7 @@ export type MerchantSignatureCreateInput = {
   secretKey?: string | null
   secretKeyPrevious?: string | null
   secretKeyRotatedAt?: Date | string | null
+  allowedIps?: Prisma.MerchantSignatureCreateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl?: string | null
@@ -432,6 +441,7 @@ export type MerchantSignatureUncheckedCreateInput = {
   secretKey?: string | null
   secretKeyPrevious?: string | null
   secretKeyRotatedAt?: Date | string | null
+  allowedIps?: Prisma.MerchantSignatureCreateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl?: string | null
@@ -450,6 +460,7 @@ export type MerchantSignatureUpdateInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -469,6 +480,7 @@ export type MerchantSignatureUncheckedUpdateInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -488,6 +500,7 @@ export type MerchantSignatureCreateManyInput = {
   secretKey?: string | null
   secretKeyPrevious?: string | null
   secretKeyRotatedAt?: Date | string | null
+  allowedIps?: Prisma.MerchantSignatureCreateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl?: string | null
@@ -506,6 +519,7 @@ export type MerchantSignatureUpdateManyMutationInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -524,6 +538,7 @@ export type MerchantSignatureUncheckedUpdateManyInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -548,6 +563,7 @@ export type MerchantSignatureCountOrderByAggregateInput = {
   secretKey?: Prisma.SortOrder
   secretKeyPrevious?: Prisma.SortOrder
   secretKeyRotatedAt?: Prisma.SortOrder
+  allowedIps?: Prisma.SortOrder
   credentials?: Prisma.SortOrder
   status?: Prisma.SortOrder
   payinUrl?: Prisma.SortOrder
@@ -645,6 +661,15 @@ export type MerchantSignatureUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.MerchantSignatureUpdateToOneWithWhereWithoutUserInput, Prisma.MerchantSignatureUpdateWithoutUserInput>, Prisma.MerchantSignatureUncheckedUpdateWithoutUserInput>
 }
 
+export type MerchantSignatureCreateallowedIpsInput = {
+  set: string[]
+}
+
+export type MerchantSignatureUpdateallowedIpsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput = {
   set?: $Enums.MerchantSignatureStatusEnum
 }
@@ -654,6 +679,7 @@ export type MerchantSignatureCreateWithoutUserInput = {
   secretKey?: string | null
   secretKeyPrevious?: string | null
   secretKeyRotatedAt?: Date | string | null
+  allowedIps?: Prisma.MerchantSignatureCreateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl?: string | null
@@ -672,6 +698,7 @@ export type MerchantSignatureUncheckedCreateWithoutUserInput = {
   secretKey?: string | null
   secretKeyPrevious?: string | null
   secretKeyRotatedAt?: Date | string | null
+  allowedIps?: Prisma.MerchantSignatureCreateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status: $Enums.MerchantSignatureStatusEnum
   payinUrl?: string | null
@@ -705,6 +732,7 @@ export type MerchantSignatureUpdateWithoutUserInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -723,6 +751,7 @@ export type MerchantSignatureUncheckedUpdateWithoutUserInput = {
   secretKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyPrevious?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secretKeyRotatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  allowedIps?: Prisma.MerchantSignatureUpdateallowedIpsInput | string[]
   credentials?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumMerchantSignatureStatusEnumFieldUpdateOperationsInput | $Enums.MerchantSignatureStatusEnum
   payinUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -743,6 +772,7 @@ export type MerchantSignatureSelect<ExtArgs extends runtime.Types.Extensions.Int
   secretKey?: boolean
   secretKeyPrevious?: boolean
   secretKeyRotatedAt?: boolean
+  allowedIps?: boolean
   credentials?: boolean
   status?: boolean
   payinUrl?: boolean
@@ -763,6 +793,7 @@ export type MerchantSignatureSelectCreateManyAndReturn<ExtArgs extends runtime.T
   secretKey?: boolean
   secretKeyPrevious?: boolean
   secretKeyRotatedAt?: boolean
+  allowedIps?: boolean
   credentials?: boolean
   status?: boolean
   payinUrl?: boolean
@@ -783,6 +814,7 @@ export type MerchantSignatureSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   secretKey?: boolean
   secretKeyPrevious?: boolean
   secretKeyRotatedAt?: boolean
+  allowedIps?: boolean
   credentials?: boolean
   status?: boolean
   payinUrl?: boolean
@@ -803,6 +835,7 @@ export type MerchantSignatureSelectScalar = {
   secretKey?: boolean
   secretKeyPrevious?: boolean
   secretKeyRotatedAt?: boolean
+  allowedIps?: boolean
   credentials?: boolean
   status?: boolean
   payinUrl?: boolean
@@ -816,7 +849,7 @@ export type MerchantSignatureSelectScalar = {
   deletedBy?: boolean
 }
 
-export type MerchantSignatureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "secretKey" | "secretKeyPrevious" | "secretKeyRotatedAt" | "credentials" | "status" | "payinUrl" | "payoutUrl" | "userId" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantSignature"]>
+export type MerchantSignatureOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "secretKey" | "secretKeyPrevious" | "secretKeyRotatedAt" | "allowedIps" | "credentials" | "status" | "payinUrl" | "payoutUrl" | "userId" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchantSignature"]>
 export type MerchantSignatureInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -838,6 +871,13 @@ export type $MerchantSignaturePayload<ExtArgs extends runtime.Types.Extensions.I
     secretKey: string | null
     secretKeyPrevious: string | null
     secretKeyRotatedAt: Date | null
+    /**
+     * Opt-in IP allowlist. Empty means unrestricted, which is the default:
+     * most merchants sit on dynamic consumer connections where pinning an
+     * address would lock them out. Entries are bare addresses or CIDR ranges,
+     * IPv4 or IPv6 - 45 chars covers the longest IPv6 form with a prefix.
+     */
+    allowedIps: string[]
     credentials: runtime.JsonValue
     status: $Enums.MerchantSignatureStatusEnum
     payinUrl: string | null
@@ -1278,6 +1318,7 @@ export interface MerchantSignatureFieldRefs {
   readonly secretKey: Prisma.FieldRef<"MerchantSignature", 'String'>
   readonly secretKeyPrevious: Prisma.FieldRef<"MerchantSignature", 'String'>
   readonly secretKeyRotatedAt: Prisma.FieldRef<"MerchantSignature", 'DateTime'>
+  readonly allowedIps: Prisma.FieldRef<"MerchantSignature", 'String[]'>
   readonly credentials: Prisma.FieldRef<"MerchantSignature", 'Json'>
   readonly status: Prisma.FieldRef<"MerchantSignature", 'MerchantSignatureStatusEnum'>
   readonly payinUrl: Prisma.FieldRef<"MerchantSignature", 'String'>

@@ -1,27 +1,8 @@
-import { ROLE } from '@app/microservice';
+import { ROLE_ID, SYSTEM_USER_ID } from '@app/microservice';
 import { PrismaClient } from '@auth/prisma';
-import { RoleIds } from './role-engine.seed';
-import {
-  ENGINE_PASSWORD,
-  hashPassword,
-  logSeeded,
-  SEED_PASSWORD,
-} from './seed.helper';
-
-const SCHEDULER_COUNT = 10;
-const SYSTEM_COUNT = 5;
-const RESERVED_COUNT = 5;
-
-/** "01" … "10" */
-function serials(count: number): string[] {
-  return Array.from({ length: count }, (_, i) =>
-    String(i + 1).padStart(2, '0'),
-  );
-}
+import { hashPassword, logSeeded, SEED_PASSWORD } from './seed.helper';
 
 export type EngineSeedResult = {
-  /** Audit principal every seeded row is attributed to. */
-  system01Id: number;
   superAdminUserId: number;
   agentInternalUserId: number;
 };
@@ -29,92 +10,48 @@ export type EngineSeedResult = {
 /**
  * MANDATORY - production data.
  *
- * These are the accounts the engine itself runs as, plus the two humans-facing
- * accounts the system cannot bootstrap without:
+ * The two accounts the system cannot be administered without:
  *
- * - scheduler01..10  cron / background workers
- * - system01..05     internal service principals; system01 is the audit
- *                    identity stamped into `createdBy` on every seeded row
- * - reserved01..05   spare system slots, kept so ids stay stable if a new
- *                    machine principal is needed later
- * - superadmin       the first account able to sign in and administer
- * - agentinternal    merchants are onboarded by an agent, so the internal team
- *                    needs an agent identity to register them (see D9)
+ * - superadmin     the first account able to sign in and administer
+ * - agentinternal  merchants are onboarded by an agent, so the internal team
+ *                  needs an agent identity to register them (see D9)
+ *
+ * **The roles and the 20 machine principals are no longer here.** They moved to
+ * the `machine_principals` migration, which pins their ids so application code
+ * can name them as constants - `SYSTEM_USER_ID`, `MACHINE_USER_ID`, `ROLE_ID`
+ * in `libs/microservice`. `BalanceEntry.createdBy` is NOT NULL, so a webhook or
+ * a cron writing a balance has to name the principal that did it, and resolving
+ * that by email at runtime meant either a TCP hop to auth or a cross-schema raw
+ * query from an app whose Prisma client does not span `auth`.
+ *
+ * These two stay in the seed deliberately. They are real login credentials, and
+ * a hardcoded argon2 hash in a migration would put the production admin
+ * password in version control - identical in every environment, and
+ * unchangeable without a new migration.
+ *
+ * They land at ids 21 and 22, because the migration sets `User_id_seq` to 20.
  *
  * Idempotent: upserts on the unique `email`, so re-running is safe and will not
  * rotate passwords or duplicate accounts.
  */
 export async function authEngineSeed(
   prisma: PrismaClient,
-  roleIds: RoleIds,
 ): Promise<EngineSeedResult> {
-  const enginePassword = await hashPassword(ENGINE_PASSWORD);
-
-  // system01 must exist before anything else so it can be the createdBy for the
-  // rest; machine accounts are therefore seeded before the human-facing ones.
-  const systemUsers = await prisma.$transaction(
-    serials(SYSTEM_COUNT).map((serial) =>
-      prisma.user.upsert({
-        where: { email: `system${serial}@pg.id` },
-        create: {
-          email: `system${serial}@pg.id`,
-          password: enginePassword,
-          roleId: roleIds[ROLE.SYSTEM],
-        },
-        update: {},
-        select: { id: true },
-      }),
-    ),
-  );
-  const system01Id = systemUsers[0].id;
-
-  const reservedUsers = await prisma.$transaction(
-    serials(RESERVED_COUNT).map((serial) =>
-      prisma.user.upsert({
-        where: { email: `reserved${serial}@pg.id` },
-        create: {
-          email: `reserved${serial}@pg.id`,
-          password: enginePassword,
-          roleId: roleIds[ROLE.SYSTEM],
-          createdBy: system01Id,
-        },
-        update: {},
-        select: { id: true },
-      }),
-    ),
-  );
-
   const seedPassword = await hashPassword(SEED_PASSWORD);
-
-  const schedulerUsers = await prisma.$transaction(
-    serials(SCHEDULER_COUNT).map((serial) =>
-      prisma.user.upsert({
-        where: { email: `scheduler${serial}@pg.id` },
-        create: {
-          email: `scheduler${serial}@pg.id`,
-          password: enginePassword,
-          roleId: roleIds[ROLE.SCHEDULER],
-          createdBy: system01Id,
-        },
-        update: {},
-        select: { id: true },
-      }),
-    ),
-  );
 
   const superAdmin = await prisma.user.upsert({
     where: { email: 'superadmin@pg.id' },
     create: {
       email: 'superadmin@pg.id',
       password: seedPassword,
-      roleId: roleIds[ROLE.SUPER_ADMIN],
-      createdBy: system01Id,
+      roleId: ROLE_ID.SUPER_ADMIN,
+      createdBy: SYSTEM_USER_ID,
       AdminDetail: {
         create: {
           fullname: 'Super Admin',
           address: 'Jl. Super Admin',
           phone: '00000000',
-          createdBy: system01Id,
+          createdBy: SYSTEM_USER_ID,
         },
       },
     },
@@ -127,8 +64,8 @@ export async function authEngineSeed(
     create: {
       email: 'agentinternal@pg.id',
       password: seedPassword,
-      roleId: roleIds[ROLE.AGENT],
-      createdBy: system01Id,
+      roleId: ROLE_ID.AGENT,
+      createdBy: SYSTEM_USER_ID,
       AgentDetail: {
         create: {
           fullname: 'Agent Internal',
@@ -138,7 +75,7 @@ export async function authEngineSeed(
           bankName: 'default',
           accountNumber: 'default',
           accountHolderName: 'default',
-          createdBy: system01Id,
+          createdBy: SYSTEM_USER_ID,
         },
       },
     },
@@ -146,14 +83,10 @@ export async function authEngineSeed(
     select: { id: true },
   });
 
-  logSeeded('system users', systemUsers.length);
-  logSeeded('scheduler users', schedulerUsers.length);
-  logSeeded('reserved users', reservedUsers.length);
   logSeeded('superadmin@pg.id', `id ${superAdmin.id}`);
   logSeeded('agentinternal@pg.id', `id ${agentInternal.id}`);
 
   return {
-    system01Id,
     superAdminUserId: superAdmin.id,
     agentInternalUserId: agentInternal.id,
   };

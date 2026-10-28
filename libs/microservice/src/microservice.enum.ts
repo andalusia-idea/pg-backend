@@ -6,6 +6,11 @@ export const MoneyType = Type.String({
   maxLength: 32,
 });
 
+export const AmountType = Type.Object({
+  value: MoneyType,
+  currency: Type.Enum({ IDR: 'IDR' }),
+});
+
 export const PercentageType = Type.String({
   pattern: `^(100(\\.0{1,2})?|[0-9]{1,2}(\\.\\d{1,2})?)$`,
   minLength: 1,
@@ -79,6 +84,8 @@ export const PROFILE_KIND_BY_ROLE = {
 export const ProviderNameEnum = {
   INTERNAL: 'INTERNAL',
   MOTIONPAY: 'MOTIONPAY',
+  TELEANJAR: 'TELEANJAR',
+  JATELINDO: 'JATELINDO',
   // INACASH: 'INACASH',
   // PDNT1: 'PDNT1',
   // ZIPAY: 'ZIPAY',
@@ -87,22 +94,77 @@ export const ProviderNameEnum = {
 export type ProviderNameEnum =
   (typeof ProviderNameEnum)[keyof typeof ProviderNameEnum];
 
+export const EWalletEnum = {
+  DANA: 'DANA',
+  GOPAY: 'GOPAY',
+  OVO: 'OVO',
+  SHOPEEPAY: 'SHOPEEPAY',
+} as const;
+export type EWalletEnum = (typeof EWalletEnum)[keyof typeof EWalletEnum];
+export const isEwalletEnum = (bankCode: string): bankCode is EWalletEnum => {
+  return Object.values(EWalletEnum).includes(bankCode as EWalletEnum);
+};
+export const BankEnum = {}; // In the future if each bank has its own fee
+export type BankEnum = (typeof BankEnum)[keyof typeof BankEnum];
+
 export const PaymentMethodNameEnum = {
   QRIS: 'QRIS',
   VIRTUALACCOUNT: 'VIRTUALACCOUNT',
   DIRECTEWALLET: 'DIRECTEWALLET',
   TRANSFERBANK: 'TRANSFERBANK',
-  TRANSFEREWALLET: 'TRANSFEREWALLET',
+  // TRANSFEREWALLET: 'TRANSFEREWALLET',
+  /// TODO Tolong remind saya tentang ini, new business plan
+  TRANSFEREWALLET_DANA: 'TRANSFEREWALLET_DANA',
+  TRANSFEREWALLET_GOPAY: 'TRANSFEREWALLET_GOPAY',
+  TRANSFEREWALLET_OVO: 'TRANSFEREWALLET_OVO',
+  TRANSFEREWALLET_SHOPEEPAY: 'TRANSFEREWALLET_SHOPEEPAY',
 } as const;
 export type PaymentMethodNameEnum =
   (typeof PaymentMethodNameEnum)[keyof typeof PaymentMethodNameEnum];
+
+/**
+ * Whether a payment method is any of the per-wallet payout methods.
+ *
+ * Sibling of `isEwalletEnum`, which answers the same question about a *bank
+ * code*. Both exist because the one-value `TRANSFEREWALLET` it replaced could be
+ * compared directly, and a per-wallet split turns every such comparison into a
+ * four-way test that is easy to write as a three-way test by accident.
+ *
+ * Derived from the enum rather than listing the four, so adding a fifth wallet
+ * cannot leave this behind.
+ */
+export const isEWalletPaymentMethod = (
+  paymentMethodName: string,
+): paymentMethodName is PaymentMethodNameEnum =>
+  paymentMethodName.startsWith('TRANSFEREWALLET');
+
+export const paymentMethodByBankCode = (bankCode: string) => {
+  switch (bankCode) {
+    case EWalletEnum.DANA:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_DANA;
+    case EWalletEnum.GOPAY:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY;
+    case EWalletEnum.OVO:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_OVO;
+    case EWalletEnum.SHOPEEPAY:
+      return PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY;
+    default:
+      return PaymentMethodNameEnum.TRANSFERBANK;
+  }
+};
+
+export const WithdrawPaymentMethodNameEnum = {
+  TRANSFERBANK: 'TRANSFERBANK',
+  USDT: 'USDT',
+};
+export type WithdrawPaymentMethodNameEnum =
+  (typeof WithdrawPaymentMethodNameEnum)[keyof typeof WithdrawPaymentMethodNameEnum];
 
 export const TransactionTypeEnum = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',
   DISBURSEMENT: 'DISBURSEMENT',
   PURCHASE: 'PURCHASE',
-  SETTLEMENT_PURCHASE: 'SETTLEMENT_PURCHASE',
 } as const;
 export type TransactionTypeEnum =
   (typeof TransactionTypeEnum)[keyof typeof TransactionTypeEnum];
@@ -122,43 +184,42 @@ export const HttpMethodEnum = {
 } as const;
 export type HttpMethodEnum =
   (typeof HttpMethodEnum)[keyof typeof HttpMethodEnum];
+export const isHttpMethodEnum = (method: string): method is HttpMethodEnum => {
+  return Object.values(HttpMethodEnum).includes(method as HttpMethodEnum);
+};
 
-/**
- * Why a merchant signature was rejected.
- *
- * Every rejection is an HTTP 401 to the merchant; this code is what makes the
- * failure diagnosable. Collapsing them into one opaque "invalid signature" is
- * the top integration-support cost in every payment API - a merchant whose
- * clock drifted three minutes needs to see that, not a crypto error.
- *
- * None of these leak anything useful to an attacker: they already know
- * whether they hold a valid secret.
- */
-export const MerchantSignatureFailureEnum = {
-  /** One of the four required headers was absent. */
-  MISSING_HEADER: 'MISSING_HEADER',
-  /**
-   * `X-Signature` was not the expected length or not hex.
-   *
-   * Also the code a merchant sees if they implemented the wrong algorithm:
-   * digest length identifies it (SHA-256 gives 64 hex, SHA-512 gives 128), so
-   * the error message should name both the expected length and the algorithm.
-   */
-  MALFORMED_SIGNATURE: 'MALFORMED_SIGNATURE',
-  /** `X-Nonce` was not a UUID or hex string - see the delimiter note in the design doc. */
-  MALFORMED_NONCE: 'MALFORMED_NONCE',
-  /** `X-Timestamp` had no UTC offset, was unparseable, or fell outside the window. */
-  TIMESTAMP_SKEW: 'TIMESTAMP_SKEW',
-  /** No merchant signature row matches the supplied `X-Client-Id`. */
-  UNKNOWN_CLIENT: 'UNKNOWN_CLIENT',
-  /** The client exists but its status is not ACTIVE. */
-  CLIENT_SUSPENDED: 'CLIENT_SUSPENDED',
-  /** The MAC did not match, under either the current or the previous secret. */
-  INVALID_SIGNATURE: 'INVALID_SIGNATURE',
-  /** This nonce was already used inside the replay window. */
-  REPLAYED_NONCE: 'REPLAYED_NONCE',
-  /** Merchant has not yet generated Secret Key at Dashboard */
-  SECRET_KEY_NOT_GENERATED: 'SECRET_KEY_NOT_GENERATED',
+export const TransactionStatusEnum = {
+  PENDING: 'PENDING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED',
 } as const;
-export type MerchantSignatureFailureEnum =
-  (typeof MerchantSignatureFailureEnum)[keyof typeof MerchantSignatureFailureEnum];
+export type TransactionStatusEnum =
+  (typeof TransactionStatusEnum)[keyof typeof TransactionStatusEnum];
+
+export const FeeTypeEnum = {
+  AGENT: 'AGENT',
+  INTERNAL: 'INTERNAL',
+  PROVIDER: 'PROVIDER',
+  MERCHANT: 'MERCHANT',
+} as const;
+export type FeeTypeEnum = (typeof FeeTypeEnum)[keyof typeof FeeTypeEnum];
+
+export const SettlementRunStatusEnum = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  DONE: 'DONE',
+  FAILED: 'FAILED',
+} as const;
+export type SettlementRunStatusEnum =
+  (typeof SettlementRunStatusEnum)[keyof typeof SettlementRunStatusEnum];
+
+export const SettlementModeEnum = {
+  INSTANT: 'INSTANT',
+  FOLLOW_UPSTREAM: 'FOLLOW_UPSTREAM',
+  FIXED_DELAY: 'FIXED_DELAY',
+  SCHEDULED: 'SCHEDULED',
+} as const;
+export type SettlementModeEnum =
+  (typeof SettlementModeEnum)[keyof typeof SettlementModeEnum];

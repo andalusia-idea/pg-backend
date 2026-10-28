@@ -21,11 +21,10 @@ export class ProfileProviderService {
     private readonly prismaSlave: PrismaClient,
   ) {}
 
-  // TODO REDIS
   async findProfileProvider(
     dto: FilterProfileProviderDto,
   ): Promise<ProfileProviderDto> {
-    const { userId, userRole, transactionType } = dto;
+    const { userId, userRole, transactionType, paymentMethodName } = dto;
 
     /// ADMIN
     if (userRole === UserRoleEnum.ADMIN) {
@@ -55,18 +54,22 @@ export class ProfileProviderService {
     const fee = await this.prismaMaster.merchantFee.findFirstOrThrow({
       where: {
         merchantId: userId,
-        baseFee: { transactionType: transactionType },
+        deletedAt: null,
+        baseFee: {
+          paymentMethodName: paymentMethodName,
+          transactionType: transactionType,
+          isActive: true,
+          deletedAt: null,
+        },
       },
       select: {
         baseFee: { select: { providerName: true, paymentMethodName: true } },
       },
     });
 
-    return {
-      userId,
-      userRole,
-      providerName: fee.baseFee.providerName,
-      paymentMethodName: fee.baseFee.paymentMethodName,
-    } as ProfileProviderDto;
+    const res: ProfileProviderDto = {
+      providerName: fee.baseFee.providerName as ProviderNameEnum,
+    };
+    return res;
   }
 }

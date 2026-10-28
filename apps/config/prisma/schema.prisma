@@ -26,9 +26,7 @@ model Bank {
 }
 
 model Merchant {
-  id                 Int       @id @db.Integer
-  settlementInterval Int       @default(120) @db.SmallInt /// in minutes like 30, 60, 120 or 1
-  lastSettlementAt   DateTime?
+  id Int @id @db.Integer
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -86,9 +84,6 @@ model Provider {
   // code      String   @unique
   name String @id
 
-  reconciliationTime   String //format: '02:00' (HH:mm)
-  lastReconciliationAt DateTime?
-
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
   updatedAt DateTime? @db.Timestamptz(6)
@@ -122,8 +117,8 @@ model PaymentMethod {
 
 // -- 4. Base Fee Config (default: hanya fee provider)
 model BaseFee {
-  id                Int                 @id @default(autoincrement()) @db.Integer
-  code              String              @unique /// PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
+  id Int @id @default(autoincrement()) @db.Integer
+
   providerName      String
   paymentMethodName String
   transactionType   TransactionTypeEnum
@@ -145,6 +140,7 @@ model BaseFee {
 
   merchantFees MerchantFee[]
 
+  @@unique([providerName, paymentMethodName, transactionType])
   @@schema("config")
 }
 
@@ -196,7 +192,6 @@ enum TransactionTypeEnum {
   TOPUP
   DISBURSEMENT
   PURCHASE
-  SETTLEMENT_PURCHASE
 
   @@schema("config")
 }

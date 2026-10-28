@@ -19,6 +19,15 @@
         "tsConfigPath": "apps/auth/tsconfig.app.json"
       }
     },
+    "balance": {
+      "type": "library",
+      "root": "libs/balance",
+      "entryFile": "index",
+      "sourceRoot": "libs/balance/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/balance/tsconfig.lib.json"
+      }
+    },
     "config": {
       "type": "application",
       "root": "apps/config",
@@ -98,6 +107,15 @@
       "sourceRoot": "libs/redis/src",
       "compilerOptions": {
         "tsConfigPath": "libs/redis/tsconfig.lib.json"
+      }
+    },
+    "settlement": {
+      "type": "application",
+      "root": "apps/settlement",
+      "entryFile": "main",
+      "sourceRoot": "apps/settlement/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/settlement/tsconfig.app.json"
       }
     },
     "signature": {

@@ -1,8 +1,6 @@
 import { Type, Static } from '@sinclair/typebox';
-import {
-  HttpMethodEnum,
-  MerchantSignatureFailureEnum,
-} from '../microservice.enum';
+import { HttpMethodEnum } from '../microservice.enum';
+import { MerchantSignatureFailureEnum } from '../merchant.enum';
 
 /// REQUEST
 /**
@@ -41,6 +39,12 @@ export const FilterMerchantSignatureValidationSchema = Type.Object(
     endpoint: Type.String({ minLength: 1, maxLength: 2048 }),
     /** Lowercase hex SHA-256 of the raw request bytes. */
     bodyHash: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+    /**
+     * The caller's address as the guard resolved it, or null when it could not
+     * be determined. Only consulted for merchants that have an allowlist -
+     * null then rejects, since an unknown origin cannot be shown to be allowed.
+     */
+    ipAddress: Type.Union([Type.String({ maxLength: 45 }), Type.Null()]),
   },
   { additionalProperties: false },
 );
@@ -66,6 +70,12 @@ export const MerchantSignatureValidationSchema = Type.Object(
      * instead of opening a support ticket.
      */
     serverTime: Type.String(),
+    /**
+     * Seconds until a rate-limited caller may retry. Null on every other
+     * outcome. The guard renders it as a `Retry-After` header - a throttle
+     * without one just invites a tighter retry loop.
+     */
+    retryAfterSeconds: Type.Union([Type.Number(), Type.Null()]),
   },
   { additionalProperties: false },
 );

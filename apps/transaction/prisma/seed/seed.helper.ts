@@ -14,8 +14,9 @@ export function logSeeded(label: string, count: number | string): void {
  * though, so a seed can resolve ids with a raw query - which is what config's
  * seeder does, and what this one should do rather than hardcoding ids.
  *
- * Unused until there is fixture data to write. Kept here so the eventual dev
- * tier does not reach for hardcoded ids as the path of least resistance.
+ * Used by the dev tier's balance fixtures, which skip loudly rather than guess
+ * when the auth dev users are absent - a wrong holder id does not error, it
+ * produces a balance belonging to nobody.
  */
 export async function findAuthUserIdsByEmail(
   prisma: PrismaClient,

@@ -51,19 +51,24 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  PurchaseTransaction: 'PurchaseTransaction',
+  PurchaseFeeDetail: 'PurchaseFeeDetail',
+  DisbursementTransaction: 'DisbursementTransaction',
+  DisbursementFeeDetail: 'DisbursementFeeDetail',
   TopUpTransaction: 'TopUpTransaction',
   TopupFeeDetail: 'TopupFeeDetail',
   WithdrawTransaction: 'WithdrawTransaction',
   WithdrawFeeDetail: 'WithdrawFeeDetail',
-  DisbursementTransaction: 'DisbursementTransaction',
-  DisbursementFeeDetail: 'DisbursementFeeDetail',
-  PurchaseTransaction: 'PurchaseTransaction',
-  PurchaseFeeDetail: 'PurchaseFeeDetail',
   WebhookLog: 'WebhookLog',
   TransactionAudit: 'TransactionAudit',
-  MerchantBalanceLog: 'MerchantBalanceLog',
-  AgentBalanceLog: 'AgentBalanceLog',
-  InternalBalanceLog: 'InternalBalanceLog'
+  BalanceEntry: 'BalanceEntry',
+  BalanceSnapshot: 'BalanceSnapshot',
+  BalanceAdjustment: 'BalanceAdjustment',
+  SettlementRun: 'SettlementRun',
+  SettlementBatch: 'SettlementBatch',
+  MerchantSettlementPolicy: 'MerchantSettlementPolicy',
+  UpstreamSettlementWindow: 'UpstreamSettlementWindow',
+  BusinessDayCalendar: 'BusinessDayCalendar'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -82,22 +87,116 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const TopUpTransactionScalarFieldEnum = {
+export const PurchaseTransactionScalarFieldEnum = {
   id: 'id',
-  code: 'code',
   merchantId: 'merchantId',
-  externalId: 'externalId',
-  referenceId: 'referenceId',
+  systemReference: 'systemReference',
+  merchantReference: 'merchantReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
   nominal: 'nominal',
   netNominal: 'netNominal',
   status: 'status',
+  paidAt: 'paidAt',
+  expiresAt: 'expiresAt',
+  batchSettlementId: 'batchSettlementId',
+  settlementAt: 'settlementAt',
+  additionalInfo: 'additionalInfo',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type PurchaseTransactionScalarFieldEnum = (typeof PurchaseTransactionScalarFieldEnum)[keyof typeof PurchaseTransactionScalarFieldEnum]
+
+
+export const PurchaseFeeDetailScalarFieldEnum = {
+  id: 'id',
+  purchaseId: 'purchaseId',
+  agentId: 'agentId',
+  type: 'type',
+  nominal: 'nominal',
+  feeFixed: 'feeFixed',
+  feePercentage: 'feePercentage',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type PurchaseFeeDetailScalarFieldEnum = (typeof PurchaseFeeDetailScalarFieldEnum)[keyof typeof PurchaseFeeDetailScalarFieldEnum]
+
+
+export const DisbursementTransactionScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  systemReference: 'systemReference',
+  merchantReference: 'merchantReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
+  accountHolderName: 'accountHolderName',
+  accountNumber: 'accountNumber',
+  bankCode: 'bankCode',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
+  nominal: 'nominal',
+  netNominal: 'netNominal',
+  status: 'status',
+  paidAt: 'paidAt',
+  batchSettlementId: 'batchSettlementId',
+  settlementAt: 'settlementAt',
+  additionalInfo: 'additionalInfo',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type DisbursementTransactionScalarFieldEnum = (typeof DisbursementTransactionScalarFieldEnum)[keyof typeof DisbursementTransactionScalarFieldEnum]
+
+
+export const DisbursementFeeDetailScalarFieldEnum = {
+  id: 'id',
+  disbursementId: 'disbursementId',
+  agentId: 'agentId',
+  type: 'type',
+  nominal: 'nominal',
+  feeFixed: 'feeFixed',
+  feePercentage: 'feePercentage',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy',
+  deletedAt: 'deletedAt',
+  deletedBy: 'deletedBy'
+} as const
+
+export type DisbursementFeeDetailScalarFieldEnum = (typeof DisbursementFeeDetailScalarFieldEnum)[keyof typeof DisbursementFeeDetailScalarFieldEnum]
+
+
+export const TopUpTransactionScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  systemReference: 'systemReference',
+  providerName: 'providerName',
+  paymentMethodName: 'paymentMethodName',
+  nominal: 'nominal',
+  netNominal: 'netNominal',
+  status: 'status',
   receiptImage: 'receiptImage',
   paidAt: 'paidAt',
-  metadata: 'metadata',
   settlementAt: 'settlementAt',
-  reconciliationAt: 'reconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -111,8 +210,8 @@ export type TopUpTransactionScalarFieldEnum = (typeof TopUpTransactionScalarFiel
 
 export const TopupFeeDetailScalarFieldEnum = {
   id: 'id',
-  agentId: 'agentId',
   topupId: 'topupId',
+  agentId: 'agentId',
   type: 'type',
   nominal: 'nominal',
   feeFixed: 'feeFixed',
@@ -130,19 +229,23 @@ export type TopupFeeDetailScalarFieldEnum = (typeof TopupFeeDetailScalarFieldEnu
 
 export const WithdrawTransactionScalarFieldEnum = {
   id: 'id',
-  code: 'code',
-  externalId: 'externalId',
   userId: 'userId',
   userRole: 'userRole',
-  referenceId: 'referenceId',
+  systemReference: 'systemReference',
+  providerReference: 'providerReference',
+  bankReference: 'bankReference',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
   nominal: 'nominal',
   netNominal: 'netNominal',
+  accountHolderName: 'accountHolderName',
+  accountNumber: 'accountNumber',
+  bankCode: 'bankCode',
   status: 'status',
   paidAt: 'paidAt',
+  settlementAt: 'settlementAt',
+  additionalInfo: 'additionalInfo',
   metadata: 'metadata',
-  reconciliationAt: 'reconciliationAt',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -156,8 +259,8 @@ export type WithdrawTransactionScalarFieldEnum = (typeof WithdrawTransactionScal
 
 export const WithdrawFeeDetailScalarFieldEnum = {
   id: 'id',
-  agentId: 'agentId',
   withdrawId: 'withdrawId',
+  agentId: 'agentId',
   type: 'type',
   nominal: 'nominal',
   feeFixed: 'feeFixed',
@@ -173,106 +276,10 @@ export const WithdrawFeeDetailScalarFieldEnum = {
 export type WithdrawFeeDetailScalarFieldEnum = (typeof WithdrawFeeDetailScalarFieldEnum)[keyof typeof WithdrawFeeDetailScalarFieldEnum]
 
 
-export const DisbursementTransactionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  orderId: 'orderId',
-  externalId: 'externalId',
-  referenceId: 'referenceId',
-  merchantId: 'merchantId',
-  providerName: 'providerName',
-  recipientName: 'recipientName',
-  recipientBankCode: 'recipientBankCode',
-  recipientBankName: 'recipientBankName',
-  recipientAccount: 'recipientAccount',
-  nominal: 'nominal',
-  netNominal: 'netNominal',
-  status: 'status',
-  paidAt: 'paidAt',
-  paymentMethodName: 'paymentMethodName',
-  metadata: 'metadata',
-  reconciliationAt: 'reconciliationAt',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type DisbursementTransactionScalarFieldEnum = (typeof DisbursementTransactionScalarFieldEnum)[keyof typeof DisbursementTransactionScalarFieldEnum]
-
-
-export const DisbursementFeeDetailScalarFieldEnum = {
-  id: 'id',
-  agentId: 'agentId',
-  disbursementId: 'disbursementId',
-  type: 'type',
-  nominal: 'nominal',
-  feeFixed: 'feeFixed',
-  feePercentage: 'feePercentage',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type DisbursementFeeDetailScalarFieldEnum = (typeof DisbursementFeeDetailScalarFieldEnum)[keyof typeof DisbursementFeeDetailScalarFieldEnum]
-
-
-export const PurchaseTransactionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  orderId: 'orderId',
-  referenceId: 'referenceId',
-  externalId: 'externalId',
-  merchantId: 'merchantId',
-  nmid: 'nmid',
-  providerName: 'providerName',
-  paymentMethodName: 'paymentMethodName',
-  nominal: 'nominal',
-  netNominal: 'netNominal',
-  status: 'status',
-  paidAt: 'paidAt',
-  expiresAt: 'expiresAt',
-  metadata: 'metadata',
-  settlementAt: 'settlementAt',
-  reconciliationAt: 'reconciliationAt',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type PurchaseTransactionScalarFieldEnum = (typeof PurchaseTransactionScalarFieldEnum)[keyof typeof PurchaseTransactionScalarFieldEnum]
-
-
-export const PurchaseFeeDetailScalarFieldEnum = {
-  id: 'id',
-  agentId: 'agentId',
-  purchaseId: 'purchaseId',
-  type: 'type',
-  nominal: 'nominal',
-  feeFixed: 'feeFixed',
-  feePercentage: 'feePercentage',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type PurchaseFeeDetailScalarFieldEnum = (typeof PurchaseFeeDetailScalarFieldEnum)[keyof typeof PurchaseFeeDetailScalarFieldEnum]
-
-
 export const WebhookLogScalarFieldEnum = {
   id: 'id',
   transactionId: 'transactionId',
+  providerReference: 'providerReference',
   source: 'source',
   payload: 'payload',
   rawSignature: 'rawSignature',
@@ -283,8 +290,7 @@ export const WebhookLogScalarFieldEnum = {
   updatedAt: 'updatedAt',
   updatedBy: 'updatedBy',
   deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy',
-  purchaseTransactionId: 'purchaseTransactionId'
+  deletedBy: 'deletedBy'
 } as const
 
 export type WebhookLogScalarFieldEnum = (typeof WebhookLogScalarFieldEnum)[keyof typeof WebhookLogScalarFieldEnum]
@@ -309,17 +315,96 @@ export const TransactionAuditScalarFieldEnum = {
 export type TransactionAuditScalarFieldEnum = (typeof TransactionAuditScalarFieldEnum)[keyof typeof TransactionAuditScalarFieldEnum]
 
 
-export const MerchantBalanceLogScalarFieldEnum = {
+export const BalanceEntryScalarFieldEnum = {
   id: 'id',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  sourceType: 'sourceType',
+  sourceId: 'sourceId',
+  batchId: 'batchId',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceEntryScalarFieldEnum = (typeof BalanceEntryScalarFieldEnum)[keyof typeof BalanceEntryScalarFieldEnum]
+
+
+export const BalanceSnapshotScalarFieldEnum = {
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  amount: 'amount',
+  lastEntryId: 'lastEntryId',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BalanceSnapshotScalarFieldEnum = (typeof BalanceSnapshotScalarFieldEnum)[keyof typeof BalanceSnapshotScalarFieldEnum]
+
+
+export const BalanceAdjustmentScalarFieldEnum = {
+  id: 'id',
+  holderType: 'holderType',
+  holderId: 'holderId',
+  bucket: 'bucket',
+  direction: 'direction',
+  amount: 'amount',
+  reason: 'reason',
+  evidence: 'evidence',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type BalanceAdjustmentScalarFieldEnum = (typeof BalanceAdjustmentScalarFieldEnum)[keyof typeof BalanceAdjustmentScalarFieldEnum]
+
+
+export const SettlementRunScalarFieldEnum = {
+  id: 'id',
   merchantId: 'merchantId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
+  paymentMethodName: 'paymentMethodName',
+  dueAt: 'dueAt',
+  status: 'status',
+  claimedBy: 'claimedBy',
+  claimedAt: 'claimedAt',
+  finishedAt: 'finishedAt',
+  failureReason: 'failureReason',
+  attempts: 'attempts',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy'
+} as const
+
+export type SettlementRunScalarFieldEnum = (typeof SettlementRunScalarFieldEnum)[keyof typeof SettlementRunScalarFieldEnum]
+
+
+export const SettlementBatchScalarFieldEnum = {
+  id: 'id',
+  runId: 'runId',
+  sweptFrom: 'sweptFrom',
+  sweptTo: 'sweptTo',
+  transactionCount: 'transactionCount',
+  grossAmount: 'grossAmount',
+  feeAmount: 'feeAmount',
+  netAmount: 'netAmount',
+  postedAt: 'postedAt'
+} as const
+
+export type SettlementBatchScalarFieldEnum = (typeof SettlementBatchScalarFieldEnum)[keyof typeof SettlementBatchScalarFieldEnum]
+
+
+export const MerchantSettlementPolicyScalarFieldEnum = {
+  id: 'id',
+  merchantId: 'merchantId',
+  paymentMethodName: 'paymentMethodName',
+  mode: 'mode',
+  delayDays: 'delayDays',
+  releaseTimes: 'releaseTimes',
+  businessDaysOnly: 'businessDaysOnly',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -328,44 +413,23 @@ export const MerchantBalanceLogScalarFieldEnum = {
   deletedBy: 'deletedBy'
 } as const
 
-export type MerchantBalanceLogScalarFieldEnum = (typeof MerchantBalanceLogScalarFieldEnum)[keyof typeof MerchantBalanceLogScalarFieldEnum]
+export type MerchantSettlementPolicyScalarFieldEnum = (typeof MerchantSettlementPolicyScalarFieldEnum)[keyof typeof MerchantSettlementPolicyScalarFieldEnum]
 
 
-export const AgentBalanceLogScalarFieldEnum = {
+export const UpstreamSettlementWindowScalarFieldEnum = {
   id: 'id',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
-  agentId: 'agentId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
-  createdAt: 'createdAt',
-  createdBy: 'createdBy',
-  updatedAt: 'updatedAt',
-  updatedBy: 'updatedBy',
-  deletedAt: 'deletedAt',
-  deletedBy: 'deletedBy'
-} as const
-
-export type AgentBalanceLogScalarFieldEnum = (typeof AgentBalanceLogScalarFieldEnum)[keyof typeof AgentBalanceLogScalarFieldEnum]
-
-
-export const InternalBalanceLogScalarFieldEnum = {
-  id: 'id',
-  topupId: 'topupId',
-  purchaseId: 'purchaseId',
-  withdrawId: 'withdrawId',
-  disbursementId: 'disbursementId',
-  merchantId: 'merchantId',
-  changeAmount: 'changeAmount',
-  balanceActive: 'balanceActive',
-  balancePending: 'balancePending',
-  transactionType: 'transactionType',
   providerName: 'providerName',
   paymentMethodName: 'paymentMethodName',
+  label: 'label',
+  windowStart: 'windowStart',
+  windowStartDayOffset: 'windowStartDayOffset',
+  windowEnd: 'windowEnd',
+  settlementOffset: 'settlementOffset',
+  settlementTime: 'settlementTime',
+  businessDaysOnly: 'businessDaysOnly',
+  timezone: 'timezone',
+  effectiveFrom: 'effectiveFrom',
+  effectiveTo: 'effectiveTo',
   createdAt: 'createdAt',
   createdBy: 'createdBy',
   updatedAt: 'updatedAt',
@@ -374,7 +438,21 @@ export const InternalBalanceLogScalarFieldEnum = {
   deletedBy: 'deletedBy'
 } as const
 
-export type InternalBalanceLogScalarFieldEnum = (typeof InternalBalanceLogScalarFieldEnum)[keyof typeof InternalBalanceLogScalarFieldEnum]
+export type UpstreamSettlementWindowScalarFieldEnum = (typeof UpstreamSettlementWindowScalarFieldEnum)[keyof typeof UpstreamSettlementWindowScalarFieldEnum]
+
+
+export const BusinessDayCalendarScalarFieldEnum = {
+  date: 'date',
+  isBusinessDay: 'isBusinessDay',
+  providerName: 'providerName',
+  note: 'note',
+  createdAt: 'createdAt',
+  createdBy: 'createdBy',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type BusinessDayCalendarScalarFieldEnum = (typeof BusinessDayCalendarScalarFieldEnum)[keyof typeof BusinessDayCalendarScalarFieldEnum]
 
 
 export const SortOrder = {

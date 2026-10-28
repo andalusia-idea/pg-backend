@@ -1,0 +1,1586 @@
+{
+  "info": {
+    "_postman_id": "2e2a67eb-c4c8-4d72-acee-254c1c00ed65",
+    "name": "Teleanjar H2H",
+    "description": "# Transaction API Documentation\n\n## Inquiry\n\nProses untuk mengecek data pelanggan/tagihan sebelum pembayaran dilakukan. Inquiry menghasilkan `reference` yang akan digunakan pada proses payment dan advice.\n\n## Payment\n\nProses pembayaran berdasarkan hasil inquiry yang sudah valid. Payment menggunakan `reference` dari inquiry untuk memproses transaksi.\n\n## Advice\n\nProses pengecekan ulang status transaksi, biasanya digunakan ketika payment timeout, pending, atau response belum jelas.\n\n## X-Device-Id\n\nHeader wajib untuk mengidentifikasi device yang melakukan request. Untuk endpoint authenticated, nilainya harus sesuai dengan `deviceId` pada token.\n\n## Token Validation\n\nSistem memvalidasi token dari header `Authorization: Bearer {{access_token}}`. Token harus valid, belum expired, dan sesuai dengan `X-Device-Id`.\n\n## Required Headers\n\n| Header | Required | Description |\n| --- | ---: | --- |\n| `Authorization` | Yes | Bearer access token untuk autentikasi request |\n| `X-Device-Id` | Yes | Device ID yang digunakan dan harus sesuai dengan token |\n\n## Transaction Flow\n\n```mermaid\nflowchart TD\n    A[Client kirim Inquiry] --> B{Inquiry berhasil?}\n    B -- Tidak --> C[Return error meta.code]\n    B -- Ya --> D[API mengembalikan reference dan detail tagihan]\n\n    D --> E[Client kirim Payment menggunakan reference]\n    E --> F{Payment berhasil?}\n\n    F -- Ya --> G[Return meta.code 0 - Transaksi berhasil]\n    F -- Pending / Timeout --> H[Return meta.code 16 atau 38]\n    F -- Gagal --> I[Return error meta.code]\n\n    H --> J[Client kirim Advice menggunakan reference]\n    J --> K{Status final?}\n\n    K -- Success --> L[Return meta.code 0 - Transaksi berhasil]\n    K -- Pending --> M[Return meta.code 16 - Transaksi pending]\n    K -- Failed --> N[Return meta.code 17 - Transaksi gagal]\n```\n\n## Transaction Flow Summary\n\n1. Client melakukan inquiry.\n2. Jika inquiry berhasil, API mengembalikan `reference` dan detail tagihan.\n3. Client melakukan payment menggunakan `reference` dari inquiry.\n4. Jika payment berhasil, transaksi selesai.\n5. Jika payment pending atau timeout, client melakukan advice menggunakan `reference`.\n6. Advice mengembalikan status transaksi: berhasil, gagal, atau masih pending.\n\n## meta.code\n\n`meta.code` adalah kode response dari API yang menunjukkan hasil request atau status transaksi.\n\n| meta.code | Deskripsi |\n| ---: | --- |\n| `0` | Transaksi berhasil |\n| `12` | Saldo tidak mencukupi |\n| `16` | Transaksi pending |\n| `17` | Transaksi gagal |\n| `31` | Data inquiry tidak ditemukan |\n| `37` | Sistem pembayaran sedang bermasalah |\n| `38` | Sistem pembayaran tidak merespons / timeout |\n| `39` | Sistem pembayaran tidak tersedia |\n| `50` | Client reference sudah digunakan |\n| `51` | Client reference sedang diproses |\n| `52` | Payment sudah terjadi, lakukan advice |\n| `53` | Transaksi melebihi limit |\n| `54` | ID pelanggan tidak ditemukan atau tagihan sudah dibayar |\n| `55` | ID pelanggan tidak valid |\n| `56` | Tagihan sudah dibayar |\n| `70` | Produk sedang cut off |\n| `72` | Produk sedang maintenance |\n| `401` | Token tidak valid atau expired |\n| `403` | Akses ditolak atau device tidak sesuai |\n\n## Example Headers\n\n```http\nAuthorization: Bearer {{access_token}}\nX-Device-Id: {{device_id}}\n```\n\n## Example Success Response\n\n```json\n{\n  \"meta\": {\n    \"status\": true,\n    \"code\": 0,\n    \"errors\": null\n  },\n  \"data\": {\n    \"reference\": \"CORE-REF-001\"\n  }\n}\n```\n\n## Example Pending Response\n\n```json\n{\n  \"meta\": {\n    \"status\": true,\n    \"code\": 16,\n    \"errors\": {\n      \"message\": [\n        \"Transaksi pending\"\n      ]\n    }\n  },\n  \"data\": {\n    \"reference\": \"CORE-REF-001\"\n  }\n}\n```\n\n## Example Error Response\n\n```json\n{\n  \"meta\": {\n    \"status\": false,\n    \"code\": 55,\n    \"errors\": {\n      \"message\": [\n        \"ID pelanggan tidak valid\"\n      ]\n    }\n  },\n  \"data\": null\n}\n```\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "52250338",
+    "_collection_link": "https://go.postman.co/collection/52250338-2e2a67eb-c4c8-4d72-acee-254c1c00ed65?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-Id",
+                "value": "{{DEVICE_ID}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "id-ID",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"username\",\n    \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/auth/login",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{TOKEN}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Device-Id",
+                "value": "{{DEVICE_ID}}",
+                "type": "text"
+              },
+              {
+                "key": "Accept-Language",
+                "value": "id-ID",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testing7\",\n    \"password\": 7000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/users/current",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "current"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Transaction",
+      "item": [
+        {
+          "name": "Voucher",
+          "item": [
+            {
+              "name": "Inquiry",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productCode\": \"VOUCHER-SANDBOX\",\n    \"customerId\": \"0811111111\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/inquiry",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "inquiry"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Sukses Inquiry",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"productCode\": \"VOUCHER-SANDBOX\",\n    \"customerId\": \"0833333331\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/inquiry",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "inquiry"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Method"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "X-XSS-Protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "Cache-Control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "Pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "Expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "X-Frame-Options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 10 Aug 2026 00:55:35 GMT"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"customerId\": \"0833333331\",\n        \"serialNumber\": \"SN1322904030\",\n        \"token\": \"SN1322904030\"\n    },\n    \"info\": {\n        \"reference\": \"51c1598c487d4c548186770376107241\",\n        \"billerReference\": \"BILLER-51c1598c487d4c548186770376107241\",\n        \"customerId\": \"0833333331\",\n        \"productCode\": \"VOUCHER-SANDBOX\",\n        \"productName\": \"Voucher Sandbox\",\n        \"paymentPointName\": \"Testing H2H\",\n        \"paymentPointCode\": \"231202001\",\n        \"timestamp\": \"2026-08-10T07:55:35.28585\",\n        \"totalSheets\": 1,\n        \"amount\": 22000,\n        \"discount\": 0,\n        \"penalty\": 0,\n        \"admin\": 0,\n        \"total\": 22000\n    },\n    \"receipt\": null,\n    \"receiptFile\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Payment",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"51c1598c487d4c548186770376107241\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/payment",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payment"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Double Hit Payment",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"reference\": \"51c1598c487d4c548186770376107241\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/payment",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "payment"
+                      ]
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Method"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "X-XSS-Protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "Cache-Control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "Pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "Expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "X-Frame-Options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 10 Aug 2026 00:57:02 GMT"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": false,\n        \"code\": 52,\n        \"errors\": {\n            \"message\": [\n                \"pembayaran sudah terjadi, silakan verifikasi dengan advice\"\n            ]\n        }\n    },\n    \"data\": null\n}"
+                },
+                {
+                  "name": "Payment Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"reference\": \"cd6e9475c87040aeba43f48a5264066d\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/payment",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "payment"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Method"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "X-XSS-Protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "Cache-Control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "Pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "Expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "X-Frame-Options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 10 Aug 2026 01:16:53 GMT"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"customerId\": \"0811111111\",\n        \"serialNumber\": \"SN1635095264\",\n        \"token\": \"SN1635095264\"\n    },\n    \"info\": {\n        \"reference\": \"cd6e9475c87040aeba43f48a5264066d\",\n        \"billerReference\": \"BILLER-cd6e9475c87040aeba43f48a5264066d\",\n        \"customerId\": \"0811111111\",\n        \"productCode\": \"VOUCHER-SANDBOX\",\n        \"productName\": \"Voucher Sandbox\",\n        \"paymentPointName\": \"Testing H2H\",\n        \"paymentPointCode\": \"231202001\",\n        \"timestamp\": \"2026-08-10T08:16:53.302904\",\n        \"transactionStatus\": \"SUCCESS\",\n        \"totalSheets\": 1,\n        \"amount\": 22000,\n        \"discount\": 0,\n        \"penalty\": 0,\n        \"admin\": 0,\n        \"total\": 22000\n    },\n    \"receipt\": null,\n    \"receiptFile\": {\n        \"name\": \"receipt-cd6e9475c87040aeba43f48a5264066d.pdf\",\n        \"contentType\": \"application/pdf\",\n        \"base64\": \"JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA1OTUgODQyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA0IDAgUiA+PiA+PiAvQ29udGVudHMgNSAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvQ291cmllciA+PgplbmRvYmoKNSAwIG9iago8PCAvTGVuZ3RoIDE5MDQgPj4Kc3RyZWFtCkJUCi9GMSAxMCBUZgo0MCA4MDAgVGQKMTQgVEwKKCAgICAgICAgICBTRUdJIExVTkFTICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBTVFJVSyBQRU1CQVlBUkFOICAgICAgICAgICAgICAgICAgICAgKSBUagpUKgooICAgICAgICAgICBWT1VDSEVSICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBUQUdJSEFOIFZPVUNIRVIgICAgICAgICAgICAgICAgICAgICApIFRqClQqCiggICAgIFRFTEVBTkpBUiAtIFNJUE9JTlQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBURUxFQU5KQVIgLSBTSVBPSU5UICAgICAgICAgICAgICAgICAgICkgVGoKVCoKKCAgICAgMTAvMDgvMjAyNiAwODoxNjo1MyAgICAgICAgICAgICAgU0JYIC0gU2FuZGJveCBQYXltZW50IFBvaW50ICAgICAgICAgICAxMC8wOC8yMDI2IDA4OjE2OjUzKSBUagpUKgooUHJvZHVrICAgIDpWb3VjaGVyICAgICAgICAgICAgICAgICAgICBQcm9kdWsgICAgIDpWb3VjaGVyICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICApIFRqClQqCihLb2RlICAgICAgOlZPVUNIRVItU0FOREJPWCAgICAgICAgICAgIEtvZGUgICAgICAgOlZPVUNIRVItU0FOREJPWCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICkgVGoKVCoKKElEIFBlbCAgICA6MDgxMTExMTExMSAgICAgICAgICAgICAgICAgSUQgUGVsICAgICA6MDgxMTExMTExMSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKSBUagpUKgooTmFtYSAgICAgIDotICAgICAgICAgICAgICAgICAgICAgICAgICBOYW1hICAgICAgIDotICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICApIFRqClQqCihUYWdpaGFuICAgOlJwMjIuMDAwLDAwICAgICAgICAgICAgICAgIFRhZ2loYW4gICAgOlJwMjIuMDAwLDAwICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICkgVGoKVCoKKERlbmRhICAgICA6UnAwLDAwICAgICAgICAgICAgICAgICAgICAgRGVuZGEgICAgICA6UnAwLDAwICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKSBUagpUKgooQWRtaW4gICAgIDpScDAsMDAgICAgICAgICAgICAgICAgICAgICBBZG1pbiAgICAgIDpScDAsMDAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICApIFRqClQqCihUb3RhbCAgICAgOlJwMjIuMDAwLDAwICAgICAgICAgICAgICAgIFRvdGFsICAgICAgOlJwMjIuMDAwLDAwICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICkgVGoKVCoKKFN0YXR1cyAgICA6U1VDQ0VTUyAgICAgICAgICAgICAgICAgICAgU3RhdHVzICAgICA6U1VDQ0VTUyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgKSBUagpUKgooUmVmICAgICAgIDpjZDZlOTQ3NWM4NzA0MGFlYmE0ICAgICAgICBSZWYgICAgICAgIDpjZDZlOTQ3NWM4NzA0MGFlYmE0M2Y0OGE1MjY0MDY2ZCAgICAgICAgICAgICApIFRqClQqCihDQS8yNjA4MTAwODE2NTMvY2Q2ZTk0NzVjODcwNDAgICAgICAgIEJJTExFUi1jZDZlOTQ3NWM4NzA0MGFlYmE0M2Y0OGE1MjY0MDY2ZCAgICAgICAgICAgICAgICAgICkgVGoKVCoKKCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBDQS9TQlgvMjYwODEwMDgxNjUzL2NkNmU5NDc1Yzg3MDQwYWViYTQzZjQ4YTUyNjQwNjZkKSBUagpUKgooICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBUZXJpbWFrYXNpaCBhdGFzIHBlbWJheWFyYW4gbWVsYWx1aSBTaXBvaW50ISAgICAgICAgICAgICApIFRqClQqCiggICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIEt1bmp1bmdpIHdlYnNpdGUga2FtaSB0ZWxlYW5qYXJtaXRyYWdsb2JhbC5jby5pZCAgICAgICAgICkgVGoKVCoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDMwOSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIyNjQKJSVFT0YK\"\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Advice",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"cd6e9475c87040aeba43f48a5264066d\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/advice",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "advice"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Advice Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"reference\": \"cd6e9475c87040aeba43f48a5264066d\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/advice",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "advice"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Method"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "X-Content-Type-Options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "X-XSS-Protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "Cache-Control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "Pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "Expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "X-Frame-Options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "Transfer-Encoding",
+                      "value": "chunked"
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 10 Aug 2026 01:17:25 GMT"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=60"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"token\": \"SN1635095264\",\n        \"customerId\": \"0811111111\",\n        \"serialNumber\": \"SN1635095264\"\n    },\n    \"info\": {\n        \"reference\": \"cd6e9475c87040aeba43f48a5264066d\",\n        \"billerReference\": \"BILLER-cd6e9475c87040aeba43f48a5264066d\",\n        \"customerId\": \"0811111111\",\n        \"productCode\": \"VOUCHER-SANDBOX\",\n        \"productName\": \"Voucher Sandbox\",\n        \"paymentPointName\": \"Testing H2H\",\n        \"paymentPointCode\": \"231202001\",\n        \"timestamp\": \"2026-08-10T08:16:53.575209\",\n        \"transactionStatus\": \"SUCCESS\",\n        \"totalSheets\": 1,\n        \"amount\": 22000,\n        \"discount\": 0,\n        \"penalty\": 0,\n        \"admin\": 0,\n        \"total\": 22000\n    },\n    \"receipt\": null,\n    \"receiptFile\": null\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Multifinance",
+          "item": [
+            {
+              "name": "Inquiry",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productCode\": \"MF-SANDBOX\",\n    \"customerId\": \"8800001001\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/inquiry",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "inquiry"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "PLN Prepaid",
+          "item": [
+            {
+              "name": "Inquiry",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productCode\": \"PLN-PREPAID-SANDBOX-50000\",\n    \"customerId\": \"123123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/inquiry",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "inquiry"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Success Inquiry",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"productCode\": \"PLN-PREPAID-SANDBOX-50000\",\n    \"customerId\": \"5343681765357\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/inquiry",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "inquiry"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": ":status",
+                      "value": 200
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 13 Aug 2026 03:10:24 GMT"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "server",
+                      "value": "cloudflare"
+                    },
+                    {
+                      "key": "vary",
+                      "value": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "cf-cache-status",
+                      "value": "DYNAMIC"
+                    },
+                    {
+                      "key": "nel",
+                      "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                    },
+                    {
+                      "key": "report-to",
+                      "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=h3iuvUzbfR56UJauEycrcUeegFj6hc3gKS73pifaBldKQW4Qq10zi0TrqAF9Ysvv7dpA%2FcfSni6qbronj7pA5Cg6yLkNYOB6zuCm3qwrLFn%2BowTZ55Hx9%2BpMcrNd9NPFE6iKfkLryjH8xoDWaEoeAjyhyrbn%2BHkpN7Y%3D\"}]}"
+                    },
+                    {
+                      "key": "content-encoding",
+                      "value": "br"
+                    },
+                    {
+                      "key": "cf-ray",
+                      "value": "a2a486c5bfafc390-SIN"
+                    },
+                    {
+                      "key": "alt-svc",
+                      "value": "h3=\":443\"; ma=86400"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"customerName\": \"PELANGGAN PLN PREPAID\",\n        \"customerId\": \"5343681765357\",\n        \"meterNumber\": \"525343681765\",\n        \"fare\": \"R1/1300 VA\",\n        \"ppn\": 0,\n        \"ppj\": 0,\n        \"token\": null,\n        \"info\": [],\n        \"unsold\": [],\n        \"kwhAmount\": 0,\n        \"tokenPriceAmount\": 0,\n        \"installments\": 0,\n        \"materai\": 0,\n        \"name\": \"PELANGGAN PLN PREPAID\"\n    },\n    \"info\": {\n        \"reference\": \"3eb514e0bf884caa9ef0191a311c4ca4\",\n        \"billerReference\": \"BILLER-3eb514e0bf884caa9ef0191a311c4ca4\",\n        \"customerId\": \"5343681765357\",\n        \"productCode\": \"PLN-PREPAID-SANDBOX-50000\",\n        \"productName\": \"PLN Prepaid Sandbox 50.000\",\n        \"paymentPointName\": \"Tegal Testing\",\n        \"paymentPointCode\": \"C013376001\",\n        \"timestamp\": \"2026-08-13T03:10:24.11082404\",\n        \"totalSheets\": 1,\n        \"amount\": 50000,\n        \"discount\": 0,\n        \"penalty\": 0,\n        \"admin\": 4500,\n        \"total\": 54500\n    },\n    \"receipt\": null,\n    \"receiptFile\": null\n}"
+                },
+                {
+                  "name": "Invalid Customer Id",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"productCode\": \"PLN-PREPAID-SANDBOX-50000\",\n    \"customerId\": \"123123\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/inquiry",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "inquiry"
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": ":status",
+                      "value": 400
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 13 Aug 2026 03:10:49 GMT"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "server",
+                      "value": "cloudflare"
+                    },
+                    {
+                      "key": "vary",
+                      "value": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "cf-cache-status",
+                      "value": "DYNAMIC"
+                    },
+                    {
+                      "key": "nel",
+                      "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                    },
+                    {
+                      "key": "report-to",
+                      "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=HfehxH4bds5dldxZ22jliiR45CXWWrWhXdFCjuFrVJM%2BwLZ%2Fw9ftieMUJSmwDe4A8ZUiYViGPZzoB0SaBiWLFe2TDu0UcRv83BHGtyAZMfeubENV6aC4OCejfrhToLrDruRGi%2Bse51tbOQZPAwDM5ajrrCfKo8gVNxk%3D\"}]}"
+                    },
+                    {
+                      "key": "cf-ray",
+                      "value": "a2a487667e56c390-SIN"
+                    },
+                    {
+                      "key": "alt-svc",
+                      "value": "h3=\":443\"; ma=86400"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": false,\n        \"code\": 55,\n        \"errors\": {\n            \"message\": [\n                \"id pelanggan yang anda masukan salah, mohon teliti kembali\"\n            ]\n        }\n    },\n    \"data\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Payment",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"3eb514e0bf884caa9ef0191a311c4ca4\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/payment",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payment"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Success Payment",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"reference\": \"3eb514e0bf884caa9ef0191a311c4ca4\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/payment",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "payment"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": ":status",
+                      "value": 200
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 13 Aug 2026 03:12:47 GMT"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "server",
+                      "value": "cloudflare"
+                    },
+                    {
+                      "key": "vary",
+                      "value": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "cf-cache-status",
+                      "value": "DYNAMIC"
+                    },
+                    {
+                      "key": "nel",
+                      "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                    },
+                    {
+                      "key": "report-to",
+                      "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=sDN3b%2BvhW4YfIguYCfI5KZIV2XlNTKexudTokl1N6MC1xnRT61zgIt6wF8X6EFv1vlnjZ7iALp%2BTv5aTlNaPPrUFMdhp8mV6LeD1TAKVDca6KxfMzalyfHOAWazrFd6NdxCesJryG4wiB43KIienvHcMdvVRKhj6T3A%3D\"}]}"
+                    },
+                    {
+                      "key": "content-encoding",
+                      "value": "br"
+                    },
+                    {
+                      "key": "cf-ray",
+                      "value": "a2a48a419978c6f6-SIN"
+                    },
+                    {
+                      "key": "alt-svc",
+                      "value": "h3=\":443\"; ma=86400"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"customerName\": \"PELANGGAN PLN PREPAID\",\n        \"customerId\": \"5343681765357\",\n        \"meterNumber\": \"525343681765\",\n        \"fare\": \"R1/1300 VA\",\n        \"ppn\": 0,\n        \"ppj\": 0,\n        \"token\": \"1234 5678 9012 3456 7890\",\n        \"info\": [\n            \"Informasi Hubungi Call Center 123 Atau hubungi PLN Terdekat\"\n        ],\n        \"unsold\": [],\n        \"kwhAmount\": 30.1,\n        \"tokenPriceAmount\": 48000,\n        \"installments\": 0,\n        \"materai\": 0,\n        \"name\": \"PELANGGAN PLN PREPAID\",\n        \"serialNumber\": \"1234 5678 9012 3456 7890\"\n    },\n    \"info\": {\n        \"reference\": \"3eb514e0bf884caa9ef0191a311c4ca4\",\n        \"billerReference\": \"BILLER-3eb514e0bf884caa9ef0191a311c4ca4\",\n        \"customerId\": \"5343681765357\",\n        \"productCode\": \"PLN-PREPAID-SANDBOX-50000\",\n        \"productName\": \"PLN Prepaid Sandbox 50.000\",\n        \"paymentPointName\": \"Tegal Testing\",\n        \"paymentPointCode\": \"C013376001\",\n        \"timestamp\": \"2026-08-13T03:12:46.656078149\",\n        \"transactionStatus\": \"SUCCESS\",\n        \"totalSheets\": 1,\n        \"amount\": 50000,\n        \"discount\": 0,\n        \"penalty\": 0,\n        \"admin\": 4500,\n        \"total\": 54500\n    },\n    \"receipt\": [\n        \"             STRUK PEMBAYARAN\",\n        \"               PLN PREPAID\",\n        \"------------------------------------------\",\n        \"Produk : PLN Prepaid\",\n        \"Kode : PLN-PREPAID-SANDBOX-50000\",\n        \"ID Pel : 5343681765357\",\n        \"Nama : PELANGGAN PLN PREPAID\",\n        \"No Meter : 525343681765\",\n        \"Token : 1234 5678 9012 3456 7890\",\n        \"------------------------------------------\",\n        \"Tagihan : Rp50.000,00\",\n        \"Denda : Rp0,00\",\n        \"Admin : Rp4.500,00\",\n        \"Total : Rp54.500,00\",\n        \"Status : SUCCESS\",\n        \"Ref : 3eb514e0bf884caa9ef0191a311c4ca4\",\n        \"------------------------------------------\",\n        \"Terimakasih atas pembayaran melalui\",\n        \"Sipoint!\",\n        \"Kunjungi website kami\",\n        \"teleanjarmitraglobal.co.id\",\n        \"CA/260813031246\"\n    ],\n    \"receiptFile\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Advice",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"3eb514e0bf884caa9ef0191a311c4ca4\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/advice",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "advice"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "PLN Postpaid",
+          "item": [
+            {
+              "name": "Inquiry",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productCode\": \"PLN-POSTPAID-SANDBOX\",\n    \"customerId\": \"532110004000\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/inquiry",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "inquiry"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Inquiry Success",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"productCode\": \"PLN-POSTPAID-SANDBOX\",\n    \"customerId\": \"532110004000\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/inquiry",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "inquiry"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": ":status",
+                      "value": 200
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 13 Aug 2026 03:39:40 GMT"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "server",
+                      "value": "cloudflare"
+                    },
+                    {
+                      "key": "vary",
+                      "value": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "cf-cache-status",
+                      "value": "DYNAMIC"
+                    },
+                    {
+                      "key": "nel",
+                      "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                    },
+                    {
+                      "key": "report-to",
+                      "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=S2%2Fm%2FKwN8BMgRMxuvcmYpKg4A4IUOpbBIhcsRDPQrolC7IpKVRcofC7qVOaFNgkrLG7Q%2B3mBn01x%2FX5CmhIkTDn5o1dm6KA8HwN4xKbDYM9hFgsaqx8IALONk21HUQTtPD0%2BN3uUhId10NBPqsL0Blyu0r%2FEQwgwoMI%3D\"}]}"
+                    },
+                    {
+                      "key": "content-encoding",
+                      "value": "br"
+                    },
+                    {
+                      "key": "cf-ray",
+                      "value": "a2a4b1a9dc5d89b8-SIN"
+                    },
+                    {
+                      "key": "alt-svc",
+                      "value": "h3=\":443\"; ma=86400"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"ppn\": 0,\n        \"fare\": \"R1/1300 VA\",\n        \"customerId\": \"532110004000\",\n        \"customerName\": \"PELANGGAN PLN POSTPAID\",\n        \"info\": [],\n        \"bills\": [\n            {\n                \"power\": 0,\n                \"startStand\": \"00012300\",\n                \"endStand\": \"00012450\",\n                \"period\": \"2026-07\",\n                \"dueDate\": null,\n                \"amount\": 120000,\n                \"admin\": 5000,\n                \"penalty\": 2500\n            }\n        ],\n        \"name\": \"PELANGGAN PLN POSTPAID\"\n    },\n    \"info\": {\n        \"reference\": \"1de9de08ccbc46198a5a3d9e04185ed4\",\n        \"billerReference\": \"BILLER-1de9de08ccbc46198a5a3d9e04185ed4\",\n        \"customerId\": \"532110004000\",\n        \"productCode\": \"PLN-POSTPAID-SANDBOX\",\n        \"productName\": \"PLN Postpaid Sandbox\",\n        \"paymentPointName\": \"Tegal Testing\",\n        \"paymentPointCode\": \"C013376001\",\n        \"timestamp\": \"2026-08-13T03:39:40.561681713\",\n        \"totalSheets\": 1,\n        \"amount\": 120000,\n        \"discount\": 0,\n        \"penalty\": 2500,\n        \"admin\": 5000,\n        \"total\": 127500\n    },\n    \"receipt\": null,\n    \"receiptFile\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Payment",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"1de9de08ccbc46198a5a3d9e04185ed4\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/payment",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "payment"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "name": "Success Payment",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Device-Id",
+                        "value": "{{DEVICE_ID}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Accept-Language",
+                        "value": "id-ID",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"reference\": \"1de9de08ccbc46198a5a3d9e04185ed4\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{BASE_URL}}/v1/payment",
+                      "host": [
+                        "{{BASE_URL}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "payment"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": ":status",
+                      "value": 200
+                    },
+                    {
+                      "key": "date",
+                      "value": "Thu, 13 Aug 2026 03:44:06 GMT"
+                    },
+                    {
+                      "key": "content-type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "server",
+                      "value": "cloudflare"
+                    },
+                    {
+                      "key": "vary",
+                      "value": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+                    },
+                    {
+                      "key": "x-content-type-options",
+                      "value": "nosniff"
+                    },
+                    {
+                      "key": "x-xss-protection",
+                      "value": "0"
+                    },
+                    {
+                      "key": "cache-control",
+                      "value": "no-cache, no-store, max-age=0, must-revalidate"
+                    },
+                    {
+                      "key": "pragma",
+                      "value": "no-cache"
+                    },
+                    {
+                      "key": "expires",
+                      "value": "0"
+                    },
+                    {
+                      "key": "x-frame-options",
+                      "value": "DENY"
+                    },
+                    {
+                      "key": "cf-cache-status",
+                      "value": "DYNAMIC"
+                    },
+                    {
+                      "key": "nel",
+                      "value": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}"
+                    },
+                    {
+                      "key": "report-to",
+                      "value": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=szOxy9qahpGS3o%2FOnGa7dMq01Nk8%2BxqKL6qtkJHlKVA9EZtohnjZU6BUNkeLecfxL3EBYfGn6DCehpIxunNFxjfX78kVky4mZeyjftLYjK1f0t7WI9QoDiDpcwdWsu85JWcSCGinBaGoinuNiJKq45TyTQbkhEjTFT8%3D\"}]}"
+                    },
+                    {
+                      "key": "content-encoding",
+                      "value": "br"
+                    },
+                    {
+                      "key": "cf-ray",
+                      "value": "a2a4b8248bbdda02-HKG"
+                    },
+                    {
+                      "key": "alt-svc",
+                      "value": "h3=\":443\"; ma=86400"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"meta\": {\n        \"status\": true,\n        \"code\": 0,\n        \"errors\": null\n    },\n    \"data\": {\n        \"ppn\": 0,\n        \"fare\": \"R1/1300 VA\",\n        \"customerId\": \"532110004000\",\n        \"customerName\": \"PELANGGAN PLN POSTPAID\",\n        \"info\": [\n            \"Informasi Hubungi Call Center 123\"\n        ],\n        \"bills\": [\n            {\n                \"power\": 0,\n                \"startStand\": \"00012300\",\n                \"endStand\": \"00012450\",\n                \"period\": \"2026-07\",\n                \"dueDate\": null,\n                \"amount\": 120000,\n                \"admin\": 5000,\n                \"penalty\": 2500\n            }\n        ],\n        \"name\": \"PELANGGAN PLN POSTPAID\"\n    },\n    \"info\": {\n        \"reference\": \"1de9de08ccbc46198a5a3d9e04185ed4\",\n        \"billerReference\": \"BILLER-1de9de08ccbc46198a5a3d9e04185ed4\",\n        \"customerId\": \"532110004000\",\n        \"productCode\": \"PLN-POSTPAID-SANDBOX\",\n        \"productName\": \"PLN Postpaid Sandbox\",\n        \"paymentPointName\": \"Tegal Testing\",\n        \"paymentPointCode\": \"C013376001\",\n        \"timestamp\": \"2026-08-13T03:44:06.301396158\",\n        \"transactionStatus\": \"SUCCESS\",\n        \"totalSheets\": 1,\n        \"amount\": 120000,\n        \"discount\": 0,\n        \"penalty\": 2500,\n        \"admin\": 5000,\n        \"total\": 127500\n    },\n    \"receipt\": [\n        \"             STRUK PEMBAYARAN\",\n        \"               PLN POSTPAID\",\n        \"------------------------------------------\",\n        \"Produk : PLN Postpaid\",\n        \"Kode : PLN-POSTPAID-SANDBOX\",\n        \"ID Pel : 532110004000\",\n        \"Nama : PELANGGAN PLN POSTPAID\",\n        \"------------------------------------------\",\n        \"Tagihan : Rp120.000,00\",\n        \"Denda : Rp2.500,00\",\n        \"Admin : Rp5.000,00\",\n        \"Total : Rp127.500,00\",\n        \"Status : SUCCESS\",\n        \"Ref : 1de9de08ccbc46198a5a3d9e04185ed4\",\n        \"------------------------------------------\",\n        \"Terimakasih atas pembayaran melalui\",\n        \"Sipoint!\",\n        \"Kunjungi website kami\",\n        \"teleanjarmitraglobal.co.id\",\n        \"CA/260813034406\"\n    ],\n    \"receiptFile\": null\n}"
+                }
+              ]
+            },
+            {
+              "name": "Advice",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{TOKEN}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Device-Id",
+                    "value": "{{DEVICE_ID}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept-Language",
+                    "value": "id-ID",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reference\": \"1de9de08ccbc46198a5a3d9e04185ed4\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/v1/advice",
+                  "host": [
+                    "{{BASE_URL}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "advice"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

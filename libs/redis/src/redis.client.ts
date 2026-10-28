@@ -4,15 +4,25 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisClient implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly databaseConfig: DatabaseConfig) {}
+  private readonly client: Redis;
 
-  private client!: Redis;
-
-  get instance(): Redis {
-    return this.client;
-  }
-
-  async onModuleInit() {
+  /**
+   * Constructed here, **not** in `onModuleInit`.
+   *
+   * `RedisProvider`'s factory reads `.instance` to bind `REDIS_KEY`, and Nest
+   * runs every provider factory during dependency resolution - before any
+   * `onModuleInit`. Assigning the client in that hook therefore bound
+   * `REDIS_KEY` to `undefined` permanently, for every consumer of it:
+   * `MerchantSignatureRedis`, `TokenRedis`, `FeeRedis`, `ProfileRedis`. It went
+   * unnoticed because their unit tests construct them with a mock rather than
+   * through DI, and the first thing to actually call a method on the injected
+   * client was the health indicator.
+   *
+   * Safe to do in a constructor: `new Redis()` does not block. ioredis opens
+   * the socket in the background and queues commands until it is ready, which
+   * is what `onModuleInit`'s ping then waits for.
+   */
+  constructor(private readonly databaseConfig: DatabaseConfig) {
     this.client = new Redis({
       host: this.databaseConfig.REDIS_HOST,
       port: this.databaseConfig.REDIS_PORT,
@@ -23,7 +33,7 @@ export class RedisClient implements OnModuleInit, OnModuleDestroy {
         return Math.min(times * 50, 200); // Reconnect Logic
       },
       enableReadyCheck: true, // Ensures Redis is ready before proceeding
-      maxRetriesPerRequest: 3, // Limits retry attempts to avoid hanging
+      maxRetriesPerRequest: 1, // Limits retry attempts to avoid hanging
     });
 
     this.client.on('error', (error) => {
@@ -32,6 +42,14 @@ export class RedisClient implements OnModuleInit, OnModuleDestroy {
     this.client.on('connect', () => {
       console.log('Redis Client Connect');
     });
+  }
+
+  get instance(): Redis {
+    return this.client;
+  }
+
+  /** Readiness gate: refuse to finish booting if Redis cannot be reached. */
+  async onModuleInit() {
     await this.client.ping();
   }
   async onModuleDestroy() {

@@ -31,6 +31,7 @@ export type DisbursementTransactionAvgAggregateOutputType = {
   merchantId: number | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
+  batchSettlementId: number | null
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
@@ -41,6 +42,7 @@ export type DisbursementTransactionSumAggregateOutputType = {
   merchantId: number | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
+  batchSettlementId: number | null
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
@@ -48,22 +50,22 @@ export type DisbursementTransactionSumAggregateOutputType = {
 
 export type DisbursementTransactionMinAggregateOutputType = {
   id: number | null
-  code: string | null
-  orderId: string | null
-  externalId: string | null
-  referenceId: string | null
   merchantId: number | null
+  systemReference: string | null
+  merchantReference: string | null
+  providerReference: string | null
+  bankReference: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   providerName: string | null
-  recipientName: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
-  recipientAccount: string | null
+  paymentMethodName: string | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
   status: $Enums.TransactionStatusEnum | null
   paidAt: Date | null
-  paymentMethodName: string | null
-  reconciliationAt: Date | null
+  batchSettlementId: number | null
+  settlementAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -74,22 +76,22 @@ export type DisbursementTransactionMinAggregateOutputType = {
 
 export type DisbursementTransactionMaxAggregateOutputType = {
   id: number | null
-  code: string | null
-  orderId: string | null
-  externalId: string | null
-  referenceId: string | null
   merchantId: number | null
+  systemReference: string | null
+  merchantReference: string | null
+  providerReference: string | null
+  bankReference: string | null
+  accountHolderName: string | null
+  accountNumber: string | null
+  bankCode: string | null
   providerName: string | null
-  recipientName: string | null
-  recipientBankCode: string | null
-  recipientBankName: string | null
-  recipientAccount: string | null
+  paymentMethodName: string | null
   nominal: runtime.Decimal | null
   netNominal: runtime.Decimal | null
   status: $Enums.TransactionStatusEnum | null
   paidAt: Date | null
-  paymentMethodName: string | null
-  reconciliationAt: Date | null
+  batchSettlementId: number | null
+  settlementAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -100,23 +102,24 @@ export type DisbursementTransactionMaxAggregateOutputType = {
 
 export type DisbursementTransactionCountAggregateOutputType = {
   id: number
-  code: number
-  orderId: number
-  externalId: number
-  referenceId: number
   merchantId: number
+  systemReference: number
+  merchantReference: number
+  providerReference: number
+  bankReference: number
+  accountHolderName: number
+  accountNumber: number
+  bankCode: number
   providerName: number
-  recipientName: number
-  recipientBankCode: number
-  recipientBankName: number
-  recipientAccount: number
+  paymentMethodName: number
   nominal: number
   netNominal: number
   status: number
   paidAt: number
-  paymentMethodName: number
+  batchSettlementId: number
+  settlementAt: number
+  additionalInfo: number
   metadata: number
-  reconciliationAt: number
   createdAt: number
   createdBy: number
   updatedAt: number
@@ -132,6 +135,7 @@ export type DisbursementTransactionAvgAggregateInputType = {
   merchantId?: true
   nominal?: true
   netNominal?: true
+  batchSettlementId?: true
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
@@ -142,6 +146,7 @@ export type DisbursementTransactionSumAggregateInputType = {
   merchantId?: true
   nominal?: true
   netNominal?: true
+  batchSettlementId?: true
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
@@ -149,22 +154,22 @@ export type DisbursementTransactionSumAggregateInputType = {
 
 export type DisbursementTransactionMinAggregateInputType = {
   id?: true
-  code?: true
-  orderId?: true
-  externalId?: true
-  referenceId?: true
   merchantId?: true
+  systemReference?: true
+  merchantReference?: true
+  providerReference?: true
+  bankReference?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
-  recipientName?: true
-  recipientBankCode?: true
-  recipientBankName?: true
-  recipientAccount?: true
+  paymentMethodName?: true
   nominal?: true
   netNominal?: true
   status?: true
   paidAt?: true
-  paymentMethodName?: true
-  reconciliationAt?: true
+  batchSettlementId?: true
+  settlementAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -175,22 +180,22 @@ export type DisbursementTransactionMinAggregateInputType = {
 
 export type DisbursementTransactionMaxAggregateInputType = {
   id?: true
-  code?: true
-  orderId?: true
-  externalId?: true
-  referenceId?: true
   merchantId?: true
+  systemReference?: true
+  merchantReference?: true
+  providerReference?: true
+  bankReference?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
-  recipientName?: true
-  recipientBankCode?: true
-  recipientBankName?: true
-  recipientAccount?: true
+  paymentMethodName?: true
   nominal?: true
   netNominal?: true
   status?: true
   paidAt?: true
-  paymentMethodName?: true
-  reconciliationAt?: true
+  batchSettlementId?: true
+  settlementAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -201,23 +206,24 @@ export type DisbursementTransactionMaxAggregateInputType = {
 
 export type DisbursementTransactionCountAggregateInputType = {
   id?: true
-  code?: true
-  orderId?: true
-  externalId?: true
-  referenceId?: true
   merchantId?: true
+  systemReference?: true
+  merchantReference?: true
+  providerReference?: true
+  bankReference?: true
+  accountHolderName?: true
+  accountNumber?: true
+  bankCode?: true
   providerName?: true
-  recipientName?: true
-  recipientBankCode?: true
-  recipientBankName?: true
-  recipientAccount?: true
+  paymentMethodName?: true
   nominal?: true
   netNominal?: true
   status?: true
   paidAt?: true
-  paymentMethodName?: true
+  batchSettlementId?: true
+  settlementAt?: true
+  additionalInfo?: true
   metadata?: true
-  reconciliationAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -315,23 +321,24 @@ export type DisbursementTransactionGroupByArgs<ExtArgs extends runtime.Types.Ext
 
 export type DisbursementTransactionGroupByOutputType = {
   id: number
-  code: string
-  orderId: string
-  externalId: string | null
-  referenceId: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference: string | null
+  bankReference: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal: runtime.Decimal
   netNominal: runtime.Decimal
   status: $Enums.TransactionStatusEnum
   paidAt: Date | null
-  paymentMethodName: string
+  batchSettlementId: number | null
+  settlementAt: Date | null
+  additionalInfo: runtime.JsonValue | null
   metadata: runtime.JsonValue | null
-  reconciliationAt: Date | null
   createdAt: Date
   createdBy: number | null
   updatedAt: Date | null
@@ -365,23 +372,24 @@ export type DisbursementTransactionWhereInput = {
   OR?: Prisma.DisbursementTransactionWhereInput[]
   NOT?: Prisma.DisbursementTransactionWhereInput | Prisma.DisbursementTransactionWhereInput[]
   id?: Prisma.IntFilter<"DisbursementTransaction"> | number
-  code?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  orderId?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  externalId?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  referenceId?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   merchantId?: Prisma.IntFilter<"DisbursementTransaction"> | number
+  systemReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  providerReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
+  bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFilter<"DisbursementTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
-  paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  batchSettlementId?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
+  settlementAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
+  additionalInfo?: Prisma.JsonNullableFilter<"DisbursementTransaction">
   metadata?: Prisma.JsonNullableFilter<"DisbursementTransaction">
-  reconciliationAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DisbursementTransaction"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
@@ -389,30 +397,28 @@ export type DisbursementTransactionWhereInput = {
   deletedAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
   feeDetails?: Prisma.DisbursementFeeDetailListRelationFilter
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
-  AgentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
-  InternalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
 }
 
 export type DisbursementTransactionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
-  orderId?: Prisma.SortOrder
-  externalId?: Prisma.SortOrderInput | Prisma.SortOrder
-  referenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   merchantId?: Prisma.SortOrder
+  systemReference?: Prisma.SortOrder
+  merchantReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
+  paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrderInput | Prisma.SortOrder
+  settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  additionalInfo?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
-  reconciliationAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -420,33 +426,32 @@ export type DisbursementTransactionOrderByWithRelationInput = {
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   deletedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   feeDetails?: Prisma.DisbursementFeeDetailOrderByRelationAggregateInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogOrderByRelationAggregateInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogOrderByRelationAggregateInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogOrderByRelationAggregateInput
 }
 
 export type DisbursementTransactionWhereUniqueInput = Prisma.AtLeast<{
   id?: number
-  code?: string
-  orderId?: string
+  systemReference?: string
+  providerReference?: string
+  merchantId_merchantReference?: Prisma.DisbursementTransactionMerchantIdMerchantReferenceCompoundUniqueInput
   AND?: Prisma.DisbursementTransactionWhereInput | Prisma.DisbursementTransactionWhereInput[]
   OR?: Prisma.DisbursementTransactionWhereInput[]
   NOT?: Prisma.DisbursementTransactionWhereInput | Prisma.DisbursementTransactionWhereInput[]
-  externalId?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  referenceId?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
   merchantId?: Prisma.IntFilter<"DisbursementTransaction"> | number
+  merchantReference?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  bankReference?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientName?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableFilter<"DisbursementTransaction"> | string | null
-  recipientAccount?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFilter<"DisbursementTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
-  paymentMethodName?: Prisma.StringFilter<"DisbursementTransaction"> | string
+  batchSettlementId?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
+  settlementAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
+  additionalInfo?: Prisma.JsonNullableFilter<"DisbursementTransaction">
   metadata?: Prisma.JsonNullableFilter<"DisbursementTransaction">
-  reconciliationAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"DisbursementTransaction"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
@@ -454,30 +459,28 @@ export type DisbursementTransactionWhereUniqueInput = Prisma.AtLeast<{
   deletedAt?: Prisma.DateTimeNullableFilter<"DisbursementTransaction"> | Date | string | null
   deletedBy?: Prisma.IntNullableFilter<"DisbursementTransaction"> | number | null
   feeDetails?: Prisma.DisbursementFeeDetailListRelationFilter
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogListRelationFilter
-  AgentBalanceLog?: Prisma.AgentBalanceLogListRelationFilter
-  InternalBalanceLog?: Prisma.InternalBalanceLogListRelationFilter
-}, "id" | "code" | "orderId">
+}, "id" | "systemReference" | "providerReference" | "merchantId_merchantReference">
 
 export type DisbursementTransactionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
-  orderId?: Prisma.SortOrder
-  externalId?: Prisma.SortOrderInput | Prisma.SortOrder
-  referenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   merchantId?: Prisma.SortOrder
+  systemReference?: Prisma.SortOrder
+  merchantReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  bankReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrderInput | Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
+  paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrderInput | Prisma.SortOrder
+  settlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  additionalInfo?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
-  reconciliationAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -496,23 +499,24 @@ export type DisbursementTransactionScalarWhereWithAggregatesInput = {
   OR?: Prisma.DisbursementTransactionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.DisbursementTransactionScalarWhereWithAggregatesInput | Prisma.DisbursementTransactionScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"DisbursementTransaction"> | number
-  code?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  orderId?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  externalId?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
-  referenceId?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
   merchantId?: Prisma.IntWithAggregatesFilter<"DisbursementTransaction"> | number
+  systemReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  merchantReference?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  providerReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
+  bankReference?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
+  accountHolderName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  accountNumber?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  bankCode?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   providerName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientBankCode?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
-  recipientBankName?: Prisma.StringNullableWithAggregatesFilter<"DisbursementTransaction"> | string | null
-  recipientAccount?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  paymentMethodName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
   nominal?: Prisma.DecimalWithAggregatesFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalWithAggregatesFilter<"DisbursementTransaction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumWithAggregatesFilter<"DisbursementTransaction"> | $Enums.TransactionStatusEnum
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DisbursementTransaction"> | Date | string | null
-  paymentMethodName?: Prisma.StringWithAggregatesFilter<"DisbursementTransaction"> | string
+  batchSettlementId?: Prisma.IntNullableWithAggregatesFilter<"DisbursementTransaction"> | number | null
+  settlementAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DisbursementTransaction"> | Date | string | null
+  additionalInfo?: Prisma.JsonNullableWithAggregatesFilter<"DisbursementTransaction">
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"DisbursementTransaction">
-  reconciliationAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DisbursementTransaction"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"DisbursementTransaction"> | Date | string
   createdBy?: Prisma.IntNullableWithAggregatesFilter<"DisbursementTransaction"> | number | null
   updatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DisbursementTransaction"> | Date | string | null
@@ -522,23 +526,24 @@ export type DisbursementTransactionScalarWhereWithAggregatesInput = {
 }
 
 export type DisbursementTransactionCreateInput = {
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference?: string | null
+  bankReference?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
+  status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  paymentMethodName: string
+  batchSettlementId?: number | null
+  settlementAt?: Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -546,30 +551,28 @@ export type DisbursementTransactionCreateInput = {
   deletedAt?: Date | string | null
   deletedBy?: number | null
   feeDetails?: Prisma.DisbursementFeeDetailCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
 }
 
 export type DisbursementTransactionUncheckedCreateInput = {
   id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference?: string | null
+  bankReference?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
+  status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  paymentMethodName: string
+  batchSettlementId?: number | null
+  settlementAt?: Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -577,29 +580,27 @@ export type DisbursementTransactionUncheckedCreateInput = {
   deletedAt?: Date | string | null
   deletedBy?: number | null
   feeDetails?: Prisma.DisbursementFeeDetailUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
 }
 
 export type DisbursementTransactionUpdateInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -607,30 +608,28 @@ export type DisbursementTransactionUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   feeDetails?: Prisma.DisbursementFeeDetailUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
 }
 
 export type DisbursementTransactionUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -638,30 +637,28 @@ export type DisbursementTransactionUncheckedUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   feeDetails?: Prisma.DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
 }
 
 export type DisbursementTransactionCreateManyInput = {
   id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference?: string | null
+  bankReference?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
+  status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  paymentMethodName: string
+  batchSettlementId?: number | null
+  settlementAt?: Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -671,23 +668,24 @@ export type DisbursementTransactionCreateManyInput = {
 }
 
 export type DisbursementTransactionUpdateManyMutationInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -698,23 +696,24 @@ export type DisbursementTransactionUpdateManyMutationInput = {
 
 export type DisbursementTransactionUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -723,25 +722,31 @@ export type DisbursementTransactionUncheckedUpdateManyInput = {
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
+export type DisbursementTransactionMerchantIdMerchantReferenceCompoundUniqueInput = {
+  merchantId: number
+  merchantReference: string
+}
+
 export type DisbursementTransactionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
-  orderId?: Prisma.SortOrder
-  externalId?: Prisma.SortOrder
-  referenceId?: Prisma.SortOrder
   merchantId?: Prisma.SortOrder
+  systemReference?: Prisma.SortOrder
+  merchantReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
+  bankReference?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
+  paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrder
+  settlementAt?: Prisma.SortOrder
+  additionalInfo?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
-  reconciliationAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -755,6 +760,7 @@ export type DisbursementTransactionAvgOrderByAggregateInput = {
   merchantId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
@@ -762,22 +768,22 @@ export type DisbursementTransactionAvgOrderByAggregateInput = {
 
 export type DisbursementTransactionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
-  orderId?: Prisma.SortOrder
-  externalId?: Prisma.SortOrder
-  referenceId?: Prisma.SortOrder
   merchantId?: Prisma.SortOrder
+  systemReference?: Prisma.SortOrder
+  merchantReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
+  bankReference?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
+  paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
-  reconciliationAt?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrder
+  settlementAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -788,22 +794,22 @@ export type DisbursementTransactionMaxOrderByAggregateInput = {
 
 export type DisbursementTransactionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
-  orderId?: Prisma.SortOrder
-  externalId?: Prisma.SortOrder
-  referenceId?: Prisma.SortOrder
   merchantId?: Prisma.SortOrder
+  systemReference?: Prisma.SortOrder
+  merchantReference?: Prisma.SortOrder
+  providerReference?: Prisma.SortOrder
+  bankReference?: Prisma.SortOrder
+  accountHolderName?: Prisma.SortOrder
+  accountNumber?: Prisma.SortOrder
+  bankCode?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
-  recipientName?: Prisma.SortOrder
-  recipientBankCode?: Prisma.SortOrder
-  recipientBankName?: Prisma.SortOrder
-  recipientAccount?: Prisma.SortOrder
+  paymentMethodName?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
-  paymentMethodName?: Prisma.SortOrder
-  reconciliationAt?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrder
+  settlementAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -817,6 +823,7 @@ export type DisbursementTransactionSumOrderByAggregateInput = {
   merchantId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   netNominal?: Prisma.SortOrder
+  batchSettlementId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
@@ -825,11 +832,6 @@ export type DisbursementTransactionSumOrderByAggregateInput = {
 export type DisbursementTransactionScalarRelationFilter = {
   is?: Prisma.DisbursementTransactionWhereInput
   isNot?: Prisma.DisbursementTransactionWhereInput
-}
-
-export type DisbursementTransactionNullableScalarRelationFilter = {
-  is?: Prisma.DisbursementTransactionWhereInput | null
-  isNot?: Prisma.DisbursementTransactionWhereInput | null
 }
 
 export type DisbursementTransactionCreateNestedOneWithoutFeeDetailsInput = {
@@ -846,111 +848,59 @@ export type DisbursementTransactionUpdateOneRequiredWithoutFeeDetailsNestedInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.DisbursementTransactionUpdateToOneWithWhereWithoutFeeDetailsInput, Prisma.DisbursementTransactionUpdateWithoutFeeDetailsInput>, Prisma.DisbursementTransactionUncheckedUpdateWithoutFeeDetailsInput>
 }
 
-export type DisbursementTransactionCreateNestedOneWithoutMerchantBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutMerchantBalanceLogInput
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-}
-
-export type DisbursementTransactionUpdateOneWithoutMerchantBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutMerchantBalanceLogInput
-  upsert?: Prisma.DisbursementTransactionUpsertWithoutMerchantBalanceLogInput
-  disconnect?: Prisma.DisbursementTransactionWhereInput | boolean
-  delete?: Prisma.DisbursementTransactionWhereInput | boolean
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.DisbursementTransactionUpdateToOneWithWhereWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUpdateWithoutMerchantBalanceLogInput>, Prisma.DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-}
-
-export type DisbursementTransactionCreateNestedOneWithoutAgentBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutAgentBalanceLogInput
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-}
-
-export type DisbursementTransactionUpdateOneWithoutAgentBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutAgentBalanceLogInput
-  upsert?: Prisma.DisbursementTransactionUpsertWithoutAgentBalanceLogInput
-  disconnect?: Prisma.DisbursementTransactionWhereInput | boolean
-  delete?: Prisma.DisbursementTransactionWhereInput | boolean
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.DisbursementTransactionUpdateToOneWithWhereWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUpdateWithoutAgentBalanceLogInput>, Prisma.DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-}
-
-export type DisbursementTransactionCreateNestedOneWithoutInternalBalanceLogInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutInternalBalanceLogInput
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-}
-
-export type DisbursementTransactionUpdateOneWithoutInternalBalanceLogNestedInput = {
-  create?: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  connectOrCreate?: Prisma.DisbursementTransactionCreateOrConnectWithoutInternalBalanceLogInput
-  upsert?: Prisma.DisbursementTransactionUpsertWithoutInternalBalanceLogInput
-  disconnect?: Prisma.DisbursementTransactionWhereInput | boolean
-  delete?: Prisma.DisbursementTransactionWhereInput | boolean
-  connect?: Prisma.DisbursementTransactionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.DisbursementTransactionUpdateToOneWithWhereWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUpdateWithoutInternalBalanceLogInput>, Prisma.DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
-}
-
 export type DisbursementTransactionCreateWithoutFeeDetailsInput = {
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference?: string | null
+  bankReference?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
+  status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  paymentMethodName: string
+  batchSettlementId?: number | null
+  settlementAt?: Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
 }
 
 export type DisbursementTransactionUncheckedCreateWithoutFeeDetailsInput = {
   id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
   merchantId: number
+  systemReference: string
+  merchantReference: string
+  providerReference?: string | null
+  bankReference?: string | null
+  accountHolderName: string
+  accountNumber: string
+  bankCode: string
   providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
+  paymentMethodName: string
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
+  status: $Enums.TransactionStatusEnum
   paidAt?: Date | string | null
-  paymentMethodName: string
+  batchSettlementId?: number | null
+  settlementAt?: Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
   updatedBy?: number | null
   deletedAt?: Date | string | null
   deletedBy?: number | null
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
 }
 
 export type DisbursementTransactionCreateOrConnectWithoutFeeDetailsInput = {
@@ -970,464 +920,58 @@ export type DisbursementTransactionUpdateToOneWithWhereWithoutFeeDetailsInput = 
 }
 
 export type DisbursementTransactionUpdateWithoutFeeDetailsInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
 }
 
 export type DisbursementTransactionUncheckedUpdateWithoutFeeDetailsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   merchantId?: Prisma.IntFieldUpdateOperationsInput | number
+  systemReference?: Prisma.StringFieldUpdateOperationsInput | string
+  merchantReference?: Prisma.StringFieldUpdateOperationsInput | string
+  providerReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bankReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accountHolderName?: Prisma.StringFieldUpdateOperationsInput | string
+  accountNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  bankCode?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
+  batchSettlementId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  settlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  additionalInfo?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionCreateWithoutMerchantBalanceLogInput = {
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput = {
-  id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionCreateOrConnectWithoutMerchantBalanceLogInput = {
-  where: Prisma.DisbursementTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-}
-
-export type DisbursementTransactionUpsertWithoutMerchantBalanceLogInput = {
-  update: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutMerchantBalanceLogInput>
-  where?: Prisma.DisbursementTransactionWhereInput
-}
-
-export type DisbursementTransactionUpdateToOneWithWhereWithoutMerchantBalanceLogInput = {
-  where?: Prisma.DisbursementTransactionWhereInput
-  data: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutMerchantBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput>
-}
-
-export type DisbursementTransactionUpdateWithoutMerchantBalanceLogInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionUncheckedUpdateWithoutMerchantBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionCreateWithoutAgentBalanceLogInput = {
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput = {
-  id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionCreateOrConnectWithoutAgentBalanceLogInput = {
-  where: Prisma.DisbursementTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-}
-
-export type DisbursementTransactionUpsertWithoutAgentBalanceLogInput = {
-  update: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutAgentBalanceLogInput>
-  where?: Prisma.DisbursementTransactionWhereInput
-}
-
-export type DisbursementTransactionUpdateToOneWithWhereWithoutAgentBalanceLogInput = {
-  where?: Prisma.DisbursementTransactionWhereInput
-  data: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutAgentBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput>
-}
-
-export type DisbursementTransactionUpdateWithoutAgentBalanceLogInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionUncheckedUpdateWithoutAgentBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  InternalBalanceLog?: Prisma.InternalBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionCreateWithoutInternalBalanceLogInput = {
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput = {
-  id?: number
-  code?: string
-  orderId: string
-  externalId?: string | null
-  referenceId?: string | null
-  merchantId: number
-  providerName: string
-  recipientName: string
-  recipientBankCode: string
-  recipientBankName?: string | null
-  recipientAccount: string
-  nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: $Enums.TransactionStatusEnum
-  paidAt?: Date | string | null
-  paymentMethodName: string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Date | string | null
-  createdAt?: Date | string
-  createdBy?: number | null
-  updatedAt?: Date | string | null
-  updatedBy?: number | null
-  deletedAt?: Date | string | null
-  deletedBy?: number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedCreateNestedManyWithoutDisbursementTransactionInput
-}
-
-export type DisbursementTransactionCreateOrConnectWithoutInternalBalanceLogInput = {
-  where: Prisma.DisbursementTransactionWhereUniqueInput
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-}
-
-export type DisbursementTransactionUpsertWithoutInternalBalanceLogInput = {
-  update: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
-  create: Prisma.XOR<Prisma.DisbursementTransactionCreateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedCreateWithoutInternalBalanceLogInput>
-  where?: Prisma.DisbursementTransactionWhereInput
-}
-
-export type DisbursementTransactionUpdateToOneWithWhereWithoutInternalBalanceLogInput = {
-  where?: Prisma.DisbursementTransactionWhereInput
-  data: Prisma.XOR<Prisma.DisbursementTransactionUpdateWithoutInternalBalanceLogInput, Prisma.DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput>
-}
-
-export type DisbursementTransactionUpdateWithoutInternalBalanceLogInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUpdateManyWithoutDisbursementTransactionNestedInput
-}
-
-export type DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
-  orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  referenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  merchantId?: Prisma.IntFieldUpdateOperationsInput | number
-  providerName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientName?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankCode?: Prisma.StringFieldUpdateOperationsInput | string
-  recipientBankName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  recipientAccount?: Prisma.StringFieldUpdateOperationsInput | string
-  nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  netNominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  status?: Prisma.EnumTransactionStatusEnumFieldUpdateOperationsInput | $Enums.TransactionStatusEnum
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
-  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  reconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  updatedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  deletedBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  feeDetails?: Prisma.DisbursementFeeDetailUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  MerchantBalanceLog?: Prisma.MerchantBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
-  AgentBalanceLog?: Prisma.AgentBalanceLogUncheckedUpdateManyWithoutDisbursementTransactionNestedInput
 }
 
 
@@ -1437,16 +981,10 @@ export type DisbursementTransactionUncheckedUpdateWithoutInternalBalanceLogInput
 
 export type DisbursementTransactionCountOutputType = {
   feeDetails: number
-  MerchantBalanceLog: number
-  AgentBalanceLog: number
-  InternalBalanceLog: number
 }
 
 export type DisbursementTransactionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   feeDetails?: boolean | DisbursementTransactionCountOutputTypeCountFeeDetailsArgs
-  MerchantBalanceLog?: boolean | DisbursementTransactionCountOutputTypeCountMerchantBalanceLogArgs
-  AgentBalanceLog?: boolean | DisbursementTransactionCountOutputTypeCountAgentBalanceLogArgs
-  InternalBalanceLog?: boolean | DisbursementTransactionCountOutputTypeCountInternalBalanceLogArgs
 }
 
 /**
@@ -1466,47 +1004,27 @@ export type DisbursementTransactionCountOutputTypeCountFeeDetailsArgs<ExtArgs ex
   where?: Prisma.DisbursementFeeDetailWhereInput
 }
 
-/**
- * DisbursementTransactionCountOutputType without action
- */
-export type DisbursementTransactionCountOutputTypeCountMerchantBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.MerchantBalanceLogWhereInput
-}
-
-/**
- * DisbursementTransactionCountOutputType without action
- */
-export type DisbursementTransactionCountOutputTypeCountAgentBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AgentBalanceLogWhereInput
-}
-
-/**
- * DisbursementTransactionCountOutputType without action
- */
-export type DisbursementTransactionCountOutputTypeCountInternalBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.InternalBalanceLogWhereInput
-}
-
 
 export type DisbursementTransactionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
-  orderId?: boolean
-  externalId?: boolean
-  referenceId?: boolean
   merchantId?: boolean
+  systemReference?: boolean
+  merchantReference?: boolean
+  providerReference?: boolean
+  bankReference?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
-  recipientName?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
-  recipientAccount?: boolean
+  paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
   status?: boolean
   paidAt?: boolean
-  paymentMethodName?: boolean
+  batchSettlementId?: boolean
+  settlementAt?: boolean
+  additionalInfo?: boolean
   metadata?: boolean
-  reconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1514,31 +1032,29 @@ export type DisbursementTransactionSelect<ExtArgs extends runtime.Types.Extensio
   deletedAt?: boolean
   deletedBy?: boolean
   feeDetails?: boolean | Prisma.DisbursementTransaction$feeDetailsArgs<ExtArgs>
-  MerchantBalanceLog?: boolean | Prisma.DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs>
-  AgentBalanceLog?: boolean | Prisma.DisbursementTransaction$AgentBalanceLogArgs<ExtArgs>
-  InternalBalanceLog?: boolean | Prisma.DisbursementTransaction$InternalBalanceLogArgs<ExtArgs>
   _count?: boolean | Prisma.DisbursementTransactionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["disbursementTransaction"]>
 
 export type DisbursementTransactionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
-  orderId?: boolean
-  externalId?: boolean
-  referenceId?: boolean
   merchantId?: boolean
+  systemReference?: boolean
+  merchantReference?: boolean
+  providerReference?: boolean
+  bankReference?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
-  recipientName?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
-  recipientAccount?: boolean
+  paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
   status?: boolean
   paidAt?: boolean
-  paymentMethodName?: boolean
+  batchSettlementId?: boolean
+  settlementAt?: boolean
+  additionalInfo?: boolean
   metadata?: boolean
-  reconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1549,23 +1065,24 @@ export type DisbursementTransactionSelectCreateManyAndReturn<ExtArgs extends run
 
 export type DisbursementTransactionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
-  orderId?: boolean
-  externalId?: boolean
-  referenceId?: boolean
   merchantId?: boolean
+  systemReference?: boolean
+  merchantReference?: boolean
+  providerReference?: boolean
+  bankReference?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
-  recipientName?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
-  recipientAccount?: boolean
+  paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
   status?: boolean
   paidAt?: boolean
-  paymentMethodName?: boolean
+  batchSettlementId?: boolean
+  settlementAt?: boolean
+  additionalInfo?: boolean
   metadata?: boolean
-  reconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1576,23 +1093,24 @@ export type DisbursementTransactionSelectUpdateManyAndReturn<ExtArgs extends run
 
 export type DisbursementTransactionSelectScalar = {
   id?: boolean
-  code?: boolean
-  orderId?: boolean
-  externalId?: boolean
-  referenceId?: boolean
   merchantId?: boolean
+  systemReference?: boolean
+  merchantReference?: boolean
+  providerReference?: boolean
+  bankReference?: boolean
+  accountHolderName?: boolean
+  accountNumber?: boolean
+  bankCode?: boolean
   providerName?: boolean
-  recipientName?: boolean
-  recipientBankCode?: boolean
-  recipientBankName?: boolean
-  recipientAccount?: boolean
+  paymentMethodName?: boolean
   nominal?: boolean
   netNominal?: boolean
   status?: boolean
   paidAt?: boolean
-  paymentMethodName?: boolean
+  batchSettlementId?: boolean
+  settlementAt?: boolean
+  additionalInfo?: boolean
   metadata?: boolean
-  reconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -1601,12 +1119,9 @@ export type DisbursementTransactionSelectScalar = {
   deletedBy?: boolean
 }
 
-export type DisbursementTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "code" | "orderId" | "externalId" | "referenceId" | "merchantId" | "providerName" | "recipientName" | "recipientBankCode" | "recipientBankName" | "recipientAccount" | "nominal" | "netNominal" | "status" | "paidAt" | "paymentMethodName" | "metadata" | "reconciliationAt" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementTransaction"]>
+export type DisbursementTransactionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "merchantId" | "systemReference" | "merchantReference" | "providerReference" | "bankReference" | "accountHolderName" | "accountNumber" | "bankCode" | "providerName" | "paymentMethodName" | "nominal" | "netNominal" | "status" | "paidAt" | "batchSettlementId" | "settlementAt" | "additionalInfo" | "metadata" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["disbursementTransaction"]>
 export type DisbursementTransactionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   feeDetails?: boolean | Prisma.DisbursementTransaction$feeDetailsArgs<ExtArgs>
-  MerchantBalanceLog?: boolean | Prisma.DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs>
-  AgentBalanceLog?: boolean | Prisma.DisbursementTransaction$AgentBalanceLogArgs<ExtArgs>
-  InternalBalanceLog?: boolean | Prisma.DisbursementTransaction$InternalBalanceLogArgs<ExtArgs>
   _count?: boolean | Prisma.DisbursementTransactionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type DisbursementTransactionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1616,29 +1131,46 @@ export type $DisbursementTransactionPayload<ExtArgs extends runtime.Types.Extens
   name: "DisbursementTransaction"
   objects: {
     feeDetails: Prisma.$DisbursementFeeDetailPayload<ExtArgs>[]
-    MerchantBalanceLog: Prisma.$MerchantBalanceLogPayload<ExtArgs>[]
-    AgentBalanceLog: Prisma.$AgentBalanceLogPayload<ExtArgs>[]
-    InternalBalanceLog: Prisma.$InternalBalanceLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    code: string
-    orderId: string
-    externalId: string | null
-    referenceId: string | null
     merchantId: number
+    systemReference: string
+    merchantReference: string
+    providerReference: string | null
+    bankReference: string | null
+    /**
+     * Where the money goes. Named to match `auth.MerchantDetail` /
+     * `auth.AgentDetail` and `config.Bank.code`, which is where these values are
+     * copied from.
+     * 
+     * `bankCode` is **polymorphic, and deliberately not a foreign key**: it holds
+     * a `config.Bank.code` when `paymentMethodName` is TRANSFERBANK, and an
+     * `EWalletEnum` value (OVO / DANA / GOPAY / SHOPEEPAY) when it is
+     * TRANSFEREWALLET. `accountNumber` likewise holds a wallet phone number in
+     * the e-wallet case.
+     * 
+     * So check `paymentMethodName` before joining on either. A bare
+     * `JOIN config."Bank" ON code = "bankCode"` silently drops every e-wallet
+     * payout instead of failing - there is no constraint to catch it, since the
+     * two tables live in different Postgres schemas.
+     * 
+     * The bank's *name* is not stored: it is derivable from `bankCode`, and a
+     * stored copy goes stale when a bank is renamed.
+     */
+    accountHolderName: string
+    accountNumber: string
+    bankCode: string
     providerName: string
-    recipientName: string
-    recipientBankCode: string
-    recipientBankName: string | null
-    recipientAccount: string
+    paymentMethodName: string
     nominal: runtime.Decimal
     netNominal: runtime.Decimal
     status: $Enums.TransactionStatusEnum
     paidAt: Date | null
-    paymentMethodName: string
+    batchSettlementId: number | null
+    settlementAt: Date | null
+    additionalInfo: runtime.JsonValue | null
     metadata: runtime.JsonValue | null
-    reconciliationAt: Date | null
     createdAt: Date
     createdBy: number | null
     updatedAt: Date | null
@@ -2040,9 +1572,6 @@ readonly fields: DisbursementTransactionFieldRefs;
 export interface Prisma__DisbursementTransactionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   feeDetails<T extends Prisma.DisbursementTransaction$feeDetailsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DisbursementTransaction$feeDetailsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DisbursementFeeDetailPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  MerchantBalanceLog<T extends Prisma.DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MerchantBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  AgentBalanceLog<T extends Prisma.DisbursementTransaction$AgentBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DisbursementTransaction$AgentBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AgentBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  InternalBalanceLog<T extends Prisma.DisbursementTransaction$InternalBalanceLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DisbursementTransaction$InternalBalanceLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$InternalBalanceLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2073,23 +1602,24 @@ export interface Prisma__DisbursementTransactionClient<T, Null = never, ExtArgs 
  */
 export interface DisbursementTransactionFieldRefs {
   readonly id: Prisma.FieldRef<"DisbursementTransaction", 'Int'>
-  readonly code: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly orderId: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly externalId: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly referenceId: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly merchantId: Prisma.FieldRef<"DisbursementTransaction", 'Int'>
+  readonly systemReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly merchantReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly providerReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly bankReference: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly accountHolderName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly accountNumber: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly bankCode: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly providerName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientBankCode: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientBankName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
-  readonly recipientAccount: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly paymentMethodName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
   readonly nominal: Prisma.FieldRef<"DisbursementTransaction", 'Decimal'>
   readonly netNominal: Prisma.FieldRef<"DisbursementTransaction", 'Decimal'>
   readonly status: Prisma.FieldRef<"DisbursementTransaction", 'TransactionStatusEnum'>
   readonly paidAt: Prisma.FieldRef<"DisbursementTransaction", 'DateTime'>
-  readonly paymentMethodName: Prisma.FieldRef<"DisbursementTransaction", 'String'>
+  readonly batchSettlementId: Prisma.FieldRef<"DisbursementTransaction", 'Int'>
+  readonly settlementAt: Prisma.FieldRef<"DisbursementTransaction", 'DateTime'>
+  readonly additionalInfo: Prisma.FieldRef<"DisbursementTransaction", 'Json'>
   readonly metadata: Prisma.FieldRef<"DisbursementTransaction", 'Json'>
-  readonly reconciliationAt: Prisma.FieldRef<"DisbursementTransaction", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"DisbursementTransaction", 'DateTime'>
   readonly createdBy: Prisma.FieldRef<"DisbursementTransaction", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"DisbursementTransaction", 'DateTime'>
@@ -2510,78 +2040,6 @@ export type DisbursementTransaction$feeDetailsArgs<ExtArgs extends runtime.Types
   take?: number
   skip?: number
   distinct?: Prisma.DisbursementFeeDetailScalarFieldEnum | Prisma.DisbursementFeeDetailScalarFieldEnum[]
-}
-
-/**
- * DisbursementTransaction.MerchantBalanceLog
- */
-export type DisbursementTransaction$MerchantBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the MerchantBalanceLog
-   */
-  select?: Prisma.MerchantBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the MerchantBalanceLog
-   */
-  omit?: Prisma.MerchantBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.MerchantBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.MerchantBalanceLogWhereInput
-  orderBy?: Prisma.MerchantBalanceLogOrderByWithRelationInput | Prisma.MerchantBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.MerchantBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.MerchantBalanceLogScalarFieldEnum | Prisma.MerchantBalanceLogScalarFieldEnum[]
-}
-
-/**
- * DisbursementTransaction.AgentBalanceLog
- */
-export type DisbursementTransaction$AgentBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AgentBalanceLog
-   */
-  select?: Prisma.AgentBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AgentBalanceLog
-   */
-  omit?: Prisma.AgentBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AgentBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.AgentBalanceLogWhereInput
-  orderBy?: Prisma.AgentBalanceLogOrderByWithRelationInput | Prisma.AgentBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.AgentBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.AgentBalanceLogScalarFieldEnum | Prisma.AgentBalanceLogScalarFieldEnum[]
-}
-
-/**
- * DisbursementTransaction.InternalBalanceLog
- */
-export type DisbursementTransaction$InternalBalanceLogArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the InternalBalanceLog
-   */
-  select?: Prisma.InternalBalanceLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the InternalBalanceLog
-   */
-  omit?: Prisma.InternalBalanceLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.InternalBalanceLogInclude<ExtArgs> | null
-  where?: Prisma.InternalBalanceLogWhereInput
-  orderBy?: Prisma.InternalBalanceLogOrderByWithRelationInput | Prisma.InternalBalanceLogOrderByWithRelationInput[]
-  cursor?: Prisma.InternalBalanceLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.InternalBalanceLogScalarFieldEnum | Prisma.InternalBalanceLogScalarFieldEnum[]
 }
 
 /**

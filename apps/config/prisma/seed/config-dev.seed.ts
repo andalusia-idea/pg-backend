@@ -6,7 +6,6 @@ import {
 import { PrismaClient } from '@config/prisma';
 import {
   AGENT_INTERNAL_EMAIL,
-  DEFAULT_RECONCILIATION_TIME,
   findAuthUserIdsByEmail,
   logSeeded,
 } from './seed.helper';
@@ -14,9 +13,6 @@ import {
 /** Must match the emails the auth dev seed creates. */
 const DEV_AGENT_EMAILS = [1, 2, 3, 4].map((n) => `agent${n}@example.com`);
 const DEV_MERCHANT_EMAILS = [1, 2, 3, 4].map((n) => `merchant${n}@example.com`);
-
-/** Legacy seeded its dev merchants at a 1-minute interval for fast testing. */
-const DEV_SETTLEMENT_INTERVAL_MINUTES = 1;
 
 /**
  * Third-party providers.
@@ -50,7 +46,6 @@ const DEV_PROVIDERS = Object.values(ProviderNameEnum).filter(
  */
 const DEV_BASE_FEES = [
   {
-    code: 'MOTIONPAY_QRIS_PURCHASE',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.QRIS,
     transactionType: TransactionTypeEnum.PURCHASE,
@@ -58,7 +53,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0.8',
   },
   {
-    code: 'MOTIONPAY_QRIS_TOPUP',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.QRIS,
     transactionType: TransactionTypeEnum.TOPUP,
@@ -66,7 +60,6 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0.8',
   },
   {
-    code: 'MOTIONPAY_TRANSFERBANK_DISBURSEMENT',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.DISBURSEMENT,
@@ -74,15 +67,57 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0',
   },
   {
-    code: 'MOTIONPAY_TRANSFERBANK_WITHDRAW',
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.WITHDRAW,
     feeProviderFixed: '1200',
     feeProviderPercentage: '0',
   },
+  /**
+   * The cheap wallet rail, and the row that makes it reachable.
+   *
+   * Without this the routing lookup finds nothing for
+   * TRANSFEREWALLET/DISBURSEMENT and `/v1/transfer/ewallet` answers `4039100` -
+   * so this row *is* the switch that turns the biller path on.
+   *
+   * The `300` is not arbitrary in the way the rates above are: MotionPay's own
+   * Biller samples show a fee of 300 on a 10,000 DANA top-up and 500 on a
+   * GoPay one, against 1200 flat for the same money over TRANSFERBANK. That
+   * gap is the entire reason this second rail exists, and seeding a number that
+   * did not show it would make the dev data misrepresent the decision.
+   *
+   * Still a dev fixture. The real per-wallet rates are commercial terms and
+   * belong in the dashboard's fee-config screens, not here.
+   */
   {
-    code: 'INTERNAL_TRANSFERBANK_TOPUP',
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_OVO,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    feeProviderFixed: '300',
+    feeProviderPercentage: '0',
+  },
+  {
     providerName: ProviderNameEnum.INTERNAL,
     paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
     transactionType: TransactionTypeEnum.TOPUP,
@@ -90,6 +125,23 @@ const DEV_BASE_FEES = [
     feeProviderPercentage: '0',
   },
 ];
+
+/**
+ * A base fee's identity, mirroring `@@unique([providerName, paymentMethodName,
+ * transactionType])`.
+ *
+ * This replaces the old `code` column, which stored the same triple as one
+ * pre-joined string. The column only ever *looked* like a constraint: nothing
+ * checked that `code` agreed with the three fields it was built from, so a
+ * single typo would have created a second row for a triple that is supposed to
+ * be unique. The database now enforces the triple directly, and this rebuilds
+ * the string locally where a map key is genuinely needed.
+ */
+const baseFeeKey = (fee: {
+  providerName: string;
+  paymentMethodName: string;
+  transactionType: string;
+}) => `${fee.providerName}:${fee.paymentMethodName}:${fee.transactionType}`;
 
 /**
  * DEVELOPMENT ONLY - never run against production.
@@ -149,7 +201,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     merchantIds.map((id) =>
       prisma.merchant.upsert({
         where: { id },
-        create: { id, settlementInterval: DEV_SETTLEMENT_INTERVAL_MINUTES },
+        create: { id },
         update: {},
         select: { id: true },
       }),
@@ -162,7 +214,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     DEV_PROVIDERS.map((name) =>
       prisma.provider.upsert({
         where: { name },
-        create: { name, reconciliationTime: DEFAULT_RECONCILIATION_TIME },
+        create: { name },
         update: {},
         select: { name: true },
       }),
@@ -172,21 +224,32 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
   const baseFees = await prisma.$transaction(
     DEV_BASE_FEES.map((fee) =>
       prisma.baseFee.upsert({
-        where: { code: fee.code },
+        where: {
+          providerName_paymentMethodName_transactionType: {
+            providerName: fee.providerName,
+            paymentMethodName: fee.paymentMethodName,
+            transactionType: fee.transactionType,
+          },
+        },
         create: fee,
         update: {},
-        select: { id: true, code: true },
+        select: {
+          id: true,
+          providerName: true,
+          paymentMethodName: true,
+          transactionType: true,
+        },
       }),
     ),
   );
-  const baseFeeIdByCode = new Map(baseFees.map((f) => [f.code, f.id]));
+  const baseFeeIdByKey = new Map(baseFees.map((f) => [baseFeeKey(f), f.id]));
 
   // Fee overrides for the first two merchants only, mirroring legacy: merchant1
   // is internal-only (no agent cut), merchant2 pays an agent share as well.
   const merchantFees = [
     ...DEV_BASE_FEES.map((fee) => ({
       merchantId: merchantIds[0],
-      baseFeeId: baseFeeIdByCode.get(fee.code)!,
+      baseFeeId: baseFeeIdByKey.get(baseFeeKey(fee))!,
       feeInternalFixed: fee.feeProviderFixed === '0' ? '0' : '600',
       feeInternalPercentage: fee.feeProviderPercentage === '0' ? '0' : '0.4',
       feeAgentFixed: '0',
@@ -194,7 +257,7 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
     })),
     ...DEV_BASE_FEES.map((fee) => ({
       merchantId: merchantIds[1],
-      baseFeeId: baseFeeIdByCode.get(fee.code)!,
+      baseFeeId: baseFeeIdByKey.get(baseFeeKey(fee))!,
       feeInternalFixed: fee.feeProviderFixed === '0' ? '0' : '600',
       feeInternalPercentage: fee.feeProviderPercentage === '0' ? '0' : '0.4',
       feeAgentFixed: fee.feeProviderFixed === '0' ? '0' : '100',

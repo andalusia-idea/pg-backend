@@ -1,4 +1,5 @@
 import { PRISMA_SLAVE_PROVIDER_KEY } from '@app/prisma';
+import { EWalletEnum } from '@app/microservice';
 import { PrismaClient, TransactionTypeEnumConfig } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 import { CommonDiv, INTERNAL_PROVIDER_NAME } from './config-common.constant';
@@ -16,6 +17,15 @@ const TRANSACTION_TYPE_BY_DIV: Partial<
     TransactionTypeEnumConfig.DISBURSEMENT,
 };
 
+/**
+ * `config.Bank` seeds e-wallets alongside real banks (`bank-engine.seed.ts`,
+ * mandatory production data - not ours to change), with `Bank.code` equal to
+ * the `EWalletEnum` value for each one (`'DANA'`, `'GOPAY'`, `'OVO'`,
+ * `'SHOPEEPAY'`). So the split between BANK and EWALLET is a `code`
+ * membership test against this list, not a separate table or column.
+ */
+const EWALLET_CODES: string[] = Object.values(EWalletEnum);
+
 @Injectable()
 export class ConfigCommonService {
   constructor(
@@ -28,12 +38,27 @@ export class ConfigCommonService {
 
     if (div === CommonDiv.BANK) {
       const banks = await this.prismaSlave.bank.findMany({
-        where: { deletedAt: null },
+        where: { deletedAt: null, code: { notIn: EWALLET_CODES } },
         orderBy: { name: 'asc' },
       });
       return banks.map(
         (bank) => new CommonDto({ name: bank.code, explain: bank.name }),
       );
+    }
+
+    if (div === CommonDiv.EWALLET) {
+      const ewallets = await this.prismaSlave.bank.findMany({
+        where: { deletedAt: null, code: { in: EWALLET_CODES } },
+        orderBy: { name: 'asc' },
+      });
+      return ewallets.map(
+        (ewallet) =>
+          new CommonDto({ name: ewallet.code, explain: ewallet.name }),
+      );
+
+      // return EWALLET_CODES.map(
+      //   (item) => new CommonDto({ name: item, explain: item }),
+      // );
     }
 
     if (div === CommonDiv.PROVIDER) {

@@ -18,11 +18,9 @@ export class TopupTransactionDto {
   @ApiProperty()
   id: number;
 
-  @ApiProperty({ type: String, required: false, nullable: true })
-  externalId: string | null;
-
+  /** Our transaction identifier (`transactionId` in the SNAP merchant API). */
   @ApiProperty()
-  referenceId: string;
+  systemReference: string;
 
   @ApiProperty()
   merchantId: number;
@@ -51,16 +49,9 @@ export class TopupTransactionDto {
   @ApiProperty({ enum: TransactionStatusEnum })
   status: TransactionStatusEnum;
 
-  @ApiProperty({ type: Object, required: false, nullable: true })
-  metadata: Record<string, unknown> | null;
-
   @ApiDateProperty({ required: false, nullable: true })
   @ToJakartaISONullable()
   settlementAt: string | null;
-
-  @ApiDateProperty({ required: false, nullable: true })
-  @ToJakartaISONullable()
-  reconciliationAt: string | null;
 
   @ApiDateProperty({ required: false, nullable: true })
   @ToJakartaISONullable()

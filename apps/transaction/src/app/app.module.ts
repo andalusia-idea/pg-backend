@@ -8,9 +8,14 @@ import { auditTrailExtension } from '../database/audit.extension';
 import { RedisModule } from '@app/redis';
 import { LoggerModule } from '@app/logger';
 import { MicroserviceModule } from '@app/microservice';
-import { MotionPayModule } from '../upstream/motionpay';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ClsModule } from 'nestjs-cls';
+import { Apiv1Module } from '../api-v1/api.v1.module';
+import { CallbackModule } from '../callback';
+import { UpstreamModule } from '../upstream/upstream.module';
+import { BalanceVerificationModule } from '../balance-verification';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   controllers: [AppController],
@@ -29,9 +34,13 @@ import { AppService } from './app.service';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     MicroserviceModule,
+    ClsModule.forRoot({ global: true, middleware: { mount: true } }),
+    ScheduleModule.forRoot(),
+    BalanceVerificationModule,
 
-    /// Business Module
-    MotionPayModule,
+    Apiv1Module,
+    CallbackModule,
+    UpstreamModule,
   ],
 })
 export class AppModule {}

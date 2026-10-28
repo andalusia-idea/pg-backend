@@ -1,9 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  ApiDateProperty,
   ApiMoneyProperty,
   ApiPercentageProperty,
-  ToJakartaISONullable,
   ToMoneyString,
   ToPercentageString,
 } from '../../../shared/decorator';
@@ -70,13 +68,6 @@ export class MerchantConfigDto {
     DtoHelper.assign(this, data);
   }
 
-  @ApiProperty({ description: 'Minutes between settlement runs' })
-  settlementInterval: number;
-
-  @ApiDateProperty({ required: false, nullable: true })
-  @ToJakartaISONullable()
-  lastSettlementAt: string | null;
-
   @ApiProperty({
     type: AgentShareholderDto,
     isArray: true,
@@ -96,11 +87,4 @@ export class MerchantIntervalDto {
 
   @ApiProperty()
   userId: number;
-
-  @ApiProperty()
-  settlementInterval: number;
-
-  @ApiDateProperty({ required: false, nullable: true })
-  @ToJakartaISONullable()
-  lastSettlementAt: string | null;
 }

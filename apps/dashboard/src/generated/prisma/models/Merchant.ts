@@ -28,7 +28,6 @@ export type AggregateMerchant = {
 
 export type MerchantAvgAggregateOutputType = {
   id: number | null
-  settlementInterval: number | null
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
@@ -36,7 +35,6 @@ export type MerchantAvgAggregateOutputType = {
 
 export type MerchantSumAggregateOutputType = {
   id: number | null
-  settlementInterval: number | null
   createdBy: number | null
   updatedBy: number | null
   deletedBy: number | null
@@ -44,8 +42,6 @@ export type MerchantSumAggregateOutputType = {
 
 export type MerchantMinAggregateOutputType = {
   id: number | null
-  settlementInterval: number | null
-  lastSettlementAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -56,8 +52,6 @@ export type MerchantMinAggregateOutputType = {
 
 export type MerchantMaxAggregateOutputType = {
   id: number | null
-  settlementInterval: number | null
-  lastSettlementAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -68,8 +62,6 @@ export type MerchantMaxAggregateOutputType = {
 
 export type MerchantCountAggregateOutputType = {
   id: number
-  settlementInterval: number
-  lastSettlementAt: number
   createdAt: number
   createdBy: number
   updatedAt: number
@@ -82,7 +74,6 @@ export type MerchantCountAggregateOutputType = {
 
 export type MerchantAvgAggregateInputType = {
   id?: true
-  settlementInterval?: true
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
@@ -90,7 +81,6 @@ export type MerchantAvgAggregateInputType = {
 
 export type MerchantSumAggregateInputType = {
   id?: true
-  settlementInterval?: true
   createdBy?: true
   updatedBy?: true
   deletedBy?: true
@@ -98,8 +88,6 @@ export type MerchantSumAggregateInputType = {
 
 export type MerchantMinAggregateInputType = {
   id?: true
-  settlementInterval?: true
-  lastSettlementAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -110,8 +98,6 @@ export type MerchantMinAggregateInputType = {
 
 export type MerchantMaxAggregateInputType = {
   id?: true
-  settlementInterval?: true
-  lastSettlementAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -122,8 +108,6 @@ export type MerchantMaxAggregateInputType = {
 
 export type MerchantCountAggregateInputType = {
   id?: true
-  settlementInterval?: true
-  lastSettlementAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -221,8 +205,6 @@ export type MerchantGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 
 export type MerchantGroupByOutputType = {
   id: number
-  settlementInterval: number
-  lastSettlementAt: Date | null
   createdAt: Date
   createdBy: number | null
   updatedAt: Date | null
@@ -256,8 +238,6 @@ export type MerchantWhereInput = {
   OR?: Prisma.MerchantWhereInput[]
   NOT?: Prisma.MerchantWhereInput | Prisma.MerchantWhereInput[]
   id?: Prisma.IntFilter<"Merchant"> | number
-  settlementInterval?: Prisma.IntFilter<"Merchant"> | number
-  lastSettlementAt?: Prisma.DateTimeNullableFilter<"Merchant"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Merchant"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"Merchant"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"Merchant"> | Date | string | null
@@ -270,8 +250,6 @@ export type MerchantWhereInput = {
 
 export type MerchantOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
-  lastSettlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -287,8 +265,6 @@ export type MerchantWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MerchantWhereInput | Prisma.MerchantWhereInput[]
   OR?: Prisma.MerchantWhereInput[]
   NOT?: Prisma.MerchantWhereInput | Prisma.MerchantWhereInput[]
-  settlementInterval?: Prisma.IntFilter<"Merchant"> | number
-  lastSettlementAt?: Prisma.DateTimeNullableFilter<"Merchant"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Merchant"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"Merchant"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"Merchant"> | Date | string | null
@@ -301,8 +277,6 @@ export type MerchantWhereUniqueInput = Prisma.AtLeast<{
 
 export type MerchantOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
-  lastSettlementAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -321,8 +295,6 @@ export type MerchantScalarWhereWithAggregatesInput = {
   OR?: Prisma.MerchantScalarWhereWithAggregatesInput[]
   NOT?: Prisma.MerchantScalarWhereWithAggregatesInput | Prisma.MerchantScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"Merchant"> | number
-  settlementInterval?: Prisma.IntWithAggregatesFilter<"Merchant"> | number
-  lastSettlementAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Merchant"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Merchant"> | Date | string
   createdBy?: Prisma.IntNullableWithAggregatesFilter<"Merchant"> | number | null
   updatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Merchant"> | Date | string | null
@@ -333,8 +305,6 @@ export type MerchantScalarWhereWithAggregatesInput = {
 
 export type MerchantCreateInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -347,8 +317,6 @@ export type MerchantCreateInput = {
 
 export type MerchantUncheckedCreateInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -361,8 +329,6 @@ export type MerchantUncheckedCreateInput = {
 
 export type MerchantUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -375,8 +341,6 @@ export type MerchantUpdateInput = {
 
 export type MerchantUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -389,8 +353,6 @@ export type MerchantUncheckedUpdateInput = {
 
 export type MerchantCreateManyInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -401,8 +363,6 @@ export type MerchantCreateManyInput = {
 
 export type MerchantUpdateManyMutationInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -413,8 +373,6 @@ export type MerchantUpdateManyMutationInput = {
 
 export type MerchantUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -425,8 +383,6 @@ export type MerchantUncheckedUpdateManyInput = {
 
 export type MerchantCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
-  lastSettlementAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -437,7 +393,6 @@ export type MerchantCountOrderByAggregateInput = {
 
 export type MerchantAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
@@ -445,8 +400,6 @@ export type MerchantAvgOrderByAggregateInput = {
 
 export type MerchantMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
-  lastSettlementAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -457,8 +410,6 @@ export type MerchantMaxOrderByAggregateInput = {
 
 export type MerchantMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
-  lastSettlementAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -469,7 +420,6 @@ export type MerchantMinOrderByAggregateInput = {
 
 export type MerchantSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  settlementInterval?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedBy?: Prisma.SortOrder
   deletedBy?: Prisma.SortOrder
@@ -510,8 +460,6 @@ export type MerchantUpdateOneRequiredWithoutMerchantFeesNestedInput = {
 
 export type MerchantCreateWithoutAgentShareholderInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -523,8 +471,6 @@ export type MerchantCreateWithoutAgentShareholderInput = {
 
 export type MerchantUncheckedCreateWithoutAgentShareholderInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -552,8 +498,6 @@ export type MerchantUpdateToOneWithWhereWithoutAgentShareholderInput = {
 
 export type MerchantUpdateWithoutAgentShareholderInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -565,8 +509,6 @@ export type MerchantUpdateWithoutAgentShareholderInput = {
 
 export type MerchantUncheckedUpdateWithoutAgentShareholderInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -578,8 +520,6 @@ export type MerchantUncheckedUpdateWithoutAgentShareholderInput = {
 
 export type MerchantCreateWithoutMerchantFeesInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -591,8 +531,6 @@ export type MerchantCreateWithoutMerchantFeesInput = {
 
 export type MerchantUncheckedCreateWithoutMerchantFeesInput = {
   id: number
-  settlementInterval?: number
-  lastSettlementAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -620,8 +558,6 @@ export type MerchantUpdateToOneWithWhereWithoutMerchantFeesInput = {
 
 export type MerchantUpdateWithoutMerchantFeesInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -633,8 +569,6 @@ export type MerchantUpdateWithoutMerchantFeesInput = {
 
 export type MerchantUncheckedUpdateWithoutMerchantFeesInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementInterval?: Prisma.IntFieldUpdateOperationsInput | number
-  lastSettlementAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -686,8 +620,6 @@ export type MerchantCountOutputTypeCountAgentShareholderArgs<ExtArgs extends run
 
 export type MerchantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  settlementInterval?: boolean
-  lastSettlementAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -701,8 +633,6 @@ export type MerchantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
 
 export type MerchantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  settlementInterval?: boolean
-  lastSettlementAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -713,8 +643,6 @@ export type MerchantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type MerchantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  settlementInterval?: boolean
-  lastSettlementAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -725,8 +653,6 @@ export type MerchantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type MerchantSelectScalar = {
   id?: boolean
-  settlementInterval?: boolean
-  lastSettlementAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -735,7 +661,7 @@ export type MerchantSelectScalar = {
   deletedBy?: boolean
 }
 
-export type MerchantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "settlementInterval" | "lastSettlementAt" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchant"]>
+export type MerchantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["merchant"]>
 export type MerchantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   merchantFees?: boolean | Prisma.Merchant$merchantFeesArgs<ExtArgs>
   AgentShareholder?: boolean | Prisma.Merchant$AgentShareholderArgs<ExtArgs>
@@ -752,11 +678,6 @@ export type $MerchantPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    /**
-     * in minutes like 30, 60, 120 or 1
-     */
-    settlementInterval: number
-    lastSettlementAt: Date | null
     createdAt: Date
     createdBy: number | null
     updatedAt: Date | null
@@ -1189,8 +1110,6 @@ export interface Prisma__MerchantClient<T, Null = never, ExtArgs extends runtime
  */
 export interface MerchantFieldRefs {
   readonly id: Prisma.FieldRef<"Merchant", 'Int'>
-  readonly settlementInterval: Prisma.FieldRef<"Merchant", 'Int'>
-  readonly lastSettlementAt: Prisma.FieldRef<"Merchant", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Merchant", 'DateTime'>
   readonly createdBy: Prisma.FieldRef<"Merchant", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"Merchant", 'DateTime'>

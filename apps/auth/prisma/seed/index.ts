@@ -1,7 +1,6 @@
 import { PrismaClient } from '@auth/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { roleEngineSeed } from './role-engine.seed';
 import { authDevSeed } from './auth-dev.seed';
 import { authEngineSeed } from './auth-engine.seed';
 
@@ -64,8 +63,8 @@ async function main(): Promise<void> {
   );
 
   console.log('\nEngine data (mandatory):');
-  const roleIds = await roleEngineSeed(prisma);
-  const { system01Id } = await authEngineSeed(prisma, roleIds);
+
+  await authEngineSeed(prisma);
 
   if (!devRequested) {
     console.log('\nDevelopment fixtures skipped (pass --dev to include them).');
@@ -81,7 +80,7 @@ async function main(): Promise<void> {
   }
 
   console.log('\nDevelopment fixtures:');
-  await authDevSeed(prisma, roleIds, system01Id);
+  await authDevSeed(prisma);
 }
 
 main()

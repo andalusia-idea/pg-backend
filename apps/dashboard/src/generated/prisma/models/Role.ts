@@ -271,10 +271,10 @@ export type RoleOrderByWithRelationInput = {
 
 export type RoleWhereUniqueInput = Prisma.AtLeast<{
   id?: number
+  name?: string
   AND?: Prisma.RoleWhereInput | Prisma.RoleWhereInput[]
   OR?: Prisma.RoleWhereInput[]
   NOT?: Prisma.RoleWhereInput | Prisma.RoleWhereInput[]
-  name?: Prisma.StringFilter<"Role"> | string
   createdAt?: Prisma.DateTimeFilter<"Role"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"Role"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"Role"> | Date | string | null
@@ -283,7 +283,7 @@ export type RoleWhereUniqueInput = Prisma.AtLeast<{
   deletedBy?: Prisma.IntNullableFilter<"Role"> | number | null
   Permission?: Prisma.PermissionListRelationFilter
   User?: Prisma.UserListRelationFilter
-}, "id">
+}, "id" | "name">
 
 export type RoleOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -740,6 +740,12 @@ export type $RolePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    /**
+     * Unique because role ids are pinned by migration and referenced as
+     * constants - a second row named SYSTEM would make "which one is the SYSTEM
+     * role" ambiguous, and the seed used to need lookup-then-create precisely
+     * because this constraint was missing.
+     */
     name: string
     createdAt: Date
     createdBy: number | null

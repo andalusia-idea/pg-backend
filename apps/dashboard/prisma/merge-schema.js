@@ -55,7 +55,7 @@ const HEADER = [
   '',
   'datasource db {',
   '  provider = "postgresql"',
-  '  schemas  = ["auth", "config", "transaction"]',
+  '  schemas  = ["auth", "config", "transaction", "settlement"]',
   '}',
 ].join('\n');
 

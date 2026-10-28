@@ -6,12 +6,13 @@ import {
   MerchantSignatureStatusEnum,
   MerchantSignatureValidationDto,
   MerchantWebhookUrlDto,
+  isIpAllowed,
 } from '@app/microservice';
 import {
   PRISMA_MASTER_PROVIDER_KEY,
   PRISMA_SLAVE_PROVIDER_KEY,
 } from '@app/prisma';
-import { MerchantSignatureRedis } from '@app/redis';
+import { MerchantSignatureRedis, MerchantSignatureRedisDto } from '@app/redis';
 import { buildCanonical, verifySignature } from '@app/signature';
 // Type-only: `PrismaClient` is never used as a value here, and erasing the
 // import keeps unit tests from having to load the whole generated ESM client.
@@ -75,17 +76,7 @@ export class MerchantSignatureService {
   async validateSignature(
     dto: FilterMerchantSignatureValidationDto,
   ): Promise<MerchantSignatureValidationDto> {
-    const merchantSignature =
-      await this.prismaMaster.merchantSignature.findUnique({
-        where: { clientId: dto.clientId, deletedAt: null },
-        select: {
-          userId: true,
-          status: true,
-          secretKey: true,
-          secretKeyPrevious: true,
-          secretKeyRotatedAt: true,
-        },
-      });
+    const merchantSignature = await this.findMerchantSignature(dto.clientId);
 
     if (!merchantSignature) {
       return this.reject(null, MerchantSignatureFailureEnum.UNKNOWN_CLIENT);
@@ -134,12 +125,54 @@ export class MerchantSignatureService {
       });
     }
 
+    // After the signature, deliberately. Rejecting on origin first would mean
+    // never learning that a secret had leaked: this rejection is only
+    // reachable by a caller who *proved* they hold the merchant's key, which
+    // makes it the highest-fidelity credential-compromise signal available.
+    // `clientId` travels in a header and is not secret; `secretKey` is.
+    //
+    // Before the nonce claim, also deliberately: a request rejected on origin
+    // must not burn its nonce, or a merchant who fixes their allowlist and
+    // retries the same signed request gets REPLAYED_NONCE instead.
+    if (!isIpAllowed(dto.ipAddress, merchantSignature.allowedIps)) {
+      this.logger.warn({
+        msg: 'Valid signature from an address outside the merchant allowlist',
+        userId,
+        ipAddress: dto.ipAddress,
+      });
+      return this.reject(userId, MerchantSignatureFailureEnum.IP_NOT_ALLOWED);
+    }
+
+    // Budget is spent only by requests that proved they hold the secret, so a
+    // stranger cannot exhaust a merchant's quota by spoofing their client id -
+    // which is exactly what counting before verification would allow.
+    //
+    // Before the nonce claim: a throttled request must not burn its nonce, or
+    // the merchant's retry after the window resets returns REPLAYED_NONCE and
+    // looks like a different fault entirely.
+    const rateLimit = await this.merchantSignatureRedis.consumeRateLimit(
+      dto.clientId,
+      dto.endpoint,
+    );
+    if (!rateLimit.allowed) {
+      this.logger.warn({
+        msg: 'Merchant exceeded their request budget',
+        userId,
+        endpoint: dto.endpoint,
+        totalHits: rateLimit.totalHits,
+      });
+      return this.reject(
+        userId,
+        MerchantSignatureFailureEnum.RATE_LIMITED,
+        rateLimit.retryAfterSeconds,
+      );
+    }
+
     // Last, and only once the signature has proved knowledge of the secret:
     // claiming earlier would let unauthenticated traffic populate the store.
     const nonceClaimed = await this.merchantSignatureRedis.claimNonce(
       dto.clientId,
       dto.nonce,
-      this.merchantSignatureConfig.NONCE_TTL_SECONDS,
     );
     if (!nonceClaimed) {
       return this.reject(userId, MerchantSignatureFailureEnum.REPLAYED_NONCE);
@@ -150,7 +183,51 @@ export class MerchantSignatureService {
       userId,
       reason: null,
       serverTime: new Date().toISOString(),
+      retryAfterSeconds: null,
     };
+  }
+
+  /**
+   * Cache-aside read of the merchant's signature row.
+   *
+   * The write happens **only on a miss**. Writing on every request would
+   * refresh the TTL on each hit, so a busy merchant's entry would never
+   * expire - and expiry is the only backstop if an invalidation is ever
+   * missed.
+   *
+   * An unknown client is deliberately not cached. Negative caching would blunt
+   * a clientId-spraying attack, but it also means a merchant onboarded moments
+   * ago can read as unknown for a full TTL; the row is only written once the
+   * database has confirmed it exists.
+   */
+  private async findMerchantSignature(
+    clientId: string,
+  ): Promise<MerchantSignatureRedisDto | null> {
+    const cached =
+      await this.merchantSignatureRedis.getMerchantSignature(clientId);
+    if (cached) return cached;
+
+    const merchantSignature =
+      await this.prismaMaster.merchantSignature.findUnique({
+        where: { clientId, deletedAt: null },
+        select: {
+          userId: true,
+          status: true,
+          secretKey: true,
+          secretKeyPrevious: true,
+          secretKeyRotatedAt: true,
+          allowedIps: true,
+        },
+      });
+
+    if (merchantSignature) {
+      await this.merchantSignatureRedis.setMerchantSignature(
+        clientId,
+        merchantSignature,
+      );
+    }
+
+    return merchantSignature;
   }
 
   /**
@@ -209,12 +286,14 @@ export class MerchantSignatureService {
   private reject(
     userId: number | null,
     reason: MerchantSignatureFailureEnum,
+    retryAfterSeconds: number | null = null,
   ): MerchantSignatureValidationDto {
     return {
       isValid: false,
       userId,
       reason,
       serverTime: new Date().toISOString(),
+      retryAfterSeconds,
     };
   }
 }

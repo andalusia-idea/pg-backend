@@ -1,0 +1,222 @@
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UseInterceptors,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Value } from '@sinclair/typebox/value';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { DisbursementWebhookService } from '../api-v1/disbursement';
+import { PurchaseWebhookService } from '../api-v1/purchase';
+import { ProviderNameEnum } from '@app/microservice';
+import { ProviderPrincipalInterceptor } from './provider-principal.interceptor';
+import {
+  MotionPayBillerCallbackDto,
+  MotionPayBillerCallbackSchema,
+  MotionPayBillerCallbackService,
+  MotionPayQrisCallbackDto,
+  MotionPayQrisCallbackSchema,
+  MotionPayQrisCallbackService,
+  MotionPayTransferCallbackDto,
+  MotionPayTransferCallbackSchema,
+  MotionPayTransferCallbackService,
+} from '../upstream/motionpay';
+
+@ApiTags('Upstream Callback')
+@Controller('callback/motionpay')
+// These routes are unauthenticated, so no guard puts a principal in CLS and
+// everything they write would be attributed to nobody. Named per provider so
+// the audit trail says whose callback moved a row. See the interceptor.
+@UseInterceptors(new ProviderPrincipalInterceptor(ProviderNameEnum.MOTIONPAY))
+export class MotionPayCallbackController {
+  private readonly logger = new Logger(MotionPayCallbackController.name);
+
+  constructor(
+    private readonly purchaseWebhookService: PurchaseWebhookService,
+    private readonly disbursementWebhookService: DisbursementWebhookService,
+
+    private readonly qrisCallbackService: MotionPayQrisCallbackService,
+    private readonly transferCallbackService: MotionPayTransferCallbackService,
+    private readonly billerCallbackService: MotionPayBillerCallbackService,
+  ) {}
+
+  /**
+   * QRIS Payment Notification, registered with Flash at
+   * *Product Configuration → QRIS* on their merchant dashboard.
+   *
+   * **Deliberately not a `@MerchantEndpoint()`.** This is inbound from a
+   * provider, not from a merchant: there is no `X-Client-Id`, no signature to
+   * verify, and answering in the SNAP merchant envelope would be meaningless to
+   * MotionPay, who only look at the HTTP status.
+   *
+   * Excluded from Swagger because publishing the shape of an unauthenticated
+   * endpoint that moves money is free reconnaissance.
+   *
+   * The status code carries the whole protocol. MotionPay retries a non-200 up
+   * to three times at five-minute intervals and then drops the callback
+   * permanently, so:
+   *
+   * - **200** — handled, or nothing a retry could fix (unknown transaction,
+   *   already settled, rejected origin, malformed body).
+   * - **500** — a transient failure on our side. Their retry is genuinely
+   *   useful, so we ask for it.
+   *
+   * Note the asymmetry: we answer 200 to a rejected origin. It is not an
+   * acknowledgement that anything was done - it is refusing to let an attacker
+   * schedule three more rounds of work by sending one request.
+   */
+  @Post('qris')
+  @HttpCode(HttpStatus.OK)
+  // @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'MotionPay QRIS payment notification' })
+  async qris(
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<{ received: boolean }> {
+    // Validated here rather than by a pipe, so a malformed payload is still
+    // logged with its source before being discarded. A pipe would reject it
+    // before we ever saw where it came from - which is the interesting part
+    // when the endpoint is unauthenticated.
+    if (!Value.Check(MotionPayQrisCallbackSchema, body)) {
+      this.logger.warn({
+        msg: 'Malformed MotionPay QRIS callback',
+        sourceIp: request.ip,
+        errors: [...Value.Errors(MotionPayQrisCallbackSchema, body)]
+          .slice(0, 3)
+          .map((error) => `${error.path} ${error.message}`),
+      });
+      // 200: their retry would send the same malformed body three more times.
+      return { received: true };
+    }
+
+    const payload = body as MotionPayQrisCallbackDto;
+
+    // Two steps, and the split is the point: MotionPay's adapter turns their
+    // wire format into our neutral one and decides whether the origin is
+    // acceptable; the purchase layer decides what it means for a transaction.
+    // Neither knows about the other.
+    const translation = this.qrisCallbackService.translate(payload, request.ip);
+    if (!translation.accepted) return { received: true };
+
+    const outcome = await this.purchaseWebhookService.handle(
+      translation.webhook,
+    );
+
+    if (outcome.retry) {
+      void reply.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return { received: false };
+    }
+
+    return { received: true };
+  }
+
+  /**
+   * Transfer payout notification, registered with Flash on the same dashboard.
+   *
+   * Same protocol as the QRIS callback above, and the same two-step split. The
+   * body is if anything less trustworthy: MotionPay's transfer callback carries
+   * no signature *and* no amount, so it is a bare "transaction X is now Y" from
+   * an unauthenticated source about money that has already left. Nothing here
+   * is acted on until `checkTransferStatus` confirms it over an authenticated
+   * call.
+   */
+  @Post('transfer')
+  @HttpCode(HttpStatus.OK)
+  // @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'MotionPay transfer payout notification' })
+  async transfer(
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<{ received: boolean }> {
+    if (!Value.Check(MotionPayTransferCallbackSchema, body)) {
+      this.logger.warn({
+        msg: 'Malformed MotionPay transfer callback',
+        sourceIp: request.ip,
+        errors: [...Value.Errors(MotionPayTransferCallbackSchema, body)]
+          .slice(0, 3)
+          .map((error) => `${error.path} ${error.message}`),
+      });
+      return { received: true };
+    }
+
+    const payload = body as MotionPayTransferCallbackDto;
+
+    const translation = this.transferCallbackService.translate(
+      payload,
+      request.ip,
+    );
+    if (!translation.accepted) return { received: true };
+
+    const outcome = await this.disbursementWebhookService.handle(
+      translation.webhook,
+    );
+
+    if (outcome.retry) {
+      void reply.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return { received: false };
+    }
+
+    return { received: true };
+  }
+
+  /**
+   * Biller payout notification — e-wallet top-ups.
+   *
+   * A third route into the same settlement path. The Biller rails carry the
+   * same payout the Transfer rails would, more cheaply, so the notification
+   * lands in `DisbursementWebhookService` exactly like a transfer one: the
+   * translator emits the same neutral shape, and which rail was used stays a
+   * routing detail rather than a fork in the settlement logic.
+   *
+   * Unauthenticated like the other two, and treated the same way - the body is
+   * a trigger, and nothing is written until an authenticated status read
+   * confirms it.
+   */
+  @Post('biller')
+  @HttpCode(HttpStatus.OK)
+  // @ApiExcludeEndpoint()
+  @ApiOperation({ summary: 'MotionPay biller (e-wallet top-up) notification' })
+  async biller(
+    @Body() body: unknown,
+    @Req() request: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<{ received: boolean }> {
+    if (!Value.Check(MotionPayBillerCallbackSchema, body)) {
+      this.logger.warn({
+        msg: 'Malformed MotionPay biller callback',
+        sourceIp: request.ip,
+        errors: [...Value.Errors(MotionPayBillerCallbackSchema, body)]
+          .slice(0, 3)
+          .map((error) => `${error.path} ${error.message}`),
+      });
+      return { received: true };
+    }
+
+    const payload = body as MotionPayBillerCallbackDto;
+
+    const translation = this.billerCallbackService.translate(
+      payload,
+      request.ip,
+    );
+    if (!translation.accepted) return { received: true };
+
+    const outcome = await this.disbursementWebhookService.handle(
+      translation.webhook,
+    );
+
+    if (outcome.retry) {
+      void reply.status(HttpStatus.INTERNAL_SERVER_ERROR);
+      return { received: false };
+    }
+
+    return { received: true };
+  }
+}

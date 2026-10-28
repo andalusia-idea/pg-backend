@@ -1,16 +1,16 @@
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { PrismaClient } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
-import { ROLE } from '../../auth/auth.constant';
 import { AuthHelper } from '../../auth/auth.helper';
 import { AuthInfoDto } from '../../auth/dto/auth-info.dto';
-import { ApiError } from '../../shared/exception';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { MerchantSignatureStatusEnum } from '@app/microservice';
+import {
+  MerchantSignatureStatusEnum,
+  ROLE_ID,
+  SettlementModeEnum,
+} from '@app/microservice';
 import { generateClientId } from '@app/signature';
-
-const DEFAULT_SETTLEMENT_INTERVAL_MINUTES = 120;
 
 @Injectable()
 export class UserService {
@@ -36,15 +36,13 @@ export class UserService {
     const hashedPassword = await AuthHelper.hashPassword(dto.password);
 
     await this.prismaMaster.$transaction(async (tx) => {
-      const role = await tx.role.findFirst({
-        where: { name: ROLE.MERCHANT, deletedAt: null },
-        select: { id: true },
-      });
-      if (!role) throw ApiError.notFound(`Role '${ROLE.MERCHANT}'`);
-
+      // `ROLE_ID` rather than a lookup by name: the `machine_principals`
+      // migration pins every role id and refuses to complete if they disagree,
+      // so there is nothing left for a query to discover. See Step 7.2 of
+      // docs/batch/settlement-batching-implementation.md.
       const user = await tx.user.create({
         data: {
-          roleId: role.id,
+          roleId: ROLE_ID.MERCHANT,
           email: dto.email,
           password: hashedPassword,
         },
@@ -88,8 +86,15 @@ export class UserService {
       await tx.merchant.create({
         data: {
           id: user.id,
-          settlementInterval:
-            dto.settlementInterval ?? DEFAULT_SETTLEMENT_INTERVAL_MINUTES,
+        },
+      });
+
+      await tx.merchantSettlementPolicy.create({
+        data: {
+          merchantId: user.id,
+          paymentMethodName: '*',
+          mode: SettlementModeEnum.FOLLOW_UPSTREAM,
+          effectiveFrom: new Date(),
         },
       });
 
@@ -119,15 +124,9 @@ export class UserService {
     const hashedPassword = await AuthHelper.hashPassword(dto.password);
 
     await this.prismaMaster.$transaction(async (tx) => {
-      const role = await tx.role.findFirst({
-        where: { name: ROLE.AGENT, deletedAt: null },
-        select: { id: true },
-      });
-      if (!role) throw ApiError.notFound(`Role '${ROLE.AGENT}'`);
-
       const user = await tx.user.create({
         data: {
-          roleId: role.id,
+          roleId: ROLE_ID.AGENT,
           email: dto.email,
           password: hashedPassword,
         },

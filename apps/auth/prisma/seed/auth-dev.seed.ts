@@ -1,6 +1,5 @@
-import { ROLE } from '@app/microservice';
+import { ROLE_ID, SYSTEM_USER_ID } from '@app/microservice';
 import { PrismaClient } from '@auth/prisma';
-import { RoleIds } from './role-engine.seed';
 import { hashPassword, logSeeded, SEED_PASSWORD } from './seed.helper';
 import { generateClientId } from '@app/signature';
 
@@ -114,11 +113,7 @@ const DEV_MERCHANT_ADDRESS = {
  * Idempotent: upserts on the unique `email`, and merchant signatures upsert on
  * the unique `userId` so their generated clientId stays stable across re-runs.
  */
-export async function authDevSeed(
-  prisma: PrismaClient,
-  roleIds: RoleIds,
-  system01Id: number,
-): Promise<void> {
+export async function authDevSeed(prisma: PrismaClient): Promise<void> {
   const password = await hashPassword(SEED_PASSWORD);
 
   const agents = await prisma.$transaction(
@@ -129,8 +124,8 @@ export async function authDevSeed(
         create: {
           email,
           password,
-          roleId: roleIds[ROLE.AGENT],
-          createdBy: system01Id,
+          roleId: ROLE_ID.AGENT,
+          createdBy: SYSTEM_USER_ID,
           AgentDetail: {
             create: {
               fullname: agent.fullname,
@@ -140,7 +135,7 @@ export async function authDevSeed(
               bankName: agent.bankName,
               accountNumber: agent.accountNumber,
               accountHolderName: `AGENT${agent.serial}`,
-              createdBy: system01Id,
+              createdBy: SYSTEM_USER_ID,
             },
           },
         },
@@ -158,8 +153,8 @@ export async function authDevSeed(
         create: {
           email,
           password,
-          roleId: roleIds[ROLE.MERCHANT],
-          createdBy: system01Id,
+          roleId: ROLE_ID.MERCHANT,
+          createdBy: SYSTEM_USER_ID,
           MerchantDetail: {
             create: {
               ownerName: merchant.owner,
@@ -174,7 +169,7 @@ export async function authDevSeed(
               bankName: merchant.bankName,
               accountNumber: merchant.accountNumber,
               accountHolderName: `MERCHANT${merchant.serial}`,
-              createdBy: system01Id,
+              createdBy: SYSTEM_USER_ID,
             },
           },
         },
@@ -195,7 +190,7 @@ export async function authDevSeed(
           userId: merchant.id,
           clientId: generateClientId(),
           status: MERCHANT_SIGNATURE_STATUS_ACTIVE,
-          createdBy: system01Id,
+          createdBy: SYSTEM_USER_ID,
         },
         update: {},
       }),

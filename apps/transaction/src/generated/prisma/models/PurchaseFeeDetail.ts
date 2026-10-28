@@ -28,8 +28,8 @@ export type AggregatePurchaseFeeDetail = {
 
 export type PurchaseFeeDetailAvgAggregateOutputType = {
   id: number | null
-  agentId: number | null
   purchaseId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -40,8 +40,8 @@ export type PurchaseFeeDetailAvgAggregateOutputType = {
 
 export type PurchaseFeeDetailSumAggregateOutputType = {
   id: number | null
-  agentId: number | null
   purchaseId: number | null
+  agentId: number | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
   feePercentage: runtime.Decimal | null
@@ -52,8 +52,8 @@ export type PurchaseFeeDetailSumAggregateOutputType = {
 
 export type PurchaseFeeDetailMinAggregateOutputType = {
   id: number | null
-  agentId: number | null
   purchaseId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -68,8 +68,8 @@ export type PurchaseFeeDetailMinAggregateOutputType = {
 
 export type PurchaseFeeDetailMaxAggregateOutputType = {
   id: number | null
-  agentId: number | null
   purchaseId: number | null
+  agentId: number | null
   type: $Enums.FeeTypeEnum | null
   nominal: runtime.Decimal | null
   feeFixed: runtime.Decimal | null
@@ -84,8 +84,8 @@ export type PurchaseFeeDetailMaxAggregateOutputType = {
 
 export type PurchaseFeeDetailCountAggregateOutputType = {
   id: number
-  agentId: number
   purchaseId: number
+  agentId: number
   type: number
   nominal: number
   feeFixed: number
@@ -102,8 +102,8 @@ export type PurchaseFeeDetailCountAggregateOutputType = {
 
 export type PurchaseFeeDetailAvgAggregateInputType = {
   id?: true
-  agentId?: true
   purchaseId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -114,8 +114,8 @@ export type PurchaseFeeDetailAvgAggregateInputType = {
 
 export type PurchaseFeeDetailSumAggregateInputType = {
   id?: true
-  agentId?: true
   purchaseId?: true
+  agentId?: true
   nominal?: true
   feeFixed?: true
   feePercentage?: true
@@ -126,8 +126,8 @@ export type PurchaseFeeDetailSumAggregateInputType = {
 
 export type PurchaseFeeDetailMinAggregateInputType = {
   id?: true
-  agentId?: true
   purchaseId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -142,8 +142,8 @@ export type PurchaseFeeDetailMinAggregateInputType = {
 
 export type PurchaseFeeDetailMaxAggregateInputType = {
   id?: true
-  agentId?: true
   purchaseId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -158,8 +158,8 @@ export type PurchaseFeeDetailMaxAggregateInputType = {
 
 export type PurchaseFeeDetailCountAggregateInputType = {
   id?: true
-  agentId?: true
   purchaseId?: true
+  agentId?: true
   type?: true
   nominal?: true
   feeFixed?: true
@@ -261,8 +261,8 @@ export type PurchaseFeeDetailGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type PurchaseFeeDetailGroupByOutputType = {
   id: number
-  agentId: number | null
   purchaseId: number
+  agentId: number | null
   type: $Enums.FeeTypeEnum
   nominal: runtime.Decimal
   feeFixed: runtime.Decimal
@@ -300,8 +300,8 @@ export type PurchaseFeeDetailWhereInput = {
   OR?: Prisma.PurchaseFeeDetailWhereInput[]
   NOT?: Prisma.PurchaseFeeDetailWhereInput | Prisma.PurchaseFeeDetailWhereInput[]
   id?: Prisma.IntFilter<"PurchaseFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   purchaseId?: Prisma.IntFilter<"PurchaseFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"PurchaseFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -317,8 +317,8 @@ export type PurchaseFeeDetailWhereInput = {
 
 export type PurchaseFeeDetailOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -337,8 +337,8 @@ export type PurchaseFeeDetailWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.PurchaseFeeDetailWhereInput | Prisma.PurchaseFeeDetailWhereInput[]
   OR?: Prisma.PurchaseFeeDetailWhereInput[]
   NOT?: Prisma.PurchaseFeeDetailWhereInput | Prisma.PurchaseFeeDetailWhereInput[]
-  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   purchaseId?: Prisma.IntFilter<"PurchaseFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"PurchaseFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -354,8 +354,8 @@ export type PurchaseFeeDetailWhereUniqueInput = Prisma.AtLeast<{
 
 export type PurchaseFeeDetailOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -378,8 +378,8 @@ export type PurchaseFeeDetailScalarWhereWithAggregatesInput = {
   OR?: Prisma.PurchaseFeeDetailScalarWhereWithAggregatesInput[]
   NOT?: Prisma.PurchaseFeeDetailScalarWhereWithAggregatesInput | Prisma.PurchaseFeeDetailScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"PurchaseFeeDetail"> | number
-  agentId?: Prisma.IntNullableWithAggregatesFilter<"PurchaseFeeDetail"> | number | null
   purchaseId?: Prisma.IntWithAggregatesFilter<"PurchaseFeeDetail"> | number
+  agentId?: Prisma.IntNullableWithAggregatesFilter<"PurchaseFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumWithAggregatesFilter<"PurchaseFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalWithAggregatesFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalWithAggregatesFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -409,8 +409,8 @@ export type PurchaseFeeDetailCreateInput = {
 
 export type PurchaseFeeDetailUncheckedCreateInput = {
   id?: number
-  agentId?: number | null
   purchaseId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -440,8 +440,8 @@ export type PurchaseFeeDetailUpdateInput = {
 
 export type PurchaseFeeDetailUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -456,8 +456,8 @@ export type PurchaseFeeDetailUncheckedUpdateInput = {
 
 export type PurchaseFeeDetailCreateManyInput = {
   id?: number
-  agentId?: number | null
   purchaseId: number
+  agentId?: number | null
   type: $Enums.FeeTypeEnum
   nominal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -486,8 +486,8 @@ export type PurchaseFeeDetailUpdateManyMutationInput = {
 
 export type PurchaseFeeDetailUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   purchaseId?: Prisma.IntFieldUpdateOperationsInput | number
+  agentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   type?: Prisma.EnumFeeTypeEnumFieldUpdateOperationsInput | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -512,8 +512,8 @@ export type PurchaseFeeDetailOrderByRelationAggregateInput = {
 
 export type PurchaseFeeDetailCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -528,8 +528,8 @@ export type PurchaseFeeDetailCountOrderByAggregateInput = {
 
 export type PurchaseFeeDetailAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -540,8 +540,8 @@ export type PurchaseFeeDetailAvgOrderByAggregateInput = {
 
 export type PurchaseFeeDetailMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -556,8 +556,8 @@ export type PurchaseFeeDetailMaxOrderByAggregateInput = {
 
 export type PurchaseFeeDetailMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
@@ -572,8 +572,8 @@ export type PurchaseFeeDetailMinOrderByAggregateInput = {
 
 export type PurchaseFeeDetailSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  agentId?: Prisma.SortOrder
   purchaseId?: Prisma.SortOrder
+  agentId?: Prisma.SortOrder
   nominal?: Prisma.SortOrder
   feeFixed?: Prisma.SortOrder
   feePercentage?: Prisma.SortOrder
@@ -622,6 +622,10 @@ export type PurchaseFeeDetailUncheckedUpdateManyWithoutTransactionNestedInput = 
   update?: Prisma.PurchaseFeeDetailUpdateWithWhereUniqueWithoutTransactionInput | Prisma.PurchaseFeeDetailUpdateWithWhereUniqueWithoutTransactionInput[]
   updateMany?: Prisma.PurchaseFeeDetailUpdateManyWithWhereWithoutTransactionInput | Prisma.PurchaseFeeDetailUpdateManyWithWhereWithoutTransactionInput[]
   deleteMany?: Prisma.PurchaseFeeDetailScalarWhereInput | Prisma.PurchaseFeeDetailScalarWhereInput[]
+}
+
+export type EnumFeeTypeEnumFieldUpdateOperationsInput = {
+  set?: $Enums.FeeTypeEnum
 }
 
 export type PurchaseFeeDetailCreateWithoutTransactionInput = {
@@ -684,8 +688,8 @@ export type PurchaseFeeDetailScalarWhereInput = {
   OR?: Prisma.PurchaseFeeDetailScalarWhereInput[]
   NOT?: Prisma.PurchaseFeeDetailScalarWhereInput | Prisma.PurchaseFeeDetailScalarWhereInput[]
   id?: Prisma.IntFilter<"PurchaseFeeDetail"> | number
-  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   purchaseId?: Prisma.IntFilter<"PurchaseFeeDetail"> | number
+  agentId?: Prisma.IntNullableFilter<"PurchaseFeeDetail"> | number | null
   type?: Prisma.EnumFeeTypeEnumFilter<"PurchaseFeeDetail"> | $Enums.FeeTypeEnum
   nominal?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeFixed?: Prisma.DecimalFilter<"PurchaseFeeDetail"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -761,8 +765,8 @@ export type PurchaseFeeDetailUncheckedUpdateManyWithoutTransactionInput = {
 
 export type PurchaseFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   purchaseId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -778,8 +782,8 @@ export type PurchaseFeeDetailSelect<ExtArgs extends runtime.Types.Extensions.Int
 
 export type PurchaseFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   purchaseId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -795,8 +799,8 @@ export type PurchaseFeeDetailSelectCreateManyAndReturn<ExtArgs extends runtime.T
 
 export type PurchaseFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  agentId?: boolean
   purchaseId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -812,8 +816,8 @@ export type PurchaseFeeDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.T
 
 export type PurchaseFeeDetailSelectScalar = {
   id?: boolean
-  agentId?: boolean
   purchaseId?: boolean
+  agentId?: boolean
   type?: boolean
   nominal?: boolean
   feeFixed?: boolean
@@ -826,7 +830,7 @@ export type PurchaseFeeDetailSelectScalar = {
   deletedBy?: boolean
 }
 
-export type PurchaseFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "agentId" | "purchaseId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["purchaseFeeDetail"]>
+export type PurchaseFeeDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "purchaseId" | "agentId" | "type" | "nominal" | "feeFixed" | "feePercentage" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["purchaseFeeDetail"]>
 export type PurchaseFeeDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   transaction?: boolean | Prisma.PurchaseTransactionDefaultArgs<ExtArgs>
 }
@@ -844,8 +848,8 @@ export type $PurchaseFeeDetailPayload<ExtArgs extends runtime.Types.Extensions.I
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    agentId: number | null
     purchaseId: number
+    agentId: number | null
     type: $Enums.FeeTypeEnum
     nominal: runtime.Decimal
     feeFixed: runtime.Decimal
@@ -1281,8 +1285,8 @@ export interface Prisma__PurchaseFeeDetailClient<T, Null = never, ExtArgs extend
  */
 export interface PurchaseFeeDetailFieldRefs {
   readonly id: Prisma.FieldRef<"PurchaseFeeDetail", 'Int'>
-  readonly agentId: Prisma.FieldRef<"PurchaseFeeDetail", 'Int'>
   readonly purchaseId: Prisma.FieldRef<"PurchaseFeeDetail", 'Int'>
+  readonly agentId: Prisma.FieldRef<"PurchaseFeeDetail", 'Int'>
   readonly type: Prisma.FieldRef<"PurchaseFeeDetail", 'FeeTypeEnum'>
   readonly nominal: Prisma.FieldRef<"PurchaseFeeDetail", 'Decimal'>
   readonly feeFixed: Prisma.FieldRef<"PurchaseFeeDetail", 'Decimal'>

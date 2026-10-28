@@ -8,209 +8,47 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["transaction"]
-}
-
-model TopUpTransaction {
-  id                Int                   @id @default(autoincrement())
-  code              String                @unique @default(uuid())
-  merchantId        Int
-  externalId        String?
-  referenceId       String                @unique //reff id from bank
-  nominal           Decimal               @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal               @default(0.0) @db.Decimal(15, 2) // Money
-  status            TransactionStatusEnum @default(PENDING)
-  providerName      String
-  paymentMethodName String //transfer_bank, virtual_account
-  receiptImage      String
-
-  paidAt           DateTime?
-  metadata         Json?
-  settlementAt     DateTime?
-  reconciliationAt DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  merchantBalanceLog MerchantBalanceLog[]
-  agentBalanceLog    AgentBalanceLog[]
-  internalBalanceLog InternalBalanceLog[]
-  feeDetails         TopupFeeDetail[]
-
-  @@index([referenceId])
-  @@index([merchantId])
-  @@schema("transaction")
-}
-
-model TopupFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  topupId       Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topUpTransation TopUpTransaction @relation(fields: [topupId], references: [id], onDelete: Cascade)
-
-  @@index([topupId])
-  @@schema("transaction")
-}
-
-model WithdrawTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique @default(uuid())
-  externalId  String?
-  userId      Int
-  userRole    String
-  referenceId String  @unique //reff id from bank
-
-  providerName      String
-  paymentMethodName String // transfer_bank, virtual_account, dll
-  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal setelah dikenakan fee
-
-  status TransactionStatusEnum @default(PENDING)
-
-  paidAt           DateTime?
-  metadata         Json?
-  reconciliationAt DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  // Relasi
-  feeDetails         WithdrawFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
-
-  @@index([userId])
-  @@index([status])
-  @@schema("transaction")
-}
-
-model WithdrawFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  withdrawId    Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  withdrawTransaction WithdrawTransaction @relation(fields: [withdrawId], references: [id], onDelete: Cascade)
-
-  @@index([withdrawId])
-  @@schema("transaction")
-}
-
-model DisbursementTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique @default(uuid())
-  orderId     String  @unique
-  externalId  String?
-  referenceId String?
-  merchantId  Int
-
-  providerName      String
-  recipientName     String // bisa merchant, agent, atau pihak ketiga
-  recipientBankCode String
-  recipientBankName String?
-  recipientAccount  String
-  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
-  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  status TransactionStatusEnum @default(PENDING)
-
-  paidAt            DateTime?
-  paymentMethodName String
-  metadata          Json?
-  reconciliationAt  DateTime?
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  // Relasi
-  feeDetails         DisbursementFeeDetail[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
-
-  @@index([providerName])
-  @@index([status])
-  @@schema("transaction")
-}
-
-model DisbursementFeeDetail {
-  id             Int         @id @default(autoincrement())
-  agentId        Int?
-  disbursementId Int
-  type           FeeTypeEnum
-  nominal        Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage  Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  disbursementTransaction DisbursementTransaction @relation(fields: [disbursementId], references: [id], onDelete: Cascade)
-
-  @@index([disbursementId])
-  @@schema("transaction")
+  schemas  = ["transaction", "settlement"]
 }
 
 model PurchaseTransaction {
-  id          Int     @id @default(autoincrement())
-  code        String  @unique
-  orderId     String  @unique
-  referenceId String?
-  externalId  String
-  merchantId  Int
-  nmid        String?
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  systemReference   String  @unique // Our System Reference No
+  // partnerReferenceNo (SNAP). Unique PER MERCHANT, not globally: merchants
+  // number their own orders, so a global unique would let the first merchant to
+  // use "ORDER-001" permanently block every other merchant from that string.
+  merchantReference String
+  // referenceNo (SNAP). Nullable because we do not have it until the provider
+  // answers, and the row is written *before* the provider is called - see the
+  // ordering note in PurchaseService.createQRIS.
+  providerReference String? @unique
+  bankReference     String? //reff id from bank
 
   providerName      String
   paymentMethodName String
   nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
   netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
 
-  status TransactionStatusEnum @default(PENDING)
+  status TransactionStatusEnum
 
-  paidAt           DateTime?
-  expiresAt        DateTime
-  metadata         Json?
-  settlementAt     DateTime?
-  reconciliationAt DateTime?
+  paidAt    DateTime? @db.Timestamptz(6)
+  // Nullable for the same reason as providerReference: the row exists before
+  // the QR does, and a fabricated expiry would be a lie we then serve back.
+  expiresAt DateTime? @db.Timestamptz(6)
+
+  // settlement.SettlementBatch.id, but a plain Int rather than a relation: the
+  // claim in apps/settlement selects on `IS NULL` and never traverses the link,
+  // and the dashboard reads a batch's rows by this same column. The cost is
+  // that nothing stops a batch row being deleted out from under these, which is
+  // acceptable only because batches are append-only records. Kept consistent
+  // with batchReconciliationId below, which has no table behind it yet.
+  batchSettlementId Int?
+  settlementAt      DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -220,12 +58,9 @@ model PurchaseTransaction {
   deletedBy Int?      @db.Integer()
 
   // Relasi
-  feeDetails         PurchaseFeeDetail[]
-  webhookLogs        WebhookLog[]
-  MerchantBalanceLog MerchantBalanceLog[]
-  AgentBalanceLog    AgentBalanceLog[]
-  InternalBalanceLog InternalBalanceLog[]
+  feeDetails PurchaseFeeDetail[]
 
+  @@unique([merchantId, merchantReference])
   @@index([merchantId])
   @@index([providerName])
   @@index([status])
@@ -233,13 +68,14 @@ model PurchaseTransaction {
 }
 
 model PurchaseFeeDetail {
-  id            Int         @id @default(autoincrement())
-  agentId       Int?
-  purchaseId    Int
-  type          FeeTypeEnum
-  nominal       Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feeFixed      Decimal     @default(0.0) @db.Decimal(15, 2) // Money
-  feePercentage Decimal     @default(0.0) @db.Decimal(8, 4) // Percentage
+  id         Int         @id @default(autoincrement())
+  purchaseId Int
+  agentId    Int?
+  type       FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   createdBy Int?      @db.Integer()
@@ -255,13 +91,273 @@ model PurchaseFeeDetail {
   @@schema("transaction")
 }
 
+model DisbursementTransaction {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  // Our reference, and for Transfer it is also the key the provider's status
+  // endpoint is queried by - unlike QRIS, which is keyed by *their* id. That
+  // makes global uniqueness load-bearing here, not just tidy.
+  systemReference   String  @unique
+  // partnerReferenceNo (SNAP). Unique PER MERCHANT, not globally: merchants
+  // number their own payouts, so a global unique would let the first merchant
+  // to use "PAYOUT-001" block every other merchant from that string.
+  merchantReference String
+  // referenceNo (SNAP). Nullable because we do not have it until the provider
+  // answers, and the row is written *before* the provider is called.
+  providerReference String? @unique
+  bankReference     String? //reff id from bank
+
+  /// Where the money goes. Named to match `auth.MerchantDetail` /
+  /// `auth.AgentDetail` and `config.Bank.code`, which is where these values are
+  /// copied from.
+  ///
+  /// `bankCode` is **polymorphic, and deliberately not a foreign key**: it holds
+  /// a `config.Bank.code` when `paymentMethodName` is TRANSFERBANK, and an
+  /// `EWalletEnum` value (OVO / DANA / GOPAY / SHOPEEPAY) when it is
+  /// TRANSFEREWALLET. `accountNumber` likewise holds a wallet phone number in
+  /// the e-wallet case.
+  ///
+  /// So check `paymentMethodName` before joining on either. A bare
+  /// `JOIN config."Bank" ON code = "bankCode"` silently drops every e-wallet
+  /// payout instead of failing - there is no constraint to catch it, since the
+  /// two tables live in different Postgres schemas.
+  ///
+  /// The bank's *name* is not stored: it is derivable from `bankCode`, and a
+  /// stored copy goes stale when a bank is renamed.
+  accountHolderName String // bisa merchant, agent, atau pihak ketiga
+  accountNumber     String
+  bankCode          String
+
+  providerName      String
+  paymentMethodName String
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  status TransactionStatusEnum
+
+  paidAt DateTime? @db.Timestamptz(6)
+
+  batchSettlementId Int?
+  settlementAt      DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails DisbursementFeeDetail[]
+
+  @@unique([merchantId, merchantReference])
+  @@index([merchantId])
+  @@index([providerName])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model DisbursementFeeDetail {
+  id             Int         @id @default(autoincrement())
+  disbursementId Int
+  agentId        Int?
+  type           FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  disbursementTransaction DisbursementTransaction @relation(fields: [disbursementId], references: [id], onDelete: Cascade)
+
+  @@index([disbursementId])
+  @@schema("transaction")
+}
+
+model TopUpTransaction {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  systemReference String @unique // Our System Reference No
+
+  providerName      String
+  paymentMethodName String
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  status       TransactionStatusEnum
+  receiptImage String
+
+  paidAt DateTime? @db.Timestamptz(6)
+
+  settlementAt DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  feeDetails TopupFeeDetail[]
+
+  @@index([merchantId])
+  @@schema("transaction")
+}
+
+model TopupFeeDetail {
+  id      Int         @id @default(autoincrement())
+  topupId Int
+  agentId Int?
+  type    FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  topUpTransation TopUpTransaction @relation(fields: [topupId], references: [id], onDelete: Cascade)
+
+  @@index([topupId])
+  @@schema("transaction")
+}
+
+/**
+ * TRANSFER_BANK:
+ * - Can transfered into bank account at profile
+ * - Customize bank account number
+ * TRANSFER_BANK Local Manual:
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - Transfer manually by admin thorugh Bank Account operational into recipient bank account
+ * - Auto Settlement by the time admin approved
+ * TRANSFER_BANK Local API
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - System hit Upstream API
+ * - Auto settlement after waiting for webhook
+ * ################################
+ * USDT:
+ * - Merchant fill the form
+ * - Admin check the form
+ * - Approve / Reject the form
+ * - Admin must purchase USDT through Vendor
+ * - Vendor send USDT to destination account USDT
+ * - Auto Settlement by the time admin approved
+ * USDT Manual
+ * - Admin have the money to purchase USDT
+ * USDT API
+ * - Admin does not have money
+ * - So must withdraw from upstream balance
+ * - System hit Upstream Disbursement channel
+ */
+model WithdrawTransaction {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  userRole String
+
+  systemReference   String  @unique // Our System Reference No
+  providerReference String? @unique // referenceNo (SNAP) - Transaction identifier on service consumer system
+  bankReference     String? //reff id from bank
+
+  providerName      String
+  paymentMethodName String // TRANSFER_BANK or USDT
+  nominal           Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  netNominal        Decimal @default(0.0) @db.Decimal(15, 2) // Money
+
+  /// Nullable, unlike the same three on DisbursementTransaction, because
+  /// `paymentMethodName` here can be USDT - which has no bank, no account
+  /// number and no account holder. NOT NULL would force a placeholder, and an
+  /// empty string in a bank-code column is how a bad join eventually finds a
+  /// match.
+  ///
+  /// Same polymorphism caveat as DisbursementTransaction: not a foreign key,
+  /// and the meaning depends on `paymentMethodName`.
+  accountHolderName String? // bisa merchant, agent, atau pihak ketiga
+  accountNumber     String?
+  bankCode          String?
+
+  status TransactionStatusEnum
+
+  paidAt DateTime? @db.Timestamptz(6)
+
+  settlementAt DateTime? @db.Timestamptz(6)
+
+  additionalInfo Json? @db.JsonB // Store NMID, RequestID, anything related to bank or custom upstream info
+  metadata       Json? @db.JsonB // Store Response Upstream
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Relasi
+  feeDetails WithdrawFeeDetail[]
+
+  @@index([userId])
+  @@index([status])
+  @@schema("transaction")
+}
+
+model WithdrawFeeDetail {
+  id         Int         @id @default(autoincrement())
+  withdrawId Int
+  agentId    Int?
+  type       FeeTypeEnum
+
+  nominal       Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feeFixed      Decimal @default(0.0) @db.Decimal(15, 2) // Money
+  feePercentage Decimal @default(0.0) @db.Decimal(8, 4) // Percentage
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  withdrawTransaction WithdrawTransaction @relation(fields: [withdrawId], references: [id], onDelete: Cascade)
+
+  @@index([withdrawId])
+  @@schema("transaction")
+}
+
 model WebhookLog {
-  id              Int                 @id @default(autoincrement())
-  transactionId   Int
-  source          String // e.g. midtrans, xendit
+  id Int @id @default(autoincrement())
+
+  // Nullable: a callback we cannot match to a transaction is exactly the one
+  // most worth keeping - a spoofing attempt, or a provider referencing an id we
+  // never issued. Requiring a transaction here would mean the only callbacks we
+  // could record are the ones that were already fine.
+  transactionId     Int?
+  // The provider's own id from the payload, so an unmatched callback is still
+  // searchable without parsing the JSON.
+  providerReference String?
+
+  source          String // e.g. motionpay, midtrans, xendit
   payload         Json
   rawSignature    String?
-  receivedAt      DateTime            @default(now())
+  receivedAt      DateTime            @default(now()) @db.Timestamptz(6)
   transactionType TransactionTypeEnum
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
@@ -271,10 +367,8 @@ model WebhookLog {
   deletedAt DateTime? @db.Timestamptz(6)
   deletedBy Int?      @db.Integer()
 
-  PurchaseTransaction   PurchaseTransaction? @relation(fields: [purchaseTransactionId], references: [id])
-  purchaseTransactionId Int?
-
   @@index([source])
+  @@index([providerReference])
   @@schema("transaction")
 }
 
@@ -284,7 +378,7 @@ model TransactionAudit {
   oldStatus       TransactionStatusEnum
   newStatus       TransactionStatusEnum
   source          String // "webhook", "admin", etc
-  changedAt       DateTime              @default(now())
+  changedAt       DateTime              @default(now()) @db.Timestamptz(6)
   transactionType TransactionTypeEnum
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
@@ -295,106 +389,6 @@ model TransactionAudit {
   deletedBy Int?      @db.Integer()
 
   @@index([transactionId])
-  @@schema("transaction")
-}
-
-model MerchantBalanceLog {
-  id             Int     @id @default(autoincrement())
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-  merchantId     Int
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType TransactionTypeEnum
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([merchantId])
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
-model AgentBalanceLog {
-  id             Int     @id @default(autoincrement())
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-  agentId        Int
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType TransactionTypeEnum
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([agentId])
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
-  @@schema("transaction")
-}
-
-model InternalBalanceLog {
-  id             Int     @id @default(autoincrement())
-  topupId        Int?
-  purchaseId     Int?
-  withdrawId     Int?
-  disbursementId Int?
-  merchantId     Int?
-  changeAmount   Decimal @default(0.0) @db.Decimal(15, 2) // Money // nominal perubahan (positif / negatif)
-  balanceActive  Decimal @default(0.0) @db.Decimal(15, 2) // Money // saldo akhir merchant setelah perubahan
-  balancePending Decimal @default(0.0) @db.Decimal(15, 2) // Money
-
-  transactionType   TransactionTypeEnum
-  providerName      String
-  paymentMethodName String
-
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  createdBy Int?      @db.Integer()
-  updatedAt DateTime? @db.Timestamptz(6)
-  updatedBy Int?      @db.Integer()
-  deletedAt DateTime? @db.Timestamptz(6)
-  deletedBy Int?      @db.Integer()
-
-  topupTransaction        TopUpTransaction?        @relation(fields: [topupId], references: [id], onDelete: SetNull)
-  purchaseTransaction     PurchaseTransaction?     @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  withdrawTransaction     WithdrawTransaction?     @relation(fields: [withdrawId], references: [id], onDelete: SetNull)
-  disbursementTransaction DisbursementTransaction? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
-
-  @@index([topupId])
-  @@index([purchaseId])
-  @@index([withdrawId])
-  @@index([disbursementId])
   @@schema("transaction")
 }
 
@@ -422,7 +416,355 @@ enum TransactionTypeEnum {
   TOPUP
   DISBURSEMENT
   PURCHASE
-  SETTLEMENT_PURCHASE
 
   @@schema("transaction")
+}
+
+model BalanceEntry {
+  id BigInt @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  direction BalanceDirectionEnum
+  amount    Decimal              @db.Decimal(18, 2) /// ALWAYS positive
+
+  reason     BalanceReasonEnum
+  sourceType BalanceSourceTypeEnum
+  sourceId   Int
+  batchId    Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  /// Idempotency. A replayed webhook, a re-run batch or a double-clicked
+  /// admin button fails the insert instead of double-crediting.
+  ///
+  /// `bucket` is in the key because one movement writes two rows - a
+  /// MERCHANT_SETTLED debits PENDING and credits AVAILABLE for the same
+  /// source. Without it those two would collide with each other.
+  @@unique([holderType, holderId, bucket, reason, sourceType, sourceId])
+  @@index([holderType, holderId, bucket, id])
+  @@index([batchId])
+  @@schema("transaction")
+}
+
+model BalanceSnapshot {
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+
+  amount Decimal @db.Decimal(18, 2)
+
+  /// The newest entry folded into `amount`. This is what makes the nightly
+  /// check in Step 4 exact rather than approximate: it sums entries up to
+  /// this id, so concurrent writes during the check cannot make it disagree.
+  lastEntryId BigInt
+
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedBy Int      @db.Integer()
+
+  @@id([holderType, holderId, bucket])
+  @@schema("transaction")
+}
+
+model BalanceAdjustment {
+  id Int @id @default(autoincrement())
+
+  holderType BalanceHolderTypeEnum
+  holderId   Int
+  bucket     BalanceBucketEnum
+  direction  BalanceDirectionEnum
+  amount     Decimal               @db.Decimal(18, 2)
+
+  /// Mandatory. An adjustment nobody can explain is indistinguishable from
+  /// an error, six months later.
+  reason   String  @db.VarChar(500)
+  /// Free-form pointer at whatever the evidence is - a chat thread, a ticket,
+  /// an upstream export filename.
+  evidence String? @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy Int      @db.Integer()
+
+  @@index([holderType, holderId])
+  @@schema("transaction")
+}
+
+enum BalanceHolderTypeEnum {
+  MERCHANT
+  AGENT
+  INTERNAL
+
+  @@schema("transaction")
+}
+
+enum BalanceBucketEnum {
+  PENDING /// Payment succeeded; not settled to the holder yet
+  AVAILABLE /// Spendable now
+  RESERVED /// Committed to a payout that is in flight
+
+  @@schema("transaction")
+}
+
+enum BalanceDirectionEnum {
+  CREDIT
+  DEBIT
+
+  @@schema("transaction")
+}
+
+enum BalanceReasonEnum {
+  PAYIN_CAPTURED
+  /// Refund or chargeback: a new entry reversing PAYIN_CAPTURED, never an edit.
+  /// Note the spelling - REVERSED, not RESERVED. Reservation is a payout
+  /// concept (PAYOUT_RESERVED below); there is no such thing as reserving a
+  /// payin, and the two words transpose easily enough to type-check silently.
+  PAYIN_REVERSED
+
+  PAYOUT_RESERVED
+  PAYOUT_COMPLETED
+  PAYOUT_FAILED
+
+  MERCHANT_SETTLED
+  TOPUP_APPROVED
+  MANUAL_ADJUSTMENT
+  OPENING_BALANCE
+
+  @@schema("transaction")
+}
+
+enum BalanceSourceTypeEnum {
+  PURCHASE
+  DISBURSEMENT
+  WITHDRAW
+  TOPUP
+  ADJUSTMENT
+  OPENING
+
+  @@schema("transaction")
+}
+
+/// Tables owned by apps/settlement, in their own Postgres schema so it is
+/// obvious at a glance which app writes them.
+///
+/// Their MIGRATIONS live here rather than in apps/settlement, deliberately:
+/// the DSN's default schema is `transaction`, so `transaction._prisma_migrations`
+/// is the one history covering both. That also lets apps/settlement import
+/// `@transaction/prisma` instead of maintaining a merged copy of these models -
+/// see Step 7.0. Do not look for apps/settlement/prisma/; there isn't one.
+model SettlementRun {
+  id         Int @id @default(autoincrement())
+  merchantId Int
+
+  /// `*` means the merchant's default policy - every payment method at once.
+  ///
+  /// A sentinel rather than NULL, deliberately. Postgres counts NULLs as
+  /// distinct in a unique index, so while this was `String?` the `@@unique`
+  /// below was inert for exactly the common case: two pods enqueueing the same
+  /// default-policy run both inserted. Measured on 17.4 - two identical NULL
+  /// rows accepted, the same pair with 'QRIS' rejected. Postgres 15+ can say
+  /// NULLS NOT DISTINCT, but Prisma cannot express it, which would mean a
+  /// hand-written index and a constraint the generator no longer owns.
+  paymentMethodName String                  @default("*")
+  dueAt             DateTime                @db.Timestamptz(6)
+  status            SettlementRunStatusEnum @default(PENDING)
+
+  /// Which *process instance* holds the lease - a pod name, or `hostname:pid`
+  /// outside Kubernetes. Not a `MACHINE_USER_ID`: a machine principal names a
+  /// role, and every settlement pod authenticates as the same one, so storing it
+  /// here would write an identical value on every row and answer nothing. The
+  /// question this column exists for is "which process died holding this run,
+  /// and whose logs do I read", which only an instance identity can answer.
+  ///
+  /// Deliberately disposable. Pod names change on every deploy, nothing joins on
+  /// it, and the sweeper resets on `claimedAt` age without ever reading it - so a
+  /// name that no longer resolves to a living pod is itself the useful signal.
+  claimedBy         String?           @db.VarChar(100)
+  claimedAt         DateTime?         @db.Timestamptz(6)
+  finishedAt        DateTime?         @db.Timestamptz(6)
+  failureReason     String?           @db.VarChar(1000)
+  attempts          Int               @default(0)
+  settlementBatches SettlementBatch[]
+
+  /// When the run was *enqueued*, which is not `dueAt` - the gap between them is
+  /// how you spot an enqueuer that stopped firing.
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  /// The principal that caused this run to exist: a `MACHINE_USER_ID` for the
+  /// enqueuer, a real `auth.User.id` once the dashboard can trigger one by hand.
+  /// That second case is the whole reason this column is worth having - it is
+  /// what separates "the cron did this" from "someone clicked the button at 2am"
+  /// on an operation that moves money.
+  ///
+  /// NOT NULL, like `BalanceEntry` and `BalanceAdjustment` and unlike the older
+  /// `*BalanceLog` tables. Those are nullable because `AUDITED_MODELS` fills them
+  /// opportunistically and may have no userId in CLS; this one is written
+  /// explicitly, and only two things ever write it, both of which always know
+  /// their principal. Nullable here would buy nothing and cost the compile error
+  /// that catches a forgotten `createdBy` - the same error that is the stated
+  /// reason `libs/balance` types against `@transaction/prisma` at all.
+  createdBy Int @db.Integer()
+
+  // No updatedAt/updatedBy/deletedAt/deletedBy, and this model is deliberately
+  // absent from AUDITED_MODELS. Two reasons, both load-bearing:
+  //
+  // 1. The claim and the sweeper in apps/settlement are raw SQL, which the
+  //    Prisma audit extension cannot see - it hooks `query.$allModels`. Generic
+  //    update columns would go stale on every status transition, and a row whose
+  //    `updatedAt` lies is worse than one that never claimed to have it. The
+  //    lifecycle is already recorded, and better, by claimedAt / finishedAt /
+  //    attempts / failureReason.
+  // 2. Auto-injection needs `authInfo.userId` in CLS. A @Cron has no request, so
+  //    without a cls.run() wrapper `getAuditUserId()` returns undefined and
+  //    `creationAuditFields` silently drops `createdBy`. Settlement writes are
+  //    all machine-driven, so createdBy is passed explicitly instead - the same
+  //    call the balance tables make, for the same reason.
+  //
+  // Adding this model to AUDITED_MODELS without the columns would throw outright:
+  // `creationAuditFields` injects `createdAt` unconditionally.
+
+  /// Makes the enqueuer safe to run on both pods - the second insert loses.
+  /// Load-bearing only because `paymentMethodName` is NOT NULL; see its comment.
+  @@unique([merchantId, paymentMethodName, dueAt])
+  @@index([status, dueAt])
+  @@schema("settlement")
+}
+
+model SettlementBatch {
+  id    Int @id @default(autoincrement())
+  runId Int
+
+  /// Descriptive, derived from what was claimed - never used to select.
+  sweptFrom DateTime? @db.Timestamptz(6)
+  sweptTo   DateTime? @db.Timestamptz(6)
+
+  transactionCount Int     @default(0)
+  grossAmount      Decimal @default(0) @db.Decimal(18, 2)
+  feeAmount        Decimal @default(0) @db.Decimal(18, 2)
+  netAmount        Decimal @default(0) @db.Decimal(18, 2)
+
+  postedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  run SettlementRun @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+  @@schema("settlement")
+}
+
+enum SettlementRunStatusEnum {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+
+  @@schema("settlement")
+}
+
+model MerchantSettlementPolicy {
+  id                Int    @id @default(autoincrement())
+  merchantId        Int
+  paymentMethodName String @default("*")
+
+  mode SettlementModeEnum
+
+  // FIXED_DELAY: 1 = T + 1
+  delayDays Int?
+
+  // SCHEDULED: ["06:00", "12:00","18:00","23:00"]
+  // FIXED_DELAY: a single entry
+  releaseTimes String[]
+
+  businessDaysOnly Boolean @default(false)
+
+  effectiveFrom DateTime  @db.Timestamptz(6)
+  effectiveTo   DateTime? @db.Timestamptz(6)
+
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  // Settlement configuration, not general merchant configuration - nothing
+  // outside the settlement app reads it. Keeping it here means that app
+  // borrows nothing from the `config` schema.
+  @@unique([merchantId, paymentMethodName, effectiveFrom])
+  @@schema("settlement")
+}
+
+enum SettlementModeEnum {
+  INSTANT
+  FOLLOW_UPSTREAM
+  FIXED_DELAY
+  SCHEDULED
+
+  @@schema("settlement")
+}
+
+model UpstreamSettlementWindow {
+  id                Int    @id @default(autoincrement())
+  providerName      String
+  paymentMethodName String
+  label             String // "DAILY", "BATCH_1", "BATCH_2"
+
+  // Transaction window, as a half-open interval [start, end) in `timezone`.
+  windowStart          String // "18:00"
+  windowStartDayOffset Int    @default(0) // -1 when the window opens the previous day
+  windowEnd            String // "12:00"
+
+  // When the upstream releases it.
+  settlementOffset Int // 0 same day, 1 = H+1, 3 = H+3
+  settlementTime   String? // "13:00"; null when the partner gives no time
+  businessDaysOnly Boolean @default(false)
+
+  timezone String @default("Asia/Jakarta")
+
+  effectiveFrom DateTime  @db.Timestamptz(6)
+  effectiveTo   DateTime? @db.Timestamptz(6) // schedules change; keep the history
+
+  // Audited for the same reason as MerchantSettlementPolicy, and arguably more
+  // urgently: these rows are hand-typed from a partner's notice, and an hour
+  // entered wrong here moves the payout time for *every* merchant on that rail,
+  // quietly, until somebody notices. A holiday typed wrong shifts one payout.
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+  deletedAt DateTime? @db.Timestamptz(6)
+  deletedBy Int?      @db.Integer()
+
+  /// `label` is in the key because a partner can run several windows on one
+  /// method from the same date - Teleanjar settles batch 1 at 13:00 and batch 2
+  /// at 19:00, both effective from the same day. Without it the second insert
+  /// loses, and the schedule becomes unrepresentable rather than merely wrong.
+  @@unique([providerName, paymentMethodName, label, effectiveFrom])
+  @@index([providerName, paymentMethodName])
+  @@schema("settlement")
+}
+
+model BusinessDayCalendar {
+  date          DateTime @db.Date
+  isBusinessDay Boolean
+  providerName  String   @default("*") /// `*` = the national calendar; a provider name overrides it for that partner
+  note          String? // "International Labor Day 2026, per Pakailink notice"
+
+  /// No `deletedAt`/`deletedBy`, unlike the other two settlement tables, and
+  /// this one is the exception on purpose.
+  ///
+  /// The primary key is a natural one with no surrogate id, so a soft-deleted
+  /// row would occupy its own key forever: enter 2026-05-01 by mistake, retire
+  /// it, then try to enter it correctly and the insert collides on the primary
+  /// key with no way round it but un-deleting. A mistaken holiday is a
+  /// correction, not a tombstone - delete it, and `updatedBy` still records who
+  /// last touched the rows that survive.
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy Int?      @db.Integer()
+  updatedAt DateTime? @db.Timestamptz(6)
+  updatedBy Int?      @db.Integer()
+
+  @@id([date, providerName])
+  @@schema("settlement")
 }

@@ -1,17 +1,29 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { MotionPayAuthService } from './motionpay-auth.service';
-import { MotionPayQRISService } from './motionpay-qris.service';
-import { MotionPayQrisController } from './motionpay-qris.controller';
-import { MotionPayTransferAuthService } from './motionpay-transfer.auth.service';
-import { MotionPayTransferService } from './motionpay-transfer.service';
-import { MotionPayTransferController } from './motionpay-transfer.controller';
+import {
+  MotionPayQrisAuthService,
+  MotionPayQrisCallbackService,
+  MotionPayQrisManualController,
+  MotionPayQrisService,
+} from './qris';
+import {
+  MotionPayTransferAuthService,
+  MotionPayTransferCallbackService,
+  MotionPayTransferManualController,
+  MotionPayTransferService,
+} from './transfer';
+import {
+  MotionPayBillerAuthService,
+  MotionPayBillerCallbackService,
+  MotionPayBillerManualController,
+  MotionPayBillerService,
+} from './biller';
 
 /**
  * MotionPay (Flash Mobile) client — two independent products behind one
  * provider name:
  *
- * - **QRIS** (`MotionPayQRISService`) — pay-in, on the `app.` host.
+ * - **QRIS** (`MotionPayQrisService`) — pay-in, on the `app.` host.
  * - **Transfer** (`MotionPayTransferService`) — payout from a prepaid deposit,
  *   on the `secure.` host with its own credentials and token endpoint.
  *
@@ -19,22 +31,46 @@ import { MotionPayTransferController } from './motionpay-transfer.controller';
  * differently shaped envelopes; neither is an internal detail worth exposing,
  * so only the two product services are exported.
  *
- * The controllers are manual test surfaces for Swagger, not product API — both
- * are inert in production and should be dropped once the real purchase and
- * payout flows call these services directly.
+ * The two controllers here are manual test surfaces for Swagger, not product
+ * API — both are inert in production and should be dropped once the real
+ * purchase and payout flows call these services directly.
+ *
+ * The inbound QRIS **callback** route is deliberately not one of them. This
+ * module must not depend on the business layer, so the endpoint that composes
+ * translation with settlement lives in `src/callback` and imports both. What
+ * lives here is `MotionPayQrisCallbackService`, which only translates.
  *
  * `MotionPayConfig` is not imported here — `ConfigurationModule` is @Global and
  * is registered in the app module.
  */
 @Module({
   imports: [HttpModule],
-  controllers: [MotionPayQrisController, MotionPayTransferController],
+  controllers: [
+    MotionPayQrisManualController,
+    MotionPayTransferManualController,
+    MotionPayBillerManualController,
+  ],
   providers: [
-    MotionPayAuthService,
-    MotionPayQRISService,
+    MotionPayQrisAuthService,
+    MotionPayQrisService,
+    MotionPayQrisCallbackService,
     MotionPayTransferAuthService,
     MotionPayTransferService,
+    MotionPayTransferCallbackService,
+    MotionPayBillerAuthService,
+    MotionPayBillerService,
+    MotionPayBillerCallbackService,
   ],
-  exports: [MotionPayQRISService, MotionPayTransferService],
+  exports: [
+    MotionPayQrisAuthService,
+    MotionPayQrisService,
+    MotionPayQrisCallbackService,
+    MotionPayTransferAuthService,
+    MotionPayTransferService,
+    MotionPayTransferCallbackService,
+    MotionPayBillerAuthService,
+    MotionPayBillerService,
+    MotionPayBillerCallbackService,
+  ],
 })
 export class MotionPayModule {}

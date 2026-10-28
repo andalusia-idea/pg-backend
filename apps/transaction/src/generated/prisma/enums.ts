@@ -34,8 +34,80 @@ export const TransactionTypeEnum = {
   WITHDRAW: 'WITHDRAW',
   TOPUP: 'TOPUP',
   DISBURSEMENT: 'DISBURSEMENT',
-  PURCHASE: 'PURCHASE',
-  SETTLEMENT_PURCHASE: 'SETTLEMENT_PURCHASE'
+  PURCHASE: 'PURCHASE'
 } as const
 
 export type TransactionTypeEnum = (typeof TransactionTypeEnum)[keyof typeof TransactionTypeEnum]
+
+
+export const BalanceHolderTypeEnum = {
+  MERCHANT: 'MERCHANT',
+  AGENT: 'AGENT',
+  INTERNAL: 'INTERNAL'
+} as const
+
+export type BalanceHolderTypeEnum = (typeof BalanceHolderTypeEnum)[keyof typeof BalanceHolderTypeEnum]
+
+
+export const BalanceBucketEnum = {
+  PENDING: 'PENDING',
+  AVAILABLE: 'AVAILABLE',
+  RESERVED: 'RESERVED'
+} as const
+
+export type BalanceBucketEnum = (typeof BalanceBucketEnum)[keyof typeof BalanceBucketEnum]
+
+
+export const BalanceDirectionEnum = {
+  CREDIT: 'CREDIT',
+  DEBIT: 'DEBIT'
+} as const
+
+export type BalanceDirectionEnum = (typeof BalanceDirectionEnum)[keyof typeof BalanceDirectionEnum]
+
+
+export const BalanceReasonEnum = {
+  PAYIN_CAPTURED: 'PAYIN_CAPTURED',
+  PAYIN_REVERSED: 'PAYIN_REVERSED',
+  PAYOUT_RESERVED: 'PAYOUT_RESERVED',
+  PAYOUT_COMPLETED: 'PAYOUT_COMPLETED',
+  PAYOUT_FAILED: 'PAYOUT_FAILED',
+  MERCHANT_SETTLED: 'MERCHANT_SETTLED',
+  TOPUP_APPROVED: 'TOPUP_APPROVED',
+  MANUAL_ADJUSTMENT: 'MANUAL_ADJUSTMENT',
+  OPENING_BALANCE: 'OPENING_BALANCE'
+} as const
+
+export type BalanceReasonEnum = (typeof BalanceReasonEnum)[keyof typeof BalanceReasonEnum]
+
+
+export const BalanceSourceTypeEnum = {
+  PURCHASE: 'PURCHASE',
+  DISBURSEMENT: 'DISBURSEMENT',
+  WITHDRAW: 'WITHDRAW',
+  TOPUP: 'TOPUP',
+  ADJUSTMENT: 'ADJUSTMENT',
+  OPENING: 'OPENING'
+} as const
+
+export type BalanceSourceTypeEnum = (typeof BalanceSourceTypeEnum)[keyof typeof BalanceSourceTypeEnum]
+
+
+export const SettlementRunStatusEnum = {
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  DONE: 'DONE',
+  FAILED: 'FAILED'
+} as const
+
+export type SettlementRunStatusEnum = (typeof SettlementRunStatusEnum)[keyof typeof SettlementRunStatusEnum]
+
+
+export const SettlementModeEnum = {
+  INSTANT: 'INSTANT',
+  FOLLOW_UPSTREAM: 'FOLLOW_UPSTREAM',
+  FIXED_DELAY: 'FIXED_DELAY',
+  SCHEDULED: 'SCHEDULED'
+} as const
+
+export type SettlementModeEnum = (typeof SettlementModeEnum)[keyof typeof SettlementModeEnum]

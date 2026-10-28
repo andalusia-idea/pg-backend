@@ -6,6 +6,10 @@ import { DatabaseConfig } from './database.config';
 import { JwtConfig } from './jwt.config';
 import { MotionPayConfig } from './motionpay.config';
 import { MerchantSignatureConfig } from './merchant-signature.config';
+import { FeeConfig } from './fee.config';
+import { ProfileConfig } from './profile.config';
+import { JatelindoConfig } from './jatelindo.config';
+import { SettlementConfig } from './settlement.config';
 
 @Global()
 @Module({})
@@ -25,8 +29,14 @@ export class ConfigurationModule {
         TCPConfig,
         DatabaseConfig,
         JwtConfig,
-        MotionPayConfig,
         MerchantSignatureConfig,
+        FeeConfig,
+        ProfileConfig,
+        SettlementConfig,
+
+        /// Upstream
+        MotionPayConfig,
+        JatelindoConfig,
       ],
       exports: [
         ConfigModule,
@@ -34,8 +44,14 @@ export class ConfigurationModule {
         TCPConfig,
         DatabaseConfig,
         JwtConfig,
-        MotionPayConfig,
         MerchantSignatureConfig,
+        FeeConfig,
+        ProfileConfig,
+        SettlementConfig,
+
+        /// Upstream
+        MotionPayConfig,
+        JatelindoConfig,
       ],
     };
   }

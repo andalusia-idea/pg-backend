@@ -46,7 +46,6 @@ export type BaseFeeSumAggregateOutputType = {
 
 export type BaseFeeMinAggregateOutputType = {
   id: number | null
-  code: string | null
   providerName: string | null
   paymentMethodName: string | null
   transactionType: $Enums.TransactionTypeEnumConfig | null
@@ -63,7 +62,6 @@ export type BaseFeeMinAggregateOutputType = {
 
 export type BaseFeeMaxAggregateOutputType = {
   id: number | null
-  code: string | null
   providerName: string | null
   paymentMethodName: string | null
   transactionType: $Enums.TransactionTypeEnumConfig | null
@@ -80,7 +78,6 @@ export type BaseFeeMaxAggregateOutputType = {
 
 export type BaseFeeCountAggregateOutputType = {
   id: number
-  code: number
   providerName: number
   paymentMethodName: number
   transactionType: number
@@ -117,7 +114,6 @@ export type BaseFeeSumAggregateInputType = {
 
 export type BaseFeeMinAggregateInputType = {
   id?: true
-  code?: true
   providerName?: true
   paymentMethodName?: true
   transactionType?: true
@@ -134,7 +130,6 @@ export type BaseFeeMinAggregateInputType = {
 
 export type BaseFeeMaxAggregateInputType = {
   id?: true
-  code?: true
   providerName?: true
   paymentMethodName?: true
   transactionType?: true
@@ -151,7 +146,6 @@ export type BaseFeeMaxAggregateInputType = {
 
 export type BaseFeeCountAggregateInputType = {
   id?: true
-  code?: true
   providerName?: true
   paymentMethodName?: true
   transactionType?: true
@@ -255,7 +249,6 @@ export type BaseFeeGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type BaseFeeGroupByOutputType = {
   id: number
-  code: string
   providerName: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
@@ -295,7 +288,6 @@ export type BaseFeeWhereInput = {
   OR?: Prisma.BaseFeeWhereInput[]
   NOT?: Prisma.BaseFeeWhereInput | Prisma.BaseFeeWhereInput[]
   id?: Prisma.IntFilter<"BaseFee"> | number
-  code?: Prisma.StringFilter<"BaseFee"> | string
   providerName?: Prisma.StringFilter<"BaseFee"> | string
   paymentMethodName?: Prisma.StringFilter<"BaseFee"> | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFilter<"BaseFee"> | $Enums.TransactionTypeEnumConfig
@@ -315,7 +307,6 @@ export type BaseFeeWhereInput = {
 
 export type BaseFeeOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
@@ -335,7 +326,7 @@ export type BaseFeeOrderByWithRelationInput = {
 
 export type BaseFeeWhereUniqueInput = Prisma.AtLeast<{
   id?: number
-  code?: string
+  providerName_paymentMethodName_transactionType?: Prisma.BaseFeeProviderNamePaymentMethodNameTransactionTypeCompoundUniqueInput
   AND?: Prisma.BaseFeeWhereInput | Prisma.BaseFeeWhereInput[]
   OR?: Prisma.BaseFeeWhereInput[]
   NOT?: Prisma.BaseFeeWhereInput | Prisma.BaseFeeWhereInput[]
@@ -354,11 +345,10 @@ export type BaseFeeWhereUniqueInput = Prisma.AtLeast<{
   provider?: Prisma.XOR<Prisma.ProviderScalarRelationFilter, Prisma.ProviderWhereInput>
   paymentMethod?: Prisma.XOR<Prisma.PaymentMethodScalarRelationFilter, Prisma.PaymentMethodWhereInput>
   merchantFees?: Prisma.MerchantFeeListRelationFilter
-}, "id" | "code">
+}, "id" | "providerName_paymentMethodName_transactionType">
 
 export type BaseFeeOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
@@ -383,7 +373,6 @@ export type BaseFeeScalarWhereWithAggregatesInput = {
   OR?: Prisma.BaseFeeScalarWhereWithAggregatesInput[]
   NOT?: Prisma.BaseFeeScalarWhereWithAggregatesInput | Prisma.BaseFeeScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"BaseFee"> | number
-  code?: Prisma.StringWithAggregatesFilter<"BaseFee"> | string
   providerName?: Prisma.StringWithAggregatesFilter<"BaseFee"> | string
   paymentMethodName?: Prisma.StringWithAggregatesFilter<"BaseFee"> | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigWithAggregatesFilter<"BaseFee"> | $Enums.TransactionTypeEnumConfig
@@ -399,7 +388,6 @@ export type BaseFeeScalarWhereWithAggregatesInput = {
 }
 
 export type BaseFeeCreateInput = {
-  code: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -417,7 +405,6 @@ export type BaseFeeCreateInput = {
 
 export type BaseFeeUncheckedCreateInput = {
   id?: number
-  code: string
   providerName: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
@@ -434,7 +421,6 @@ export type BaseFeeUncheckedCreateInput = {
 }
 
 export type BaseFeeUpdateInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -452,7 +438,6 @@ export type BaseFeeUpdateInput = {
 
 export type BaseFeeUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
@@ -470,7 +455,6 @@ export type BaseFeeUncheckedUpdateInput = {
 
 export type BaseFeeCreateManyInput = {
   id?: number
-  code: string
   providerName: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
@@ -486,7 +470,6 @@ export type BaseFeeCreateManyInput = {
 }
 
 export type BaseFeeUpdateManyMutationInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -501,7 +484,6 @@ export type BaseFeeUpdateManyMutationInput = {
 
 export type BaseFeeUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
@@ -526,9 +508,14 @@ export type BaseFeeOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type BaseFeeProviderNamePaymentMethodNameTransactionTypeCompoundUniqueInput = {
+  providerName: string
+  paymentMethodName: string
+  transactionType: $Enums.TransactionTypeEnumConfig
+}
+
 export type BaseFeeCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
@@ -554,7 +541,6 @@ export type BaseFeeAvgOrderByAggregateInput = {
 
 export type BaseFeeMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
@@ -571,7 +557,6 @@ export type BaseFeeMaxOrderByAggregateInput = {
 
 export type BaseFeeMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  code?: Prisma.SortOrder
   providerName?: Prisma.SortOrder
   paymentMethodName?: Prisma.SortOrder
   transactionType?: Prisma.SortOrder
@@ -703,7 +688,6 @@ export type BaseFeeUpdateOneRequiredWithoutMerchantFeesNestedInput = {
 }
 
 export type BaseFeeCreateWithoutProviderInput = {
-  code: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -720,7 +704,6 @@ export type BaseFeeCreateWithoutProviderInput = {
 
 export type BaseFeeUncheckedCreateWithoutProviderInput = {
   id?: number
-  code: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -766,7 +749,6 @@ export type BaseFeeScalarWhereInput = {
   OR?: Prisma.BaseFeeScalarWhereInput[]
   NOT?: Prisma.BaseFeeScalarWhereInput | Prisma.BaseFeeScalarWhereInput[]
   id?: Prisma.IntFilter<"BaseFee"> | number
-  code?: Prisma.StringFilter<"BaseFee"> | string
   providerName?: Prisma.StringFilter<"BaseFee"> | string
   paymentMethodName?: Prisma.StringFilter<"BaseFee"> | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFilter<"BaseFee"> | $Enums.TransactionTypeEnumConfig
@@ -782,7 +764,6 @@ export type BaseFeeScalarWhereInput = {
 }
 
 export type BaseFeeCreateWithoutPaymentMethodInput = {
-  code: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -799,7 +780,6 @@ export type BaseFeeCreateWithoutPaymentMethodInput = {
 
 export type BaseFeeUncheckedCreateWithoutPaymentMethodInput = {
   id?: number
-  code: string
   providerName: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -841,7 +821,6 @@ export type BaseFeeUpdateManyWithWhereWithoutPaymentMethodInput = {
 }
 
 export type BaseFeeCreateWithoutMerchantFeesInput = {
-  code: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -858,7 +837,6 @@ export type BaseFeeCreateWithoutMerchantFeesInput = {
 
 export type BaseFeeUncheckedCreateWithoutMerchantFeesInput = {
   id?: number
-  code: string
   providerName: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
@@ -890,7 +868,6 @@ export type BaseFeeUpdateToOneWithWhereWithoutMerchantFeesInput = {
 }
 
 export type BaseFeeUpdateWithoutMerchantFeesInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -907,7 +884,6 @@ export type BaseFeeUpdateWithoutMerchantFeesInput = {
 
 export type BaseFeeUncheckedUpdateWithoutMerchantFeesInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
@@ -924,7 +900,6 @@ export type BaseFeeUncheckedUpdateWithoutMerchantFeesInput = {
 
 export type BaseFeeCreateManyProviderInput = {
   id?: number
-  code: string
   paymentMethodName: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -939,7 +914,6 @@ export type BaseFeeCreateManyProviderInput = {
 }
 
 export type BaseFeeUpdateWithoutProviderInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -956,7 +930,6 @@ export type BaseFeeUpdateWithoutProviderInput = {
 
 export type BaseFeeUncheckedUpdateWithoutProviderInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -973,7 +946,6 @@ export type BaseFeeUncheckedUpdateWithoutProviderInput = {
 
 export type BaseFeeUncheckedUpdateManyWithoutProviderInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   paymentMethodName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -989,7 +961,6 @@ export type BaseFeeUncheckedUpdateManyWithoutProviderInput = {
 
 export type BaseFeeCreateManyPaymentMethodInput = {
   id?: number
-  code: string
   providerName: string
   transactionType: $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1004,7 +975,6 @@ export type BaseFeeCreateManyPaymentMethodInput = {
 }
 
 export type BaseFeeUpdateWithoutPaymentMethodInput = {
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   feeProviderPercentage?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1021,7 +991,6 @@ export type BaseFeeUpdateWithoutPaymentMethodInput = {
 
 export type BaseFeeUncheckedUpdateWithoutPaymentMethodInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1038,7 +1007,6 @@ export type BaseFeeUncheckedUpdateWithoutPaymentMethodInput = {
 
 export type BaseFeeUncheckedUpdateManyWithoutPaymentMethodInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
-  code?: Prisma.StringFieldUpdateOperationsInput | string
   providerName?: Prisma.StringFieldUpdateOperationsInput | string
   transactionType?: Prisma.EnumTransactionTypeEnumConfigFieldUpdateOperationsInput | $Enums.TransactionTypeEnumConfig
   feeProviderFixed?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1085,7 +1053,6 @@ export type BaseFeeCountOutputTypeCountMerchantFeesArgs<ExtArgs extends runtime.
 
 export type BaseFeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   transactionType?: boolean
@@ -1106,7 +1073,6 @@ export type BaseFeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 
 export type BaseFeeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   transactionType?: boolean
@@ -1125,7 +1091,6 @@ export type BaseFeeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 
 export type BaseFeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  code?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   transactionType?: boolean
@@ -1144,7 +1109,6 @@ export type BaseFeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 
 export type BaseFeeSelectScalar = {
   id?: boolean
-  code?: boolean
   providerName?: boolean
   paymentMethodName?: boolean
   transactionType?: boolean
@@ -1159,7 +1123,7 @@ export type BaseFeeSelectScalar = {
   deletedBy?: boolean
 }
 
-export type BaseFeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "code" | "providerName" | "paymentMethodName" | "transactionType" | "feeProviderFixed" | "feeProviderPercentage" | "isActive" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["baseFee"]>
+export type BaseFeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "providerName" | "paymentMethodName" | "transactionType" | "feeProviderFixed" | "feeProviderPercentage" | "isActive" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["baseFee"]>
 export type BaseFeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   provider?: boolean | Prisma.ProviderDefaultArgs<ExtArgs>
   paymentMethod?: boolean | Prisma.PaymentMethodDefaultArgs<ExtArgs>
@@ -1184,10 +1148,6 @@ export type $BaseFeePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
-    /**
-     * PROVIDER_PAYMENTMETHOD_TRANSACTIONTYPE => example format
-     */
-    code: string
     providerName: string
     paymentMethodName: string
     transactionType: $Enums.TransactionTypeEnumConfig
@@ -1627,7 +1587,6 @@ export interface Prisma__BaseFeeClient<T, Null = never, ExtArgs extends runtime.
  */
 export interface BaseFeeFieldRefs {
   readonly id: Prisma.FieldRef<"BaseFee", 'Int'>
-  readonly code: Prisma.FieldRef<"BaseFee", 'String'>
   readonly providerName: Prisma.FieldRef<"BaseFee", 'String'>
   readonly paymentMethodName: Prisma.FieldRef<"BaseFee", 'String'>
   readonly transactionType: Prisma.FieldRef<"BaseFee", 'TransactionTypeEnumConfig'>

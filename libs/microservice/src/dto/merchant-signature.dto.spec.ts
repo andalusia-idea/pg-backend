@@ -4,7 +4,7 @@ import {
   FilterMerchantSignatureValidationSchema,
   MerchantSignatureValidationSchema,
 } from './merchant-signature.dto';
-import { MerchantSignatureFailureEnum } from '../microservice.enum';
+import { MerchantSignatureFailureEnum } from '../merchant.enum';
 
 /**
  * Same options as {@link AjvPipe}, so these tests exercise the schemas the way
@@ -30,6 +30,7 @@ const validRequest = () => ({
   httpMethod: 'POST',
   endpoint: '/open/v1/payin/purchase',
   bodyHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+  ipAddress: '203.0.113.5',
 });
 
 const withRequest = (mutate: (payload: Record<string, unknown>) => void) => {
@@ -98,6 +99,7 @@ describe('FilterMerchantSignatureValidationSchema', () => {
     ['httpMethod'],
     ['endpoint'],
     ['bodyHash'],
+    ['ipAddress'],
   ])('rejects a payload missing %s', (field) => {
     expect(withRequest((p) => delete p[field])).toBe(false);
   });
@@ -125,6 +127,7 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: 42,
         reason: null,
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(true);
   });
@@ -137,6 +140,7 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: null,
         reason: MerchantSignatureFailureEnum.UNKNOWN_CLIENT,
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(true);
   });
@@ -150,6 +154,7 @@ describe('MerchantSignatureValidationSchema', () => {
           userId: null,
           reason,
           serverTime: '2026-08-23T10:15:30+07:00',
+          retryAfterSeconds: null,
         }),
       ).toBe(true);
     },
@@ -162,14 +167,20 @@ describe('MerchantSignatureValidationSchema', () => {
         userId: null,
         reason: 'SOMETHING_ELSE',
         serverTime: '2026-08-23T10:15:30+07:00',
+        retryAfterSeconds: null,
       }),
     ).toBe(false);
   });
 
   /** Always populated so the guard can echo it on a skew rejection. */
   it('requires serverTime', () => {
-    expect(validateResponse({ isValid: true, userId: 42, reason: null })).toBe(
-      false,
-    );
+    expect(
+      validateResponse({
+        isValid: true,
+        userId: 42,
+        reason: null,
+        retryAfterSeconds: null,
+      }),
+    ).toBe(false);
   });
 });

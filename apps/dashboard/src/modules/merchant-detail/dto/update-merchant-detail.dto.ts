@@ -10,8 +10,6 @@ import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
  * the whole DTO into `merchantDetail.update`, which threw on an unknown `email`
  * argument the moment anyone actually changed an email.
  *
- * `settlementInterval` is intentionally absent: it lives on `config.Merchant`,
- * and legacy's update never touched it either.
  */
 export class UpdateMerchantDetailDto {
   @ApiPropertyOptional()

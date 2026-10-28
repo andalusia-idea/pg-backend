@@ -40,8 +40,6 @@ export type ProviderSumAggregateOutputType = {
 
 export type ProviderMinAggregateOutputType = {
   name: string | null
-  reconciliationTime: string | null
-  lastReconciliationAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -52,8 +50,6 @@ export type ProviderMinAggregateOutputType = {
 
 export type ProviderMaxAggregateOutputType = {
   name: string | null
-  reconciliationTime: string | null
-  lastReconciliationAt: Date | null
   createdAt: Date | null
   createdBy: number | null
   updatedAt: Date | null
@@ -64,8 +60,6 @@ export type ProviderMaxAggregateOutputType = {
 
 export type ProviderCountAggregateOutputType = {
   name: number
-  reconciliationTime: number
-  lastReconciliationAt: number
   createdAt: number
   createdBy: number
   updatedAt: number
@@ -90,8 +84,6 @@ export type ProviderSumAggregateInputType = {
 
 export type ProviderMinAggregateInputType = {
   name?: true
-  reconciliationTime?: true
-  lastReconciliationAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -102,8 +94,6 @@ export type ProviderMinAggregateInputType = {
 
 export type ProviderMaxAggregateInputType = {
   name?: true
-  reconciliationTime?: true
-  lastReconciliationAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -114,8 +104,6 @@ export type ProviderMaxAggregateInputType = {
 
 export type ProviderCountAggregateInputType = {
   name?: true
-  reconciliationTime?: true
-  lastReconciliationAt?: true
   createdAt?: true
   createdBy?: true
   updatedAt?: true
@@ -213,8 +201,6 @@ export type ProviderGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 
 export type ProviderGroupByOutputType = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt: Date | null
   createdAt: Date
   createdBy: number | null
   updatedAt: Date | null
@@ -248,8 +234,6 @@ export type ProviderWhereInput = {
   OR?: Prisma.ProviderWhereInput[]
   NOT?: Prisma.ProviderWhereInput | Prisma.ProviderWhereInput[]
   name?: Prisma.StringFilter<"Provider"> | string
-  reconciliationTime?: Prisma.StringFilter<"Provider"> | string
-  lastReconciliationAt?: Prisma.DateTimeNullableFilter<"Provider"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Provider"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"Provider"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"Provider"> | Date | string | null
@@ -261,8 +245,6 @@ export type ProviderWhereInput = {
 
 export type ProviderOrderByWithRelationInput = {
   name?: Prisma.SortOrder
-  reconciliationTime?: Prisma.SortOrder
-  lastReconciliationAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -277,8 +259,6 @@ export type ProviderWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.ProviderWhereInput | Prisma.ProviderWhereInput[]
   OR?: Prisma.ProviderWhereInput[]
   NOT?: Prisma.ProviderWhereInput | Prisma.ProviderWhereInput[]
-  reconciliationTime?: Prisma.StringFilter<"Provider"> | string
-  lastReconciliationAt?: Prisma.DateTimeNullableFilter<"Provider"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Provider"> | Date | string
   createdBy?: Prisma.IntNullableFilter<"Provider"> | number | null
   updatedAt?: Prisma.DateTimeNullableFilter<"Provider"> | Date | string | null
@@ -290,8 +270,6 @@ export type ProviderWhereUniqueInput = Prisma.AtLeast<{
 
 export type ProviderOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
-  reconciliationTime?: Prisma.SortOrder
-  lastReconciliationAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   updatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -310,8 +288,6 @@ export type ProviderScalarWhereWithAggregatesInput = {
   OR?: Prisma.ProviderScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ProviderScalarWhereWithAggregatesInput | Prisma.ProviderScalarWhereWithAggregatesInput[]
   name?: Prisma.StringWithAggregatesFilter<"Provider"> | string
-  reconciliationTime?: Prisma.StringWithAggregatesFilter<"Provider"> | string
-  lastReconciliationAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Provider"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Provider"> | Date | string
   createdBy?: Prisma.IntNullableWithAggregatesFilter<"Provider"> | number | null
   updatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Provider"> | Date | string | null
@@ -322,8 +298,6 @@ export type ProviderScalarWhereWithAggregatesInput = {
 
 export type ProviderCreateInput = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -335,8 +309,6 @@ export type ProviderCreateInput = {
 
 export type ProviderUncheckedCreateInput = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -348,8 +320,6 @@ export type ProviderUncheckedCreateInput = {
 
 export type ProviderUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -361,8 +331,6 @@ export type ProviderUpdateInput = {
 
 export type ProviderUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -374,8 +342,6 @@ export type ProviderUncheckedUpdateInput = {
 
 export type ProviderCreateManyInput = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -386,8 +352,6 @@ export type ProviderCreateManyInput = {
 
 export type ProviderUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -398,8 +362,6 @@ export type ProviderUpdateManyMutationInput = {
 
 export type ProviderUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -410,8 +372,6 @@ export type ProviderUncheckedUpdateManyInput = {
 
 export type ProviderCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
-  reconciliationTime?: Prisma.SortOrder
-  lastReconciliationAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -428,8 +388,6 @@ export type ProviderAvgOrderByAggregateInput = {
 
 export type ProviderMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
-  reconciliationTime?: Prisma.SortOrder
-  lastReconciliationAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -440,8 +398,6 @@ export type ProviderMaxOrderByAggregateInput = {
 
 export type ProviderMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
-  reconciliationTime?: Prisma.SortOrder
-  lastReconciliationAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -477,8 +433,6 @@ export type ProviderUpdateOneRequiredWithoutBaseFeesNestedInput = {
 
 export type ProviderCreateWithoutBaseFeesInput = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -489,8 +443,6 @@ export type ProviderCreateWithoutBaseFeesInput = {
 
 export type ProviderUncheckedCreateWithoutBaseFeesInput = {
   name: string
-  reconciliationTime: string
-  lastReconciliationAt?: Date | string | null
   createdAt?: Date | string
   createdBy?: number | null
   updatedAt?: Date | string | null
@@ -517,8 +469,6 @@ export type ProviderUpdateToOneWithWhereWithoutBaseFeesInput = {
 
 export type ProviderUpdateWithoutBaseFeesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -529,8 +479,6 @@ export type ProviderUpdateWithoutBaseFeesInput = {
 
 export type ProviderUncheckedUpdateWithoutBaseFeesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  reconciliationTime?: Prisma.StringFieldUpdateOperationsInput | string
-  lastReconciliationAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdBy?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   updatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -572,8 +520,6 @@ export type ProviderCountOutputTypeCountBaseFeesArgs<ExtArgs extends runtime.Typ
 
 export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   name?: boolean
-  reconciliationTime?: boolean
-  lastReconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -586,8 +532,6 @@ export type ProviderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
 
 export type ProviderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   name?: boolean
-  reconciliationTime?: boolean
-  lastReconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -598,8 +542,6 @@ export type ProviderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type ProviderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   name?: boolean
-  reconciliationTime?: boolean
-  lastReconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -610,8 +552,6 @@ export type ProviderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 
 export type ProviderSelectScalar = {
   name?: boolean
-  reconciliationTime?: boolean
-  lastReconciliationAt?: boolean
   createdAt?: boolean
   createdBy?: boolean
   updatedAt?: boolean
@@ -620,7 +560,7 @@ export type ProviderSelectScalar = {
   deletedBy?: boolean
 }
 
-export type ProviderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"name" | "reconciliationTime" | "lastReconciliationAt" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["provider"]>
+export type ProviderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"name" | "createdAt" | "createdBy" | "updatedAt" | "updatedBy" | "deletedAt" | "deletedBy", ExtArgs["result"]["provider"]>
 export type ProviderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   baseFees?: boolean | Prisma.Provider$baseFeesArgs<ExtArgs>
   _count?: boolean | Prisma.ProviderCountOutputTypeDefaultArgs<ExtArgs>
@@ -635,8 +575,6 @@ export type $ProviderPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     name: string
-    reconciliationTime: string
-    lastReconciliationAt: Date | null
     createdAt: Date
     createdBy: number | null
     updatedAt: Date | null
@@ -1068,8 +1006,6 @@ export interface Prisma__ProviderClient<T, Null = never, ExtArgs extends runtime
  */
 export interface ProviderFieldRefs {
   readonly name: Prisma.FieldRef<"Provider", 'String'>
-  readonly reconciliationTime: Prisma.FieldRef<"Provider", 'String'>
-  readonly lastReconciliationAt: Prisma.FieldRef<"Provider", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Provider", 'DateTime'>
   readonly createdBy: Prisma.FieldRef<"Provider", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"Provider", 'DateTime'>

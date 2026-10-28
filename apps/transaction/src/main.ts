@@ -9,10 +9,34 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 
+/**
+ * What Fastify treats as a trusted proxy when resolving `request.ip`.
+ *
+ * Read from `process.env` rather than `AppConfig` because the adapter is
+ * constructed before Nest boots, so no injected config exists yet. In k8s this
+ * arrives as a real environment variable; locally it is normally unset, since
+ * there is no proxy in front.
+ *
+ * **Unset means do not trust `X-Forwarded-For` at all**, so `request.ip` is the
+ * socket address - behind an ingress that is the proxy's own address, identical
+ * for every caller. Set it to the ingress CIDR (e.g. `10.42.0.0/16`) in any
+ * environment where merchant IP allowlisting is in use.
+ *
+ * Trust by **address**. Never `true`, which means believing whatever
+ * `X-Forwarded-For` claims - anyone could then assert any origin and the
+ * allowlist becomes theatre. Never a hop count either: that is spoofable by
+ * anything able to reach the pod directly, which inside a cluster is every
+ * other pod.
+ *
+ * Leaving it unset does not silently disable the control - an origin that
+ * cannot be resolved is rejected rather than allowed (`isIpAllowed`).
+ */
+const trustProxy = process.env.TRUST_PROXY || false;
+
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ bodyLimit: 1_000_000 }),
+    new FastifyAdapter({ bodyLimit: 1_000_000, trustProxy }),
     {
       bufferLogs: true,
       /**

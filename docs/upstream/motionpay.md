@@ -47,7 +47,7 @@ The spec's `servers` block and the docs site's own `config.js`:
 
 > **✅ Resolved 13 Aug 2026 — use `.id`.** The prose section of the same document gives `.co.id` (and so does its cURL sample), contradicting the `servers` block. Tested directly: **`sandbox-app.flashmobile.co.id` does not resolve at all** (DNS failure), while `sandbox-app.flashmobile.id` authenticates successfully. The `.co.id` references in the docs are wrong — ignore them.
 
-The base URL is still read from `MOTIONPAY_BASE_URL` rather than hardcoded, so production can be pointed without a code change.
+The base URL is still read from `MOTIONPAY_QRIS_BASE_URL` rather than hardcoded, so production can be pointed without a code change.
 
 There are also `SECURE_SANDBOX` / `SECURE_LIVE` hosts (`sandbox-secure.flashmobile.id` / `secure.flashmobile.id`) in the site config. No QRIS endpoint in this spec uses them; ignore unless told otherwise.
 
@@ -295,33 +295,108 @@ So an unrecognized code must **not** be mapped to failure. Our status mapper ret
 
 ---
 
+## 6.5 QRIS Service v2.7 — what changed (received 2026-09-01)
+
+The current spec is `[API] QRIS Service v2.7.pdf`, dated 18 May 2026. It answers several open questions below and introduces one landmine that is worth more attention than everything else in this document.
+
+### 🟡 Timestamps: the spec and the API disagree
+
+§Important Notes claims:
+
+> All timestamps ... are in **WIB (UTC+7)**. Although the timestamp string displays a `+00:00` offset, the time values are native WIB and do not require any conversion.
+
+**This is not what the sandbox does.** Measured 2026-09-02 by creating transactions and comparing `created_date` against our own clock at the instant of the request:
+
+```
+created_date=2026-09-02T09:16:26+00:00  ourUTC=2026-09-02T09:16:25.966Z
+   skew if offset TRUSTED (UTC): 0s   |  skew if treated as WIB: -7.0h
+created_date=2026-09-02T09:16:27+00:00  ourUTC=2026-09-02T09:16:27.598Z
+   skew if offset TRUSTED (UTC): -1s  |  skew if treated as WIB: -7.0h
+created_date=2026-09-02T09:16:29+00:00  ourUTC=2026-09-02T09:16:29.212Z
+   skew if offset TRUSTED (UTC): -0s  |  skew if treated as WIB: -7.0h
+```
+
+Sub-second every time when the offset is trusted; exactly seven hours out when it is not. **The offset is truthful and the spec's note is wrong**, at least on sandbox.
+
+So `parseMotionPayTimestamp` defaults to `offset` mode — ordinary ISO-8601 parsing. A `wib` mode is kept because production may yet behave as documented, and a seven-hour error in `paid_date` corrupts settlement windows and reconciliation *silently*: every value still looks like a plausible timestamp.
+
+**The assumption is checked continuously rather than trusted.** `created_date` on a create response describes a transaction made moments ago, so our own clock is ground truth. `assertTimestampMode` compares them on every create and logs an error if the skew exceeds an hour. If MotionPay ever switches to the documented behaviour we learn it that day, from a log line, instead of from a reconciliation that will not balance weeks later.
+
+**Ask MotionPay to correct §Important Notes, or confirm production differs from sandbox.** As written, the note would lead any integrator to introduce a seven-hour error.
+
+### 🔴 The callback has no signature
+
+From §Security Recommendation:
+
+> FLASH does not provide a callback signature for verification. Merchants are strongly advised to validate the received `transaction_id` against their internal database before processing any status change.
+
+Their suggested mitigation is not a security control. A `transaction_id` is not a secret; anyone who obtains one can POST a forged `SUCCESS`, and a `SUCCESS` credits a merchant balance. That is a direct path to taking money.
+
+**Our mitigation is to not trust the callback body at all.** It is treated as a trigger, not as data:
+
+1. record the payload to `WebhookLog` as evidence, whatever it claims;
+2. look up our own transaction by `transaction_id`;
+3. call **Get Payment Status** ourselves, authenticated with our own token;
+4. act only on that answer.
+
+That converts an unauthenticated push into an authenticated pull, at a cost of one GET per callback. An IP allowlist (`MOTIONPAY_CALLBACK_ALLOWED_IPS`) sits in front as defence in depth — **ask Flash for their egress ranges**, it is currently empty, which means unrestricted, and the handler warns on every request while it stays that way.
+
+### Callback contract
+
+| | |
+|---|---|
+| Trigger | Payment received (`SUCCESS`), or QR expired with no payment (`FAILED`, description `"Order expired"`) |
+| Registration | Flash merchant dashboard → Product Configuration → QRIS. **Not** an API |
+| Retry | Non-200 retried **3 times at 5-minute intervals**, then dropped permanently |
+| Fallback | Polling Get Payment Status is required, not optional — a dropped callback is silent |
+| Auth | None. See above |
+
+Delivery is therefore at-least-once with a hard ceiling: the handler must be idempotent, and anything not settled within ~15 minutes has to be recovered by the settlement sweep.
+
+### No EXPIRED status
+
+MotionPay has only `PENDING` / `SUCCESS` / `FAILED`. An expiry arrives as `FAILED` with `description: "Order expired"`.
+
+Matching on that prose alone would be fragile, so `mapMotionPayStatus` requires **both** signals: the description says expired *and* the expiry instant has passed with no `paid_date`. A payment that failed for any other reason keeps `FAILED`. This resolves open question #4.
+
+### Field corrections
+
+| Field | v2.7 says | We had |
+|---|---|---|
+| `external_id` | String, **max 21** | **255** — measured, see open question #1. Both documented numbers are wrong |
+| `terminal_id` | String, max 21. *"Option 1: ID Merchant from Flash (e.g. `00022654`). Option 2: your POS identifier (e.g. `KASIR001`)"* | Was the per-transaction `external_id` — **fixed**, now `MotionPayConfig.TERMINAL_ID`. It is **embedded in the QR payload** (a probe returned `...0708KASIR001...` inside `qr_string`), so a per-transaction value wrote a different "terminal" into every QR and made their terminal-level reporting meaningless. Not the cause of the 400, but wrong regardless |
+| `amount` | Integer, 1,000–10,000,000 | matches |
+| `session_time` | Integer minutes, min 1 | matches |
+| Token | Valid **7 days**, may expire early on their deploy; handle 401 by regenerating and retrying | already implemented |
+| `customer_pan` | **Always empty** in Get Payment Status; present only in the callback | not used; captured in `metadata` regardless |
+
+### The PTEN theory, resolved
+
+§Status Code assigns **422** to *"Failed to generate QR string. Ensure merchant is registered at PTEN"*, while our blocker returned **400**. That distinction suggested the PTEN diagnosis was wrong.
+
+In the event, the re-probe simply succeeded — so the question is moot. Either the merchant was provisioned in the interim, or the sandbox was repaired. `qr_string` now returns populated, which per their own documentation only happens for a PTEN-registered merchant, so PTEN was very likely the underlying issue after all — just not one that surfaced as the documented 422.
+
+---
+
 ## 7. Open questions / integration risks
 
 Ordered by how much they can hurt.
 
-0. **🔴 BLOCKER — Create QRIS Payment returns `400 "Invalid request data"` for every payload, including MotionPay's own documented sample.** Verified against the sandbox on 13 Aug 2026 with merchant **ANDAPAY** (`merchant_id` 59240, `merchant_uuid` 00059102).
+0. ~~**🔴 BLOCKER — Create QRIS Payment returns `400` for every payload.**~~ — **RESOLVED 2026-09-02.** Re-probed against the v2.7 spec and create now succeeds: `status.code = 0`, `Transaction Successfully Created`, with a real `qr_string`.
 
-   What was tested and what it proves:
+   Five `terminal_id` variants were tried (merchant uuid `00059102`, merchant id `59240`, `KASIR001`, `TERMINAL01`, and the old per-transaction value) — **all five succeeded**, so `terminal_id` was never the cause. Nothing on our side changed the outcome; the fix was on MotionPay's, most likely the PTEN provisioning finally landing. Confirmed end-to-end through our own client, including `payment-status`.
 
-   | Probe | Result | What it rules out |
-   |---|---|---|
-   | `POST /priv/v1/pg/token` | ✅ token issued | Credentials and base URL are correct |
-   | `GET payment-status/FM-doesnotexist` **with** token | `400 "Invalid transaction id value"` | The QRIS API is reachable, the path is right, **and our token is accepted** — it returns that endpoint's own distinct error |
-   | `POST payment` with **no** token | `401 "Header Authorization is missing"` | The auth layer differentiates correctly |
-   | `POST payment` with **garbage** token | `401 "Invalid token: …"` | Our real token is genuinely being validated, not ignored |
-   | `POST payment`, documented sample body | `400 "Invalid request data"` | — |
-   | `POST payment`, body `{}` | `400 "Invalid request data"` | — |
-   | `POST payment`, body `zzz` (**not even JSON**) | `400 "Invalid request data"` | **Conclusive: the body is never evaluated.** Valid JSON, empty JSON, and non-JSON all produce a byte-identical error |
-   | Path variants (`/api/v1/qris/payment`, `/payment/v1/…`) | `404 page not found` | Our path is the only one that exists |
-   | Extra fields (`type`, `qr_type`, `currency`, `callback_url`, `merchant_id`), `amount`/`session_time` as strings, amounts 1 000–10 000 000 | all `400`, unchanged | Not a missing or mistyped field |
+   Worth keeping the probe table below on file: it is what the diagnosis was built on, and it is the evidence to reuse if this recurs.
 
-   **This is not a payload problem and not a client bug** — a validation error that is identical for a valid body, an empty body, and a non-JSON body is not validation.
+1. ~~**`external_id` is documented as String(16), but our transaction code does not fit.**~~ — **resolved 10 Sep 2026 by probe. The real limit is 255.** Stale documentation, wrong by a factor of sixteen; their own 20-character samples were not violating the spec, the spec was simply out of date.
 
-   **Most likely cause:** the sandbox merchant is not provisioned for QRIS on the **PTEN switch**. The docs state twice that this endpoint is "only available for merchants already registered in the PTEN switch" and that `qr_string` "will only be generated if merchant is PTEN" — a merchant-entitlement rejection surfacing as a generic 400 fits every observation above. Cannot be confirmed from our side.
+   Ladder from 16 to 1024 against sandbox. Every length **up to and including 255** was accepted and echoed back byte-identical — checked in two independent places, the create response and a status read keyed by their `transaction_id`, with a sentinel on the tail of each value so a quiet trim could not hide behind a length match. **256 and above** answered HTTP 422 `Failed processing data`. A clean cliff at 255 is a `varchar(255)` with an API in front of it.
 
-   **Action: ask MotionPay/Flash support** whether merchant `59240` / `00059102` (ANDAPAY) is PTEN-registered and enabled for QRIS dynamic payment in sandbox. The table above is the evidence to send them. Nothing in our code changes until they answer.
+   A control run isolated the field: a 300-character `description` alongside a short `external_id` was accepted without complaint, so the 422 belongs to `external_id` alone and not to body size or a blanket field rule.
 
-1. **`external_id` is documented as String(16), but our transaction code does not fit.** The monorepo's correlation key is `{timestampMs}{type}{method}{provider}-{userId}[-random]` — the millisecond timestamp alone is 13 characters, so the full code is far over 16. Compounding it, MotionPay's *own* samples violate their stated limit (`"20c67336-dcea-42d8-a"` is 20 characters, and `"PSTMN{{uuid}}"` expands well past 16). **Needs confirmation: is 16 the real limit, or stale documentation?** If it is real, we need a separate short reference for MotionPay and a mapping back to our transaction code — which changes what gets persisted. Until this is settled, our client does not silently truncate; it validates and fails loudly.
+   **The finding that mattered is that they reject rather than truncate.** Silent truncation was the dangerous outcome — a shortened correlation key does not error, it just stops matching at callback and reconciliation time. That failure mode does not exist here.
+
+   Consequences: `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` is now 255, no separate short provider-side reference is needed, and the 64-character `merchantReference` we accept from merchants clears the field with room to spare. Script: `scripts/motionpay/probe-qris-external-id.js` (see also §12.5).
 2. ~~**Base URL `.id` vs `.co.id`**~~ — **resolved 13 Aug 2026**: `.id` is correct, `.co.id` does not resolve. See §1.
 3. **No callback contract.** "Callback Format" is advertised as a service but no endpoint, payload, or signature scheme is defined in the spec. For a pay-in flow, the callback is normally how `SUCCESS` arrives — polling `payment-status` is the fallback, not the design. Ask MotionPay for the callback spec, and specifically **how the callback is authenticated** (signature? IP allowlist? shared secret?). This matters: the legacy codebase's provider callbacks verified nothing at all, which the migration audit flagged as a must-fix.
 4. **No `EXPIRED` status.** `session_time` sets a QR expiry and the status response has an `expired_date`, yet `status` only has `PENDING`/`SUCCESS`/`FAILED`. Our internal `TransactionStatusEnum` has a distinct `EXPIRED`. Unclear whether an expired QR reports `FAILED` or stays `PENDING` forever. Our mapper currently leaves it as reported and derives nothing from `expired_date` — confirm the real behavior.
@@ -355,7 +430,7 @@ Credentials are read from env only. The legacy PDN integration hardcoded its key
 ### Required environment variables
 
 ```bash
-MOTIONPAY_BASE_URL="https://sandbox-app.flashmobile.id"   # confirm .id vs .co.id first
+MOTIONPAY_QRIS_BASE_URL="https://sandbox-app.flashmobile.id"   # confirm .id vs .co.id first
 MOTIONPAY_CLIENT_KEY="<from Flash merchant dashboard>"
 MOTIONPAY_SERVER_KEY="<from Flash merchant dashboard>"
 MOTIONPAY_TIMEOUT_MS=15000              # optional, default 15000
@@ -400,7 +475,7 @@ Things to know while testing:
 - The paths above are shown without a prefix because `setGlobalPrefix` is currently commented out in [main.ts](../../apps/transaction/src/main.ts). With it enabled they become `/api/v1/upstream/motionpay/…`, which is what the nginx and k8s ingress rules expect.
 - `MotionPayService.createQrisPayment` (the normalized, domain-shaped method the real purchase flow should call) is untouched and still validates responses — only this test endpoint bypasses it via `createQrisPaymentRaw`.
 - **Blocked in production.** The endpoints are unauthenticated and, against live credentials, would create real upstream QRIS transactions our system has no record of, so they return 403 when `NODE_ENV=production`. Delete the controller or move it behind the real auth guards once the purchase flow in `src/api` supersedes it.
-- To probe MotionPay's real `external_id` limit (open question #1 in §7), raise `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` in `motionpay.constant.ts` — that single constant drives both the request-body validation and the service-side assertion.
+- **`external_id` length has been probed** — 255, see open question #1. The probe did **not** go through this controller or `MotionPayQrisService`: it signs and posts directly, so `MOTIONPAY_EXTERNAL_ID_MAX_LENGTH` never has to be loosened to run it and nothing touches our database. Re-run it against Transfer or Biller the same way rather than raising a production constant to find out.
 
 ---
 
@@ -424,7 +499,7 @@ This is the section to re-read before assuming any QRIS knowledge carries over.
 | Success code | `0` (payments), `200` (token) | **`"0001"`** — a zero-padded string |
 | Status keyed by | MotionPay's `transaction_id` | **our `external_id`** |
 | Amount bounds | 1.000 – 10.000.000 | **10.000 – 50.000.000** |
-| `external_id` max | 16 (disputed) | **50** |
+| `external_id` max | **255** (probed; docs said 16) | **50** (documented, *unprobed* — the QRIS number was off by 16×, so treat this one as a guess too) |
 | IP whitelisting | not mentioned | **required** |
 | Extra header | — | **`x-server-key`** (see §13.1) |
 
@@ -457,6 +532,18 @@ Conclusions:
 3. **Separate Transfer credentials are probably not needed** — the QRIS pair authenticated successfully against the transfer token endpoint.
 
 Practical consequence: your workstation's public IP and the K3s node's egress IP are different addresses. Send Flash both, or testing works in one place and fails in the other.
+
+**Re-confirmed 11 Sep 2026, still blocking.** Current workstation egress IP: **`182.253.55.156`**. A three-way comparison run in one pass makes the diagnosis unambiguous, and is the check worth repeating rather than guessing at a 403:
+
+| Request | Result | Reading |
+|---|---|---|
+| QRIS host, real credentials | **200**, `application/json`, token issued | Network and credentials are both fine |
+| QRIS host, **deliberately wrong** credentials | **401**, `application/json` — `{"status":{"code":401,"message":"Unauthorized"}}` | This is what an auth failure looks like: their *application* answers, in their own envelope |
+| Transfer/Biller host, real credentials | **403**, `text/html`, bare edge page | No envelope at all — the request never reached their application |
+
+The distinction that matters is **content type, not status code**. A JSON body means MotionPay's code ran and refused you; an HTML body means the edge refused you first and MotionPay never saw it. Only the second is the allowlist.
+
+This blocks the `external_id` length probe for both Transfer and Biller (open question #5 below, and #1 in §7 for the QRIS result it should be compared against). The probe script is written and ready at `scripts/motionpay/probe-transfer-biller-external-id.js` — inquiry legs only, since the payment legs move money — and needs nothing but the allowlist to run. The three-way check above is `scripts/motionpay/check-host-reachability.js`.
 
 ## 12. Authentication
 
@@ -593,9 +680,14 @@ Same conventions as the QRIS test controller: request bodies are MotionPay's ver
 
 ## 17. Transfer open questions
 
-1. **🔴 BLOCKER — the public IP is not whitelisted.** Confirmed by probe, see §11.1. Nothing else can be tested until Flash whitelists it. Send them **both** your workstation IP and the K3s node's egress IP.
+1. **🔴 BLOCKER — the public IP is not whitelisted.** Confirmed by probe, see §11.1, and **re-confirmed 11 Sep 2026** — current workstation egress IP `182.253.55.156`. Nothing else can be tested until Flash whitelists it. Send them **both** your workstation IP and the K3s node's egress IP. This is what holds up #5 below.
 2. ~~**Are Transfer credentials separate from QRIS?**~~ — **resolved**: the QRIS pair authenticated fine against the transfer token endpoint. `MOTIONPAY_TRANSFER_CLIENT_KEY` / `_SERVER_KEY` can stay unset; they fall back to the QRIS pair.
 3. **Is `x-server-key` actually required?** Undocumented in the header tables, present in the samples. We always send it. Untestable until #1 clears.
 4. **Callback authentication** — see §14. The most serious of these, and independent of #1.
-5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50.
+5. **`external_id` length**: "String, 64" and "max 50 characters" in the same row. We enforce 50, and `MotionPayTransferService.systemReferenceMaxLength` exposes that to the payout flow so references are sized before a row is reserved. **Attempted 11 Sep 2026 — blocked by #1**, the host answered an edge 403 before the request reached MotionPay. Still unverified, and still worth distrusting: the same exercise on QRIS found 255 against a documented 16 (open question #1 in §7). Biller's 64 is in exactly the same position.
+
+   The probe is `scripts/motionpay/probe-transfer-biller-external-id.js`, waiting on the allowlist. It walks a ladder of `external_id` lengths through the **inquiry legs only** — `/transfer/api/v1/inquiry` and `/biller/v1/inquiry` — because `/transfer/api/v1/payment` and `/biller/v1/payment` move money and must never be used to test a field width. Two caveats for whoever runs it:
+
+   - A transfer inquiry echoes back only `bank_code`, `bank_account` and `name`, so it can establish the **accept/reject boundary but not whether they truncate**. Observing storage would mean creating a real transfer. Biller's inquiry does echo `external_id`, so that one gives both signals.
+   - A biller inquiry is **not free the way a bank lookup is** — it opens provider-side state and prices a product. It debits nothing, but it does leave dangling inquiries behind.
 6. ~~**Host contradiction**~~ — **resolved**: `secure.` is correct (the `servers` block), the cURL samples are wrong. The app host 404s every `/transfer/api/v1/*` path. See §11.1.
