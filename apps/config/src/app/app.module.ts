@@ -1,4 +1,4 @@
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { Module } from '@nestjs/common';
 // import { DatabaseModule } from '../database/database.module';
 import { LoggerModule } from '@app/logger';
@@ -18,7 +18,7 @@ import { AppService } from './app.service';
   providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/config/.env.local', 'apps/config/.env'],
+      envFilePath: envFilePath('config'),
     }),
     LoggerModule,
     HealthModule,

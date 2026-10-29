@@ -11,8 +11,11 @@ import {
   UpstreamTransferResponseDto,
   UpstreamTransferStep,
 } from '@app/upstream';
-import { Injectable, Logger } from '@nestjs/common';
-import { JatelindoTransferService } from '../../upstream/jatelindo';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  JATELINDO_KEY_TRANSFER,
+  type JatelindoTransferInterface,
+} from '../../upstream/jatelindo';
 import {
   MotionPayBillerService,
   MotionPayTransferService,
@@ -48,7 +51,8 @@ export class DisbursementService {
     private readonly common: DisbursementCommonService,
     private readonly motionPayTransferService: MotionPayTransferService,
     private readonly motionPayBillerService: MotionPayBillerService,
-    private readonly jatelindoTransferService: JatelindoTransferService,
+    @Inject(JATELINDO_KEY_TRANSFER)
+    private readonly jatelindoTransferService: JatelindoTransferInterface,
   ) {}
 
   /**

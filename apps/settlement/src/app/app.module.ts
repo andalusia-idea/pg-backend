@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { LoggerModule } from '@app/logger';
 import { RedisModule } from '@app/redis';
 import { DatabaseModule } from '../database';
@@ -15,7 +15,7 @@ import { SettlementModule } from '../settlement/settlement.module';
   providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/settlement/.env.local', 'apps/settlement/.env'],
+      envFilePath: envFilePath('settlement'),
     }),
     LoggerModule,
     // Not @app/health: its HealthController injects PRISMA_MASTER_PROVIDER_KEY

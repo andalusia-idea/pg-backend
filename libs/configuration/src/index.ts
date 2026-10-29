@@ -8,6 +8,7 @@ export * from './merchant-signature.config';
 export * from './fee.config';
 export * from './profile.config';
 export * from './settlement.config';
+export * from './env-file-path';
 
 /// Upstream
 export * from './motionpay.config';
