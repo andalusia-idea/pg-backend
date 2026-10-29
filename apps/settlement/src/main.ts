@@ -34,7 +34,8 @@ async function bootstrap() {
   );
 
   const appConfig = app.get(AppConfig);
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   const options = new DocumentBuilder()
     .setTitle(`${appConfig.APP_NAME} Service`)
@@ -61,6 +62,9 @@ async function bootstrap() {
   await app.listen(
     appConfig.PORT,
     appConfig.IS_PRODUCTION ? '0.0.0.0' : 'localhost',
+  );
+  logger.log(
+    `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,
   );
   console.log(
     `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,

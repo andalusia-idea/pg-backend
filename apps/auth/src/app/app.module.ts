@@ -12,8 +12,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ClsModule } from 'nestjs-cls';
 import { UserModule } from '../user/user.module';
 import { MerchantSignatureModule } from '../merchant-signature/merchant-signature.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
+  controllers: [AppController],
+  providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
       envFilePath: ['apps/auth/.env.local', 'apps/auth/.env'],
