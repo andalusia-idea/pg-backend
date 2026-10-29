@@ -13,6 +13,7 @@
     "start:config": "nest start config --watch",
     "start:transaction": "nest start transaction --watch",
     "start:settlement": "nest start settlement --watch",
+    "start:uat-local": "nest start uat-local --watch",
     "build:dashboard": "nest build dashboard",
     "build:auth": "nest build auth",
     "build:config": "nest build config",
