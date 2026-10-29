@@ -33,10 +33,10 @@ export class JatelindoCallbackController {
     private readonly transferCallbackService: JatelindoTransferCallbackService,
   ) {}
 
-  @Post('qris')
+  @Post('transfer')
   @HttpCode(HttpStatus.OK)
   // @ApiExcludeEndpoint()
-  @ApiOperation({ summary: 'Jatelindo QRIS Single Transfer Asynchoronous' })
+  @ApiOperation({ summary: 'Jatelindo Single Transfer Asynchoronous' })
   async qris(
     @Body() body: unknown,
     @Req() request: FastifyRequest,
@@ -44,7 +44,7 @@ export class JatelindoCallbackController {
   ) {
     if (!Value.Check(JatelindoTransferCallbackSchema, body)) {
       this.logger.warn({
-        msg: 'Malformed MotionPay QRIS callback',
+        msg: 'Malformed Jatelindo transfer callback',
         sourceIp: request.ip,
         errors: [...Value.Errors(JatelindoTransferCallbackSchema, body)]
           .slice(0, 3)

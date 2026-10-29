@@ -41,6 +41,10 @@ async function bootstrap() {
     .setDescription(`${appConfig.APP_NAME} Service API Description`)
     .setVersion(appConfig.VERSION)
     .addServer(`http://localhost:${appConfig.PORT}`, 'Local')
+    .addServer(
+      `https://loverlike-underogatively-elane.ngrok-free.dev/`,
+      'ngrok',
+    )
     .addServer(`http://103.94.238.214:3004`, 'Production') // Adjust with Server Proxy
     .addServer(`https://api.manapay.id/settlement`, 'Production DNS') // Adjust with Server Proxy
     .addBearerAuth()
