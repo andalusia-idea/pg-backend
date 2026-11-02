@@ -167,10 +167,11 @@ receipts and check.
 - **Only a balance** → fast, but nothing can prove it. If it is wrong, it is
   wrong silently, forever, and you find out from an angry merchant.
 
-This is also precisely what is wrong with the **old** `MerchantBalanceLog`: it
-looks like a history, but each row *stores* the balance it resulted in, computed
-from the row before it. So there is nothing to check it against. One wrong row
-is inherited by every row after it and nothing notices.
+This is also precisely what was wrong with the **old** `MerchantBalanceLog`,
+dropped on 26 Oct 2026: it looked like a history, but each row *stored* the
+balance it resulted in, computed from the row before it. So there was nothing to
+check it against. One wrong row was inherited by every row after it and nothing
+noticed.
 
 **With two tables, the snapshot is a number you can prove.** That is the whole
 point, and §9 is how you prove it.

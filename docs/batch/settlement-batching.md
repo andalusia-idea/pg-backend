@@ -7,6 +7,16 @@ as reference for a possible future accounting app. **It is not what we are
 building.** This document is the scoped-down version, and where the two
 disagree, this one wins.
 
+> **This is the *why*, written before the build, and it has been left that way.**
+> It argues from the schema as it stood in September 2026, so where it says
+> "today `MerchantBalanceLog` has two columns" (§2) or points at
+> `lastSettlementAt` as the only record of a run (§6), it is describing the world
+> the design was reacting to. All of that was actually deleted on **26 Oct
+> 2026** — see §9. For what exists now, read
+> [settlement-explained.md](settlement-explained.md) and
+> [settlement-batching-implementation.md](settlement-batching-implementation.md),
+> which track the code.
+
 ---
 
 ## 0. Scope
@@ -69,10 +79,11 @@ already correct.
 
 ### Three buckets, not three columns
 
-This is the one structural change that matters. Today `MerchantBalanceLog` has
-`balanceActive` and `balancePending` as two **columns on one row**, plus a single
-`changeAmount`. Settlement moves money from one column to the other, and one
-scalar cannot describe that — so the row has to either write zero or lie.
+This is the one structural change that matters. In the pre-revamp schema
+`MerchantBalanceLog` had `balanceActive` and `balancePending` as two **columns on
+one row**, plus a single `changeAmount`. Settlement moves money from one column
+to the other, and one scalar cannot describe that — so the row had to either
+write zero or lie.
 
 Make each bucket its own row and the problem disappears:
 
@@ -471,6 +482,13 @@ code is written.
 ---
 
 ## 9. What gets deleted
+
+**Done on 26 Oct 2026**, in migrations `20261026090919_cleaning_after_settlement`
+(config) and `20261026090936_cleaning_after_settlement` (transaction). Every row
+below was actually dropped, so this is a record of what went and what replaced
+it rather than a plan. Step 15 of
+[settlement-batching-implementation.md](settlement-batching-implementation.md)
+has the commits and the one caveat worth knowing.
 
 | Dropped | Replaced by |
 |---|---|
