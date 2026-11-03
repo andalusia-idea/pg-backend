@@ -132,7 +132,7 @@ export class PurchaseQrisService {
     }
   }
 
-  /** Hand the payout to the routed provider, and translate what comes back. */
+  /** Hand the payin to the routed provider, and translate what comes back. */
   private async send(
     purchaseId: number,
     request: UpstreamQrisRequestDto,
@@ -176,7 +176,7 @@ export class PurchaseQrisService {
     }
   }
 
-  /** Which upstream service carries this payout. The only rail branch here. */
+  /** Which upstream service carries this payin. The only rail branch here. */
   private route(
     request: UpstreamQrisRequestDto,
   ): Promise<UpstreamQrisResponseDto> {
@@ -186,7 +186,7 @@ export class PurchaseQrisService {
       return this.motionPayQrisService.createQRIS(request);
 
     this.logger.error({
-      msg: 'No payout client for routed provider',
+      msg: 'No payin client for routed provider',
       providerName,
       paymentMethodName: this.paymentMethodName,
       systemReference: request.systemReference,
