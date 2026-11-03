@@ -1,4 +1,4 @@
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { HealthModule } from '@app/health';
 import { LoggerModule } from '@app/logger';
 import { PrismaModule } from '@app/prisma';
@@ -80,7 +80,7 @@ import { AppService } from './app.service';
   ],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/dashboard/.env.local', 'apps/dashboard/.env'],
+      envFilePath: envFilePath('dashboard'),
     }),
     // Carries authInfo per request so the Prisma audit extension can stamp
     // createdBy / updatedBy without threading it through every service call.

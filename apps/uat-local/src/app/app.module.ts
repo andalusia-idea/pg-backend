@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { LoggerModule } from '@app/logger';
 import { HealthModule } from '@app/health';
 import { RedisModule } from '@app/redis';
@@ -13,7 +13,7 @@ import { DatabaseModule } from '../database';
   providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/uat-local/.env.local', 'apps/uat-local/.env'],
+      envFilePath: envFilePath('uat-local'),
     }),
     LoggerModule,
     HealthModule,

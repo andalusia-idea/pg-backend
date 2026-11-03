@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 
 const profile = 'PG';
 const dir = 'C:\\le\\andalusia\\pg';
-const apps = ['auth', 'config', 'transaction', 'settlement'];
+const apps = ['dashboard', 'auth', 'config', 'transaction', 'settlement', 'uat-local'];
 
 console.log('🚀 [TEST] Starting all services in Windows Terminal...\n');
 
