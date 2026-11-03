@@ -37,10 +37,13 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  await app.listen(
-    appConfig.PORT,
-    appConfig.IS_PRODUCTION ? '0.0.0.0' : 'localhost',
-  );
+  /// A fixed bind address, not `localhost`, because the webhook URL stored in
+  /// auth.MerchantSignature has to be an IP literal - `@IsUrl()` rejects
+  /// `localhost` - and `listen(port, 'localhost')` binds ::1 only, so nothing
+  /// would answer at the 127.0.0.1 the merchant registered.
+  const host = appConfig.IS_PRODUCTION ? '0.0.0.0' : '127.0.0.1';
+
+  await app.listen(appConfig.PORT, host);
   logger.log(
     `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,
   );
