@@ -1,5 +1,4 @@
 import { ConfigurationModule, envFilePath } from '@app/configuration';
-import { HealthModule } from '@app/health';
 import { LoggerModule } from '@app/logger';
 import { PrismaModule } from '@app/prisma';
 import { RedisModule } from '@app/redis';
@@ -41,9 +40,11 @@ import { ResponseInterceptor } from '../shared/interceptor';
 import { CustomValidationPipe } from '../shared/pipe';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { TerminusModule } from '@nestjs/terminus';
+import { HealthController } from './health.controller';
 
 @Module({
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
 
@@ -86,7 +87,15 @@ import { AppService } from './app.service';
     // createdBy / updatedBy without threading it through every service call.
     ClsModule.forRoot({ global: true, middleware: { mount: true } }),
     LoggerModule,
-    HealthModule,
+    // Not @app/health: its HealthController also pings tcp-auth, tcp-config
+    // and tcp-transaction, which this app holds no client to and has no
+    // CLIENT_* key for - so every request threw out of TCPConfig's getOrThrow.
+    // The local HealthController pings Redis and the two pools, and nothing
+    // else this process does not itself need.
+    //
+    // TerminusModule arrived with @app/health; the local controller injects the
+    // same indicators, so it has to be imported here instead.
+    TerminusModule,
     RedisModule,
     PrismaModule.forRoot({
       prismaClient: PrismaClient,

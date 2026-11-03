@@ -27,7 +27,7 @@ async function bootstrap() {
   SwaggerModule.setup('/swag-rwz', app, document);
 
   app.setGlobalPrefix(appConfig.API_PREFIX, {
-    exclude: ['/metrics'],
+    exclude: ['/metrics', '/health'],
   });
 
   app.enableCors({
