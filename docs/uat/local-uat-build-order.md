@@ -224,10 +224,13 @@ works as written.
 
 **2c. If you set the callback allowlists, they need both addresses.** They are
 **comma**-separated, not semicolon (`motionpay.config.ts:98`,
-`jatelindo.config.ts:48`), and `isIpAllowed` matches by exact family through
-Node's `BlockList`, with no IPv4-mapped normalisation. A callback arriving over
-IPv6 loopback presents `request.ip` as `::1`, which an allowlist of
-`127.0.0.1` rejects:
+`jatelindo.config.ts:48`), and `isIpAllowed` matches each entry within its own
+family through Node's `BlockList`. `BlockList` *does* normalise IPv4-mapped
+IPv6 - `::ffff:203.0.113.5` matches an entry of `203.0.113.5`, and
+[merchant-ip.spec.ts:57](../../libs/microservice/src/merchant-ip.spec.ts:57)
+tests it - but `::1` is a real IPv6 address rather than a mapped IPv4 one. So a
+callback arriving over IPv6 loopback presents `request.ip` as `::1`, which an
+allowlist of `127.0.0.1` alone rejects:
 
 ```ini
 MOTIONPAY_CALLBACK_ALLOWED_IPS="127.0.0.1,::1"
