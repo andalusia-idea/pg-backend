@@ -2,7 +2,6 @@ import {
   PaymentMethodNameEnum,
   ProviderNameEnum,
   TransactionException,
-  TransactionStatusEnum,
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import {
@@ -13,7 +12,6 @@ import {
 } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
-import Decimal from 'decimal.js';
 import { MotionPayQrisService } from '../../upstream/motionpay';
 import {
   DEFAULT_SYSTEM_REFERENCE_LENGTH,
@@ -80,20 +78,23 @@ export class PurchaseQrisService {
       maxLength: this.systemReferenceMaxLength(providerName),
     });
 
-    const purchaseId = await this.reserveTransaction(
+    const purchaseId = await this.common.reserveTransaction({
       userId,
-      providerName,
       systemReference,
+      providerName,
+      paymentMethodName: this.paymentMethodName,
       dto,
-    );
+    });
 
-    const upstream = await this.callUpstream(purchaseId, {
+    const request: UpstreamQrisRequestDto = {
       systemReference,
       providerName,
       merchantReference: dto.merchantReference,
       amount: dto.amount,
       expireSeconds: dto.expireSeconds,
-    });
+    };
+
+    const upstream = await this.send(purchaseId, request);
 
     await this.recordUpstreamResult(purchaseId, upstream);
 
@@ -131,81 +132,13 @@ export class PurchaseQrisService {
     }
   }
 
-  /**
-   * Claim `merchantReference` and write the transaction.
-   *
-   * `providerReference` and `expiresAt` are left null: we genuinely do not know
-   * them yet, and inventing placeholders would put values in the database that
-   * later have to be told apart from real ones.
-   *
-   * **No fee breakdown is written here.** Fees are calculated when the payment
-   * is confirmed by callback, not when the QR is issued: a QR that expires
-   * never earns anything, so computing at creation writes rows for transactions
-   * that will never settle. `netNominal` stays at its `0.00` default until then
-   * - unambiguous while the row is PENDING, since a pending purchase has earned
-   * nothing yet by definition.
-   */
-  private async reserveTransaction(
-    userId: number,
-    providerName: ProviderNameEnum,
-    systemReference: string,
-    dto: CreateQrisRequestDto,
-  ): Promise<number> {
-    try {
-      const purchase = await this.prismaMaster.purchaseTransaction.create({
-        data: {
-          merchantId: userId,
-          systemReference,
-          merchantReference: dto.merchantReference,
-
-          providerName,
-          paymentMethodName: this.paymentMethodName,
-          nominal: new Decimal(dto.amount.value),
-
-          status: TransactionStatusEnum.PENDING,
-        },
-        select: { id: true },
-      });
-      return purchase.id;
-    } catch (error) {
-      this.common.reserveFailure({
-        error,
-        userId,
-        systemReference,
-        merchantReference: dto.merchantReference,
-        instrument: 'QRIS',
-      });
-    }
-  }
-
-  /**
-   * Call the routed provider, translating any failure into a merchant-facing
-   * one and leaving the reserved row in an honest state.
-   *
-   * A **timeout is deliberately not marked FAILED.** We do not know whether the
-   * QR was created - the request may have succeeded with only the response
-   * lost. Marking it FAILED asserts something unknown, and if a customer then
-   * pays that QR we hold a paid transaction we told everyone had failed. It
-   * stays PENDING for reconciliation to settle.
-   */
-  private async callUpstream(
+  /** Hand the payout to the routed provider, and translate what comes back. */
+  private async send(
     purchaseId: number,
-    dto: UpstreamQrisRequestDto,
+    request: UpstreamQrisRequestDto,
   ): Promise<UpstreamQrisResponseDto> {
     try {
-      switch (dto.providerName) {
-        case ProviderNameEnum.MOTIONPAY:
-          return await this.motionPayQrisService.createQRIS(dto);
-        default:
-          // Routing sent us somewhere we have no client for: a configuration
-          // error of ours, so the merchant gets a 500 and we get the log.
-          this.logger.error({
-            msg: 'No QRIS client for routed provider',
-            providerName: dto.providerName,
-            systemReference: dto.systemReference,
-          });
-          throw TransactionException.internalError();
-      }
+      return await this.route(request);
     } catch (error) {
       if (error instanceof TransactionException) {
         await this.common.markFailed(purchaseId, {
@@ -220,8 +153,8 @@ export class PurchaseQrisService {
       this.logger.error({
         msg: 'Upstream QRIS creation failed',
         purchaseId,
-        systemReference: dto.systemReference,
-        providerName: dto.providerName,
+        systemReference: request.systemReference,
+        providerName: request.providerName,
         timedOut,
         context: error instanceof UpstreamException ? error.context : undefined,
         error,
@@ -241,6 +174,25 @@ export class PurchaseQrisService {
       });
       throw TransactionException.upstreamRejected();
     }
+  }
+
+  /** Which upstream service carries this payout. The only rail branch here. */
+  private route(
+    request: UpstreamQrisRequestDto,
+  ): Promise<UpstreamQrisResponseDto> {
+    const { providerName } = request;
+
+    if (ProviderNameEnum.MOTIONPAY === providerName)
+      return this.motionPayQrisService.createQRIS(request);
+
+    this.logger.error({
+      msg: 'No payout client for routed provider',
+      providerName,
+      paymentMethodName: this.paymentMethodName,
+      systemReference: request.systemReference,
+    });
+
+    throw TransactionException.internalError();
   }
 
   /**

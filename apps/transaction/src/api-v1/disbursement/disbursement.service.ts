@@ -11,11 +11,7 @@ import {
   UpstreamTransferResponseDto,
   UpstreamTransferStep,
 } from '@app/upstream';
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import {
-  JATELINDO_KEY_TRANSFER,
-  type JatelindoTransferInterface,
-} from '../../upstream/jatelindo';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   MotionPayBillerService,
   MotionPayTransferService,
@@ -26,6 +22,7 @@ import {
   CreateTransferDataDto,
   CreateTransferRequestDto,
 } from './disbursement.dto';
+import { JatelindoTransferService } from '../../upstream/jatelindo';
 
 /**
  * Payouts, over whichever rail the merchant's routing resolves to.
@@ -51,8 +48,7 @@ export class DisbursementService {
     private readonly common: DisbursementCommonService,
     private readonly motionPayTransferService: MotionPayTransferService,
     private readonly motionPayBillerService: MotionPayBillerService,
-    @Inject(JATELINDO_KEY_TRANSFER)
-    private readonly jatelindoTransferService: JatelindoTransferInterface,
+    private readonly jatelindoTransferService: JatelindoTransferService,
   ) {}
 
   /**
