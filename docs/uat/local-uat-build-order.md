@@ -150,14 +150,28 @@ settlement uses, `POD_NAME`, is a plain `get` with a hostname fallback.
 Leave all of it as it is.
 
 > **Sighting 1.** `node scripts/test-db-all.js`, then
-> `node scripts/test-start-all.js`. Six windows come up. Then:
+> `node scripts/test-start-all.js`. Six windows come up. Then one probe per
+> app:
 >
 > ```bash
-> curl http://localhost:3003/open/v1/ping
+> for p in 3000 3001 3002 3003 3004 3010; do
+>   curl -s -o /dev/null -w "$p %{http_code}\n" "http://localhost:$p/health"
+> done
 > ```
 >
-> and the dashboard's Swagger at `http://localhost:3000/swag-rwz` loads. If
-> a window dies, it dies now, with nothing of yours in the stack to blame.
+> **Six 200s.** `/health` and not `/open/v1/ping`: the merchant signature guard
+> covers `/open/v1/*`, so a bare ping answers 401 and says nothing about the
+> stack. And over `localhost`, never `127.0.0.1` - every app binds `'localhost'`
+> outside production, which Node resolves on this machine to `::1` only.
+>
+> A 200 here is more than an open port, because each body names what that app
+> reached: auth, config and transaction report Redis, three TCP peers and both
+> Prisma pools; settlement reports Redis and the two transaction pools;
+> uat-local reports Redis and all six per-schema pools; the dashboard reports
+> Redis and its two pools, from a local controller rather than `@app/health`,
+> since it holds no TCP client to anything. The dashboard's Swagger at
+> `http://localhost:3000/swag-rwz` loads as well. If a window dies, it dies
+> now, with nothing of yours in the stack to blame.
 
 ---
 
@@ -571,7 +585,7 @@ Worth keeping straight, so the harness is not trusted for more than it shows.
 
 | Sighting | Proves | Does not prove |
 |---|---|---|
-| 1 | six apps boot against `pgtest` | anything about behaviour |
+| 1 | six apps boot against `pgtest` and reach Redis and their pools | anything about behaviour |
 | 3 | the whole merchant-auth path, end to end | that a real merchant's SDK signs the same way |
 | 4 | the client speaks the provider's create contract **as we read it** | that the provider agrees with our reading |
 | 6 | fees, balances and the merchant webhook, from one real callback | that the callback was genuine - nothing verifies it |
