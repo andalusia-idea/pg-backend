@@ -76,7 +76,7 @@ export class SettlementConfig {
    * Truncated to 100 characters because `claimedBy` is `VarChar(100)`; a longer
    * value would fail the claim rather than just reading oddly.
    */
-  get POD_IDENTITY(): string {
+  get POD_NAME(): string {
     const configured = this.configService.get<string>('POD_NAME');
 
     return (configured ?? hostname()).slice(0, 100);

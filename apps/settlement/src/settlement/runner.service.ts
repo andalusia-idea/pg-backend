@@ -165,7 +165,7 @@ export class RunnerService {
     const rows = await this.prismaMaster.$queryRaw<ClaimedRun[]>`
       UPDATE "settlement"."SettlementRun"
       SET "status"    = 'RUNNING',
-          "claimedBy" = ${this.settlementConfig.POD_IDENTITY},
+          "claimedBy" = ${this.settlementConfig.POD_NAME},
           "claimedAt" = now(),
           "attempts"  = "attempts" + 1
       WHERE "id" = (

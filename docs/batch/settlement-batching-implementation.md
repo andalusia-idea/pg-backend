@@ -1657,7 +1657,7 @@ RETURNING *;
 ```
 
 `$1` is a **pod identity**, not a `MACHINE_USER_ID` — see the note below.
-It comes from `SettlementConfig.POD_IDENTITY`, which reads `POD_NAME` and falls
+It comes from `SettlementConfig.POD_NAME`, which reads `POD_NAME` and falls
 back to `os.hostname()`. `get` rather than `getOrThrow`, deliberately: in
 Kubernetes a container's hostname already *is* the pod name, so this needs no
 manifest change to be useful. Truncated to 100 characters, because `claimedBy`
