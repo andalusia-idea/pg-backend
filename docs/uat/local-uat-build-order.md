@@ -85,10 +85,10 @@ rmdir apps/transaction/src/upstream/jatelindo/mock
 
 ## Step 1 - Make the whole stack start under `NODE_ENV=test`
 
-**Goal.** Six windows, six running apps, against `pg-test`. Still no new
+**Goal.** Six windows, six running apps, against `pgtest`. Still no new
 features.
 
-**1a. The dashboard cannot reach `pg-test` yet.** It is the only app that still
+**1a. The dashboard cannot reach `pgtest` yet.** It is the only app that still
 hardcodes its env files, at
 [app.module.ts:83](../../apps/dashboard/src/app/app.module.ts:83):
 
@@ -110,7 +110,7 @@ together:
 
 The dashboard's DSN is deliberately **not** schema-qualified: it uses the
 merged schema over all three, so `.env.test` carries
-`postgresql://…/pg-test?TimeZone=Asia/Jakarta` with no `&schema=`.
+`postgresql://…/pgtest?TimeZone=Asia/Jakarta` with no `&schema=`.
 
 **1b. `scripts/test-start-all.js` is missing two apps.** The dashboard, because
 onboarding goes through it, and `uat-local`:
@@ -510,7 +510,7 @@ most useful thing on this list.
 **Goal.** Watch the second half of the system - the part that reads what Steps
 6-9 wrote.
 
-Settlement runs on its own crons against the same `pg-test`. With real traffic
+Settlement runs on its own crons against the same `pgtest`. With real traffic
 behind it you can watch `SettlementRun` rows appear, get claimed with a
 `claimedBy` naming the process, and move the day's `PENDING` balances to
 `AVAILABLE`. [docs/batch/](../batch/) describes the pipeline and was reviewed
@@ -558,7 +558,7 @@ UAT_AMOUNT_MAX=500000
 ```
 
 **`apps/dashboard/.env.test`** - new file. Copy `.env.local` and change: `PORT`
-stays 3000, `NODE_ENV=test`, and the two DSNs point at `pg-test` with no
+stays 3000, `NODE_ENV=test`, and the two DSNs point at `pgtest` with no
 `&schema=`. `JWT_ACCESS_TOKEN_SECRET` must match whatever issues the tokens you
 present. The rest - Redis, the `MERCHANT_SIGNATURE_*` tolerances, the three
 `*_TTL_SECONDS` - carries over unchanged.
@@ -571,7 +571,7 @@ Worth keeping straight, so the harness is not trusted for more than it shows.
 
 | Sighting | Proves | Does not prove |
 |---|---|---|
-| 1 | six apps boot against `pg-test` | anything about behaviour |
+| 1 | six apps boot against `pgtest` | anything about behaviour |
 | 3 | the whole merchant-auth path, end to end | that a real merchant's SDK signs the same way |
 | 4 | the client speaks the provider's create contract **as we read it** | that the provider agrees with our reading |
 | 6 | fees, balances and the merchant webhook, from one real callback | that the callback was genuine - nothing verifies it |
