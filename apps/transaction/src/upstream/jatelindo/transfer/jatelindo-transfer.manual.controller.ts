@@ -30,6 +30,7 @@ export class JatelindoTransferManualController {
     private readonly appConfig: AppConfig,
 
     private readonly transferAuthService: JatelindoTransferAuthService,
+
     private readonly transferService: JatelindoTransferService,
     private readonly transferOtherService: JatelindoTransferOtherService,
   ) {}

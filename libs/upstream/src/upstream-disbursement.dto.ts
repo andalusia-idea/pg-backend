@@ -22,6 +22,7 @@ export type UpstreamTransferRequestDto = Static<
 >;
 
 export const UpstreamTransferResponseSchema = Type.Object({
+  systemReference: Type.String(),
   providerReference: Type.String(),
   bankReference: Type.Union([Type.String(), Type.Null()]),
   bankCode: Type.String(),

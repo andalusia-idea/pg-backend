@@ -68,7 +68,7 @@ export class BalanceService {
   async checkBalanceAgent(agentId: number): Promise<BalanceAgentDto> {
     const snapshots = await this.prismaSlave.balanceSnapshot.findMany({
       where: {
-        holderType: BalanceHolderTypeEnum.MERCHANT,
+        holderType: BalanceHolderTypeEnum.AGENT,
         holderId: agentId,
       },
       select: {

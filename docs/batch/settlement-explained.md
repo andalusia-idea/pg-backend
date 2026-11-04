@@ -666,8 +666,16 @@ Easy to mix up. Ordered by when they happen:
 | `finishedAt` | SettlementRun | when the run completed, success or failure |
 | `sweptFrom` / `sweptTo` | SettlementBatch | min/max `paidAt` of the claimed rows. **Descriptive only** |
 
-Two traps:
+Three traps:
 
+- **`paidAt` and `status = 'SUCCESS'` come straight from the provider's
+  callback, and settlement verifies neither.** Until 1 Nov 2026 both webhook
+  services re-read the authoritative status from the provider over an
+  authenticated call before writing it; `503a602` removed that step. So the two
+  values the claim predicate in §7 trusts most are now whatever the callback
+  body asserted, gated only by a source-IP allowlist. Nothing inside settlement
+  needs to change for that — but when this document says a payment "actually
+  arrived", that is the provider's word for it, not ours.
 - **`dueAt` is not `paidAt + delay`.** `dueAt` is a property of the *run* — "it
   is time to look at this merchant". Whether any individual transaction is ripe
   is the eligibility predicate's job (§6).

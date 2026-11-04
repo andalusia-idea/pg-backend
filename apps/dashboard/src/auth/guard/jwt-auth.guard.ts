@@ -23,6 +23,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     if (request.path === '/metrics') return true;
+    if (request.path === '/health') return true;
 
     const isPublicApi = this.reflector.getAllAndOverride<boolean>(
       PUBLIC_API_KEY,

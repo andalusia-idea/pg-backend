@@ -5,7 +5,8 @@ Companion to [settlement-batching.md](settlement-batching.md), which covers
 
 Written 22 Sep 2026, **and kept current as each step lands** — where a step was
 built differently from how it was planned, the section says so rather than
-quietly reading as though it was always that way.
+quietly reading as though it was always that way. Last reviewed against the
+code on **2 Nov 2026**.
 
 Steps are ordered so each is independently verifiable and nothing is left
 half-wired between them. **Steps 1–6 needed no new app** — they landed in
@@ -28,8 +29,10 @@ for it to run.
 | 9 | Policy and eligibility | ✅ `0896962`, `eb88f32` |
 | 10 | The claim and the batch | ✅ `b26916e` |
 | 11 | Enqueuer, runner and sweeper | ✅ `614c81f`, `4a5894b`, `50d1b29`, `3504be7`, `c368461` |
-| 12 | Dashboard | next — the other team's side, see [D24](../engine/dashboard-migration.md) |
-| 13–15 | Export, comparison, cleanup | planned |
+| 12 | Dashboard | partly — balance reads landed `409adcc`, the other two changes not built |
+| 13 | Excel export | planned |
+| 14 | Comparison tool | planned |
+| 15 | Delete the legacy tables | ✅ `2bef704`, `aaef4c2`, `409adcc` — **ran early**, see below |
 
 Step 8 took two commits because `SettlementRun.createdBy` went in nullable and
 had to be corrected — the reasoning is under *Audit columns* in that step.
@@ -48,6 +51,16 @@ Both are written up at the end of that step.
 **Settlement now runs end to end.** Verified on a booted `apps/settlement` with
 no hand-driving: policy → enqueuer → claim → balance movements → batch, 30
 seconds from `runs enqueued` to `drain complete`.
+
+**Step 15 landed on 26 Oct 2026, out of order and ahead of its own gate.**
+This document said to drop the legacy tables *last*, once the snapshot had been
+the read path for a full settlement cycle. That has not happened — settlement
+has run end to end locally only. The drop went ahead because the three log
+tables were empty in every environment that exists, so there was nothing for a
+cycle to prove and nothing to lose. **Whether a dump was taken first is not
+recorded.** If those tables turn out to hold real pre-migration history in an
+environment this migration has not reached yet, that is the thing to check
+before deploying it there.
 
 Both `TODO(balance-ledger)` markers are gone, and the overdraw race
 ([D17](../engine/dashboard-migration.md)) is closed structurally rather than by
@@ -133,11 +146,12 @@ enum BalanceReasonEnum {
 
 /// Deliberately NOT `TransactionTypeEnum`.
 ///
-/// Two reasons. `TransactionTypeEnum.SETTLEMENT_PURCHASE` is being deleted
-/// (Step 15), so reusing it would tie the balance tables to a value with no
-/// future. And the idempotency key below needs `ADJUSTMENT` and `OPENING` as
-/// distinct sources - without them, two manual adjustments against the same
-/// purchase would collide on the unique constraint and the second would fail.
+/// Two reasons. `TransactionTypeEnum.SETTLEMENT_PURCHASE` was deleted in Step
+/// 15 (`2bef704`), so reusing it would have tied the balance tables to a value
+/// with no future. And the idempotency key below needs `ADJUSTMENT` and
+/// `OPENING` as distinct sources - without them, two manual adjustments against
+/// the same purchase would collide on the unique constraint and the second
+/// would fail.
 enum BalanceSourceTypeEnum {
   PURCHASE
   DISBURSEMENT
@@ -245,8 +259,8 @@ it belongs.
 
 The instinct is to add all three to `AUDITED_MODELS` in
 [audit.extension.ts](../../apps/transaction/src/database/audit.extension.ts:28),
-next to `MerchantBalanceLog`. **Don't** — it breaks two ways, both found by
-doing it:
+where `MerchantBalanceLog` used to sit, before Step 15 removed it.
+**Don't** — it breaks two ways, both found by doing it:
 
 **It throws on `BalanceSnapshot`.** The extension's create path calls
 `creationAuditFields()`, which returns `createdAt` *unconditionally* — only
@@ -528,11 +542,12 @@ Three smaller reasons it is the wrong trade:
 And `reserve()` returning `INSUFFICIENT_BALANCE` for a holder with no snapshot
 row is already the right answer — they have no money.
 
-> **`registerMerchant` does need changing, but at Step 9, not here.** It
-> currently writes `settlementInterval: dto.settlementInterval ?? 120`, and that
-> column is deleted in Step 15. The replacement is a default
-> `MerchantSettlementPolicy` row. `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
-> `CreateMerchantDto.settlementInterval` go with it.
+> **`registerMerchant` did need changing, at Step 9 rather than here — and it
+> has been done.** It used to write
+> `settlementInterval: dto.settlementInterval ?? 120`, and that column is gone
+> as of Step 15. `settlementInterval`, `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
+> `CreateMerchantDto.settlementInterval` no longer appear anywhere in `apps/` or
+> `libs/` outside the generated clients.
 
 ### What to build instead
 
@@ -1323,20 +1338,22 @@ of settlement's tables by the admin UI, not a reason to move them.
 
 ### `registerMerchant` changes here
 
+**Landed.**
 [user.service.ts](../../apps/dashboard/src/modules/user/user.service.ts:91)
-currently creates the config row with
+used to create the config row with
 `settlementInterval: dto.settlementInterval ?? DEFAULT_SETTLEMENT_INTERVAL_MINUTES`.
-That column is deleted in Step 15, so a registration path still writing it would
-break the moment it goes.
+That column was dropped in Step 15 and the registration path no longer writes
+it, so the break this warned about never happened.
 
-In the same transaction, create a default `MerchantSettlementPolicy` instead:
-`paymentMethodName: '*'`, `mode: FOLLOW_UPSTREAM`, `effectiveFrom: now()`. Then
-remove `DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and
-`CreateMerchantDto.settlementInterval`, and give the frontend the mode enum in
-their place.
+In the same transaction it now creates a default `MerchantSettlementPolicy`
+instead: `paymentMethodName: '*'`, `mode: FOLLOW_UPSTREAM`,
+`effectiveFrom: new Date()` — exactly as prescribed here, at
+[user.service.ts:92](../../apps/dashboard/src/modules/user/user.service.ts:92).
+`DEFAULT_SETTLEMENT_INTERVAL_MINUTES` and `CreateMerchantDto.settlementInterval`
+went with it, so the frontend takes the mode enum in their place.
 
 The `isEligible` fallback still treats a merchant with no policy row as
-`FOLLOW_UPSTREAM`, so a merchant registered before this lands is not stranded —
+`FOLLOW_UPSTREAM`, so a merchant registered before this landed is not stranded —
 but an explicit row is what makes their terms visible and editable in the admin
 UI rather than implied by a default buried in code.
 
@@ -1640,7 +1657,7 @@ RETURNING *;
 ```
 
 `$1` is a **pod identity**, not a `MACHINE_USER_ID` — see the note below.
-It comes from `SettlementConfig.POD_IDENTITY`, which reads `POD_NAME` and falls
+It comes from `SettlementConfig.POD_NAME`, which reads `POD_NAME` and falls
 back to `os.hostname()`. `get` rather than `getOrThrow`, deliberately: in
 Kubernetes a container's hostname already *is* the pod name, so this needs no
 manifest change to be useful. Truncated to 100 characters, because `claimedBy`
@@ -1750,26 +1767,35 @@ proves the queries but not the crash path.
 
 ## Step 12 — Dashboard
 
-Three changes in `apps/dashboard`:
+Three changes in `apps/dashboard`. **The first landed** in `409adcc` (26 Oct
+2026), as part of the Step 15 cleanup rather than as a commit of its own; the
+other two are not built.
 
-**Balance reads switch to the snapshot.** In
+**Balance reads switch to the snapshot. ✅ Landed.** In
 [balance.service.ts](../../apps/dashboard/src/modules/balance/balance.service.ts),
-replace the `findFirst` on the log tables with a `findUnique` on
-`BalanceSnapshot`. Simpler and faster — a primary-key lookup instead of an
-ordered scan.
+the `findFirst` on the log tables is gone. It went in as `findMany` plus a
+group-by-bucket helper rather than the `findUnique` planned here, and that is
+the better shape: the three buckets are three rows, so one holder is one
+`findMany` rather than three key lookups. The two aggregate endpoints use
+`groupBy` with `_sum` on `amount`.
 
 This also quietly fixes D18's aggregate inconsistency: the old aggregate
 excluded `PURCHASE` while the single-holder endpoints did not, so the two never
 had to agree. Summing snapshot rows removes the question.
 
-**Admin profit view**: `INTERNAL` holder `0`, both buckets — pending profit and
-settled profit shown separately. Gate on `ROLE.ADMIN` / `ROLE.SUPER_ADMIN` from
+**Admin profit view — partly there.** `INTERNAL` holder `0`, both buckets:
+pending profit and settled profit shown separately. Gate on `ROLE.ADMIN` /
+`ROLE.SUPER_ADMIN` from
 [libs/microservice/src/microservice.enum.ts](../../libs/microservice/src/microservice.enum.ts:56).
+`GET balance/aggregate/internal` exists and sums the INTERNAL holder's snapshot
+rows, but it carries a bare `@CheckPolicies()` with no role argument, so the
+gating asked for here is still missing.
 
-**Manual adjustment**: a form writing `BalanceAdjustment` plus its movement, in
-one transaction, gated on the same two roles. Mandatory reason. `createdBy` from
-the CLS auth context. Show the adjustment history on the same screen — an
-adjustment tool without a visible log is how a balance quietly becomes fiction.
+**Manual adjustment — not built.** A form writing `BalanceAdjustment` plus its
+movement, in one transaction, gated on the same two roles. Mandatory reason.
+`createdBy` from the CLS auth context. Show the adjustment history on the same
+screen — an adjustment tool without a visible log is how a balance quietly
+becomes fiction.
 
 > **`BalanceEntry.id` is a `BigInt`, and `JSON.stringify` throws on those.**
 > Convert to string in the DTO. This will not fail at compile time and it will
@@ -1837,21 +1863,40 @@ work — worth learning in a reply rather than after the code exists.
 
 ## Step 15 — Delete the legacy tables
 
-Last, once the snapshot has been the read path for a full settlement cycle and
-the Step 4 check has been quiet.
+**✅ Landed 26 Oct 2026**, in three commits split in the order that keeps each
+one reviewable: `2bef704` schema only → `aaef4c2` migration, seed and regenerated
+clients → `409adcc` the application code that had to follow. All four planned
+items were done:
 
-1. Drop `MerchantBalanceLog`, `AgentBalanceLog`, `InternalBalanceLog` — and
-   remove them from `AUDITED_MODELS`.
-2. Remove `TransactionTypeEnum.SETTLEMENT_PURCHASE` from the Prisma enums **and**
-   from [libs/microservice/src/microservice.enum.ts](../../libs/microservice/src/microservice.enum.ts:168).
-3. Drop `Merchant.settlementInterval` and `lastSettlementAt`; drop
-   `Provider.reconciliationTime` and `lastReconciliationAt`; drop
-   `batchReconciliationId` and `reconciliationAt` from both transaction models.
-4. Re-run both schema merges.
+1. ✅ `MerchantBalanceLog`, `AgentBalanceLog` and `InternalBalanceLog` dropped,
+   and removed from `AUDITED_MODELS` in both transaction and dashboard.
+2. ✅ `TransactionTypeEnum.SETTLEMENT_PURCHASE` removed from the Prisma enums in
+   both config and transaction **and** from
+   [libs/microservice/src/microservice.enum.ts](../../libs/microservice/src/microservice.enum.ts:163).
+3. ✅ `Merchant.settlementInterval` and `lastSettlementAt` dropped;
+   `Provider.reconciliationTime` and `lastReconciliationAt` dropped;
+   `batchReconciliationId` and `reconciliationAt` dropped from both transaction
+   models.
+4. ✅ Both schema merges re-run.
 
-**Take a backup of the three log tables first** — as a dump, not a rename.
-They are the only record of pre-migration history, and the opening-balance
-entries reference figures that came from them.
+The migrations are `20261026090919_cleaning_after_settlement` (config) and
+`20261026090936_cleaning_after_settlement` (transaction).
+
+**The enum drop is worth reading before you ever remove another enum value.**
+Postgres has no `ALTER TYPE ... DROP VALUE`, so the migration creates
+`TransactionTypeEnum_new`, casts every dependent column through `::text`,
+renames the old type out of the way and the new one into place, then drops the
+old one. Prisma generated that correctly, including the array cast on
+`PaymentMethod.transactionTypes`. It also means the migration **fails loudly**
+if any row still holds `SETTLEMENT_PURCHASE`, rather than silently losing it.
+
+> **The backup this step asked for is not recorded anywhere.** It said to dump
+> the three log tables first — as a dump, not a rename — because they were the
+> only record of pre-migration history and the opening-balance entries reference
+> figures that came from them. They were empty in every environment that exists,
+> so in practice there was nothing to lose, but no check is written down. If this
+> migration is ever applied to a database that predates the revamp, do the dump
+> first.
 
 ---
 
@@ -1862,10 +1907,10 @@ is the record. This covers only what remains, one commit per step:
 
 | Commit | Step | Independently shippable? |
 |---|---|---|
-| `feat(dashboard): read balances from snapshot` | 12 | **behavior change** |
+| ~~`feat(dashboard): read balances from snapshot`~~ | 12 | landed in `409adcc` |
 | `feat(settlement): transaction export to minio` | 13 | yes |
 | `feat(settlement): statement comparison placeholder` | 14 | yes |
-| `chore: drop legacy balance logs` | 15 | yes, after a full cycle |
+| ~~`chore: drop legacy balance logs`~~ | 15 | landed in `2bef704`, `aaef4c2`, `409adcc` |
 
 **Step 11 was the real cutover**, and it has landed. It is the first moment
 settlement happens on the new schedule, and it is worth telling merchants about,
@@ -1873,9 +1918,12 @@ because `FOLLOW_UPSTREAM` means waiting until T+1 15:00 instead of the 120
 minutes they used to get. Nothing enqueues for a merchant without a policy row,
 so the cutover is per merchant rather than all at once.
 
-**Step 15 waits for a full cycle.** Dropping the legacy balance logs is
-irreversible, and the thing that proves the new tables are right is a complete
-settlement cycle having run against them in production — not a passing test.
+**Step 15 was meant to wait for a full cycle, and did not.** Dropping the legacy
+balance logs is irreversible, and the thing that would prove the new tables are
+right is a complete settlement cycle having run against them in production — not
+a passing test. That cycle has still not run. The drop was safe anyway because
+the old tables were empty in every environment, which is luck rather than the
+argument this paragraph was making.
 
 One note on the messages above: they are the shape, not the wording. The commits
 for steps 1–8 did not use `feat(scope):` prefixes, because the recent history in

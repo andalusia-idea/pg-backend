@@ -136,6 +136,15 @@
         "tsConfigPath": "apps/transaction/tsconfig.app.json"
       }
     },
+    "uat-local": {
+      "type": "application",
+      "root": "apps/uat-local",
+      "entryFile": "main",
+      "sourceRoot": "apps/uat-local/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/uat-local/tsconfig.app.json"
+      }
+    },
     "upstream": {
       "type": "library",
       "root": "libs/upstream",

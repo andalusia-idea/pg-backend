@@ -1,4 +1,4 @@
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { Module } from '@nestjs/common';
 // import { DatabaseModule } from '../database/database.module';
 import { PrismaModule } from '@app/prisma';
@@ -22,7 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
   providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/transaction/.env.local', 'apps/transaction/.env'],
+      envFilePath: envFilePath('transaction'),
     }),
     LoggerModule,
     HealthModule,

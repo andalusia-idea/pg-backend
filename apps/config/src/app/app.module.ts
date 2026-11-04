@@ -1,4 +1,4 @@
-import { ConfigurationModule } from '@app/configuration';
+import { ConfigurationModule, envFilePath } from '@app/configuration';
 import { Module } from '@nestjs/common';
 // import { DatabaseModule } from '../database/database.module';
 import { LoggerModule } from '@app/logger';
@@ -10,11 +10,15 @@ import { auditTrailExtension } from '../database/audit.extension';
 import { MicroserviceModule } from '@app/microservice';
 import { FeeModule } from '../fee/fee.module';
 import { ProfileProviderModule } from '../profile-provider/profile-provider.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
+  controllers: [AppController],
+  providers: [AppService],
   imports: [
     ConfigurationModule.forRoot({
-      envFilePath: ['apps/config/.env.local', 'apps/config/.env'],
+      envFilePath: envFilePath('config'),
     }),
     LoggerModule,
     HealthModule,

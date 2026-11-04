@@ -22,6 +22,7 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
+    "types": ["node", "jest"],
     "paths": {
       "@app/balance": [
         "libs/balance/src"

@@ -11,6 +11,8 @@ import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { UpstreamException } from '@app/upstream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
+import { CreateQrisRequestDto } from './purchase.dto';
+import Decimal from 'decimal.js';
 
 /** Prisma's unique-constraint violation. */
 const UNIQUE_VIOLATION = 'P2002';
@@ -46,6 +48,60 @@ export class PurchaseCommonService {
 
   readonly userRole = UserRoleEnum.MERCHANT;
   readonly transactionType = TransactionTypeEnum.PURCHASE;
+
+  /**
+   * Claim `merchantReference` and write the transaction.
+   *
+   * `providerReference` and `expiresAt` are left null: we genuinely do not know
+   * them yet, and inventing placeholders would put values in the database that
+   * later have to be told apart from real ones.
+   *
+   * **No fee breakdown is written here.** Fees are calculated when the payment
+   * is confirmed by callback, not when the QR is issued: a QR that expires
+   * never earns anything, so computing at creation writes rows for transactions
+   * that will never settle. `netNominal` stays at its `0.00` default until then
+   * - unambiguous while the row is PENDING, since a pending purchase has earned
+   * nothing yet by definition.
+   */
+  async reserveTransaction({
+    userId,
+    systemReference,
+    providerName,
+    paymentMethodName,
+    dto,
+  }: {
+    userId: number;
+    providerName: ProviderNameEnum;
+    systemReference: string;
+    paymentMethodName: PaymentMethodNameEnum;
+    dto: CreateQrisRequestDto;
+  }): Promise<number> {
+    try {
+      const purchase = await this.prismaMaster.purchaseTransaction.create({
+        data: {
+          merchantId: userId,
+          systemReference,
+          merchantReference: dto.merchantReference,
+
+          providerName,
+          paymentMethodName: paymentMethodName,
+          nominal: new Decimal(dto.amount.value),
+
+          status: TransactionStatusEnum.PENDING,
+        },
+        select: { id: true },
+      });
+      return purchase.id;
+    } catch (error) {
+      this.reserveFailure({
+        error,
+        userId,
+        systemReference,
+        merchantReference: dto.merchantReference,
+        rail: paymentMethodName,
+      });
+    }
+  }
 
   /**
    * Which provider this merchant routes a pay-in to.
@@ -106,13 +162,13 @@ export class PurchaseCommonService {
     userId,
     systemReference,
     merchantReference,
-    instrument,
+    rail,
   }: {
     error: unknown;
     userId: number;
     systemReference: string;
     merchantReference: string;
-    instrument: string;
+    rail: string;
   }): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -129,7 +185,7 @@ export class PurchaseCommonService {
       }
 
       this.logger.debug({
-        msg: `Duplicate merchantReference on ${instrument} purchase`,
+        msg: `Duplicate merchantReference on ${rail} purchase`,
         userId,
         merchantReference,
       });
@@ -137,7 +193,7 @@ export class PurchaseCommonService {
     }
 
     this.logger.error({
-      msg: `Failed to reserve ${instrument} purchase transaction`,
+      msg: `Failed to reserve ${rail} purchase transaction`,
       userId,
       systemReference,
       error,

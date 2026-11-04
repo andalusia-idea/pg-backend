@@ -18,7 +18,8 @@ async function bootstrap() {
 
   const appConfig = app.get(AppConfig);
   const tcpConfig = app.get(TCPConfig);
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   const options = new DocumentBuilder()
     .setTitle(`${appConfig.APP_NAME} Service`)
@@ -55,7 +56,12 @@ async function bootstrap() {
     appConfig.PORT,
     appConfig.IS_PRODUCTION ? '0.0.0.0' : 'localhost',
   );
-
+  logger.log(
+    `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,
+  );
+  logger.log(
+    `TCP Name [${tcpConfig.AUTH.NAME}], TCP Host [${tcpConfig.AUTH.HOST}], TCP PORT [${tcpConfig.AUTH.PORT}]`,
+  );
   console.log(
     `${appConfig.APP_NAME} [${appConfig.NODE_ENV}] listening on port ${appConfig.PORT}`,
   );

@@ -160,6 +160,7 @@ export class MotionPayTransferService {
     }
 
     return {
+      systemReference: params.systemReference,
       providerReference: payment.data?.transaction_id ?? '',
       // Only a callback or a status read produces one; inventing a value here
       // would be a lie on the row.

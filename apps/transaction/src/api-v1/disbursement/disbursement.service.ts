@@ -12,7 +12,6 @@ import {
   UpstreamTransferStep,
 } from '@app/upstream';
 import { Injectable, Logger } from '@nestjs/common';
-import { JatelindoTransferService } from '../../upstream/jatelindo';
 import {
   MotionPayBillerService,
   MotionPayTransferService,
@@ -23,6 +22,7 @@ import {
   CreateTransferDataDto,
   CreateTransferRequestDto,
 } from './disbursement.dto';
+import { JatelindoTransferService } from '../../upstream/jatelindo';
 
 /**
  * Payouts, over whichever rail the merchant's routing resolves to.

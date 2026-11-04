@@ -1,25 +1,15 @@
 import {
-  isEWalletPaymentMethod,
   MerchantSignatureAuthClient,
-  PaymentMethodNameEnum,
-  ProviderNameEnum,
   TransactionStatusEnum,
   TransactionTypeEnum,
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
-import {
-  UpstreamTransferStatusResponseDto,
-  UpstreamWebhookTransferDto,
-} from '@app/upstream';
+import { UpstreamWebhookTransferDto } from '@app/upstream';
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
 import { firstValueFrom, timeout } from 'rxjs';
-import {
-  MotionPayBillerService,
-  MotionPayTransferService,
-} from '../../upstream/motionpay';
 import { WebhookPayoutDto } from './disbursement.dto';
 import { DisbursementCommonService } from './disbursement-common.service';
 
@@ -57,8 +47,6 @@ export class DisbursementWebhookService {
 
     private readonly httpService: HttpService,
     private readonly merchantSignatureClient: MerchantSignatureAuthClient,
-    private readonly motionPayTransferService: MotionPayTransferService,
-    private readonly motionPayBillerService: MotionPayBillerService,
   ) {}
 
   private readonly transactionType = TransactionTypeEnum.DISBURSEMENT;
@@ -99,33 +87,9 @@ export class DisbursementWebhookService {
       return done('already terminal');
     }
 
-    const confirmed = await this.confirmWithProvider({
-      disbursementId: disbursement.id,
-      providerName: disbursement.providerName as ProviderNameEnum,
-      paymentMethodName:
-        disbursement.paymentMethodName as PaymentMethodNameEnum,
-      systemReference: payload.systemReference,
-      providerReference: disbursement.providerReference,
-    });
+    await this.settle(disbursement, payload);
 
-    if (!confirmed) return askRetry('status confirmation failed');
-
-    if (confirmed.status === TransactionStatusEnum.PENDING) {
-      // Still in flight. For a payout this is the common case rather than an
-      // anomaly - transfers settle asynchronously and a callback can arrive
-      // ahead of the provider's own state.
-      this.logger.warn({
-        msg: 'Transfer callback fired but the provider still reports PENDING',
-        disbursementId: disbursement.id,
-        systemReference: payload.systemReference,
-        callbackStatus: payload.status,
-      });
-      return done('provider still pending');
-    }
-
-    await this.settle(disbursement, confirmed, payload);
-
-    return done(`settled as ${confirmed.status}`);
+    return done(`settled as ${payload.status}`);
   }
 
   /**
@@ -137,10 +101,10 @@ export class DisbursementWebhookService {
    */
   private async settle(
     disbursement: DisbursementRow,
-    confirmed: UpstreamTransferStatusResponseDto,
+    // confirmed: UpstreamTransferStatusResponseDto,
     payload: UpstreamWebhookTransferDto,
   ): Promise<void> {
-    const isPaid = confirmed.status === TransactionStatusEnum.SUCCESS;
+    const isPaid = payload.status === TransactionStatusEnum.SUCCESS;
 
     // The provider's callback has no timestamp of its own, so the moment we
     // confirmed settlement is the best record we have of when it happened.
@@ -150,13 +114,12 @@ export class DisbursementWebhookService {
       await tx.disbursementTransaction.update({
         where: { id: disbursement.id },
         data: {
-          status: confirmed.status,
+          status: payload.status,
           paidAt,
-          providerReference:
-            payload.providerReference ?? confirmed.providerReference,
+          providerReference: payload.providerReference,
           metadata: this.mergeMetadata(disbursement.metadata, {
             ...payload.metadata,
-            ...confirmed.metadata,
+            // ...confirmed.metadata,
           }),
         },
       });
@@ -171,18 +134,14 @@ export class DisbursementWebhookService {
     this.logger.log({
       msg: 'Payout settled from callback',
       disbursementId: disbursement.id,
-      status: confirmed.status,
+      status: payload.status,
     });
 
-    // From the row, not recomputed. It is the figure the merchant was actually
-    // charged - fees are priced and reserved at create time now, so a second
-    // call to the fee service here could return a different number under a
-    // changed config and report the merchant something that never happened.
     await this.notifyMerchant(
       disbursement,
-      confirmed,
       disbursement.netNominal,
       paidAt,
+      payload.status,
     );
   }
 
@@ -196,9 +155,9 @@ export class DisbursementWebhookService {
    */
   private async notifyMerchant(
     disbursement: DisbursementRow,
-    confirmed: UpstreamTransferStatusResponseDto,
     netNominal: Decimal,
     paidAt: Date | null,
+    status: TransactionStatusEnum,
   ): Promise<void> {
     try {
       const { payoutUrl } =
@@ -216,7 +175,7 @@ export class DisbursementWebhookService {
           value: disbursement.nominal.minus(netNominal).abs().toFixed(2),
           currency: 'IDR',
         },
-        status: confirmed.status,
+        status: status,
         beneficiary: {
           bankCode: disbursement.bankCode,
           accountNumber: disbursement.accountNumber,
@@ -245,65 +204,6 @@ export class DisbursementWebhookService {
         merchantId: disbursement.merchantId,
         error,
       });
-    }
-  }
-
-  /**
-   * Re-read the authoritative status from the provider.
-   *
-   * Returns null when we could not get an answer, which the caller turns into a
-   * retry - never into an assumption. For a payout that restraint matters more
-   * than anywhere else in the system: acting on an unverified "success" would
-   * release a merchant's funds against money that may never have moved.
-   */
-  private async confirmWithProvider({
-    disbursementId,
-    providerName,
-    paymentMethodName,
-    systemReference,
-    providerReference,
-  }: {
-    disbursementId: number;
-    providerName: ProviderNameEnum;
-    paymentMethodName: PaymentMethodNameEnum;
-    systemReference: string;
-    providerReference: string | null;
-  }): Promise<UpstreamTransferStatusResponseDto | null> {
-    // The payment method decides which rail carried this payout, and therefore
-    // which status endpoint knows about it. A wallet top-up sent over the
-    // biller rails is invisible to the transfer status endpoint and vice versa.
-    const isEWallet = isEWalletPaymentMethod(paymentMethodName);
-
-    try {
-      switch (providerName) {
-        case ProviderNameEnum.MOTIONPAY:
-          // `return await`, not `return`: without the await the promise rejects
-          // after this try block has exited and the catch never runs.
-          return await (isEWallet
-            ? this.motionPayBillerService.checkStatus({
-                systemReference,
-                providerReference,
-              })
-            : this.motionPayTransferService.checkTransferStatus({
-                systemReference,
-                providerReference,
-              }));
-        default:
-          this.logger.error({
-            msg: 'No transfer status client for this provider',
-            providerName,
-            disbursementId,
-          });
-          return null;
-      }
-    } catch (error) {
-      this.logger.error({
-        msg: 'Could not confirm transfer status with the provider',
-        systemReference,
-        disbursementId,
-        error,
-      });
-      return null;
     }
   }
 

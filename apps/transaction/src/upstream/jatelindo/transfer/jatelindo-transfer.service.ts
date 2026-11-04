@@ -143,6 +143,7 @@ export class JatelindoTransferService {
     }
 
     return {
+      systemReference: params.systemReference,
       providerReference: payment.jpaReferenceNo,
       bankReference: payment.DisbursementResponse[0].transactionNumber,
 
@@ -158,7 +159,7 @@ export class JatelindoTransferService {
     };
   }
 
-  async accountInquiry(params: UpstreamTransferRequestDto) {
+  private async accountInquiry(params: UpstreamTransferRequestDto) {
     const isWallet = isEwalletEnum(params.bankCode);
     const body: JatelindoInquiryRequestDto = {
       accountNo: isWallet ? '' : params.accountNumber,
@@ -191,7 +192,7 @@ export class JatelindoTransferService {
     return parsed;
   }
 
-  async payment(
+  private async payment(
     params: UpstreamTransferRequestDto,
     accountInquiry: JatelindoInquiryResponseDto,
   ) {

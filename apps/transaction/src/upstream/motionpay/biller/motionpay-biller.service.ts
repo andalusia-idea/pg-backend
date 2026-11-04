@@ -194,6 +194,7 @@ export class MotionPayBillerService {
     );
 
     return {
+      systemReference: dto.systemReference,
       providerReference: paymentData.transaction_id,
       bankReference: null,
 

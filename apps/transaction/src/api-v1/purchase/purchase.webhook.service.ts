@@ -11,16 +11,12 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice';
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
-import {
-  UpstreamQrisStatusResponseDto,
-  UpstreamWebhookQrisDto,
-} from '@app/upstream';
+import { UpstreamWebhookQrisDto } from '@app/upstream';
 import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
 import { firstValueFrom, timeout } from 'rxjs';
-import { MotionPayQrisService } from '../../upstream/motionpay';
 import { WebhookPayinDto } from './purchase.dto';
 import {
   BalanceBucketEnum,
@@ -70,7 +66,6 @@ export class PurchaseWebhookService {
     private readonly httpService: HttpService,
     private readonly feeCalculateClient: FeeCalculateConfigClient,
     private readonly merchantSignatureClient: MerchantSignatureAuthClient,
-    private readonly motionPayQrisService: MotionPayQrisService,
   ) {}
 
   private readonly transactionType = TransactionTypeEnum.PURCHASE;
@@ -119,34 +114,9 @@ export class PurchaseWebhookService {
       return done('already terminal');
     }
 
-    const confirmed = await this.confirmWithProvider({
-      purchaseId: purchase.id,
-      providerName: purchase.providerName as ProviderNameEnum,
-      providerReference: payload.providerReference,
-    });
+    await this.settle(purchase, payload);
 
-    if (!confirmed) {
-      // We could not reach the provider to verify. Acting on the unverified
-      // payload is exactly what this design refuses to do, so ask for the
-      // retry their schedule exists for.
-      return askRetry('status confirmation failed');
-    }
-
-    if (confirmed.status === TransactionStatusEnum.PENDING) {
-      // The provider told us something happened, then told us nothing has.
-      // Do not guess - leave it pending for the settlement sweep.
-      this.logger.warn({
-        msg: 'QRIS callback fired but the provider still reports PENDING',
-        purchaseId: purchase.id,
-        providerReference: payload.providerReference,
-        callbackStatus: payload.status,
-      });
-      return done('provider still pending');
-    }
-
-    await this.settle(purchase, confirmed, payload);
-
-    return done(`settled as ${confirmed.status}`);
+    return done(`settled as ${payload.status}`);
   }
 
   /**
@@ -159,10 +129,10 @@ export class PurchaseWebhookService {
    */
   private async settle(
     purchase: PurchaseRow,
-    confirmed: UpstreamQrisStatusResponseDto,
     payload: UpstreamWebhookQrisDto,
   ): Promise<void> {
-    const isPaid = confirmed.status === TransactionStatusEnum.SUCCESS;
+    const status = payload.status;
+    const isPaid = status === TransactionStatusEnum.SUCCESS;
 
     // Fees only for money that actually arrived. A QR that expired earns
     // nothing, so writing a breakdown for it would be noise settlement has to
@@ -171,7 +141,7 @@ export class PurchaseWebhookService {
       ? await this.calculateFee({
           merchantId: purchase.merchantId,
           providerName: purchase.providerName as ProviderNameEnum,
-          nominal: confirmed.nominal,
+          nominal: purchase.nominal.toFixed(2),
         })
       : null;
 
@@ -183,7 +153,7 @@ export class PurchaseWebhookService {
       await tx.purchaseTransaction.update({
         where: { id: purchase.id },
         data: {
-          status: confirmed.status,
+          status: payload.status,
           // Null unless the provider says money arrived. Defaulting to "now"
           // would stamp a payment time on a transaction nobody ever paid.
           paidAt: payload.paidAt,
@@ -195,7 +165,6 @@ export class PurchaseWebhookService {
             : {}),
           metadata: this.mergeMetadata(purchase.metadata, {
             ...payload.metadata,
-            ...confirmed.metadata,
           }),
         },
       });
@@ -210,7 +179,7 @@ export class PurchaseWebhookService {
     this.logger.log({
       msg: 'QRIS transaction settled from callback',
       purchaseId: purchase.id,
-      status: confirmed.status,
+      status: payload.status,
       feesWritten: fee !== null,
     });
 
@@ -226,7 +195,7 @@ export class PurchaseWebhookService {
       });
     }
 
-    await this.notifyMerchant(purchase, confirmed, netNominal, payload.paidAt);
+    await this.notifyMerchant(purchase, netNominal, payload.paidAt, status);
   }
 
   /**
@@ -310,9 +279,9 @@ export class PurchaseWebhookService {
    */
   private async notifyMerchant(
     purchase: PurchaseRow,
-    confirmed: UpstreamQrisStatusResponseDto,
     netNominal: Decimal,
     paidAt: Date | null,
+    status: TransactionStatusEnum,
   ): Promise<void> {
     try {
       const { payinUrl } =
@@ -330,7 +299,7 @@ export class PurchaseWebhookService {
           value: purchase.nominal.minus(netNominal).toFixed(2),
           currency: 'IDR',
         },
-        status: confirmed.status,
+        status: status,
         // ISO 8601 UTC. `toLocaleString()` here would emit the *server's*
         // locale - "9/2/2026, 4:15:53 PM" - which no merchant can parse
         // reliably and which changes with the host's configuration.
@@ -358,50 +327,6 @@ export class PurchaseWebhookService {
         merchantId: purchase.merchantId,
         error,
       });
-    }
-  }
-
-  /**
-   * Re-read the authoritative status from the provider.
-   *
-   * Returns null when we could not get an answer, which the caller turns into a
-   * retry - never into an assumption.
-   */
-  private async confirmWithProvider({
-    purchaseId,
-    providerName,
-    providerReference,
-  }: {
-    purchaseId: number;
-    providerName: ProviderNameEnum;
-    providerReference: string;
-  }): Promise<UpstreamQrisStatusResponseDto | null> {
-    try {
-      switch (providerName) {
-        case ProviderNameEnum.MOTIONPAY:
-          // `return await`, not `return`: without the await the promise
-          // rejects after this try block has already exited, so the catch
-          // below never runs and the error escapes as an unhandled failure.
-          return await this.motionPayQrisService.getQrisStatus({
-            systemReference: null,
-            providerReference,
-          });
-        default:
-          this.logger.error({
-            msg: 'No QRIS status client for this provider',
-            providerName,
-            purchaseId,
-          });
-          return null;
-      }
-    } catch (error) {
-      this.logger.error({
-        msg: 'Could not confirm QRIS status with the provider',
-        providerReference,
-        purchaseId,
-        error,
-      });
-      return null;
     }
   }
 
