@@ -13,7 +13,8 @@ apps.forEach((app, i) => {
 
   const command = [
     `npx dotenv -e apps/${app}/.env.test -- prisma migrate reset --force --config apps/${app}/prisma.config.ts`,
-    `npx dotenv -e apps/${app}/.env.test -- prisma db seed --config apps/${app}/prisma.config.ts -- --dev`,
+    // `npx dotenv -e apps/${app}/.env.test -- prisma db seed --config apps/${app}/prisma.config.ts -- --dev`,
+    `npx dotenv -e apps/${app}/.env.test -- prisma db seed --config apps/${app}/prisma.config.ts`,
   ].join(' && ');
 
   args.push('-p', profile, '-d', dir, '--', 'cmd', '/k', command);
