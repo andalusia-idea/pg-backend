@@ -2,7 +2,42 @@
 
 **Branch**: `dashboard` · **Status**: in progress · **Scope**: port every endpoint the PG-Dashboard frontend actually calls into `apps/dashboard`, keeping the legacy style (Express, class-validator, class-transformer) rather than refactoring to the Fastify/TypeBox stack used by the transactional apps.
 
-Source of truth for "what to migrate" is the frontend's own API client layer at `C:\prelion\pg\PG-Dashboard\src\api\*.api.ts` — if the frontend doesn't call it, it isn't in scope.
+Source of truth for "what to migrate" is the frontend's own API client layer at `C:\Users\USER\Documents\programming_folder\web dev\PG-Dashboard\src\api\*.api.ts` — if the frontend doesn't call it, it isn't in scope.
+
+---
+
+## Update — 2026-11-05 frontend push (second pass, same day)
+
+Frontend pushed two commits (`457c199..f01cb07`, backend unchanged at `7d9a6c3`) closing out the frontend half of the findings from the first pass below.
+
+- **Balance Step 12 is now fully complete on both sides.** Commit `f01cb07` rewrites `balance.type.ts` to the wire-string `balanceActive`/`balancePending`/`balanceReserved` shape keyed by `agentId`/`merchantId`, exactly matching all five routes, and propagates it through every consumer (home balance cards, merchant/agent lists and detail pages, withdrawal balance display). Rows 24-28 in §2.3 updated below — no frontend action remains on any of them.
+- **The "admin profit view" gap is closed.** The same commit adds a `ProfitOverview` card on Home (admin-only), reusing row 24's existing query to show Settled/Unsettled/Reserved/Total, as the design docs asked for. D22's remaining open item is now backend-only: the manual-adjustment write endpoint.
+- **The stale `SETTLEMENT_PURCHASE` enum is removed from the frontend** (commit `1ad92ba`), matching the backend's Step 15 removal — nothing left referencing it on either side.
+- **`POST settlement/settle`'s no-op stub no longer presents as a real success.** The unsettled page's "Settle" action (row 48) now shows a warning toast stating plainly this is a test action and no balances moved, instead of a misleading success message. The stub itself is unchanged — still backend work whenever that's prioritized.
+
+---
+
+## Update — 2026-11-05 post-pull comparison
+
+Compared backend `apps/dashboard` + `docs/batch/*` against backend commit `7d9a6c3` (14 commits past `503a602`); frontend unchanged at `457c199`. Full detail in D22's new 2026-11-05 dated update below.
+
+- **The agent-balance holder-type bug flagged in the last two passes is fixed** (`b93f9b8`) — `checkBalanceAgent()` now correctly filters `holderType: AGENT`. Row 28 updated in §2.2; no longer a backend blocker for the frontend's balance-alignment work.
+- **A new `apps/uat-local` app and test-harness commits landed** (health probes, a Jatelindo DI cleanup, `apps/transaction` terminology fixes). Checked each one specifically: none changes a dashboard route, DTO, or response shape. No inventory changes from this.
+- **The "admin profit view" the design docs describe already has a data endpoint** — `GET balance/aggregate/internal` (row 24) already returns the pending-vs-settled shape asked for; what's missing is a frontend screen and real role enforcement (D3, not a new gap). Manual adjustment itself is still fully unbuilt.
+- **New context, no frontend task**: the backend's own `docs/batch` audit found that commit `503a602` made settlement trust webhook callback bodies without re-verifying with the provider, and that Step 15's legacy-table drop shipped ahead of its own stated safety gate (worked out safely by luck, not by the gate being satisfied). Both are backend-internal risk notes, recorded under D22 for visibility.
+
+---
+
+## Update — 2026-11-02 post-pull comparison
+
+Compared backend `apps/dashboard`, all five `docs/batch/` guides, and frontend commit `457c199` against backend commit `503a602` (current dashboard DTO state includes the D19 fix in `050ee0b`). The current task list is `PG-Dashboard/new-task.md`; its opening section separates completed, partial, and remaining work. The detailed notes below are retained as history.
+
+- **D18/D19/D23/D24 frontend contract changes are complete.** Frontend commit `b3f7efc` aligns transaction and settlement types, tables, and exports with the canonical transaction DTOs; top-up metadata and dashboard `reconciliationAt` references are removed. Merchant create/detail no longer uses the deleted interval fields. The separate reconciliation module keeps its separate contract.
+- **Backend commit `503a602` changes webhook handling only.** Purchase/disbursement webhook services now use callback payload statuses directly rather than confirming status with the provider. It adds no dashboard route or request/response shape change, so there is no direct frontend DTO task from this commit.
+- **Balance Step 12 is partial across the stack.** Backend reads now use `BalanceSnapshot` and return `balanceReserved`; frontend balance types still omit that field and model the money values/holder IDs differently. The frontend screens still show active/pending only. The agent detail query still filters `holderType: MERCHANT`, so fix that backend defect before relying on agent balances. Admin profit/adjustment endpoints and run/batch read routes do not exist yet.
+- **Settlement Steps 10–11 are live; Step 15 cleanup is complete.** The implementation guide's status table still calls Step 15 planned, which is stale relative to commit `409adcc` and the merged Prisma schema. Steps 13–14 remain roadmap items without frontend-facing contracts.
+- **Remaining current frontend tasks:** remove the stale `SETTLEMENT_PURCHASE` enum; stop presenting `POST settlement/settle` as a successful real operation (it remains a no-op); keep the settlement-policy screen mock-backed until dashboard policy routes exist; and defer run/batch history and export/comparison UI until those APIs are specified.
+- **Withdrawal read alignment is complete; write behavior is not.** The listing now uses the backend response names. The dashboard still has no withdrawal create route, and approve/reject remain stubs that ignore `approvalMethod`.
 
 ---
 
@@ -14,7 +49,7 @@ The frontend has now completed the requested transaction read-model follow-up ag
 - **8b:** purchase, top-up, disbursement, withdrawal, and settlement response types now follow their backend DTOs. Transaction and settlement tables/exports no longer reference `reconciliationAt`; metadata is not rendered in transaction UI. Metadata remains in response types only for backend DTOs that still return it. Withdrawal reads now use `paymentMethodName`, `accountHolderName`, `accountNumber`, and `bankCode`.
 - **D18 is closed for this frontend cleanup.** Withdrawal create/approval request behavior remains a separate contract item and is not implied by the read DTO alignment.
 
-The current frontend task list is `PG-Dashboard/new-task.md` (updated 2026-10-27). Historical comparison notes below are retained as records of earlier findings.
+The 2026-10-27 entry is historical; use the 2026-11-02 status above and `PG-Dashboard/new-task.md` for current work.
 
 ---
 ## Update — 2026-10-26 post-pull comparison
@@ -105,7 +140,7 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` | Any authenticated (see D8) | ✅ Matches | — | — |
 | 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` | Any authenticated | ✅ Matches | — | — |
 | 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches | — | — |
-| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ✅ Matches, but **`settlementInterval` silently dropped since 2026-10-16** | **Frontend.** `CreateMerchantDto.settlementInterval` no longer exists server-side; `whitelist: true` strips the field rather than rejecting it, so the create form still gets a 201 while the value it sent has no effect. See D24 | — |
+| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ✅ **Updated 2026-11-02** — frontend no longer sends the removed `settlementInterval` | No frontend task. New merchants receive the default `FOLLOW_UPSTREAM` policy; policy editing remains mock-only until dashboard policy endpoints exist. See D24 | — |
 | 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `SUPER_ADMIN`, `ADMIN` (`AGENT_ADMIN_ROLES`). Frontend route `/acc-management/create-agent` grants only `SUPER_ADMIN` | ✅ Matches (route is reachable now — see the resolved role-rename note above) | **Frontend, minor residual gap.** The lockout that made this route unreachable is fixed. One narrower gap remains: `roles: ["SUPER_ADMIN"]` on this route doesn't include plain `ADMIN`, which backend's `AGENT_ADMIN_ROLES` does permit — low priority, since no `ADMIN`-role account exists in the test data yet (§7 only exercises `SUPER_ADMIN`/`AGENT`/`MERCHANT`) | — (body is `CreateAgentDto`, already correct — no backend change needed) |
 | 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` | `SUPER_ADMIN` | ✅ Matches | — | — |
 | 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` | `SUPER_ADMIN` | ✅ Matches | — | — |
@@ -179,8 +214,8 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` | `SUPER_ADMIN` (agent detail page) | ✅ Matches | — | — |
 | 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` | Any authenticated — dropdown data (bank/provider/payment-method) reused across the create-agent, create-merchant, config-fee, provider and withdrawal pages | ✅ Matches, and **`?div=BANK` fixed 2026-10-21** — see the note below | — | — |
 | 19 | GET | `fee/config` | `fee` | `getBaseFee` | `SUPER_ADMIN`, `MERCHANT` (provider page + config-fee) | ✅ Matches | — | — |
-| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail / create-merchant) | ✅ Matches, but **`settlementInterval` is now a meaningless number for merchants created after 2026-10-16** | **Backend decision, then frontend.** Returns the DB default (120) rather than anything real — settlement timing moved to `MerchantSettlementPolicy`. The merchant-edit page's "Settlement Interval" dropdown (`src/pages/merchant/index.tsx:677`) was already a pre-existing no-op before this (legacy's update never wrote this column either) — not a new regression, but now also displaying a number that was never set to begin with. See D24 | — |
-| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ Matches, but **same `settlementInterval`/`lastSettlementAt` staleness as row 20** | **Backend decision, then frontend.** `MerchantConfigDto` still serves both dead fields. See D24 | — |
+| 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail / create-merchant) | ⚠️ **Deprecated shape cleaned 2026-10-26** — interval fields are no longer returned; frontend no longer calls the legacy interval mock/API | No frontend task for the removed fields. Policy management is tracked separately under D24 and remains mock-backed. | — |
+| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ **Updated 2026-10-26** — `settlementInterval`/`lastSettlementAt` removed | No frontend references remain for those fields. Real settlement-policy controller is still absent; see D24. | — |
 | 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 | 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
 
@@ -188,19 +223,19 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 
 | # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
 |---|---|---|---|---|---|---|---|---|
-| 24 | GET | `balance/aggregate/internal` | `balance` | `getBalanceInternal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (home dashboard) | ⚠️ **Updated 2026-10-26** — now sums `BalanceSnapshot` and returns `balanceReserved`; `providerName` query is still unsupported | **Frontend.** Provider filter removed (D18 complete); reserved-balance support remains. See D22 | — |
-| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-10-26** — sums merchant `BalanceSnapshot` rows by bucket, including `balanceReserved` | **Frontend.** Add the reserved-balance field to the API type and views. See D22 | — |
-| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-10-26** — sums agent `BalanceSnapshot` rows by bucket, including `balanceReserved` | **Frontend.** Add the reserved-balance field to the API type and views. See D22 | — |
-| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ **Updated 2026-10-26** — reads merchant `BalanceSnapshot` buckets and returns `balanceReserved` | **Frontend.** Add the reserved-balance field to the API type and views. See D22 | — |
-| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `SUPER_ADMIN` (agent detail balance widget) | 🔴 **Updated 2026-10-26** — reads snapshots but filters `holderType: MERCHANT` instead of `AGENT` | **Backend.** Fix the holder type before relying on this response. Frontend should add `balanceReserved` to the type and detail view. See D22 | — |
-| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Updated 2026-10-27** — exposes Prisma reference fields; `reconciliationAt` removed 2026-10-26 | **Frontend.** Read the canonical reference fields and remove legacy aliases; see D19 | — |
-| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Updated 2026-10-27** — only `systemReference` exists; `metadata` and `reconciliationAt` are absent | **Frontend.** Metadata column removed (D18 complete); read `systemReference`; see D19 | — |
+| 24 | GET | `balance/aggregate/internal` | `balance` | `getBalanceInternal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (home dashboard) | ✅ **Fully aligned 2026-11-05** — reads `BalanceSnapshot`, returns three buckets; frontend consumes `balanceReserved` and now shows an admin `ProfitOverview` card off this same query (commit `f01cb07`) | Provider filter removed (D18). See D22 | — |
+| 25 | GET | `balance/aggregate/merchant` | `balance` | `getBalanceMerchant` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Fully aligned 2026-11-05** — sums merchant `BalanceSnapshot` by bucket; frontend reads and displays all three buckets (commit `f01cb07`) | See D22 | — |
+| 26 | GET | `balance/aggregate/agent` | `balance` | `getBalanceAgent` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Fully aligned 2026-11-05** — sums agent `BalanceSnapshot` by bucket; frontend reads and displays all three buckets (commit `f01cb07`) | See D22 | — |
+| 27 | GET | `balance/merchant/:merchantId` | `balance` | `getBalanceMerchantById` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail balance widget) | ✅ **Fully aligned 2026-11-05** — reads merchant `BalanceSnapshot` buckets; merchant detail/list views show all three, keyed on `merchantId` (commit `f01cb07`) | See D22 | — |
+| 28 | GET | `balance/agent/:agentId` | `balance` | `getBalanceAgentById` | `SUPER_ADMIN` (agent detail balance widget) | ✅ **Fully aligned 2026-11-05** — holder-type bug fixed (`b93f9b8`); agent detail/list views show all three buckets, keyed on `agentId` (commit `f01cb07`) | See D22 | — |
+| 29 | GET | `transactions/purchase` | `purchase` | `getTransactionPurchase` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-11-02** — canonical Prisma reference fields exposed; `reconciliationAt` removed | Frontend types, table, and CSV aligned in `b3f7efc`; see D19 | — |
+| 30 | GET | `transactions/topup` | `topup` | `getTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-11-02** — only `systemReference`; no `metadata` or `reconciliationAt` | Frontend types/table/CSV aligned; D18/D19 complete | — |
 | 31 | POST | `transactions/topup` | `topup` | `createTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (fee-calc dependency) | **Backend.** Blocked on porting config's fee-calculation services (currently ~95%-duplicated across four legacy services) — see §7 | POST `transactions/topup`. Frontend sends `CreateTopUp = { userId: number, receiptImage: string, nominal: number }`. Requirement: split `nominal` into merchant/agent/provider/internal cuts via the fee calculator, write the pending top-up row |
 | 32 | POST | `transactions/topup/approve` | `topup` | `approveTransactionTopUp` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (implementation pending, D17 fixed 2026-10-12) | **Backend.** D17's balance-ledger defects are fixed and proven live in disbursement/purchase (see D22) — no decision left to make here, just the implementation: call `@app/balance`'s `post()` for the credit legs, following `disbursement-common.service.ts`'s pattern | POST `transactions/topup/approve`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: mark approved, post the credit legs via `BalanceService.post()` (`BalanceReasonEnum.TOPUP_APPROVED`, `BalanceSourceTypeEnum.TOPUP`) inside the same transaction as the status update |
 | 33 | POST | `transactions/topup/reject` | `topup` | `rejectTransactionTopUp` — see D1, fixed 2026-08-26 | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (backend only, now — see note below) | **Backend.** Implementation-only now, same as row 32 — D17 is fixed, nothing left pending a decision. The frontend's D1 bug (posting to `/approve` instead of `/reject`) is fixed — commit `2df39fa`, confirmed by re-reading `transaction-top-up.api.ts`, which now posts to `transactions/topup/reject` correctly. Once the backend ships `/reject`, this call will work with no further frontend change needed | POST `transactions/topup/reject`. Frontend sends `StatusTopUp = { topupId: number }`. Requirement: flip status to rejected only — no ledger write, unlike approve |
-| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Updated 2026-10-27** — raw destination fields and canonical Prisma reference fields are present; `reconciliationAt` is removed | **Frontend.** Align the display/read model and the USDT API-approval guard to the returned fields. See D19 and D21 | — |
+| 34 | GET | `transactions/withdraw` | `withdraw` | `getTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-11-02** — canonical references and nullable destination fields are exposed; `reconciliationAt` removed | Read-side DTO/table and USDT guard use backend names; create/approve/reject behavior remains open under D21 | — |
 | 35 | POST | `transactions/withdraw` | `withdraw` | `createTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🚧 Not ported (fee-calc dependency; D17's balance-ledger half fixed 2026-10-12); **request shape changed 2026-09-11, see D21** | **Backend.** Fee-calculation porting is still the real blocker; the balance-ledger half (D17) now has a proven, live reference implementation in disbursement's `reserve()` flow to copy. The shape below is stale — see D21 | POST `transactions/withdraw`. Frontend now sends `CreateWithdrawal = { userId: number, nominal: number, withdrawMethod: "BANK" \| "USDT", bankName?: string, accountNumber?: string }` — `bankName`/`accountNumber` required for `BANK`, both omitted for `USDT` (was `{ userId, nominal }` as of the 2026-08-25 pass; see D21). Requirement: insufficient-balance check via `BalanceService.reserve()` (lock-and-check in one statement, per D17/D22's now-shipped pattern), then write the pending withdrawal row with whatever columns D21 settles on |
-| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ⚠️ **Updated 2026-10-27** — D23 destination fields and canonical Prisma reference fields are present; `reconciliationAt` is removed | **Frontend.** Remove the now-empty reconciliation column/export field and read canonical reference fields; see D19 | — |
+| 36 | GET | `transactions/disbursement` | `disbursement` | `getTransactionDisbursement` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Updated 2026-11-02** — D23 destination fields and canonical references are exposed; `reconciliationAt` removed | Frontend type/table/CSV aligned; D19 and D23 complete | — |
 | 40 | POST | `transactions/withdraw/approve` | *(none)* | `approveTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26**; **request body grew a field 2026-09-11, see note below and D21** | **Backend.** Route/DTO/response shape are real; the handler is still a no-op, but D17 no longer blocks it — `disbursement-common.service.ts`'s reserve/complete/fail methods are a working reference to copy. The DTO (`StatusWithdrawalDto`) doesn't yet declare the new `approvalMethod` field — harmless today (`whitelist: true` without `forbidNonWhitelisted` drops unknown properties rather than rejecting the request), but the field needs adding before real logic lands, since `API` vs `MANUAL` changes what that logic has to do | POST `transactions/withdraw/approve`. Frontend now sends `StatusWithdrawal = { withdrawalId: string, approvalMethod?: "API" \| "MANUAL" }` (was `{ withdrawalId }` alone as of 2026-08-25; see D21) — `withdrawalId` is still typed `string` here vs. `topupId: number` on the topup side (row 32), worth reconciling. Requirement: for `API`, reserve-then-complete via `BalanceService` exactly like disbursement now does (fixed 2026-10-12, including sourcing the merchant id from the row in hand rather than an echoed value); for `MANUAL`, just record that the admin transferred the funds themselves and mark it done |
 | 41 | POST | `transactions/withdraw/reject` | *(none)* | `rejectTransactionWithdrawal` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26** — request body unchanged by the 2026-09-11 withdraw-flow update, only approve (row 40) gained a field | **Backend.** Same as row 40 | POST `transactions/withdraw/reject`. Body: `StatusWithdrawal = { withdrawalId: string }`. Requirement: flip status only, no ledger write — same shape as topup reject (row 33) |
 | 42 | POST | `transactions/purchase/resend-callback` | *(none)* | `resendPurchaseCallback` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🟡 **Stubbed 2026-08-26** | **Backend.** Route/DTO/response shape are real; the handler is a no-op pending the provider-integration work | POST `transactions/purchase/resend-callback`. Body: `PurchaseCallbackAction = { purchaseId: string }`. Requirement: re-fire the provider webhook callback for that purchase — needs the provider-integration layer this dashboard doesn't otherwise touch |
@@ -220,9 +255,9 @@ Settlerecon's *provider integrations* (Inacash/PDN/Pakaidonk/Payhere/Zipay) stay
 
 | # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
 |---|---|---|---|---|---|---|---|---|
-| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `SUPER_ADMIN` (settlement page) | ⚠️ **Updated 2026-10-27** — uses purchase DTO with canonical Prisma reference fields; `reconciliationAt` removed | **Frontend.** Read canonical fields and remove stale `reconciliationAt` column/export field; see D19 | — |
-| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `SUPER_ADMIN` | ⚠️ **Updated 2026-10-27** — uses purchase DTO with canonical Prisma reference fields; `reconciliationAt` removed | **Frontend.** Read canonical fields and remove stale `reconciliationAt` column/export field; the paired `POST settlement/settle` is still a no-op stub | — |
-| 48 | POST | `settlement/settle` | *(none)* | `settleUnsettledData` | `SUPER_ADMIN` | 🟡 **Stubbed 2026-08-26** — wired to a live "settle" action in `src/pages/transaction/settlement/components/unsettled-table.tsx`, now gets a success response instead of a 404 | **Backend.** Route/DTO/response shape are real (`SettlementController.settle()` / `SettlementService.settle()`); the handler is a no-op — no row is actually stamped `settlementAt` yet | POST `settlement/settle`. Frontend sends `SettleUnsettledBody = { ids: string[] }` — a batch of purchase/settlement ids. Requirement: mark each as settled (stamp `settlementAt`), moving it out of the `unsettled` listing and into `settled` |
+| 37 | GET | `settlement/settled` | `settlement` | `getSettleData` | `SUPER_ADMIN` (settlement page) | ✅ **Updated 2026-11-02** — uses purchase DTO with canonical references; `reconciliationAt` removed | Frontend type/table/CSV aligned | — |
+| 38 | GET | `settlement/unsettled` | `settlement` | `getUnsettleData` | `SUPER_ADMIN` | ✅ **Updated 2026-11-02** — uses purchase DTO with canonical references; `reconciliationAt` removed | Read UI aligned. Paired `POST settlement/settle` remains a no-op stub; frontend now shows a warning, not a success message, on use (2026-11-05, commit `1ad92ba`) | — |
+| 48 | POST | `settlement/settle` | *(none)* | `settleUnsettledData` | `SUPER_ADMIN` | 🟡 **Stubbed 2026-08-26** — wired to a live "settle" action in `src/pages/transaction/settlement/components/unsettled-table.tsx`, now gets a success response instead of a 404 | **Backend.** Route/DTO/response shape are real (`SettlementController.settle()` / `SettlementService.settle()`); the handler is a no-op — no row is actually stamped `settlementAt` yet. Frontend no longer presents this as a real success (2026-11-05): the single-row and bulk actions show a warning toast stating it's a test action and no balances moved | POST `settlement/settle`. Frontend sends `SettleUnsettledBody = { ids: string[] }` — a batch of purchase/settlement ids. Requirement: mark each as settled (stamp `settlementAt`), moving it out of the `unsettled` listing and into `settled` |
 
 ### 2.5 Not migrated
 
@@ -401,17 +436,13 @@ Twenty-four entries (D1–D24), each a real defect or ambiguity found while read
 
 | # | What | Who acts | Why it matters |
 |---|---|---|---|
-
-| **D22** | Dashboard balance reads now use `BalanceSnapshot`, but `checkBalanceAgent()` filters the `MERCHANT` holder type; deferred balance write/admin features also remain unimplemented | **Backend** — fix the holder filter and finish the remaining balance endpoints; frontend — add the reserved-balance field | Agent balance detail can show the wrong holder rows; profit/adjustment workflows remain unavailable |
+| **D22** | Snapshot balance reads, the agent holder-filter fix, frontend three-bucket support, and the admin profit view are all done; only the manual-adjustment write feature remains | **You** — build the `BalanceAdjustment` endpoint (mandatory reason, visible audit history, `BigInt` id serialized as a string) when ready | Admins can see profit and all three buckets everywhere now; manual balance correction still has no write path at all |
 | **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
-
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
-| **D19** | Transaction v2 reference columns were not reflected in the dashboard DTOs | Frontend | **Backend fixed 2026-10-27.** DTOs now expose schema names; frontend table/types still need to read the canonical fields |
-| **D18** | Transaction v2 dropped `InternalBalanceLog.providerName` and `TopUpTransaction.metadata`, both exposed through the dashboard API | Frontend dev | Backend is fixed and compiling. **Closed 2026-10-27** — frontend removed unsupported provider filter wiring and the top-up metadata UI column; transaction response types and UI are aligned in task 8b |
-| **D21** | Frontend shipped a bank/USDT withdraw split and a manual-vs-API approval mode; the schema had no columns for any of it. **As of 2026-10-21, the raw destination fields are now exposed on both listings** — see the D21 and D23 updates below | **You** — naming still needs reconciling with the frontend | Not live yet (rows 34/35/40 aren't real endpoints today), but blocks doing rows 35/40 for real, and one silent symptom already exists on row 34 |
+| **D21** | Withdrawal read fields now align; create/approve/reject dashboard behavior and approval-mode semantics remain unfinished | **Backend/product** — settle request contract and implement routes; frontend — wait for that contract | The listing can display backend fields, but dashboard writes remain absent or stubs |
 
-> **D17, D23, D24, and D15 are settled.** D22 is partially delivered; the remaining balance work and agent holder-filter defect are recorded above.
+> **D17, D18, D19, D23, D24, and D15 are settled.** D22's read side (both backend and frontend) and admin profit view are done; only its manual-adjustment write feature remains open. D21 remains open for withdrawal write behavior and approval semantics.
 
 ### Settled — no action needed
 
@@ -419,6 +450,8 @@ Twenty-four entries (D1–D24), each a real defect or ambiguity found while read
 |---|---|---|
 | D1 | Frontend's "reject" button posted to `/approve` | **Frontend fixed 2026-08-26** (commit `2df39fa`) — `rejectTransactionTopUp()` now posts to `transactions/topup/reject`, confirmed still correct as of this 2026-10-01 pass. Backend side folded into D22: `transactions/topup/approve` and `/reject` are still both un-ported in `apps/dashboard` (row 33), so nothing calls the fixed frontend code yet — but the frontend bug itself is gone and needs no further action |
 | D2 | `agent-detail/dropdown` was public | Fixed — auth required |
+| D18 | Transaction v2 removed the internal balance provider and top-up metadata fields | **Resolved 2026-10-27** — frontend removed the provider filter and top-up metadata UI |
+| D19 | Transaction v2 reference fields were missing from dashboard response DTOs | **Resolved by backend `050ee0b` and frontend `b3f7efc`** — transaction/settlement types, tables, and exports use the schema names |
 | D23 | Merged schema and two DTOs (`WithdrawTransactionDto`, `DisbursementTransactionDto`) still used the pre-rename `recipientName`/`recipientAccount`/`recipientBankCode`/`recipientBankName` columns | **Fixed 2026-10-21** — both DTOs now declare `accountHolderName`/`accountNumber`/`bankCode`, matching the schema. `recipientBankName` dropped outright rather than derived (the frontend never read it, and deriving it needs a new `config.Bank` lookup that doesn't exist yet — a separate feature, not this fix). See the D23 write-up |
 | D15 | Aggregate balances excluded PURCHASE while per-holder balances included it | **Resolved 2026-10-26** — aggregate and per-holder endpoints now sum `BalanceSnapshot` buckets, with no transaction-type filter |
 | D24 | Settlement timing moved to `MerchantSettlementPolicy`; obsolete interval fields remained in legacy read DTOs | **Resolved 2026-10-26** — config GET DTOs no longer expose `settlementInterval` or `lastSettlementAt`; the frontend had already stopped sending the create field |
@@ -766,7 +799,7 @@ Verified: `tsc` clean on all four apps, `eslint` clean on both touched modules, 
 
 ---
 
-### D19 — Transaction v2 renamed every reference column; dashboard DTOs now expose the Prisma fields → **frontend alignment remains**
+### D19 — Transaction v2 reference fields → **fixed on backend and frontend**
 
 Found on 2026-09-01 while auditing this doc against the code. **This is the one to read first.**
 
@@ -785,13 +818,13 @@ reconciliationAt = undefined
 JSON: {"id":1,"merchantId":27,"providerName":"MOTIONPAY", ... }   <- all three absent
 ```
 
-**Backend fix (2026-10-27).** The purchase and disbursement DTOs now expose `systemReference`, `merchantReference`, `providerReference`, and `bankReference`, plus nullable `additionalInfo`. The withdrawal DTO exposes `systemReference`, nullable `providerReference` and `bankReference`, and nullable `additionalInfo`; its schema has no `merchantReference`. Top-up exposes only `systemReference` because that is its only reference field in Prisma. Purchase, disbursement, and withdrawal retain their schema-backed `metadata`; top-up does not. Settlement listings use the purchase DTO and therefore expose the purchase schema references. Nullable Prisma fields are represented as nullable API fields. Derived `totalFeeCut` and nested fee details remain response fields computed from fee rows, not transaction table columns.
+**Backend fix (`050ee0b`, 2026-10-27).** The purchase and disbursement DTOs now expose `systemReference`, `merchantReference`, `providerReference`, and `bankReference`, plus nullable `additionalInfo`. The withdrawal DTO exposes `systemReference`, nullable `providerReference` and `bankReference`, and nullable `additionalInfo`; its schema has no `merchantReference`. Top-up exposes only `systemReference` because that is its only reference field in Prisma. Purchase, disbursement, and withdrawal retain their schema-backed `metadata`; top-up does not. Settlement listings use the purchase DTO and therefore expose the purchase schema references. Nullable Prisma fields are represented as nullable API fields. Derived `totalFeeCut` and nested fee details remain response fields computed from fee rows, not transaction table columns.
 
 The old `externalId` and `referenceId` aliases were removed. There is no lossy mapping: `providerReference` is the provider's `referenceNo`, while `merchantReference` and `bankReference` remain separate canonical fields so operators can distinguish their source.
 
-**Frontend follow-up**
+**Frontend alignment (`b3f7efc`, 2026-10-27; rechecked at `457c199`, 2026-11-02)**
 
-| Endpoint | Row | Canonical fields the frontend should read |
+| Endpoint | Row | Canonical fields consumed by the frontend |
 |---|---|---|
 | `GET transactions/purchase` | 29 | `systemReference`, `merchantReference`, `providerReference`, `bankReference` |
 | `GET transactions/topup` | 30 | `systemReference` only |
@@ -799,7 +832,7 @@ The old `externalId` and `referenceId` aliases were removed. There is no lossy m
 | `GET transactions/disbursement` | 36 | `systemReference`, `merchantReference`, `providerReference`, `bankReference` |
 | `GET settlement/settled` / `unsettled` | 37, 38 | Purchase reference fields |
 
-These are **rendered table columns**, not incidental type fields. The frontend must update its old `External ID` and `Reference ID` data keys to the canonical fields above; several are wrapped in `CopyableEllipsisText`, since operators copy them to trace transactions with a provider or bank. Until that frontend change lands, those columns read absent legacy response keys and remain blank. (The reconciliation page reads the same old field names but is out of scope per D5.)
+These are **rendered table columns**, not incidental type fields. Frontend transaction and settlement types, tables, and CSV exports now use the canonical fields above; nullable provider/bank references render as empty placeholders. The reconciliation page still uses its own `externalId`/`referenceId` contract and remains out of scope per D5.
 
 `reconciliationAt` was removed from the dashboard transaction DTOs in the 2026-10-26 cleanup; frontend purchase, disbursement, withdrawal, and legacy settlement columns that still read it now render blank and should be removed. The separate reconciliation module is out of scope.
 
@@ -815,7 +848,7 @@ The new scheme is SNAP-aligned, which is the point of it — see `docs/snap-stan
 | `bankReference` | *reff id from bank* | — (new) |
 | `additionalInfo` `JsonB` | *Store NMID, RequestID, anything bank/upstream* | absorbs `nmid` |
 
-The backend DTOs now expose the applicable fields from Prisma directly. **Frontend follow-up:** rename the `dataIndex` values and fields in `src/api/transaction-*.type.ts` and `settlement.type.ts` to these canonical names, then remove the old aliases. Keep the applicable field set per endpoint as listed above; do not add `merchantReference` to withdrawal or provider/bank references to top-up, since those columns do not exist on those Prisma models.
+The backend DTOs expose the applicable fields from Prisma directly, and frontend response types and consumers now match them. Keep the endpoint-specific field set above; withdrawal has no `merchantReference`, and top-up has no provider/bank references.
 
 **Also worth fixing, separately**: the `as unknown as XDto` cast is what let a schema change reach production shape unnoticed. Mapping the fields explicitly — or typing the DTO constructor against the Prisma row — would have turned all of this into compile errors, which is how the two in D18 were caught. Those two were caught *only* because they were used in a `where` clause or a typed property access, not in the DTO.
 
@@ -841,7 +874,9 @@ The two `orderBy: { code: 'asc' }` clauses became `[{ providerName }, { paymentM
 
 ---
 
-### D21 — Frontend shipped a withdraw bank/USDT split and a manual-vs-API approval mode; the schema has none of it → needs a decision, then a backend fix
+### D21 — Withdrawal listing is aligned; dashboard write behavior and approval semantics remain open
+
+> **Current status, 2026-11-02.** The read-side mismatch described below is resolved: frontend commit `b3f7efc` reads `paymentMethodName`, `accountHolderName`, `accountNumber`, and `bankCode`, and disables API approval for `paymentMethodName === USDT`. The dashboard still has no create-withdraw route; approve/reject remain stubs, and `StatusWithdrawalDto` does not implement `approvalMethod`. The historical “Approve via API never disables” symptom is fixed on the listing. Do not treat the create request shape or approval mode as a working backend contract yet.
 
 Found 2026-09-13 auditing this doc against the frontend. Opposite direction from D19/D18 (backend changed, frontend hadn't caught up): here the **frontend** shipped ahead of the backend. Commit `39fd47b` ("feat: change withdraw flow, add bank transfer and usdt withdraw. new withdraw approval for admin") reshaped the withdrawal create/approve flow and how the listing page reads it. Affects rows 34, 35, 40; row 41 (reject) is untouched.
 
@@ -860,7 +895,7 @@ Found 2026-09-13 auditing this doc against the frontend. Opposite direction from
 
 `StatusWithdrawalDto` (the row 40 stub, `apps/dashboard/src/modules/withdraw/dto/status-withdrawal.dto.ts`) still declares only `withdrawalId`. Sending `approvalMethod` alongside it isn't rejected — `CustomValidationPipe` runs with `whitelist: true` but not `forbidNonWhitelisted`, so class-validator silently strips unknown properties rather than 422ing the request — but the field also isn't recorded anywhere, since the stub handler ignores its body regardless (D17). No frontend-visible symptom there today; it will matter the moment row 40 stops being a stub, since `API` vs `MANUAL` changes what that handler has to do.
 
-**One symptom is live right now, on row 34.** The listing page's "Approve via API" button is *supposed* to disable itself for a USDT withdrawal (`record.withdrawMethod === WithdrawMethod.USDT`). Since this backend never returns `withdrawMethod`, that comparison is always against `undefined`, so the button is **never disabled** — an admin looking at a USDT row sees both approve buttons active, with nothing server-side stopping them from clicking "Approve via API" instead of "Approve Manually". Currently harmless only because row 40 is a no-op stub that does the same nothing regardless of which button was clicked; it stops being harmless the day D17 lands and `approvalMethod` starts driving real behavior.
+**Historical symptom, fixed in frontend commit `b3f7efc`.** The earlier listing checked `record.withdrawMethod`, which the backend did not return. The current frontend uses `paymentMethodName === USDT`. The remaining D21 gap is the unimplemented dashboard write API and approval semantics, not the listing guard.
 
 **This needs your call before rows 35/40 can be built for real**, on one question: does `withdrawMethod` reuse the existing `recipientName`/`recipientAccount`/`recipientBankCode`/`recipientBankName` columns (renaming or repurposing them, plus adding a method enum), or does the schema need dedicated `withdrawMethod`/`bankName`/`accountNumber` columns of its own? The existing four columns already look built for a payout destination — worth checking whether they were sized for exactly this before adding new ones next to them.
 
@@ -890,9 +925,26 @@ Found 2026-09-13 auditing this doc against the frontend. Opposite direction from
 
 ---
 
-### D22 — Dashboard balance reads moved to snapshots; remaining balance actions and an agent holder-filter defect are open
+### D22 — Dashboard snapshot reads shipped on both sides; only the manual-adjustment write feature remains open
 
 > **Update, 2026-10-26:** the read migration has landed. checkBalanceAgent() currently filters holderType: MERCHANT and must be corrected to AGENT; the admin adjustment/profit and deferred write endpoints remain unimplemented.
+
+> **Update, 2026-11-02:** backend read endpoints now return `balanceActive`, `balancePending`, and `balanceReserved` from `BalanceSnapshot`. Frontend `balance.type.ts` still declares only the first two as numbers and uses `agentUserId`/`merchantUserId` rather than the backend's `agentId`/`merchantId`; balance cards/lists/details still render only active and pending. The agent detail query still filters `holderType: MERCHANT`. Admin profit/manual-adjustment APIs and transaction write APIs remain absent. Step 12 is therefore partial, not pending wholesale.
+
+> **Update, 2026-11-05 — the agent holder-filter bug is fixed; one more thing clarified, one new risk found elsewhere.** Pulled 14 more backend commits (`503a602..7d9a6c3`).
+>
+> - **`checkBalanceAgent()` now filters `holderType: AGENT`** (commit `b93f9b8`, "Read agent balances from the agent's own snapshot rows"). Confirmed by reading the diff directly — this is the exact fix the 2026-10-26/11-02 updates above called out as a backend blocker. The commit message is worth quoting, since it's the sharpest statement yet of why this class of bug matters: *"It failed silently, which is why it survived... agent id usually matches an existing merchant: the endpoint returned that merchant's available, pending and reserved figures under the agent's name. No error, no empty result, just somebody else's money."* All five `balance.service.ts` methods now query the correct holder type — row 28 updated in §2.3. Backend also flagged, in the same commit, that `apps/dashboard` still has zero spec files anywhere, so nothing currently guards against this exact mistake recurring on the next method added to this file.
+> - **The "admin profit view" from D22's earlier update isn't fully missing — the data endpoint already exists, under a different name.** `GET balance/aggregate/internal` (row 24) already returns `balanceActive`/`balancePending`/`balanceReserved` for the `INTERNAL` holder — which *is* "the house's profit, pending vs. settled, shown separately," the exact shape the design docs ask for. What's actually missing is (a) a frontend screen presenting it that way, and (b) real role enforcement: `BalanceController`'s `@CheckPolicies()` is called bare on every route (confirmed by reading `balance.controller.ts`), so today any authenticated caller — not just `ADMIN`/`SUPER_ADMIN` — can hit it. That's not a new, balance-specific gap; it's D3 (`@CheckPolicies()` is a placeholder everywhere, nothing registers a `PoliciesGuard`), restated in this specific spot because the backend's own docs described it as a balance problem. **Manual adjustment is still fully unbuilt** — no endpoint, no `BalanceAdjustment` writes anywhere.
+> - **New, unrelated finding, worth recording even though it has no frontend task**: commit `503a602` ("confirmWithProvider remove") dropped the purchase/disbursement webhooks' re-verification of payment status with the provider, so the settlement claim now trusts `paidAt` and `status: SUCCESS` straight from the callback body with nothing double-checking them against the provider. The backend's own docs audit (`cb14d20`) found and flagged this themselves — not a theoretical concern raised here first. This affects how much the `PENDING→AVAILABLE` move (and therefore every balance figure rows 24-28 show) can be trusted if a callback were ever spoofed or malformed; it does not change any dashboard-facing contract, so there's nothing for the frontend to do, but it's relevant context for D17/D22's "is the money real" question. Flagged here for visibility, not tracked as a separate Decision.
+> - **Also worth knowing, no action needed**: the backend's own audit of its `docs/batch/*` guides (same commit) found that Step 15 (dropping the legacy balance-log tables) shipped *before* its own stated safety gate was satisfied — the guide said to wait for a full settlement cycle to run in production first, and that cycle still hasn't happened. It worked out safely only because the three tables were already empty everywhere, which the backend is candid is luck, not the guarantee the original plan promised. Nothing to do about this now (the tables are already gone), just worth knowing the cleanup was faster than its own plan intended.
+
+> **Update, 2026-11-05 (second pass, same day) — the frontend closed its half; this entry is now backend-only.** Frontend commit `f01cb07` (`457c199..f01cb07`, backend still at `7d9a6c3`):
+>
+> - **`balance.type.ts` now matches the backend exactly**: `balanceActive`/`balancePending`/`balanceReserved` typed as wire strings keyed by `agentId`/`merchantId`, propagated through every consumer — home balance cards, merchant/agent list and detail pages, and the withdrawal balance display. Rows 24-28 in §2.3 updated to ✅; no frontend action remains on any of them.
+> - **The admin profit view is built**, not just available: a new `ProfitOverview` card on Home, admin-only, showing Settled/Unsettled/Reserved/Total, reusing row 24's existing query (no new request). Closes the gap this entry's previous update described as "a frontend screen away from done."
+> - **What's left is exactly one thing**: the manual balance-adjustment (write) endpoint. No `BalanceAdjustment` table writer exists anywhere in the backend. Per the design docs, it needs a mandatory adjustment reason, a visible audit history, and `BalanceEntry.id` (a `BigInt`) serialized safely as a string. This is now the only open item under D22 — moved to backend-only in the Open-decisions table above.
+
+The discussion below records the earlier findings and design history; use the dated updates above for current status.
 
 Found 2026-10-01, cross-checking `.env` and `apps/dashboard` against the rest of the repo for this pass. **D17 undersold the size of this problem.** D17 reads as "the dashboard's 3 deferred write endpoints need their balance-ledger bug fixed before porting." That's still true, but it turns out the *entire* balance-ledger write path — for every transaction type, including ones already live and moving real money — doesn't exist in the current codebase at all.
 
@@ -1000,6 +1052,8 @@ The migration (`20260930134813_rename_payout_destination_columns`) is a hand-wri
 
 > **Resolved in code, 2026-10-26:** this pull removed the obsolete interval fields from both legacy config GET DTOs/services. No frontend migration remains for those response fields.
 
+> **Current status, 2026-11-02:** the frontend no longer sends or reads `settlementInterval`/`lastSettlementAt`, and the backend no longer returns them. The policy configuration page exists only against the frontend mock; `apps/dashboard` has no policy read/write controller. `businessDaysOnly` must stay false/unavailable, and `FOLLOW_UPSTREAM` still depends on an upstream-window resolver. See the batch policy guide and the current frontend task summary.
+
 Backend work 2026-10-13 → 2026-10-16, commits `4215a4f`, `d4ade10`, `0896962` (plus `476f1c7` and `e1d7be1`, which are the attribution half below). This is the backend's Steps 8–9 in
 [docs/batch/settlement-batching-implementation.md](../batch/settlement-batching-implementation.md);
 nothing in `apps/dashboard/src` changed, so every effect below is either a
@@ -1017,7 +1071,7 @@ four modes:
 | `FIXED_DELAY` | N days after the payment, at one time of day ("T+2, released 10:00") |
 | `SCHEDULED` | at set times of day ("06:00, 12:00, 18:00, 23:00") |
 
-#### Already shipped, breaking, and silent — act on this one
+#### Historical breaking change — resolved
 
 `CreateMerchantDto.settlementInterval` **no longer exists** (`0896962`).
 `CustomValidationPipe` runs `whitelist: true` **without**
@@ -1032,7 +1086,9 @@ default policy row itself — `paymentMethodName: '*'`, `mode: FOLLOW_UPSTREAM`,
 So the correct frontend change today is to **stop sending the field**, not to
 send a mode. A mode selector belongs with the policy screens below.
 
-#### Needs a decision — the read endpoints still serve the dead column
+#### Historical finding — superseded by the 2026-10-26 cleanup
+
+The following describes the pre-cleanup state and is retained for audit history. The current endpoint inventory and the 2026-11-02 status above supersede this finding: the interval fields have since been removed from the dashboard response and frontend usage.
 
 `config-merchant.service.ts` still selects and returns `settlementInterval` and
 `lastSettlementAt` ([lines 45–52, 65, 111–112](../../apps/dashboard/src/modules/config-merchant/config-merchant.service.ts:45)),
