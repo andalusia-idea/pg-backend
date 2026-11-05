@@ -1,32 +1,32 @@
 import { PrismaClient } from '@config/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { bankEngineSeed } from './bank-engine.seed';
 import { configDevSeed } from './config-dev.seed';
 
 /**
- * config seeder.
+ * config seeder - development fixtures only.
  *
- *   npm run prisma:seed:config        engine data only (safe anywhere)
- *   npm run prisma:seed:config:dev    engine + development fixtures
+ *   npm run prisma:seed:config        nothing to do, and says so
+ *   npm run prisma:seed:config:dev    development fixtures
  *
- * Two tiers:
- *   - ENGINE   the bank catalogue. Safe in any environment, including
- *              production.
- *   - DEV      config rows for the dev agents and merchants, provider fee
- *              config, fee overrides and shareholder splits. Never in production.
+ * There is no engine tier any more. Every piece of config engine data is
+ * written by a migration, so a fresh database holds it before any seed runs and
+ * a production cutover does not depend on a seed step at all:
  *
- * The rest of the engine data is no longer here. Agent Internal's `config.Agent`
- * row, the INTERNAL provider and the payment-method routing vocabulary are
- * written by migrations - `20261105170000_named_principals` and
- * `20261105200000_provider_and_payment_methods` - so a fresh database holds them
- * before any seed runs, and a production cutover does not depend on a seed step
- * at all. Banks are the only engine data still seeded; moving them is the
- * unfinished half of that work.
+ *   20261105170000_named_principals              Agent Internal's config.Agent row
+ *   20261105200000_provider_and_payment_methods  the INTERNAL provider and the
+ *                                                payment-method vocabulary
+ *   20261106090000_bank_catalogue                the 95-row bank catalogue
  *
- * Only the DEV tier needs the auth seeder to have run first: it resolves
+ * This file stays rather than going the way of the engine seeders it used to
+ * call: prisma.config.ts names it as the seed entry point, `prisma migrate
+ * reset` invokes it, and the dev tier arrives through the same script. With no
+ * `--dev` it reports that there is nothing to do, which distinguishes "ran, and
+ * nothing was needed" from "never ran".
+ *
+ * The DEV tier needs the auth seeder to have run first: it resolves
  * `config.Merchant.id` and `config.Agent.id` from the matching `auth.User`
- * rows, and skips what it cannot find. The engine tier is independent of auth.
+ * rows, and skips what it cannot find.
  *
  * Every step is idempotent, so re-running only fills in what is missing.
  *
@@ -58,11 +58,11 @@ async function main(): Promise<void> {
     `Seeding config  [NODE_ENV=${process.env.NODE_ENV ?? 'unset'}] [dev fixtures: ${devRequested}]`,
   );
 
-  console.log('\nEngine data (mandatory):');
-  await bankEngineSeed(prisma);
-
   if (!devRequested) {
-    console.log('\nDevelopment fixtures skipped (pass --dev to include them).');
+    console.log(
+      '\nNothing to seed - all config engine data is written by migrations.' +
+        '\nPass --dev for the development fixtures.',
+    );
     return;
   }
 
