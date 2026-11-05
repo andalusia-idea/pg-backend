@@ -84,7 +84,7 @@ Split the two concerns that the seed currently bundles together.
 | Concern | Owner | Why there |
 |---|---|---|
 | Row exists, id, email, role, profile row | the migration | runs once, before any seed, so the id is a contract |
-| The password | `SUPER_ADMIN_INITIAL_PASSWORD` / `AGENT_INTERNAL_INITIAL_PASSWORD` | never in version control, different per environment |
+| The password | `INITIAL_SUPER_ADMIN_PASSWORD` / `INITIAL_AGENT_INTERNAL_PASSWORD` | never in version control, different per environment |
 | Promoting that password to argon2 | the first successful login | bounded exposure, and it makes the fallback self-extinguishing |
 | Rotation afterwards | the password-change API | ordinary application concern |
 
@@ -172,7 +172,7 @@ label.
 ### 5.2 Refuse empty, short and committed values
 
 - Unset gives `undefined`; never compare.
-- **Empty must be refused.** `SUPER_ADMIN_INITIAL_PASSWORD=` plus a submitted
+- **Empty must be refused.** `INITIAL_SUPER_ADMIN_PASSWORD=` plus a submitted
   empty string would otherwise authenticate.
 - Minimum 16 characters in production.
 - **Refuse values committed to this repository.** `password123456789` is both
@@ -200,13 +200,12 @@ const constantTimeEqual = (a: string, b: string) =>
 
 ## 6. Build order
 
-> **Status, 2026-11-05: built, and four things shipped differently from the plan
-> below.** The steps are kept as written because the reasoning still explains
-> the design, but where they disagree with the code, the code is right.
+> **Status, 2026-11-05: built, and three things shipped differently from the
+> plan below.** The steps are kept as written because the reasoning still
+> explains the design, but where they disagree with the code, the code is right.
 >
 > | Planned | Shipped |
 > | --- | --- |
-> | `SUPER_ADMIN_INITIAL_PASSWORD`, `AGENT_INTERNAL_INITIAL_PASSWORD` | `INITIAL_SUPER_ADMIN_PASSWORD`, `INITIAL_AGENT_INTERNAL_PASSWORD` |
 > | `configuredCount()` checked at boot | not implemented; a bad value surfaces at the activation login, logged as an error and answered 401 |
 > | Step 5: the auth seed stops creating 21 and 22 | the seed still upserts both. Its `update: {}` leaves an existing row alone, so the migration's sentinel survives a re-seed - which makes the step unnecessary rather than skipped |
 > | Step 6: promote on first login | **not done, by decision.** Resetting both passwords is the first protocol after go-live, via `POST /super-admin/reset-password`. Each activation login logs a warning naming that endpoint |
@@ -226,7 +225,7 @@ and by then everything it depends on is already verified.
 | 3 | The migration | `npm run db:test:all` applies it clean on a reset |
 | 4 | `PrincipalConfig` + module + barrel + env | dashboard boots and logs the configured count |
 | 5 | Seed becomes an activation step | reset + engine seed, then sign in as agentinternal |
-| 6 | Login fallback and promotion | first login works; second login works after unsetting the env var |
+| 6 | Login fallback | the activation login works, and keeps working on every later login until a reset - unsetting the env var alone makes it 401 |
 
 ### Step 1 - Constants
 
@@ -528,20 +527,24 @@ next to `JwtConfig`, and add `export * from './principal.config';` to
 Call `configuredCount()` once from the dashboard's `bootstrap()` and log it, so
 a bad value refuses to boot instead of surfacing at someone's login.
 
-`apps/dashboard/.env.example`:
+`apps/dashboard/.env.example` gains the two keys. Note what is committed
+there - the seed password, not an empty value:
 
 ```bash
-# Named principals - one-time provisioning passwords
-# Honoured only while the account still carries the migration's sentinel. The
-# first successful login writes a real argon2 hash and these stop being read.
-# Leave unset once both accounts are activated. Production refuses values under
-# 16 characters and refuses anything committed to this repository.
-SUPER_ADMIN_INITIAL_PASSWORD=
-AGENT_INTERNAL_INITIAL_PASSWORD=
+# Principal
+INITIAL_SUPER_ADMIN_PASSWORD="password123456789"
+INITIAL_AGENT_INTERNAL_PASSWORD="password123456789"
 ```
 
-In `apps/dashboard/.env.test`, set both to `password123456789` so the UAT specs keep
-working untouched.
+`apps/dashboard/.env.test` carries the same two values, which is what lets the
+UAT specs sign in untouched. Both are honoured only while the account still
+carries the migration's sentinel: once a reset writes a real argon2 hash they
+stop being read, and can be unset.
+
+This is also the clearest case for why `REFUSED_IN_PRODUCTION` is not redundant
+with the length rule. A copied `.env.example` reaches a server holding a working
+admin password, and at 17 characters it clears `MIN_LENGTH_PRODUCTION` without
+help. The named list is the only thing that refuses it.
 
 ### Step 5 - The seed becomes an activation step
 
@@ -555,32 +558,99 @@ re-running can never rotate a password an operator set.
 return value, and after this the ids are constants rather than something the
 seed discovers.
 
-### Step 6 - The login fallback and promotion
+### Step 6 - The login fallback
 
-In [auth.service.ts](../../apps/dashboard/src/auth/auth.service.ts), between
-the user lookup and the argon2 call:
+Shipped, but without the promotion the step was drafted around - see the status
+note at the head of this section. The fallback compares and signs in; it never
+rewrites the password column.
+
+In [auth.service.ts](../../apps/dashboard/src/auth/auth.service.ts),
+`validateUser` dispatches on the sentinel before argon2 is reached:
 
 ```ts
-/// The provisioning password for a named principal, honoured only while the
-/// row still carries the migration's sentinel. Keyed by user id and by the
-/// exact sentinel value - deliberately NOT by "argon2 rejected the stored
-/// hash", which is true of every malformed-hash row in the table.
-private provisioningPasswordFor(user: {
-  id: number;
-  password: string;
-}): string | null {
-  if (user.password !== UNSET_PASSWORD) return null;
-
-  switch (user.id) {
-    case NAMED_PRINCIPAL_USER_ID.SUPER_ADMIN:
-      return this.principalConfig.SUPER_ADMIN_INITIAL_PASSWORD;
-    case NAMED_PRINCIPAL_USER_ID.AGENT_INTERNAL:
-      return this.principalConfig.AGENT_INTERNAL_INITIAL_PASSWORD;
-    default:
-      return null;
-  }
-}
+    // An unactivated named principal: the migration wrote a sentinel instead of
+    // a hash, so there is nothing for argon2 to verify against and the
+    // provisioning password from the environment stands in for one login.
+    //
+    // The two branches are disjoint on purpose. Falling through to
+    // verifyPassword on a failed activation would work - argon2 rejects the
+    // sentinel - but it would also mean the provisioning path is reachable from
+    // the normal path, and the whole point of UNSET_PASSWORD being a distinct
+    // string from LOCKED_MACHINE_PASSWORD is that those two paths never meet.
+    if (user.password === UNSET_PASSWORD) {
+      return this.activateNamedPrincipal(user, password);
+    }
 ```
+
+The branch it dispatches to, and the lookup behind it:
+
+```ts
+  /**
+   * Signs in a named principal that still carries UNSET_PASSWORD, by comparing
+   * the submitted password against the provisioning password in the
+   * environment.
+   *
+   * Only ids 21 and 22 have one. Anything else holding the sentinel - a row
+   * hand-edited, restored from a dump, or a machine principal whose password
+   * column was tampered with - gets null, because
+   * `provisioningPasswordFor` has nothing to offer it.
+   */
+  private async activateNamedPrincipal(
+    user: { id: number; role: { name: string } },
+    password: string,
+  ): Promise<AuthInfoDto | null> {
+    let provisioningPassword: string;
+    try {
+      const configured = this.provisioningPasswordFor(user.id);
+      if (configured === null) return null;
+      provisioningPassword = configured;
+    } catch (error) {
+      // PrincipalConfig throws when the key is missing, or set to something it
+      // refuses in production. That is a deployment fault, not a credential
+      // fault: log it so it is findable, and still answer 401 rather than
+      // telling an anonymous caller that the server is misconfigured.
+      this.logger.error(
+        `Named principal ${user.id} is unactivated and its provisioning ` +
+          `password is unusable: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+
+    if (!AuthHelper.secretEquals(provisioningPassword, password)) return null;
+
+    // Role and profile are read, never assumed. The migration asserts this
+    // account's roleId, so reading it costs nothing and cannot drift; and the
+    // detail row's id is left to the sequence by that same migration, so there
+    // is no constant to hardcode it from. It happens to be 1 on a database
+    // seeded in the usual order, which is precisely what makes hardcoding it
+    // dangerous - it would pass every local test and sign a wrong profileId
+    // into the JWT on a restored or differently-ordered database.
+    const role = user.role.name as ROLE;
+    const profileId = await this.findProfileIdByUserIdAndRole(user.id, role);
+
+    this.logger.warn(
+      `Named principal ${user.id} signed in with its provisioning password. ` +
+        `Reset it via POST /super-admin/reset-password.`,
+    );
+
+    return new AuthInfoDto({ userId: user.id, profileId, role });
+  }
+
+  /** The provisioning password for a named principal, or null for anything else. */
+  private provisioningPasswordFor(userId: number): string | null {
+    switch (userId) {
+      case NAMED_PRINCIPAL_USER_ID.SUPER_ADMIN:
+        return this.principalConfig.INITIAL_SUPER_ADMIN_PASSWORD;
+      case NAMED_PRINCIPAL_USER_ID.AGENT_INTERNAL:
+        return this.principalConfig.INITIAL_AGENT_INTERNAL_PASSWORD;
+      default:
+        return null;
+    }
+  }
+```
+
+What the plan called for and this does not do is promote the password on first
+use:
 
 ```ts
 const provisioning = this.provisioningPasswordFor(user);
@@ -607,18 +677,19 @@ if (provisioning) {
 }
 ```
 
-Three things this step needs:
+What dropping that leaves:
 
-- **`PRISMA_MASTER_PROVIDER_KEY` injected into `AuthService`.**
-  [auth.service.ts:17](../../apps/dashboard/src/auth/auth.service.ts:17)
-  currently has only the slave. This is the one structural change the design
-  forces.
-- **Replica lag is benign but confusing.** The read is from the slave and the
-  promotion writes to master, so the fallback stays live for a moment after
-  activation. Idempotent and harmless - worth a comment so it is not debugged
-  twice.
-- **A `WARN` on every fallback login**, not just the first. If one appears in
-  production after go-live, an account was re-armed and somebody should know.
+- **No master client is needed.** The plan's one structural change was
+  injecting `PRISMA_MASTER_PROVIDER_KEY` into `AuthService`, which still has
+  only the slave. That existed solely to carry the promotion write; a
+  comparison reads nothing it does not already have.
+- **Replica lag never arises**, for the same reason. Nothing is written, so
+  there is no window in which the slave still shows the sentinel after the
+  master has moved on.
+- **A `WARN` on every activation login, not just the first** - shipped, and it
+  names the reset endpoint. Because the password is never promoted, that line
+  is the only signal that an account is still carrying its provisioning
+  password, and it keeps appearing until someone resets it.
 
 ---
 
