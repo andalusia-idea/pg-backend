@@ -15,7 +15,7 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 /** Every seeded account shares one password - these are non-production logins. */
-export const SEED_PASSWORD = 'password123';
+export const SEED_PASSWORD = 'password123456789';
 
 // ENGINE_PASSWORD is gone. The machine principals it hashed are now inserted by
 // the `machine_principals` migration with a password value that is not a valid

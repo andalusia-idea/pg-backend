@@ -100,9 +100,13 @@ export class UserService {
 
       // Merchants are onboarded by their agent (the internal team signs in as
       // an "AgentInternal" agent to do it), so this normally holds and the
-      // shareholder row is always created. The check stays because @Roles() is
-      // not enforced yet - without it, a non-agent caller would hit a foreign
-      // key violation on agentId instead of simply not getting a shareholder.
+      // shareholder row is always created.
+      //
+      // @Roles(...MERCHANT_REGISTRAR_ROLES) now enforces AGENT on this
+      // endpoint, but the check stays: RolesGuard lets SUPER_ADMIN through any
+      // @Roles() as a wildcard, and a SUPER_ADMIN caller has no config.Agent
+      // row. Without this, that caller would hit a foreign key violation on
+      // agentId instead of simply not getting a shareholder.
       const registrarIsAgent = await tx.agent.findUnique({
         where: { id: authInfo.userId },
         select: { id: true },

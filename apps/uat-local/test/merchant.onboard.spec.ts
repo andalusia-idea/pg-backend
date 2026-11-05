@@ -28,7 +28,7 @@ const AUTH_DSN = process.env.POSTGRESQL_URL_MASTER_AUTH ?? '';
  * in Step 6 has the fewest moving parts.
  */
 const MERCHANT_EMAIL = 'merchant1@example.com';
-const MERCHANT_PASSWORD = 'password123';
+const MERCHANT_PASSWORD = 'password123456789';
 
 /**
  * `127.0.0.1`, never `localhost`. `RegisterWebhookUrlDto` puts `@IsUrl()` on

@@ -42,6 +42,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
+import { RolesGuard } from '../auth';
+import { SuperAdminModule } from '../super-admin';
 
 @Module({
   controllers: [AppController, HealthController],
@@ -73,11 +75,15 @@ import { HealthController } from './health.controller';
 
     { provide: APP_GUARD, useClass: JwtAuthGuard },
 
-    // RolesGuard is deliberately NOT registered: @Roles() is metadata-only for
-    // now, marking intended access while the role model is settled internally.
-    // Authentication (JwtAuthGuard) is the only thing enforced today.
-    // Re-enabling is this one line:
-    //   { provide: APP_GUARD, useClass: RolesGuard },
+    // RolesGuard runs after JwtAuthGuard, which is what populates request.user
+    // for it to read - global guards execute in registration order, so these
+    // two must stay in this order.
+    //
+    // @Roles() is enforced from here on. An endpoint with no @Roles() is still
+    // open to any authenticated caller, so this is coverage for the three
+    // decorated sites rather than a default-deny: adding a decorator is what
+    // restricts an endpoint, not registering this guard.
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
   imports: [
     ConfigurationModule.forRoot({
@@ -103,6 +109,7 @@ import { HealthController } from './health.controller';
       applyMasterExtensions: (client) => client.$extends(auditTrailExtension),
     }),
     AuthModule,
+    SuperAdminModule,
 
     // Feature modules, ported in the order listed in docs/dashboard-migration.md
     UserModule,

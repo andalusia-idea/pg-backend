@@ -138,5 +138,56 @@ export const PROVIDER_CALLBACK_USER_ID = {
   JATELINDO: MACHINE_USER_ID.SYSTEM_04,
 } as const satisfies Record<ProviderNameEnum, number>;
 
-/** The id the first non-machine account receives. Everything below is pinned. */
-export const FIRST_HUMAN_USER_ID = 21;
+/**
+ * The two named principals, pinned by the `named_principals` migration.
+ *
+ * Distinct from MACHINE_USER_ID above, and the distinction carries weight: a
+ * machine principal is *defined* by being unable to sign in, while these two
+ * sign in, hold profile rows, and carry sign-in capable roles. Filing them
+ * under MACHINE_USER_ID would make "every machine principal must be unable to
+ * log in" either false or unenforceable.
+ *
+ * Pinned because apps/config's engine seed creates `config.Agent` at
+ * AGENT_INTERNAL's id with no foreign key behind it - see the migration header
+ * for what a shifted id costs.
+ */
+export const NAMED_PRINCIPAL_USER_ID = {
+  SUPER_ADMIN: 21,
+  AGENT_INTERNAL: 22,
+} as const;
+export type NAMED_PRINCIPAL_USER_ID =
+  (typeof NAMED_PRINCIPAL_USER_ID)[keyof typeof NAMED_PRINCIPAL_USER_ID];
+
+/**
+ * The password value the `named_principals` migration writes for an account
+ * that has not been activated yet.
+ *
+ * Not a valid argon2 hash, so `argon2.verify` rejects it - the same trick the
+ * machine principals use. It is a different string from
+ * '!locked-machine-principal' on purpose, and that difference is a security
+ * boundary rather than a label: the login path treats this exact value as
+ * "compare the submitted password against the provisioning password in the
+ * environment", and a machine principal must never qualify for that.
+ *
+ * Compare it with `===`. Never infer it from `argon2.verify` throwing - that is
+ * true of *any* malformed hash, including a truncated or corrupted column, and
+ * would hand the provisioning password to rows it was never meant for.
+ */
+export const UNSET_PASSWORD = '!unset-password';
+
+/**
+ * The password value `20261009090000_machine_principals` writes for ids 1-20.
+ *
+ * That migration has always written this string; naming it here is what makes
+ * the guarantee *enforceable* rather than merely true. A migration can pin a
+ * row, but nothing stops an API from updating it afterwards - so any endpoint
+ * that sets a password must refuse a row carrying this value, or one call turns
+ * a locked system account into a usable login and the database-level guarantee
+ * is quietly gone.
+ *
+ * @see SuperAdminService.resetPassword
+ */
+export const LOCKED_MACHINE_PASSWORD = '!locked-machine-principal';
+
+/** The id the first self-service account receives. Everything below is pinned. */
+export const FIRST_SELF_SERVICE_USER_ID = 23;

@@ -184,8 +184,8 @@ export async function configDevSeed(prisma: PrismaClient): Promise<boolean> {
   // key - the same thing registerMerchant does at runtime.
   //
   // Agent Internal is deliberately absent here: its config.Agent row is engine
-  // data, created by configEngineSeed. This tier only borrows its id for the
-  // shareholder splits below.
+  // data, written by 20261105170000_named_principals. This tier only borrows
+  // its id for the shareholder splits below.
   await prisma.$transaction(
     agentIds.map((id) =>
       prisma.agent.upsert({

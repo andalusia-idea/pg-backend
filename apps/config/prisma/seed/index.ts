@@ -2,7 +2,6 @@ import { PrismaClient } from '@config/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { bankEngineSeed } from './bank-engine.seed';
-import { configEngineSeed } from './config-engine.seed';
 import { configDevSeed } from './config-dev.seed';
 
 /**
@@ -12,15 +11,22 @@ import { configDevSeed } from './config-dev.seed';
  *   npm run prisma:seed:config:dev    engine + development fixtures
  *
  * Two tiers:
- *   - ENGINE   the bank catalogue, Agent Internal, and the provider /
- *              payment-method routing vocabulary. Safe in any environment,
- *              including production.
+ *   - ENGINE   the bank catalogue. Safe in any environment, including
+ *              production.
  *   - DEV      config rows for the dev agents and merchants, provider fee
  *              config, fee overrides and shareholder splits. Never in production.
  *
- * Run AFTER the auth seeder - both tiers resolve `config.Merchant.id` and
- * `config.Agent.id` from the matching `auth.User` rows. The engine tier throws
- * if they are missing; the dev tier skips.
+ * The rest of the engine data is no longer here. Agent Internal's `config.Agent`
+ * row, the INTERNAL provider and the payment-method routing vocabulary are
+ * written by migrations - `20261105170000_named_principals` and
+ * `20261105200000_provider_and_payment_methods` - so a fresh database holds them
+ * before any seed runs, and a production cutover does not depend on a seed step
+ * at all. Banks are the only engine data still seeded; moving them is the
+ * unfinished half of that work.
+ *
+ * Only the DEV tier needs the auth seeder to have run first: it resolves
+ * `config.Merchant.id` and `config.Agent.id` from the matching `auth.User`
+ * rows, and skips what it cannot find. The engine tier is independent of auth.
  *
  * Every step is idempotent, so re-running only fills in what is missing.
  *
@@ -54,7 +60,6 @@ async function main(): Promise<void> {
 
   console.log('\nEngine data (mandatory):');
   await bankEngineSeed(prisma);
-  await configEngineSeed(prisma);
 
   if (!devRequested) {
     console.log('\nDevelopment fixtures skipped (pass --dev to include them).');

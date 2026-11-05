@@ -9,7 +9,7 @@ export class CreateAgentDto {
   @EmailUnique()
   email: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: 'password123456789' })
   @IsString()
   @MinLength(8)
   password: string;

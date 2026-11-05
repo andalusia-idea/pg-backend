@@ -1479,7 +1479,7 @@ That last row is the one legacy could not guarantee: auth committed its own tran
 
 Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as separate Postgres types in the pushed database, confirming the merged-schema `@@map` rename targets real types.
 
-> Local test data: roles `ADMIN_SUPER`/`AGENT`/`MERCHANT`, `admin@manapay.id` / `password123`, plus one seeded agent and merchant. Wipe with
+> Local test data: roles `ADMIN_SUPER`/`AGENT`/`MERCHANT`, `admin@manapay.id` / `password123456789`, plus one seeded agent and merchant. Wipe with
 > `DROP SCHEMA auth, config, transaction CASCADE;` then re-push.
 >
 > **Superseded.** Those rows were hand-made before the seeders existed, and the role

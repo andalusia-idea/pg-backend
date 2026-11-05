@@ -28,6 +28,16 @@ export class RolesGuard implements CanActivate {
     const authInfo = request.user as AuthInfoDto | undefined;
     if (!authInfo) throw ApiError.unauthorized();
 
+    // SUPER_ADMIN satisfies every @Roles(), including one added specifically to
+    // exclude it. Two consequences worth keeping in mind:
+    //
+    //  - AGENT_ADMIN_ROLES lists SUPER_ADMIN explicitly while this grants it
+    //    implicitly. The lists are therefore descriptive, not exhaustive - do
+    //    not read the absence of SUPER_ADMIN from a @Roles() as a denial.
+    //  - It reaches an endpoint with no config.Agent row behind it, which is
+    //    why user.service's registrarIsAgent check cannot be removed.
+    if (authInfo.role === ROLE.SUPER_ADMIN) return true;
+
     if (!requiredRoles.includes(authInfo.role)) {
       throw ApiError.forbidden(
         `Role '${authInfo.role}' is not permitted to access this resource`,

@@ -157,7 +157,7 @@ No `.env.example` exists in any of the 4 zips — only real `.env`/`.env.develop
 
 **Bug**: `LocalStrategy.validate()` — on invalid credentials, constructs `new UnauthorizedException()` but **never throws or returns it**; falls through to `return authInfo` (null). Still produces a 401 in practice (Passport rejects a falsy `validate()` result), but the exception-construction line is dead code — almost certainly meant to be `throw`.
 
-**Secrets/config risk**: `JWT.accessToken.secret` defaults to `process.env.JWT_ACCESS_TOKEN_SECRET || ''` — if unset, signing secret silently becomes an empty string (forgeable tokens) rather than failing startup. `LoginDto`'s Swagger default bakes in `superadmin@manapay.id`/`password123` as the visible API-docs example — confirm these aren't real prod credentials before porting Swagger defaults as-is.
+**Secrets/config risk**: `JWT.accessToken.secret` defaults to `process.env.JWT_ACCESS_TOKEN_SECRET || ''` — if unset, signing secret silently becomes an empty string (forgeable tokens) rather than failing startup. `LoginDto`'s Swagger default bakes in `superadmin@manapay.id`/`password123456789` as the visible API-docs example — confirm these aren't real prod credentials before porting Swagger defaults as-is.
 
 ### Consolidated TODOs / risks (auth)
 - **~30+ `console.log`/`console.error` debug call sites** across `auth.service.ts`, `local.strategy.ts`, `auth.controller.ts`, `casl-ability.factory.ts`, `policies.guard.ts`, `roles.controller.ts`, `user.controller.ts`, `user.service.ts`, `user-profile.service.ts`, `jwt-auth.guard.ts` (logs on **every** authenticated request), `microservice/*.client.ts`, `pagination.decorator.ts`.

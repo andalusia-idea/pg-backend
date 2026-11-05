@@ -255,7 +255,7 @@ only authentication.
 first signed request accepted. No provider involved yet.
 
 **What the seed already gives you.** `authDevSeed` creates
-`merchant1@example.com` … `merchant4@example.com`, password `password123`,
+`merchant1@example.com` … `merchant4@example.com`, password `password123456789`,
 each with a `MerchantSignature` row holding a generated `clientId` - but
 `secretKey`, `payinUrl` and `payoutUrl` are all null. `configDevSeed` then adds
 `MerchantFee` rows for **merchant1 and merchant2 only**. Merchants 3 and 4 have

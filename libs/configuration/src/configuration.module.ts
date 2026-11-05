@@ -10,6 +10,7 @@ import { FeeConfig } from './fee.config';
 import { ProfileConfig } from './profile.config';
 import { JatelindoConfig } from './jatelindo.config';
 import { SettlementConfig } from './settlement.config';
+import { PrincipalConfig } from './principal.config';
 
 @Global()
 @Module({})
@@ -29,6 +30,7 @@ export class ConfigurationModule {
         TCPConfig,
         DatabaseConfig,
         JwtConfig,
+        PrincipalConfig,
         MerchantSignatureConfig,
         FeeConfig,
         ProfileConfig,
@@ -44,6 +46,7 @@ export class ConfigurationModule {
         TCPConfig,
         DatabaseConfig,
         JwtConfig,
+        PrincipalConfig,
         MerchantSignatureConfig,
         FeeConfig,
         ProfileConfig,

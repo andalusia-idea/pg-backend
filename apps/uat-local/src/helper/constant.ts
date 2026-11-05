@@ -11,19 +11,19 @@ export const MERCHANT_1 = 'merchant1@example.com';
 export const MERCHANT_2 = 'merchant2@example.com';
 export const MERCHANT_3 = 'merchant3@example.com';
 export const MERCHANT_4 = 'merchant4@example.com';
-export const MERCHANT_PASSWORD = 'password123';
+export const MERCHANT_PASSWORD = 'password123456789';
 
 export const AGENT_1 = 'agent1@example.com';
 export const AGENT_2 = 'agent2@example.com';
 export const AGENT_3 = 'agent3@example.com';
 export const AGENT_4 = 'agent4@example.com';
-export const AGENT_PASSWORD = 'password123';
+export const AGENT_PASSWORD = 'password123456789';
 
 export const AGENT_INTERNAL_EMAIL = 'agentinternal@pg.id';
-export const AGENT_INTERNAL_PASSWORD = 'password123';
+export const AGENT_INTERNAL_PASSWORD = 'password123456789';
 
 export const SUPER_ADMIN_EMAIL = 'superadmin@pg.id';
-export const SUPER_ADMIN_PASSWORD = 'password123';
+export const SUPER_ADMIN_PASSWORD = 'password123456789';
 
 const address = {
   province: 'Jakarta',
