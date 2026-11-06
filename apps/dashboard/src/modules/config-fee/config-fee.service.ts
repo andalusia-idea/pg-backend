@@ -20,6 +20,6 @@ export class ConfigFeeService {
       ],
     });
 
-    return baseFees.map((baseFee) => new BaseFeeDto(baseFee as never));
+    return baseFees.map((baseFee) => new BaseFeeDto(baseFee));
   }
 }

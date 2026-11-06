@@ -90,9 +90,9 @@ export class ConfigMerchantService {
       .map(
         (baseFee) =>
           new MerchantBaseFeeConfigDto({
-            baseFeeConfig: new BaseFeeDto(baseFee as never),
+            baseFeeConfig: new BaseFeeDto(baseFee),
             merchantFeeConfig: baseFee.merchantFees[0]
-              ? new MerchantFeeDto(baseFee.merchantFees[0] as never)
+              ? new MerchantFeeDto(baseFee.merchantFees[0])
               : null,
           }),
       )
@@ -109,7 +109,7 @@ export class ConfigMerchantService {
         agentShareholders.length === 0
           ? null
           : agentShareholders.map(
-              (shareholder) => new AgentShareholderDto(shareholder as never),
+              (shareholder) => new AgentShareholderDto(shareholder),
             ),
       fees,
     });

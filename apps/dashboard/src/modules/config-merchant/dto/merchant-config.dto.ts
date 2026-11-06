@@ -5,11 +5,13 @@ import {
   ToMoneyString,
   ToPercentageString,
 } from '../../../shared/decorator';
-import { DtoHelper } from '../../../shared/helper';
+import { DtoHelper, PrismaRowOf } from '../../../shared/helper';
 import { BaseFeeDto } from '../../config-fee/dto/base-fee.dto';
 
 export class AgentShareholderDto {
-  constructor(data: AgentShareholderDto) {
+  constructor(
+    data: PrismaRowOf<AgentShareholderDto, never, 'percentagePerAgent'>,
+  ) {
     DtoHelper.assign(this, data);
   }
 
@@ -23,7 +25,16 @@ export class AgentShareholderDto {
 
 /** A merchant's override of the provider-level base fee. */
 export class MerchantFeeDto {
-  constructor(data: MerchantFeeDto) {
+  constructor(
+    data: PrismaRowOf<
+      MerchantFeeDto,
+      never,
+      | 'feeInternalFixed'
+      | 'feeInternalPercentage'
+      | 'feeAgentFixed'
+      | 'feeAgentPercentage'
+    >,
+  ) {
     DtoHelper.assign(this, data);
   }
 

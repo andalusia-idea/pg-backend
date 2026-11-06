@@ -6,11 +6,17 @@ import {
   ToMoneyString,
   ToPercentageString,
 } from '../../../shared/decorator';
-import { DtoHelper } from '../../../shared/helper';
+import { DtoHelper, PrismaRowOf } from '../../../shared/helper';
 
 /** Provider-level fee configuration, before any per-merchant override. */
 export class BaseFeeDto {
-  constructor(data: BaseFeeDto) {
+  constructor(
+    data: PrismaRowOf<
+      BaseFeeDto,
+      'code',
+      'feeProviderFixed' | 'feeProviderPercentage'
+    >,
+  ) {
     DtoHelper.assign(this, data);
     // Derived, not stored. `BaseFee.code` used to be a column holding this
     // exact string; it was dropped because nothing checked it against the three
