@@ -6,6 +6,27 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-06 base fee API, and the config seed loses its engine tier
+
+Backend-only commits (`e0870db`, `41ed637`, `18ee3dc`). One item reaches your
+side and it is a request-shape change, not a response one — see **D25** below.
+
+- **`POST /super-admin/base-fee` now requires `isActive` as a real JSON boolean.**
+  It was being discarded before it reached the service, so a create always stored
+  `true` and an update could never switch a fee off. Sending it as a string, or
+  omitting it, is now a 422. This is the only change that needs anything from you.
+- **`GET merchant/:merchantId/config` percentages are no longer rounded.** A
+  `Decimal(8, 4)` rate was passing through `.toFixed(2)` first, so `0.7250`
+  arrived as `0.7300`. Display-only, no shape change, but if you cached or
+  snapshotted those values they will differ now — in the direction of being right.
+- **Two new super-admin endpoints**, listed in D25. `GET /fee/config` is unchanged
+  and remains the operational read.
+- **All config engine data now arrives from migrations**, not the seed —
+  §8 rewritten. Nothing frontend-visible; it means a fresh database is usable
+  after `migrate deploy` with no seed step.
+
+---
+
 ## Update — 2026-11-05 frontend push (second pass, same day)
 
 Frontend pushed two commits (`457c199..f01cb07`, backend unchanged at `7d9a6c3`) closing out the frontend half of the findings from the first pass below.
@@ -430,12 +451,13 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Twenty-four entries (D1–D24), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; eight do, and a ninth (D15) is listed but no longer actually needs your input — see its row.
+Twenty-five entries (D1–D25), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
 
 ### Open — needs a decision or action
 
 | # | What | Who acts | Why it matters |
 |---|---|---|---|
+| **D25** | `POST /super-admin/base-fee` now validates `isActive` as a boolean, and rejects payloads it used to accept | **You** — send `isActive` as a JSON boolean, and surface the new 422 field errors | A string or an omitted value is now a 422. Before the fix the field was silently dropped, so the switch never worked at all |
 | **D22** | Snapshot balance reads, the agent holder-filter fix, frontend three-bucket support, and the admin profit view are all done; only the manual-adjustment write feature remains | **You** — build the `BalanceAdjustment` endpoint (mandatory reason, visible audit history, `BigInt` id serialized as a string) when ready | Admins can see profit and all three buckets everywhere now; manual balance correction still has no write path at all |
 | **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
@@ -1386,6 +1408,92 @@ and settlement landing makes it more visible, not less.
 
 ---
 
+### D25 — `POST /super-admin/base-fee` validated nothing; `BaseFee` gets no migration → **fixed, one request-shape change for you**
+
+Two new endpoints, both `SUPER_ADMIN`-only, and one of them had a bug that made
+its most important field inert.
+
+Worth knowing against D3: role enforcement **is** live on this controller. The
+class carries `@Roles(ROLE.SUPER_ADMIN)` and `RolesGuard` is registered in
+`app.module.ts`, so a token for any other role gets a 403 here rather than being
+waved through. D3 still stands for the endpoints that rely on
+`@CheckPolicies()`.
+
+| Method | Route | What it is |
+|---|---|---|
+| `POST` | `/super-admin/base-fee` | Upsert an array of provider-level base fees, keyed on `(providerName, paymentMethodName, transactionType)` |
+| `GET` | `/super-admin/base-fee` | The same rows **including inactive and soft-deleted ones** |
+
+**What you have to change.** `isActive` must be a JSON boolean:
+
+```json
+[
+  {
+    "providerName": "INTERNAL",
+    "paymentMethodName": "QRIS",
+    "transactionType": "PURCHASE",
+    "isActive": false,
+    "feeProviderFixed": "1000.00",
+    "feeProviderPercentage": "0.7250"
+  }
+]
+```
+
+`"false"` as a string, or leaving the key out, is a 422 naming the field. That is
+new, and it is new because the field was previously **discarded before the
+service ever saw it**: the array pipe validates with `whitelist: true`, which
+strips any property carrying no `class-validator` decorator, and `isActive` had
+only a Swagger one. The consequence was invisible from the outside — a create
+stored `true` whatever you sent, an update left the stored value untouched, and
+both answered 201. If you built an on/off toggle against this endpoint and
+concluded it did nothing, that is why.
+
+**The new rejections.** All of these previously returned 201 and then did
+something other than what the payload said:
+
+| Payload | Now |
+|---|---|
+| `[]` | 400 `At least one base fee is required` |
+| Two entries with the same provider + method + type | 400 naming the duplicate key — the transaction used to upsert one row twice, later entry winning |
+| A `providerName` or `paymentMethodName` not in the config tables | 422 per entry, e.g. `{"[0].providerName": "provider 'MOTIONPAY' is not configured"}` |
+| A `transactionType` the payment method does not support | 422, e.g. `{"[0].transactionType": "QRIS supports PURCHASE, not WITHDRAW"}` |
+
+Field keys are indexed as you sent them, and every offending entry is reported
+in one response — a screen posting the whole fee table does not have to fix one
+row per round trip. Nothing is written when any entry is rejected.
+
+That last row is worth a note: `PaymentMethod.transactionTypes` is an array
+column and no constraint relates it to `BaseFee.transactionType`, so a QRIS +
+WITHDRAW row used to insert successfully and then match no transaction for the
+rest of its life. Same failure mode as a misspelled provider name in the engine
+migrations — written, and simply unreachable.
+
+**`GET /super-admin/base-fee` is deliberately wider than `GET /fee/config`.** It
+includes soft-deleted and inactive rows, because it backs the configuration
+screen behind the upsert: a row it cannot show is a row nobody can repair, and a
+tombstone is the only thing that explains an upsert reporting success on a row no
+other endpoint returns. `GET /fee/config` is unchanged — `deletedAt IS NULL`,
+and still the right call for anything operational. Use the super-admin route only
+on the admin fee-config screen.
+
+**Percentages stopped being rounded.** `GET merchant/:merchantId/config` was
+converting each `Decimal(8, 4)` rate with `.toFixed(2)` before serialization, so
+a stored `0.7250` reached you as `0.7300`. The conversion was never needed and is
+gone. No shape change; the values are simply correct now. D4 is the standing
+rule: Money is `Decimal(15,2)`, Percentage is `Decimal(8,4)`, and percentages
+arrive as four-decimal strings.
+
+**And a decision that affects nothing you call, recorded here so it is not
+re-litigated:** `BaseFee` deliberately gets **no** migration, unlike every other
+piece of config engine data (§8). Real provider rates are commercial terms from
+a signed agreement, and §8's existing reasoning applies exactly — a production
+database carrying plausible-but-fictional rates is worse than one carrying none,
+because nothing fails loudly; the fees are simply wrong and every settlement
+quietly mis-splits. A migration would ship invented numbers. The endpoints above
+are how real rates get in. The dev seed's 9 rows stay dev-only.
+
+---
+
 ## 6. Deliberate deviations from legacy
 
 Everything else is a faithful port. These four are intentional, and each is behaviour-preserving:
@@ -1565,22 +1673,39 @@ Two seeders, one per schema-owning app. The dashboard has none — it owns no ta
 ```bash
 npm run prisma:seed:auth          # engine only
 npm run prisma:seed:auth:dev      # engine + dev fixtures
-npm run prisma:seed:config        # engine only
-npm run prisma:seed:config:dev    # engine + dev fixtures
+npm run prisma:seed:config        # nothing to do, and says so
+npm run prisma:seed:config:dev    # dev fixtures
 ```
 
-**Order matters.** Config resolves `config.Agent.id` / `config.Merchant.id` from
-`auth.User` by email, so auth runs first. There is no cross-schema foreign key to
-enforce this — Prisma cannot express one across `multiSchema` clients — so the
-seeds check explicitly: the config engine tier throws with the command to run,
-and the dev tier skips with a message. Neither writes rows pointing at users that
-do not exist.
+**As of 2026-11-06 the config seeder has no engine tier.** Every piece of config
+engine data is written by a migration, so a fresh database holds it after
+`migrate deploy` with no seed step at all:
+
+| Migration | Writes |
+|---|---|
+| `20261105170000_named_principals` | Agent Internal's `config.Agent` row |
+| `20261105200000_provider_and_payment_methods` | the INTERNAL provider, the payment-method vocabulary |
+| `20261106090000_bank_catalogue` | the 95-row bank catalogue |
+
+`apps/config/prisma/seed/index.ts` stays because `prisma.config.ts` names it as
+the seed entry point and `migrate reset` invokes it, but with no `--dev` it
+reports that there is nothing to do rather than printing an empty section.
+
+**Order still matters, for the dev tier only.** Config's dev fixtures resolve
+`config.Agent.id` / `config.Merchant.id` from `auth.User` by email, so auth runs
+first. There is no cross-schema foreign key to enforce this — Prisma cannot
+express one across `multiSchema` clients — so the dev tier skips with a message
+rather than writing rows that point at users who do not exist. The config
+migrations do not depend on the auth seed; `20261105170000_named_principals`
+reads `auth."User"` to *assert* that id 22 is `agentinternal@pg.id`, and guards
+that check with `to_regclass` so it is a no-op on a database where auth has not
+migrated yet.
 
 ### Two tiers
 
 | Tier | Contents | Safe in production |
 |---|---|---|
-| **engine** | auth: 6 roles, 5 system + 10 scheduler + 5 reserved accounts, `superadmin@pg.id`, `agentinternal@pg.id`. config: 91 banks, Agent Internal's `config.Agent` row, the INTERNAL provider, payment methods. | yes |
+| **engine** | auth only: 6 roles, 5 system + 10 scheduler + 5 reserved accounts, `superadmin@pg.id`, `agentinternal@pg.id`. Config has no engine tier — see the migration table above. | yes |
 | **dev** | auth: 4 agents + 4 merchants + signatures. config: third-party providers, their config rows, provider fee config, fee overrides, shareholder splits. | **no** — refuses to run under `NODE_ENV=production` |
 
 Engine is the data the system cannot boot without. Dev is everything ported from
@@ -1592,13 +1717,19 @@ runs leave identical row counts.
 
 ### Things worth knowing
 
-**Agent Internal is engine data.** Merchants are onboarded by an agent, and the
-internal team signs in as `agentinternal@pg.id` to do it. Without its
-`config.Agent` row, `registerMerchant`'s `registrarIsAgent` lookup misses and no
-`AgentShareholder` row is written — a silent failure, because the merchant is
-still registered successfully. It lands on id 22 on a fresh database, but the
-seed looks the id up by email rather than hardcoding it: nothing enforces that id,
-so a stale hardcode would not error, it would just point at nothing.
+**Agent Internal is engine data, and its id is now pinned.** Merchants are
+onboarded by an agent, and the internal team signs in as `agentinternal@pg.id`
+to do it. Without its `config.Agent` row, `registerMerchant`'s
+`registrarIsAgent` lookup misses and no `AgentShareholder` row is written — a
+silent failure, because the merchant is still registered successfully, with the
+agent dropped from every fee split.
+
+Until 2026-11-05 it landed on id 22 by coincidence: the sequence starts at 20
+and the auth seed happened to upsert `superadmin` first. Reordering those two
+upserts, restoring a dump or importing a legacy user moved it with no error.
+`20261105150000_named_principals` now pins both accounts (21 and 22) and the
+config side asserts the pairing, so the id is a contract rather than an
+accident. Full write-up in `docs/engine/named-principals.md`.
 
 **Permissions are deliberately not seeded.**
 
@@ -1617,10 +1748,18 @@ screens. A production database carrying plausible-looking but fictional rates is
 worse than one carrying none — nothing fails loudly, the fees are simply wrong and
 every settlement quietly mis-splits.
 
+This is also why `BaseFee` is the one piece of config data with **no** migration,
+while everything else in the table above moved into one. The write path is
+`POST /super-admin/base-fee` (D25). The dev seed's 9 rows stay dev-only.
+
 **The bank list was de-duplicated.** The legacy list held 97 entries under 91
 distinct codes, and `Bank.code` is the primary key — it would have thrown P2002
 partway through. Renamed banks collapsed to one entry; Bank NTB / Bank SulutGo were
-split across 127 / 128.
+split across 127 / 128. That resolved list is now
+`20261106090000_bank_catalogue`, 95 rows: the 91 banks plus four e-wallet
+pseudo-banks. The four are load-bearing — `common/div?div=BANK` and `div=EWALLET`
+read one table and split it by testing `code` against `EWalletEnum`, so
+`div=BANK` returns 91 and `div=EWALLET` returns 4.
 
 **`--dev` needs a `--` separator.** `prisma db seed` spawns the seed as a child
 process and only forwards arguments after `--`. The npm scripts therefore end in a
@@ -1628,5 +1767,7 @@ bare `--`, which looks like a typo but is load-bearing: without it the flag is
 swallowed and the dev tier is skipped *silently* rather than erroring.
 
 `prisma migrate reset` also runs these, via `migrations.seed`. It passes no
-arguments, so a reset restores engine data only — the right default for a command
-that just wiped the database.
+arguments, so a reset restores auth engine data only — the right default for a
+command that just wiped the database. For config there is nothing left for that
+step to do: the reset re-applies the migrations, which is where its engine data
+now comes from.
