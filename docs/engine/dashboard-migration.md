@@ -6,10 +6,11 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
-## Update — 2026-11-06 base fee API, and the config seed loses its engine tier
+## Update — 2026-11-06 base fee and settlement-window APIs, and the config seed loses its engine tier
 
-Backend-only commits (`e0870db`, `41ed637`, `18ee3dc`). One item reaches your
-side and it is a request-shape change, not a response one — see **D25** below.
+Backend-only commits (`e0870db`, `41ed637`, `18ee3dc`, `3a776b2`). One item
+reaches your side and it is a request-shape change, not a response one — see
+**D25** below. **D26** is new surface, nothing breaking.
 
 - **`POST /super-admin/base-fee` now requires `isActive` as a real JSON boolean.**
   It was being discarded before it reached the service, so a create always stored
@@ -21,6 +22,9 @@ side and it is a request-shape change, not a response one — see **D25** below.
   snapshotted those values they will differ now — in the direction of being right.
 - **Two new super-admin endpoints**, listed in D25. `GET /fee/config` is unchanged
   and remains the operational read.
+- **Two more super-admin endpoints for upstream settlement windows** — when
+  each partner closes a transaction window and releases our money. See **D26**.
+  Nothing to change; this is a screen you can build when it is wanted.
 - **All config engine data now arrives from migrations**, not the seed —
   §8 rewritten. Nothing frontend-visible; it means a fresh database is usable
   after `migrate deploy` with no seed step.
@@ -451,7 +455,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Twenty-five entries (D1–D25), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
+Twenty-six entries (D1–D26), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
 
 ### Open — needs a decision or action
 
@@ -489,6 +493,7 @@ Twenty-five entries (D1–D25), each a real defect or ambiguity found while read
 | D16 | Ordering had no tiebreak | Fixed — `createdAt DESC, id DESC` |
 | D17 | Legacy balance-ledger write path: writes escaping their transaction, no advisory locks, wrong `merchantId` in the withdraw callback | **Fixed 2026-10-12** — not ported as originally recommended, but superseded by `@app/balance`'s `reserve()`/`post()`, which solves all three more robustly. Live in the purchase and disbursement paths, verified against fixtures and a nightly snapshot-integrity job. See the write-up for what this does and doesn't finish |
 | D20 | `BaseFee.code` dropped from the config schema | Fixed — `BaseFeeDto.code` derived from the three columns, so the response is unchanged |
+| D26 | Upstream settlement schedules had no write path — the two MotionPay windows were hardcoded in a seed, and Jatelindo and Teleanjar had none at all | **New surface, nothing required of you.** `POST` / `GET /super-admin/settlement-window` ship the admin write path. A screen for it is worth building when the fee-config screen gets a sibling; until then the rows go in by API call. See the write-up |
 
 ---
 
@@ -1494,6 +1499,104 @@ are how real rates get in. The dev seed's 9 rows stay dev-only.
 
 ---
 
+### D26 — upstream settlement schedules had no write path → **fixed; new endpoints, nothing breaking**
+
+`UpstreamSettlementWindow` is how the system knows when each partner closes a
+transaction window and releases our money. `FOLLOW_UPSTREAM` eligibility cannot
+answer anything without it — it is what turns "this purchase settled" into a
+date a merchant can be paid on.
+
+Until now the only rows came from `transaction-engine.seed.ts`, hardcoded, and
+there were exactly two: MotionPay QRIS and MotionPay e-wallet. **Jatelindo and
+Teleanjar had none**, so those rails had no answer at all.
+
+| Method | Route | What it is |
+|---|---|---|
+| `POST` | `/super-admin/settlement-window` | Upsert an array of windows, keyed on `(providerName, paymentMethodName, label, effectiveFrom)` |
+| `GET` | `/super-admin/settlement-window` | Every window, **retired ones included**, newest schedule first per rail |
+
+Both are `SUPER_ADMIN`-only and enforced — same as D25's endpoints.
+
+**The request:**
+
+```json
+[
+  {
+    "providerName": "TELEANJAR",
+    "paymentMethodName": "TRANSFERBANK",
+    "label": "BATCH_1",
+    "windowStart": "18:00",
+    "windowStartDayOffset": -1,
+    "windowEnd": "12:00",
+    "settlementOffset": 0,
+    "settlementTime": "13:00",
+    "businessDaysOnly": false,
+    "effectiveFrom": "2026-01-01T00:00:00+07:00"
+  }
+]
+```
+
+`windowStart` / `windowEnd` / `settlementTime` are **wall-clock times**,
+`"HH:MM"` in the row's own `timezone` — not timestamps, so the ISO-with-offset
+convention from §4.2 does not apply to them. `settlementTime` may be `null`,
+which eligibility reads as end of day.
+
+**Two conventions worth knowing before you build a form for this:**
+
+- **A full day is `windowEnd` equal to `windowStart`.** Both MotionPay rails are
+  stored `00:00`/`00:00`. `"24:00"` is rejected on purpose — the reference
+  tables in `docs/accounting/` write it that way, but allowing a second spelling
+  would put rows in the table that look different and behave identically.
+- **`windowStartDayOffset` is `-1` when the window opens the previous day**, as
+  Teleanjar batch 1 does at 18:00 for a window closing at 12:00. It is the only
+  way to express that, and getting it wrong is caught (below).
+
+**The response** adds two derived strings so a listing row needs no formatting
+logic on your side:
+
+| Field | Example |
+|---|---|
+| `window` | `"18:00 (D-1) - 12:00"` |
+| `releases` | `"H+1 15:00"`, or `"H+2 end of day"` when no time is published |
+
+**Rejections**, all `422` with field keys indexed as you sent them, except the
+two `400`s:
+
+| Payload | Result |
+|---|---|
+| `[]` | 400 |
+| Two entries with the same provider + method + label + effectiveFrom | 400 naming the key |
+| Provider or payment method not configured | 422 per entry |
+| `effectiveTo` not after `effectiveFrom` | 422 |
+| A window longer than 24 hours | 422 on `windowStartDayOffset` — "window is 44 hours long, which is more than a day" |
+| Two windows on one rail covering the same minutes | 422 on `label`, naming the other window and whether it is stored or in the same request |
+| `businessDaysOnly: true` | 422 — see below |
+
+That overlap check is the important one for a UI. `label` is part of the key, so
+a mistyped label does not correct a window — it creates a second schedule
+covering the same transactions, with nothing to say which wins. Teleanjar's two
+batches are a legitimate pair only because their intervals do not touch. Show
+the error against the `label` field.
+
+**`businessDaysOnly` is accepted by the shape and refused by the server.** The
+holiday calendar behind it is deliberately unbuilt — no partner has given us
+their policy — and settlement eligibility throws rather than treating the flag
+as `false`, on the grounds that failing a run is recoverable and paying early is
+not. A row saved with it set would stop payouts for every merchant on that rail,
+from a checkbox, with the failure surfacing somewhere else entirely. Render it
+disabled, or leave it out of the form for now.
+
+**What is still missing, and it is not code.** No schedule for **Jatelindo** is
+recorded anywhere — not the seed, not
+`docs/accounting/upstream-settlement-schedules.md` — and it is one of the two
+live upstreams. Until someone enters one, settlement cannot answer
+`FOLLOW_UPSTREAM` for that rail. Teleanjar's two batches are documented and can
+go in now, though the batch-boundary rule is still an open question with the
+partner. Nothing about this blocks a screen: the endpoints work, the table is
+just thin.
+
+---
+
 ## 6. Deliberate deviations from legacy
 
 Everything else is a faithful port. These four are intentional, and each is behaviour-preserving:
@@ -1668,14 +1771,29 @@ Both `config.TransactionTypeEnum` and `transaction.TransactionTypeEnum` exist as
 
 ## 8. Seeding
 
-Two seeders, one per schema-owning app. The dashboard has none — it owns no tables.
+Three seeders, one per schema-owning app. The dashboard has none — it owns no tables.
 
 ```bash
 npm run prisma:seed:auth          # engine only
 npm run prisma:seed:auth:dev      # engine + dev fixtures
 npm run prisma:seed:config        # nothing to do, and says so
 npm run prisma:seed:config:dev    # dev fixtures
+npm run prisma:seed:transaction      # engine only
+npm run prisma:seed:transaction:dev  # engine + dev fixtures
 ```
+
+The transaction seeder was missing from this section until 2026-11-06. It
+matters more than it looks: a production `transaction` schema is correct
+precisely when its tables are *empty*, because almost everything in it is a
+record of something that happened. The one exception is the `settlement` schema
+riding along in the same migrations — `UpstreamSettlementWindow` is a
+transcription of what each partner has told us about when they release our
+money, which is vocabulary the system boots with. Its engine tier currently
+holds two rows, both MotionPay; the rest is entered through
+`POST /super-admin/settlement-window` (D26), and the seed's `update: {}` means
+re-running never overwrites a correction made that way.
+`MerchantSettlementPolicy` is not seeded at all — `registerMerchant` creates the
+default row in the same transaction as the merchant.
 
 **As of 2026-11-06 the config seeder has no engine tier.** Every piece of config
 engine data is written by a migration, so a fresh database holds it after
