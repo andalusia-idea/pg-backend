@@ -1,7 +1,13 @@
 import { PRISMA_MASTER_PROVIDER_KEY } from '@app/prisma';
 import { PrismaClient } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
-import { CreateAdminDto, ResetPasswordDto, UpsertBaseFeeDto } from './dto';
+import {
+  CreateAdminDto,
+  ResetPasswordDto,
+  SettlementWindowDto,
+  UpsertBaseFeeDto,
+  UpsertSettlementWindowDto,
+} from './dto';
 import { AuthHelper } from '../auth';
 import {
   LOCKED_MACHINE_PASSWORD,
@@ -10,6 +16,90 @@ import {
 } from '@app/microservice';
 import { ApiError } from '../shared/exception';
 import { BaseFeeDto } from '../modules/config-fee';
+import { MINUTES_PER_DAY, timeOfDayToMinutes } from '../shared/decorator';
+
+/** The schema default, repeated here so an omitted field writes the same value. */
+const DEFAULT_WINDOW_TIMEZONE = 'Asia/Jakarta';
+
+type WindowShape = {
+  providerName: string;
+  paymentMethodName: string;
+  label: string;
+  windowStart: string;
+  windowStartDayOffset: number;
+  windowEnd: string;
+  effectiveFrom: Date;
+  effectiveTo?: Date | null;
+};
+
+function settlementWindowKey(window: {
+  providerName: string;
+  paymentMethodName: string;
+  label: string;
+  effectiveFrom: Date;
+}): string {
+  return [
+    window.providerName,
+    window.paymentMethodName,
+    window.label,
+    window.effectiveFrom.toISOString(),
+  ].join('|');
+}
+
+/**
+ * The window as a half-open `[start, end)` run of minutes, with the start
+ * shifted by `windowStartDayOffset` so a window that opens the previous day
+ * sorts before one that opens on the day itself.
+ *
+ * Equal start and end is how the table writes a full day - the engine seed
+ * stores `00:00`/`00:00` for both MotionPay rails, deliberately, because
+ * writing `23:59` as MotionPay words it would drop the final minute under the
+ * half-open convention. Any other end at or before the start wraps past
+ * midnight, which is how a `23:30` - `00:00` window has to be expressed.
+ */
+function settlementWindowInterval(window: {
+  windowStart: string;
+  windowStartDayOffset: number;
+  windowEnd: string;
+}): { startMinutes: number; endMinutes: number } {
+  const startMinutes =
+    timeOfDayToMinutes(window.windowStart) +
+    window.windowStartDayOffset * MINUTES_PER_DAY;
+
+  let endMinutes = timeOfDayToMinutes(window.windowEnd);
+
+  if (window.windowEnd === window.windowStart) {
+    endMinutes = startMinutes + MINUTES_PER_DAY;
+  } else {
+    while (endMinutes <= startMinutes) endMinutes += MINUTES_PER_DAY;
+  }
+
+  return { startMinutes, endMinutes };
+}
+
+/** A null `effectiveTo` means "still current", so it never stops overlapping. */
+function effectivePeriodsOverlap(
+  left: WindowShape,
+  right: WindowShape,
+): boolean {
+  const leftEnd = left.effectiveTo?.getTime() ?? Number.POSITIVE_INFINITY;
+  const rightEnd = right.effectiveTo?.getTime() ?? Number.POSITIVE_INFINITY;
+
+  return (
+    left.effectiveFrom.getTime() < rightEnd &&
+    right.effectiveFrom.getTime() < leftEnd
+  );
+}
+
+function windowIntervalsOverlap(
+  left: WindowShape,
+  right: WindowShape,
+): boolean {
+  const a = settlementWindowInterval(left);
+  const b = settlementWindowInterval(right);
+
+  return a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
+}
 
 @Injectable()
 export class SuperAdminService {
@@ -176,27 +266,8 @@ export class SuperAdminService {
   private async assertBaseFeeReferencesResolve(
     dtos: UpsertBaseFeeDto[],
   ): Promise<void> {
-    const [providers, paymentMethods] = await Promise.all([
-      this.prismaMaster.provider.findMany({
-        where: {
-          name: { in: dtos.map((dto) => dto.providerName) },
-          deletedAt: null,
-        },
-        select: { name: true },
-      }),
-      this.prismaMaster.paymentMethod.findMany({
-        where: {
-          name: { in: dtos.map((dto) => dto.paymentMethodName) },
-          deletedAt: null,
-        },
-        select: { name: true, transactionTypes: true },
-      }),
-    ]);
-
-    const knownProviders = new Set(providers.map((provider) => provider.name));
-    const typesByPaymentMethod = new Map(
-      paymentMethods.map((method) => [method.name, method.transactionTypes]),
-    );
+    const { knownProviders, typesByPaymentMethod } =
+      await this.loadProviderCatalogue(dtos);
 
     // Every offending entry at once, indexed as the caller sent them - a screen
     // posting the whole fee table should not have to fix one row per round trip.
@@ -230,6 +301,44 @@ export class SuperAdminService {
   }
 
   /**
+   * The provider names and the payment-method vocabulary both base fees and
+   * settlement windows are checked against, in one pair of queries.
+   *
+   * Both are real foreign keys, so Postgres would catch a bad value - but as a
+   * P2003 whose message names neither the value nor which column it came from.
+   */
+  private async loadProviderCatalogue(
+    dtos: { providerName: string; paymentMethodName: string }[],
+  ): Promise<{
+    knownProviders: Set<string>;
+    typesByPaymentMethod: Map<string, string[]>;
+  }> {
+    const [providers, paymentMethods] = await Promise.all([
+      this.prismaMaster.provider.findMany({
+        where: {
+          name: { in: dtos.map((dto) => dto.providerName) },
+          deletedAt: null,
+        },
+        select: { name: true },
+      }),
+      this.prismaMaster.paymentMethod.findMany({
+        where: {
+          name: { in: dtos.map((dto) => dto.paymentMethodName) },
+          deletedAt: null,
+        },
+        select: { name: true, transactionTypes: true },
+      }),
+    ]);
+
+    return {
+      knownProviders: new Set(providers.map((provider) => provider.name)),
+      typesByPaymentMethod: new Map(
+        paymentMethods.map((method) => [method.name, method.transactionTypes]),
+      ),
+    };
+  }
+
+  /**
    * Every base fee, inactive and soft-deleted rows included.
    *
    * Deliberately wider than `GET /fee/config`, which filters `deletedAt: null`
@@ -251,5 +360,244 @@ export class SuperAdminService {
     });
 
     return baseFees.map((baseFee) => new BaseFeeDto(baseFee));
+  }
+
+  /**
+   * Upserts upstream settlement windows, keyed on the natural key
+   * `(providerName, paymentMethodName, label, effectiveFrom)`.
+   *
+   * These rows are a transcription of what a partner has told us about when
+   * they release our money - not recorded activity - which is why they are
+   * admin-managed here rather than written by the transactional apps, and why
+   * the engine seed's own `update: {}` never overwrites a correction made
+   * through this endpoint.
+   *
+   * It is also why the checks below are heavier than the base-fee ones. A wrong
+   * fee is wrong for one merchant; an hour entered wrong here moves the payout
+   * time for *every* merchant on that rail, and nothing fails while it does.
+   */
+  async upsertSettlementWindow(dtos: UpsertSettlementWindowDto[]) {
+    if (dtos.length === 0) {
+      throw ApiError.badRequest('At least one settlement window is required');
+    }
+
+    this.assertDistinctSettlementWindowKeys(dtos);
+    await this.assertSettlementWindowsAreUsable(dtos);
+    await this.assertSettlementWindowsDoNotOverlap(dtos);
+
+    await this.prismaMaster.$transaction(
+      dtos.map((dto) =>
+        this.prismaMaster.upstreamSettlementWindow.upsert({
+          where: {
+            providerName_paymentMethodName_label_effectiveFrom: {
+              providerName: dto.providerName,
+              paymentMethodName: dto.paymentMethodName,
+              label: dto.label,
+              effectiveFrom: dto.effectiveFrom,
+            },
+          },
+          create: {
+            providerName: dto.providerName,
+            paymentMethodName: dto.paymentMethodName,
+            label: dto.label,
+            windowStart: dto.windowStart,
+            windowStartDayOffset: dto.windowStartDayOffset,
+            windowEnd: dto.windowEnd,
+            settlementOffset: dto.settlementOffset,
+            settlementTime: dto.settlementTime ?? null,
+            businessDaysOnly: dto.businessDaysOnly,
+            timezone: dto.timezone ?? DEFAULT_WINDOW_TIMEZONE,
+            effectiveFrom: dto.effectiveFrom,
+            effectiveTo: dto.effectiveTo ?? null,
+          },
+          update: {
+            windowStart: dto.windowStart,
+            windowStartDayOffset: dto.windowStartDayOffset,
+            windowEnd: dto.windowEnd,
+            settlementOffset: dto.settlementOffset,
+            settlementTime: dto.settlementTime ?? null,
+            businessDaysOnly: dto.businessDaysOnly,
+            timezone: dto.timezone ?? DEFAULT_WINDOW_TIMEZONE,
+            effectiveTo: dto.effectiveTo ?? null,
+            // Same reasoning as the base-fee upsert: the unique key does not
+            // span `deletedAt`, so without this a retired window is updated and
+            // stays retired, reported as a success.
+            deletedAt: null,
+            deletedBy: null,
+          },
+        }),
+      ),
+    );
+  }
+
+  private assertDistinctSettlementWindowKeys(
+    dtos: UpsertSettlementWindowDto[],
+  ): void {
+    const seen = new Set<string>();
+
+    for (const dto of dtos) {
+      const key = settlementWindowKey(dto);
+
+      if (seen.has(key)) {
+        throw ApiError.badRequest(
+          `Duplicate settlement window in request: ${key}`,
+        );
+      }
+
+      seen.add(key);
+    }
+  }
+
+  /**
+   * Field-level checks that need more than a decorator can express.
+   *
+   * `businessDaysOnly` is refused outright for now. The holiday calendar behind
+   * it is deliberately unbuilt - no partner has given us their policy - and
+   * `apps/settlement/src/policy/policy.eligibility.ts` throws rather than
+   * treating the flag as false, on the grounds that failing a run is
+   * recoverable and paying early is not. Saving the flag here would therefore
+   * stop payouts for every merchant on the rail, from a checkbox, with the
+   * failure appearing somewhere else entirely.
+   */
+  private async assertSettlementWindowsAreUsable(
+    dtos: UpsertSettlementWindowDto[],
+  ): Promise<void> {
+    const { knownProviders, typesByPaymentMethod } =
+      await this.loadProviderCatalogue(dtos);
+
+    const fields: Record<string, string> = {};
+
+    dtos.forEach((dto, index) => {
+      if (!knownProviders.has(dto.providerName)) {
+        fields[`[${index}].providerName`] =
+          `provider '${dto.providerName}' is not configured`;
+      }
+
+      if (!typesByPaymentMethod.has(dto.paymentMethodName)) {
+        fields[`[${index}].paymentMethodName`] =
+          `payment method '${dto.paymentMethodName}' is not configured`;
+      }
+
+      if (dto.businessDaysOnly) {
+        fields[`[${index}].businessDaysOnly`] =
+          'not supported yet - BusinessDayCalendar is unbuilt, and settlement ' +
+          'eligibility refuses any window carrying this flag rather than ' +
+          'guessing a holiday policy';
+      }
+
+      const { startMinutes, endMinutes } = settlementWindowInterval(dto);
+      const length = endMinutes - startMinutes;
+
+      if (length > MINUTES_PER_DAY) {
+        fields[`[${index}].windowStartDayOffset`] =
+          `window is ${Math.round((length / 60) * 10) / 10} hours long, which ` +
+          'is more than a day - windowStartDayOffset is probably wrong';
+      }
+
+      if (dto.effectiveTo && dto.effectiveTo <= dto.effectiveFrom) {
+        fields[`[${index}].effectiveTo`] =
+          'must be after effectiveFrom, or null while the schedule is current';
+      }
+    });
+
+    if (Object.keys(fields).length > 0) {
+      throw ApiError.validationFailed(fields);
+    }
+  }
+
+  /**
+   * Two windows on one rail must not claim the same minute.
+   *
+   * This is the check that earns its keep. `label` is in the natural key, so a
+   * misspelt one does not correct the existing window - it creates a second,
+   * and the rail then has two schedules covering the same transactions with
+   * nothing to say which wins. Teleanjar's batch 1 and batch 2 are a legitimate
+   * pair precisely because their intervals do not touch.
+   *
+   * Stored rows are compared too, not just the payload, and a payload entry
+   * replaces the stored row it shares a natural key with - otherwise correcting
+   * a window would collide with the version of itself already in the table.
+   */
+  private async assertSettlementWindowsDoNotOverlap(
+    dtos: UpsertSettlementWindowDto[],
+  ): Promise<void> {
+    const rails = new Set(
+      dtos.map((dto) => `${dto.providerName}|${dto.paymentMethodName}`),
+    );
+
+    const stored = await this.prismaMaster.upstreamSettlementWindow.findMany({
+      where: {
+        deletedAt: null,
+        OR: [...rails].map((rail) => {
+          const [providerName, paymentMethodName] = rail.split('|');
+          return { providerName, paymentMethodName };
+        }),
+      },
+    });
+
+    const incomingKeys = new Set(dtos.map(settlementWindowKey));
+    const candidates = [
+      ...stored
+        .filter((row) => !incomingKeys.has(settlementWindowKey(row)))
+        .map((row) => ({ row, index: null as number | null })),
+      ...dtos.map((dto, index) => ({ row: dto, index })),
+    ];
+
+    const fields: Record<string, string> = {};
+
+    for (let a = 0; a < candidates.length; a++) {
+      for (let b = a + 1; b < candidates.length; b++) {
+        const left = candidates[a];
+        const right = candidates[b];
+
+        if (
+          left.row.providerName !== right.row.providerName ||
+          left.row.paymentMethodName !== right.row.paymentMethodName
+        ) {
+          continue;
+        }
+
+        if (!effectivePeriodsOverlap(left.row, right.row)) continue;
+        if (!windowIntervalsOverlap(left.row, right.row)) continue;
+
+        // Report against whichever side the caller actually sent.
+        const reported = left.index ?? right.index;
+        if (reported === null) continue;
+
+        const other = left.index === reported ? right : left;
+        fields[`[${reported}].label`] =
+          `overlaps ${other.row.label} on ${other.row.providerName} ` +
+          `${other.row.paymentMethodName} ` +
+          `(${other.row.windowStart} - ${other.row.windowEnd})` +
+          (other.index === null
+            ? ', already stored'
+            : ', also in this request');
+      }
+    }
+
+    if (Object.keys(fields).length > 0) {
+      throw ApiError.validationFailed(fields);
+    }
+  }
+
+  /**
+   * Every upstream settlement window, retired ones included.
+   *
+   * Same reasoning as `findAllBaseFee`: this is the configuration screen, and a
+   * retired window is history worth reading - `effectiveFrom` is in the natural
+   * key precisely so a schedule change keeps what the old payouts were computed
+   * from.
+   */
+  async findAllSettlementWindow(): Promise<SettlementWindowDto[]> {
+    const windows = await this.prismaMaster.upstreamSettlementWindow.findMany({
+      orderBy: [
+        { providerName: 'asc' },
+        { paymentMethodName: 'asc' },
+        { effectiveFrom: 'desc' },
+        { label: 'asc' },
+      ],
+    });
+
+    return windows.map((window) => new SettlementWindowDto(window));
   }
 }

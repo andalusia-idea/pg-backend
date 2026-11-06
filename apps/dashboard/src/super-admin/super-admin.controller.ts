@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { SuperAdminService } from './super-admin.service';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -9,7 +10,13 @@ import {
 } from '@nestjs/swagger';
 import { ROLE, Roles } from '../auth';
 import { ParseDtoArrayPipe, ResponseDto, ResponseStatus } from '../shared';
-import { CreateAdminDto, ResetPasswordDto, UpsertBaseFeeDto } from './dto';
+import {
+  CreateAdminDto,
+  ResetPasswordDto,
+  SettlementWindowDto,
+  UpsertBaseFeeDto,
+  UpsertSettlementWindowDto,
+} from './dto';
 import { BaseFeeDto } from '../modules/config-fee';
 
 @Controller('super-admin')
@@ -56,5 +63,36 @@ export class SuperAdminController {
   @ApiOkResponse({ type: BaseFeeDto, isArray: true })
   async findAllBaseFee(): Promise<BaseFeeDto[]> {
     return this.service.findAllBaseFee();
+  }
+
+  @Post('settlement-window')
+  @ApiOperation({
+    summary: 'Upsert upstream settlement windows',
+    description:
+      'When each partner closes a transaction window and releases our money. ' +
+      'Transcribe from the partner notice - these rows decide the payout time ' +
+      'for every merchant on that rail.',
+  })
+  @ApiBody({ type: UpsertSettlementWindowDto, isArray: true })
+  @ApiCreatedResponse({ type: ResponseDto })
+  async upsertSettlementWindow(
+    @Body(ParseDtoArrayPipe(UpsertSettlementWindowDto))
+    body: UpsertSettlementWindowDto[],
+  ) {
+    await this.service.upsertSettlementWindow(body);
+    return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  @Get('settlement-window')
+  @ApiOperation({
+    summary: 'Upstream settlement windows, retired ones included',
+    description:
+      'Ordered newest schedule first per rail. A retired window is kept ' +
+      'because effectiveFrom is part of the key: it is what an old payout was ' +
+      'computed from.',
+  })
+  @ApiOkResponse({ type: SettlementWindowDto, isArray: true })
+  async findAllSettlementWindow(): Promise<SettlementWindowDto[]> {
+    return this.service.findAllSettlementWindow();
   }
 }

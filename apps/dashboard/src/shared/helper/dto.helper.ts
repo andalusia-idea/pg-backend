@@ -3,11 +3,12 @@ import type { Prisma } from '@dashboard/prisma';
 /**
  * The constructor-parameter type for a DTO built straight from a Prisma row.
  *
- * `Derived` names fields the constructor computes rather than reads. `Decimals`
- * names the money and percentage fields: those stay declared `string` on the
- * DTO, because a string is what crosses the API boundary, but Prisma hands them
- * over as `Decimal` - and `@ToMoneyString()` / `@ToPercentageString()` already
- * accept a Decimal and convert it on serialization.
+ * `Derived` names fields the constructor computes rather than reads. `Raw`
+ * names the fields Prisma hands over as a `Decimal` or a `Date` while the DTO
+ * declares them `string`, because a string is what crosses the API boundary -
+ * money, percentages and timestamps. `@ToMoneyString()`,
+ * `@ToPercentageString()` and `@ToJakartaISO()` already accept the raw value
+ * and convert it on serialization.
  *
  * Naming them here is what stops a caller pre-stringifying, which is the step
  * that loses precision: `.toFixed(2)` on a `Decimal(8, 4)` percentage rounds
@@ -18,9 +19,9 @@ import type { Prisma } from '@dashboard/prisma';
 export type PrismaRowOf<
   T,
   Derived extends keyof T = never,
-  Decimals extends keyof T = never,
-> = Omit<T, Derived | Decimals> & {
-  [Field in Decimals]: T[Field] | Prisma.Decimal;
+  Raw extends keyof T = never,
+> = Omit<T, Derived | Raw> & {
+  [Field in Raw]: T[Field] | Prisma.Decimal | Date;
 };
 
 export class DtoHelper {
