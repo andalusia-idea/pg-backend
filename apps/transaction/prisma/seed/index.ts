@@ -12,8 +12,12 @@ import { transactionEngineSeed } from './transaction-engine.seed';
  *
  * Two tiers, same contract as the other apps:
  *   - ENGINE   data the system cannot boot without. Safe in any environment,
- *              including production. Nothing qualifies here - this schema holds
- *              only recorded activity, so an empty production schema is correct.
+ *              including production. Almost nothing qualifies: the transaction
+ *              schema holds recorded activity, so an empty production copy of
+ *              it is correct. The exception is the settlement schema riding
+ *              along in the same migrations - `UpstreamSettlementWindow` is a
+ *              transcription of what each partner publishes about when they
+ *              release our money, which the system has to boot knowing.
  *   - DEV      balance fixtures across all three buckets. Transaction fixtures
  *              are still unchosen.
  *

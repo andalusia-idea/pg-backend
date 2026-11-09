@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   PaymentMethodNameEnum,
   ProviderNameEnum,
@@ -51,8 +50,13 @@ const SCHEDULES_IN_FORCE_FROM = new Date('2026-01-01T00:00:00+07:00');
 
 /**
  * What each partner has published, transcribed from
- * docs/accounting/upstream-settlement-schedules.md. Add partners as they go
- * live; MotionPay is the only one integrated today.
+ * docs/accounting/upstream-settlement-schedules.md.
+ *
+ * Transcribe a partner once their schedule is published, not once they are
+ * routable - a window is inert until a transaction actually lands on that rail,
+ * because eligibility looks these up by the provider of a payment it already
+ * has. MotionPay is the only one integrated today; Teleanjar's rows below exist
+ * so the schedule is in the system rather than only in a prose document.
  *
  * **`windowStart` / `windowEnd` are not consumed yet.** Eligibility derives the
  * release moment from the payment's own calendar day plus `settlementOffset`,
@@ -100,6 +104,58 @@ const UPSTREAM_WINDOWS: {
     // start, so we never release before the upstream plausibly has.
     settlementTime: null,
     explain: 'E-Wallet, H+3, no published time (window assumed same day)',
+  },
+
+  /*
+   * Teleanjar runs two batches on one rail, which is the case `label` exists in
+   * the unique key for.
+   *
+   * **Restated as half-open intervals**, which is what the reference doc asks
+   * the partner to confirm. As they word it the batches are `18:00 - 12:00` and
+   * `12:01 - 18:00`, and that wording has two faults: 18:00 appears in both, so
+   * a transaction at exactly 18:00:00 belongs to neither batch or to both, and
+   * nothing at all owns 12:00:01 - 12:00:59. Under `[start, end)` both faults
+   * disappear, and the two windows then tile the day exactly - 18 hours plus 6,
+   * batch 2 ending where the next batch 1 begins. That the arithmetic closes is
+   * the evidence the restatement is right; it is still worth getting in
+   * writing.
+   *
+   * **The payment method is the one field the reference doc does not give.**
+   * It records the batches with no product named. `TRANSFERBANK` here because
+   * the only other mention of Teleanjar in the tree is
+   * `libs/upstream/src/upstream.constant.ts`, which groups it with MotionPay
+   * and Jatelindo as a bank payout rail. Correct it in place while nothing
+   * reads these - once something does, a change of product is a new row.
+   *
+   * **TELEANJAR is not a configured provider outside development.** The
+   * migrations insert INTERNAL only; the other three come from `DEV_PROVIDERS`
+   * in the config dev seed. There is no foreign key from this table to
+   * `config.Provider`, so these rows write anywhere and simply never match
+   * anything until a Teleanjar integration exists.
+   */
+  {
+    providerName: ProviderNameEnum.TELEANJAR,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    label: 'BATCH_1',
+    windowStart: '18:00',
+    // The window opens the evening before it closes, which is the only thing
+    // this column is for.
+    windowStartDayOffset: -1,
+    windowEnd: '12:00',
+    settlementOffset: 0,
+    settlementTime: '13:00',
+    explain: 'batch 1, 18:00 (D-1) to 12:00, same day 13:00',
+  },
+  {
+    providerName: ProviderNameEnum.TELEANJAR,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    label: 'BATCH_2',
+    windowStart: '12:00',
+    windowStartDayOffset: 0,
+    windowEnd: '18:00',
+    settlementOffset: 0,
+    settlementTime: '19:00',
+    explain: 'batch 2, 12:00 to 18:00, same day 19:00',
   },
 ];
 
