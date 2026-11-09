@@ -27,7 +27,8 @@ Verified against the working tree. **Steps 0-2 are done. Start at Step 3.**
 | 0 - compile errors | Done. `npx tsc --noEmit -p tsconfig.json` is clean, and `JatelindoTransferInterface` / `jatelindo.contract.dto` are gone from the tree |
 | 1 - boot under `NODE_ENV=test` | Done. `/health` comes from [libs/health](../../libs/health/src/health.controller.ts) for auth, config and transaction, and from a local controller in dashboard, settlement and uat-local |
 | 2 - the two loopback traps | Done. uat-local binds `127.0.0.1` at [main.ts:44](../../apps/uat-local/src/main.ts:44), and both allowlists are filled in [apps/transaction/.env.test](../../apps/transaction/.env.test) |
-| 3 - onboard the fake merchant | **Next.** Three API calls, no code |
+| 3 - onboard the merchant | Sighting 3 met 3 Nov against the seeded `merchant1`, in `test/merchant.onboard.spec.ts`. **Being redone through the real admin path, and that is where the work is** - see below |
+| 4 - the fake MotionPay provider | Not started. `test/upstream.spec.ts` is a one-line stub |
 
 All of it is on `dev`, through PR #3 (`7d9a6c3`) and the commits around it:
 `c4a6504` bound the harness and filled the allowlists, `8657115` corrected what
@@ -42,6 +43,34 @@ with `ScheduleModule.forRoot()`, a `DatabaseModule` wiring the auth, config and
 transaction Prisma clients, `GET /app`, `GET /health`, and
 `merchant/merchant-signer.ts` - a pure `signRequest` helper, with no controller
 and no module of its own. Still no `provider/`; that is Step 4.
+
+**Step 3 below is no longer the plan.** It says to onboard the seeded
+`merchant1@example.com` by hand, which is how Sighting 3 was first met. The tree
+has moved past that: `test/agent-onboard.spec.ts` logs in as `superadmin` and
+registers `AGENTS` through `POST /api/v1/user/admin/register-agent`, then
+`test/merchant-onboard.spec.ts` logs in as `agentinternal` and registers
+`MERCHANTS` through `register-merchant`. That is a better harness than the step
+describes - it exercises the onboarding path a real merchant takes, which the
+named principals landing on 5 Nov is what made possible - so the step is the
+thing that is out of date, not the tree.
+
+Both run under the root jest config, which picks up `*.spec.ts` anywhere.
+`test:e2e` in `package.json` is **not** the way in: it points at
+`./apps/pg/test/jest-e2e.json`, a path that does not exist.
+
+**What the open `it('fee config')` has to do, because it is not one call.**
+Registering a merchant does not give it fees, and routing *is* the fee row:
+`profile-provider.service.ts` resolves a provider from the merchant's own
+`MerchantFee`, so a freshly registered merchant 403s out of `resolveProvider`
+until one exists. `POST /super-admin/base-fee` covers only the provider side of
+that. Watch the second hazard there too - that resolve is a `findFirstOrThrow`
+with **no `orderBy`**, so two rows matching one (paymentMethod, transactionType)
+pairing make the chosen provider depend on Postgres row order.
+
+**Two specs sit one dot apart**, both tracked, doing different things:
+`merchant.onboard.spec.ts` is the 248-line original that met Sighting 3, and
+`merchant-onboard.spec.ts` is the 41-line replacement. Worth deciding which one
+survives before a third reader has to work it out.
 
 **One sentence in Step 1 has gone stale, and it is harmless.** Sighting 1 says
 every app binds `'localhost'` outside production, which Step 2b then changed for
