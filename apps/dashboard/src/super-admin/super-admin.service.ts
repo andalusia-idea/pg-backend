@@ -3,9 +3,11 @@ import { PrismaClient } from '@dashboard/prisma';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CreateAdminDto,
+  ProviderDto,
   ResetPasswordDto,
   SettlementWindowDto,
   UpsertBaseFeeDto,
+  UpsertProviderDto,
   UpsertSettlementWindowDto,
 } from './dto';
 import { AuthHelper } from '../auth';
@@ -17,9 +19,7 @@ import {
 import { ApiError } from '../shared/exception';
 import { BaseFeeDto } from '../modules/config-fee';
 import { MINUTES_PER_DAY, timeOfDayToMinutes } from '../shared/decorator';
-
-/** The schema default, repeated here so an omitted field writes the same value. */
-const DEFAULT_WINDOW_TIMEZONE = 'Asia/Jakarta';
+import { SETTLEMENT_TIMEZONE } from 'apps/settlement/src/policy';
 
 type WindowShape = {
   providerName: string;
@@ -304,8 +304,12 @@ export class SuperAdminService {
    * The provider names and the payment-method vocabulary both base fees and
    * settlement windows are checked against, in one pair of queries.
    *
-   * Both are real foreign keys, so Postgres would catch a bad value - but as a
-   * P2003 whose message names neither the value nor which column it came from.
+   * **How load-bearing this is depends on the caller.** For a base fee both
+   * columns are real foreign keys, so Postgres would catch a bad value anyway -
+   * just as a P2003 naming neither the value nor which of the two columns it
+   * came from. `UpstreamSettlementWindow` has **no** foreign key to either
+   * table, so for that caller this lookup is the only thing standing between a
+   * mistyped provider and a stored schedule that nothing will ever read.
    */
   private async loadProviderCatalogue(
     dtos: { providerName: string; paymentMethodName: string }[],
@@ -406,7 +410,7 @@ export class SuperAdminService {
             settlementOffset: dto.settlementOffset,
             settlementTime: dto.settlementTime ?? null,
             businessDaysOnly: dto.businessDaysOnly,
-            timezone: dto.timezone ?? DEFAULT_WINDOW_TIMEZONE,
+            timezone: dto.timezone ?? SETTLEMENT_TIMEZONE,
             effectiveFrom: dto.effectiveFrom,
             effectiveTo: dto.effectiveTo ?? null,
           },
@@ -417,7 +421,7 @@ export class SuperAdminService {
             settlementOffset: dto.settlementOffset,
             settlementTime: dto.settlementTime ?? null,
             businessDaysOnly: dto.businessDaysOnly,
-            timezone: dto.timezone ?? DEFAULT_WINDOW_TIMEZONE,
+            timezone: dto.timezone ?? SETTLEMENT_TIMEZONE,
             effectiveTo: dto.effectiveTo ?? null,
             // Same reasoning as the base-fee upsert: the unique key does not
             // span `deletedAt`, so without this a retired window is updated and
@@ -578,6 +582,91 @@ export class SuperAdminService {
     if (Object.keys(fields).length > 0) {
       throw ApiError.validationFailed(fields);
     }
+  }
+
+  /**
+   * Activates upstream providers by name, so a partner can be brought live
+   * without a hand-written SQL statement at cutover.
+   *
+   * **This is what makes the other two endpoints usable in production.**
+   * `20261105200000_provider_and_payment_methods` inserts `INTERNAL` alone, on
+   * the deliberate grounds that every other provider exists because a contract
+   * was signed rather than because the code knows its name - and the only other
+   * writer, `DEV_PROVIDERS` in the config dev seed, refuses to run under
+   * `NODE_ENV=production`. So a production `config.Provider` held exactly one
+   * row, which meant `POST /super-admin/base-fee` answered 422 (and would have
+   * hit `BaseFee_providerName_fkey` regardless), the settlement-window upsert
+   * answered 422, and `GET common/div?div=PROVIDER` came back empty, since it
+   * excludes INTERNAL.
+   *
+   * Deliberately not folded into either of those endpoints. A settlement window
+   * carries no foreign key to this table, so `assertSettlementWindowsAreUsable`
+   * is the only check between a typo and a stored row; an upsert that created
+   * the provider rather than rejecting would turn `MOTIONPAI` into a fourth
+   * partner with a payout schedule attached, and say nothing about it.
+   * Activating an upstream is a commercial decision and earns its own call.
+   *
+   * Unrelated to `ConfigMerchantService.upsertProvider`, which despite the name
+   * writes `MerchantFee` rows and never touches this table.
+   *
+   * `createdBy` / `updatedBy` are not set here: `Provider` is in
+   * `AUDITED_MODELS`, so `auditTrailExtension` stamps both branches from the
+   * request's user id.
+   */
+  async upsertProvider(dtos: UpsertProviderDto[]) {
+    if (dtos.length === 0) {
+      throw ApiError.badRequest('At least one provider is required');
+    }
+
+    this.assertDistinctProviderNames(dtos);
+
+    await this.prismaMaster.$transaction(
+      dtos.map((dto) =>
+        this.prismaMaster.provider.upsert({
+          where: { name: dto.name },
+          create: { name: dto.name },
+          // `name` is the primary key, so the `where` above matches a
+          // soft-deleted row and would otherwise leave it retired while
+          // reporting success - the same trap the base-fee and
+          // settlement-window upserts clear. Re-posting a provider that is
+          // already live is a no-op beyond the `updatedBy` the audit extension
+          // stamps, which is a fair record of someone re-activating it.
+          update: { deletedAt: null, deletedBy: null },
+        }),
+      ),
+    );
+  }
+
+  /**
+   * Two entries naming the same provider would upsert one row twice and let the
+   * later one win in silence - the same reasoning as the base-fee check.
+   */
+  private assertDistinctProviderNames(dtos: UpsertProviderDto[]): void {
+    const seen = new Set<string>();
+
+    for (const dto of dtos) {
+      if (seen.has(dto.name as string)) {
+        throw ApiError.badRequest(`Duplicate provider in request: ${dto.name}`);
+      }
+
+      seen.add(dto.name as string);
+    }
+  }
+
+  /**
+   * Every configured provider, retired ones included.
+   *
+   * Same reasoning as `findAllBaseFee`: this is the configuration screen, and a
+   * row it cannot show is a row the operator cannot repair. Unlike that one,
+   * the response carries `deletedAt`, so a retired provider is distinguishable
+   * from a live one rather than merely present in the list.
+   */
+  async findAllProvider(): Promise<ProviderDto[]> {
+    const providers = await this.prismaMaster.provider.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    return providers.map<ProviderDto>((provider) => new ProviderDto(provider));
   }
 
   /**

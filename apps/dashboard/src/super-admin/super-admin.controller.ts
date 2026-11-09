@@ -12,9 +12,11 @@ import { ROLE, Roles } from '../auth';
 import { ParseDtoArrayPipe, ResponseDto, ResponseStatus } from '../shared';
 import {
   CreateAdminDto,
+  ProviderDto,
   ResetPasswordDto,
   SettlementWindowDto,
   UpsertBaseFeeDto,
+  UpsertProviderDto,
   UpsertSettlementWindowDto,
 } from './dto';
 import { BaseFeeDto } from '../modules/config-fee';
@@ -63,6 +65,38 @@ export class SuperAdminController {
   @ApiOkResponse({ type: BaseFeeDto, isArray: true })
   async findAllBaseFee(): Promise<BaseFeeDto[]> {
     return this.service.findAllBaseFee();
+  }
+
+  @Post('provider')
+  @ApiOperation({
+    summary: 'Activate upstream providers',
+    description:
+      'Brings a partner live. The migrations insert INTERNAL only - every ' +
+      'other provider exists because a contract was signed - so until this is ' +
+      'called for a partner, its base fees and its settlement windows are both ' +
+      'refused and the provider dropdown is empty.',
+  })
+  @ApiBody({ type: UpsertProviderDto, isArray: true })
+  @ApiCreatedResponse({ type: ResponseDto })
+  async upsertProvider(
+    @Body(ParseDtoArrayPipe(UpsertProviderDto))
+    body: UpsertProviderDto[],
+  ) {
+    await this.service.upsertProvider(body);
+    return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  @Get('provider')
+  @ApiOperation({
+    summary: 'Configured providers, retired ones included',
+    description:
+      'The configuration view behind POST /super-admin/provider. ' +
+      'GET common/div?div=PROVIDER is the operational read: it excludes ' +
+      'INTERNAL and filters retired rows.',
+  })
+  @ApiOkResponse({ type: ProviderDto, isArray: true })
+  async findAllProvider(): Promise<ProviderDto[]> {
+    return this.service.findAllProvider();
   }
 
   @Post('settlement-window')
