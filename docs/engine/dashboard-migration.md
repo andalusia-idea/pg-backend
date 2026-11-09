@@ -6,10 +6,10 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
-## Update — 2026-11-09 the settlement-window endpoint actually works now
+## Update — 2026-11-09 the settlement-window fix, and a provider can be created in production
 
-One correction, and it only matters if you tried the endpoint announced on
-Friday.
+One correction and one new pair of endpoints. The correction only matters if
+you tried the endpoint announced on Friday.
 
 - **`POST /super-admin/settlement-window` answered 500 to every request.**
   `effectiveFrom` was being deleted before the service saw it, so the handler
@@ -23,6 +23,11 @@ Friday.
   field you sent is accepted, the response says success, and the value simply
   never arrives. It is now guarded inside the date decorator rather than left to
   each field.
+
+- **Two new endpoints, `POST` / `GET /super-admin/provider`** — and they are
+  the reason the other two work at all outside development. See **D27**. There
+  is nothing for you to change today; there is a screen worth building when the
+  fee-config screens get a sibling.
 
 Backend-only otherwise (`docs/uat` refresh, Teleanjar's windows into the
 transaction engine seed). Nothing else reaches your side.
@@ -478,7 +483,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Twenty-six entries (D1–D26), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
+Twenty-seven entries (D1–D27), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
 
 ### Open — needs a decision or action
 
@@ -516,6 +521,7 @@ Twenty-six entries (D1–D26), each a real defect or ambiguity found while readi
 | D16 | Ordering had no tiebreak | Fixed — `createdAt DESC, id DESC` |
 | D17 | Legacy balance-ledger write path: writes escaping their transaction, no advisory locks, wrong `merchantId` in the withdraw callback | **Fixed 2026-10-12** — not ported as originally recommended, but superseded by `@app/balance`'s `reserve()`/`post()`, which solves all three more robustly. Live in the purchase and disbursement paths, verified against fixtures and a nightly snapshot-integrity job. See the write-up for what this does and doesn't finish |
 | D20 | `BaseFee.code` dropped from the config schema | Fixed — `BaseFeeDto.code` derived from the three columns, so the response is unchanged |
+| D27 | No way to create a `Provider` outside development — the migrations insert `INTERNAL` alone and the only other writer refuses to run in production, so base fees, settlement windows and the provider dropdown were all dead for every real partner | **New surface, nothing required of you.** `POST` / `GET /super-admin/provider`. Activating a partner is now an audited call rather than a remembered SQL statement at cutover. See the write-up |
 | D26 | Upstream settlement schedules had no write path — the two MotionPay windows were hardcoded in a seed, and Jatelindo and Teleanjar had none at all | **New surface, nothing required of you.** `POST` / `GET /super-admin/settlement-window` ship the admin write path. A screen for it is worth building when the fee-config screen gets a sibling; until then the rows go in by API call. See the write-up |
 
 ---
@@ -1519,6 +1525,92 @@ database carrying plausible-but-fictional rates is worse than one carrying none,
 because nothing fails loudly; the fees are simply wrong and every settlement
 quietly mis-splits. A migration would ship invented numbers. The endpoints above
 are how real rates get in. The dev seed's 9 rows stay dev-only.
+
+---
+
+### D27 — a provider could not be created outside development → **fixed; new endpoints, nothing breaking**
+
+`config.Provider` is the table every provider name is checked against.
+`BaseFee.providerName` is a real foreign key to it, the settlement-window upsert
+validates against it, and `GET common/div?div=PROVIDER` reads it for your
+dropdown.
+
+**In production it held exactly one row.** Every writer in the repo:
+
+| Writer | Inserts | Runs in production? |
+|---|---|---|
+| `20261105200000_provider_and_payment_methods` | `INTERNAL`, and only that | yes |
+| `DEV_PROVIDERS` in the config dev seed | MOTIONPAY, TELEANJAR, JATELINDO | **no** — the seed throws under `NODE_ENV=production` |
+| the API | nothing | — |
+
+Leaving the commercial providers out of the migration is deliberate: a provider
+exists because a contract was signed and credentials were issued, not because
+the code knows its name, and a migration would ship partner names regardless.
+The problem is that nothing replaced the seed, so on a production database:
+
+- `POST /super-admin/base-fee` answered **422** `provider 'MOTIONPAY' is not
+  configured` — and would have hit `BaseFee_providerName_fkey` even without the
+  check;
+- `POST /super-admin/settlement-window` answered the same 422 (**D26**);
+- `GET common/div?div=PROVIDER` came back **empty**, because it excludes
+  `INTERNAL`.
+
+So D25's and D26's endpoints were both unusable for any real partner. Measured
+on a throwaway database holding only what `migrate deploy` writes, which is the
+shape a cutover starts from.
+
+| Method | Route | What it is |
+|---|---|---|
+| `POST` | `/super-admin/provider` | Upsert an array of providers by name. Activates a partner |
+| `GET` | `/super-admin/provider` | Every provider, **retired ones included** |
+
+Both are `SUPER_ADMIN`-only and enforced.
+
+**The request is one field:**
+
+```json
+[{ "name": "MOTIONPAY" }]
+```
+
+`name` must be one of `INTERNAL`, `MOTIONPAY`, `TELEANJAR`, `JATELINDO` — the
+`ProviderNameEnum` values. That is the boundary that matters rather than a
+formality: there is no table behind a provider name, so the enum is the only
+thing asserting this system has an upstream client able to route to it. An
+arbitrary string would insert happily, satisfy every foreign key a base fee
+needs, appear in your dropdown, and fail at the first transaction.
+
+**The response** carries three fields, and the third is the point:
+
+| Field | Example |
+|---|---|
+| `name` | `"MOTIONPAY"` |
+| `createdAt` | `"2026-11-09T14:02:11+07:00"` — the closest thing stored to "when did we go live with this partner" |
+| `deletedAt` | `null` while active |
+
+`deletedAt` is there on purpose. `GET /super-admin/base-fee` is documented as
+the wider configuration view "including inactive and soft-deleted rows", but
+`BaseFeeDto` carries neither `isActive` nor `deletedAt` — so it returns those
+rows and gives you no way to tell them apart. This endpoint does not repeat
+that. **If you build a base-fee configuration screen and need the same thing
+there, ask and it is a two-field change.**
+
+**Rejections:**
+
+| Payload | Result |
+|---|---|
+| `[]` | 400 |
+| Two entries naming the same provider | 400 naming it |
+| A name outside `ProviderNameEnum` | 422 from the enum validator |
+
+**Re-posting a provider is safe and meaningful.** `name` is the primary key, so
+the upsert matches a retired row and clears its tombstone — re-posting
+reactivates a partner. Re-posting a live one changes nothing except the
+`updatedBy` the audit trail stamps, which is a fair record of someone having
+re-activated it.
+
+**There is no retire endpoint yet.** Soft-deleting a provider is a
+database-level action for now. Say if a screen needs it; the read already shows
+the result.
 
 ---
 
