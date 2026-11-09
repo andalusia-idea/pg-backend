@@ -18,27 +18,39 @@ that looks like a crash.
 
 ---
 
-## Where the tree stands (3 Nov 2026)
+## Where the tree stands (9 Nov 2026)
 
-Verified against the working tree, not remembered. The DI-mock revert is
-essentially done - seven files staged, all of them keepers:
+Verified against the working tree. **Steps 0-2 are done. Start at Step 3.**
 
-| Staged file | What it carries |
+| Step | State |
 |---|---|
-| `purchase-common.service.ts`, `purchase-qris.service.ts` | the `reserveTransaction` / `rail` / `route()` refactor |
-| `disbursement.service.ts` | back to injecting `JatelindoTransferService` directly, no DI token |
-| `jatelindo-transfer.manual.controller.ts` | back to the concrete service |
-| `jatelindo-transfer.service.ts` | `systemReference` in the response, `private` on two methods - **plus two lines still to drop** |
-| `uat-local/src/app/app.module.ts` | `envFilePath('uat-local')` |
-| `uat-local/test/app.e2e-spec.ts` | the `AppModule` import fix - **one line still to change** |
+| 0 - compile errors | Done. `npx tsc --noEmit -p tsconfig.json` is clean, and `JatelindoTransferInterface` / `jatelindo.contract.dto` are gone from the tree |
+| 1 - boot under `NODE_ENV=test` | Done. `/health` comes from [libs/health](../../libs/health/src/health.controller.ts) for auth, config and transaction, and from a local controller in dashboard, settlement and uat-local |
+| 2 - the two loopback traps | Done. uat-local binds `127.0.0.1` at [main.ts:44](../../apps/uat-local/src/main.ts:44), and both allowlists are filled in [apps/transaction/.env.test](../../apps/transaction/.env.test) |
+| 3 - onboard the fake merchant | **Next.** Three API calls, no code |
 
-`npx tsc --noEmit -p tsconfig.json` reports **2 errors**, which is what Step 0
-has left to clear.
+All of it is on `dev`, through PR #3 (`7d9a6c3`) and the commits around it:
+`c4a6504` bound the harness and filled the allowlists, `8657115` corrected what
+`BlockList` does with IPv4-mapped addresses, `55e127d` added the merchant signer.
 
-`apps/uat-local` itself is still a scaffold: `AppModule` with
-`ScheduleModule.forRoot()` already registered, a `DatabaseModule` wiring the
-auth, config and transaction Prisma clients, and a `GET /app`. No `merchant/`
-and no `provider/` yet.
+Sighting 1 was green - six 200s - on 3 Nov. That one line is from the log rather
+than re-measured: the stack is not running today, so everything else above was
+read off the tree instead.
+
+`apps/uat-local` is no longer a bare scaffold, though it is close: `AppModule`
+with `ScheduleModule.forRoot()`, a `DatabaseModule` wiring the auth, config and
+transaction Prisma clients, `GET /app`, `GET /health`, and
+`merchant/merchant-signer.ts` - a pure `signRequest` helper, with no controller
+and no module of its own. Still no `provider/`; that is Step 4.
+
+**One sentence in Step 1 has gone stale, and it is harmless.** Sighting 1 says
+every app binds `'localhost'` outside production, which Step 2b then changed for
+uat-local. The probe loop still passes, and so will Appendix A's
+`http://localhost:3010/motionpay`: curl tries every address the resolver
+returns, and Node does the same - `net.getDefaultAutoSelectFamily()` is `true`
+on the Node 24 here, measured on this machine - so a *name* falls back from
+`::1` to `127.0.0.1`. An **IP literal** gets no such fallback, which is the
+whole reason Step 2b matters.
 
 ---
 
