@@ -34,20 +34,22 @@ export const callDashboard = async <T>(
   }
 };
 
-export const loginSuperAdmin = async () => {
+/**
+ * Any principal, by email. `/api/v1/login` gates on nothing but the password -
+ * `validateUser` does not look at the role - so a merchant signs in here the
+ * same way an admin does, which is how a spec learns a merchant's own id.
+ */
+export const login = async (email: string, password: string) => {
   const res = await callDashboard<AuthDto>({
     method: 'POST',
     url: '/api/v1/login',
-    data: { email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD },
+    data: { email, password },
   });
   return res.data!;
 };
 
-export const loginAgentInternal = async () => {
-  const res = await callDashboard<AuthDto>({
-    method: 'POST',
-    url: '/api/v1/login',
-    data: { email: AGENT_INTERNAL_EMAIL, password: AGENT_INTERNAL_PASSWORD },
-  });
-  return res.data!;
-};
+export const loginSuperAdmin = async () =>
+  login(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
+
+export const loginAgentInternal = async () =>
+  login(AGENT_INTERNAL_EMAIL, AGENT_INTERNAL_PASSWORD);
