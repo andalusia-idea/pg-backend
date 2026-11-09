@@ -6,6 +6,29 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-09 the settlement-window endpoint actually works now
+
+One correction, and it only matters if you tried the endpoint announced on
+Friday.
+
+- **`POST /super-admin/settlement-window` answered 500 to every request.**
+  `effectiveFrom` was being deleted before the service saw it, so the handler
+  threw on `undefined.toISOString()`. Nothing about the documented request shape
+  was wrong — if you sent a valid payload and got a 500, that was us. The
+  payload in **D26** now works exactly as written.
+- **Same root cause as `isActive` in D25**, one decorator along. Both validation
+  pipes run `whitelist: true`, which deletes any property carrying no
+  class-validator decorator; `@ApiProperty` is Swagger and `@Transform` is
+  class-transformer, and neither counts. Worth knowing as a shape of bug: a
+  field you sent is accepted, the response says success, and the value simply
+  never arrives. It is now guarded inside the date decorator rather than left to
+  each field.
+
+Backend-only otherwise (`docs/uat` refresh, Teleanjar's windows into the
+transaction engine seed). Nothing else reaches your side.
+
+---
+
 ## Update — 2026-11-06 base fee and settlement-window APIs, and the config seed loses its engine tier
 
 Backend-only commits (`e0870db`, `41ed637`, `18ee3dc`, `3a776b2`). One item
@@ -1501,6 +1524,10 @@ are how real rates get in. The dev seed's 9 rows stay dev-only.
 
 ### D26 — upstream settlement schedules had no write path → **fixed; new endpoints, nothing breaking**
 
+> **Corrected 2026-11-09.** As first shipped this endpoint threw a 500 on every
+> request — `effectiveFrom` never reached the service. The shape below was
+> always right; the handler was not. See the 2026-11-09 update at the top.
+
 `UpstreamSettlementWindow` is how the system knows when each partner closes a
 transaction window and releases our money. `FOLLOW_UPSTREAM` eligibility cannot
 answer anything without it — it is what turns "this purchase settled" into a
@@ -1590,10 +1617,17 @@ disabled, or leave it out of the form for now.
 recorded anywhere — not the seed, not
 `docs/accounting/upstream-settlement-schedules.md` — and it is one of the two
 live upstreams. Until someone enters one, settlement cannot answer
-`FOLLOW_UPSTREAM` for that rail. Teleanjar's two batches are documented and can
-go in now, though the batch-boundary rule is still an open question with the
-partner. Nothing about this blocks a screen: the endpoints work, the table is
-just thin.
+`FOLLOW_UPSTREAM` for that rail.
+
+**Teleanjar's two batches went in on 2026-11-09**, through the transaction
+engine seed rather than the API, so a fresh database has them. They are stored
+as half-open intervals — `18:00 (D-1) - 12:00` and `12:00 - 18:00` — which is
+the restatement the partner has been asked to confirm, and which makes the two
+windows tile the day exactly, 18 hours plus 6. Their *payment method* is the one
+thing nobody has published, so `TRANSFERBANK` there is an inference, not a fact.
+
+Nothing about any of this blocks a screen: the endpoints work, the table is just
+thin.
 
 ---
 
