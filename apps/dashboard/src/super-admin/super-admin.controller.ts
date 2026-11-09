@@ -14,6 +14,7 @@ import {
   CreateAdminDto,
   ProviderDto,
   ResetPasswordDto,
+  RetireProviderDto,
   SettlementWindowDto,
   UpsertBaseFeeDto,
   UpsertProviderDto,
@@ -83,6 +84,26 @@ export class SuperAdminController {
     body: UpsertProviderDto[],
   ) {
     await this.service.upsertProvider(body);
+    return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  @Post('provider/retire')
+  @ApiOperation({
+    summary: 'Retire upstream providers',
+    description:
+      'Soft-deletes a provider, taking it out of the dropdowns. Refused while ' +
+      'it still has an active base fee: nothing in the routing path reads this ' +
+      'table, so retiring a provider with live fees would hide it from the UI ' +
+      'and keep sending transactions to it. Deactivate its fees first. ' +
+      'INTERNAL cannot be retired at all.',
+  })
+  @ApiBody({ type: RetireProviderDto, isArray: true })
+  @ApiCreatedResponse({ type: ResponseDto })
+  async retireProvider(
+    @Body(ParseDtoArrayPipe(RetireProviderDto))
+    body: RetireProviderDto[],
+  ) {
+    await this.service.retireProvider(body);
     return new ResponseDto({ status: ResponseStatus.CREATED });
   }
 

@@ -31,6 +31,34 @@ export class UpsertProviderDto {
   name: ProviderNameEnum;
 }
 
+/**
+ * One upstream to retire.
+ *
+ * Same single field as `UpsertProviderDto` and deliberately a separate class,
+ * because the constraints are not the same and this is where they belong.
+ *
+ * **Retiring is a soft delete, and on its own it is cosmetic.** It takes the
+ * provider out of `GET common/div?div=PROVIDER`, which filters
+ * `deletedAt: null` - but nothing in the routing path looks at this table.
+ * `ProfileProviderService.findProfileProvider` resolves a merchant's provider
+ * through `merchantFee.baseFee`, filtering on the *base fee's* `isActive` and
+ * `deletedAt` and never the provider's. So a provider retired while its fees
+ * are still live disappears from the dropdown and keeps taking transactions,
+ * which is the worst of both. `SuperAdminService.retireProvider` refuses that
+ * case rather than performing it.
+ *
+ * `INTERNAL` is refused outright. It is the house provider: the migrations
+ * insert it as engine data, `config-common` excludes it from the dropdown
+ * because no merchant routes to it, and `findProfileProvider` returns it as the
+ * fallback for admins and for agents with no provider of their own. Nothing
+ * about retiring it is ever meant.
+ */
+export class RetireProviderDto {
+  @ApiProperty({ enum: ProviderNameEnum })
+  @IsEnum(ProviderNameEnum)
+  name: ProviderNameEnum;
+}
+
 /** A configured upstream, as stored. */
 export class ProviderDto {
   constructor(

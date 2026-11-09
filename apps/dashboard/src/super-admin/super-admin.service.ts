@@ -5,6 +5,7 @@ import {
   CreateAdminDto,
   ProviderDto,
   ResetPasswordDto,
+  RetireProviderDto,
   SettlementWindowDto,
   UpsertBaseFeeDto,
   UpsertProviderDto,
@@ -14,6 +15,7 @@ import { AuthHelper } from '../auth';
 import {
   LOCKED_MACHINE_PASSWORD,
   MACHINE_USER_ID,
+  ProviderNameEnum,
   ROLE_ID,
 } from '@app/microservice';
 import { ApiError } from '../shared/exception';
@@ -641,7 +643,7 @@ export class SuperAdminService {
    * Two entries naming the same provider would upsert one row twice and let the
    * later one win in silence - the same reasoning as the base-fee check.
    */
-  private assertDistinctProviderNames(dtos: UpsertProviderDto[]): void {
+  private assertDistinctProviderNames(dtos: { name: string }[]): void {
     const seen = new Set<string>();
 
     for (const dto of dtos) {
@@ -651,6 +653,138 @@ export class SuperAdminService {
 
       seen.add(dto.name as string);
     }
+  }
+
+  /**
+   * Retires providers by soft-deleting them, so a partner can be taken out of
+   * circulation without a hand-written UPDATE.
+   *
+   * **Refused while the provider still has an active base fee**, and that check
+   * is the reason this endpoint is worth having rather than a `deletedAt` the
+   * operator sets themselves. Nothing in the routing path reads this table:
+   * `ProfileProviderService.findProfileProvider` resolves a merchant's provider
+   * through `merchantFee.baseFee` and filters on the base fee's own `isActive`
+   * and `deletedAt`. Meanwhile `GET common/div?div=PROVIDER` does filter
+   * `deletedAt: null`. So retiring a provider with live fees removes it from
+   * every dropdown and changes nothing about where money goes - the config
+   * screen says the partner is gone while transactions keep arriving at it.
+   * Deactivate its fees first, and this will then let it through.
+   *
+   * Already-retired providers are accepted and skipped: the desired end state
+   * is already true, and the read says so. A provider that was never activated
+   * is a 422 instead, because at that point the name is more likely a typo or
+   * the wrong environment than a request to do nothing.
+   *
+   * `deletedBy` is not set here. `auditTrailExtension` sees a non-null
+   * `deletedAt` in an update, classifies the write as a deletion, and stamps
+   * `deletedAt`, `deletedBy`, `updatedAt` and `updatedBy` itself.
+   */
+  async retireProvider(dtos: RetireProviderDto[]) {
+    if (dtos.length === 0) {
+      throw ApiError.badRequest('At least one provider is required');
+    }
+
+    this.assertDistinctProviderNames(dtos);
+
+    const retirable = await this.assertProvidersCanRetire(dtos);
+    if (retirable.length === 0) return;
+
+    await this.prismaMaster.$transaction(
+      retirable.map((name) =>
+        this.prismaMaster.provider.update({
+          where: { name },
+          // The value is replaced by the audit extension's own `now`; what
+          // matters is that it is non-null, which is what marks this a deletion
+          // rather than an ordinary update.
+          data: { deletedAt: new Date() },
+        }),
+      ),
+    );
+  }
+
+  /**
+   * Returns the names that still need retiring, having refused every entry that
+   * must not be.
+   *
+   * Reports all of them at once, indexed as sent, for the same reason the fee
+   * checks do: an operator retiring several partners should not fix one per
+   * round trip.
+   */
+  private async assertProvidersCanRetire(
+    dtos: RetireProviderDto[],
+  ): Promise<string[]> {
+    const names = dtos.map((dto) => dto.name);
+
+    const [stored, liveFees] = await Promise.all([
+      this.prismaMaster.provider.findMany({
+        where: { name: { in: names } },
+        select: { name: true, deletedAt: true },
+      }),
+      // The exact condition the routing lookup uses, so what this refuses is
+      // precisely what would still have routed.
+      this.prismaMaster.baseFee.findMany({
+        where: {
+          providerName: { in: names },
+          isActive: true,
+          deletedAt: null,
+        },
+        select: {
+          providerName: true,
+          paymentMethodName: true,
+          transactionType: true,
+        },
+      }),
+    ]);
+
+    const storedByName = new Map(stored.map((row) => [row.name, row]));
+
+    const feeCodesByProvider = new Map<string, string[]>();
+    for (const fee of liveFees) {
+      const code = `${fee.providerName}_${fee.paymentMethodName}_${fee.transactionType}`;
+      feeCodesByProvider.set(fee.providerName, [
+        ...(feeCodesByProvider.get(fee.providerName) ?? []),
+        code,
+      ]);
+    }
+
+    const fields: Record<string, string> = {};
+    const retirable: string[] = [];
+
+    dtos.forEach((dto, index) => {
+      if (dto.name === ProviderNameEnum.INTERNAL) {
+        fields[`[${index}].name`] =
+          'INTERNAL is the house provider and cannot be retired - it is engine ' +
+          'data, and it is the provider admins and agent-less agents resolve to';
+        return;
+      }
+
+      const row = storedByName.get(dto.name);
+      if (row === undefined) {
+        fields[`[${index}].name`] =
+          `provider '${dto.name}' is not configured, so there is nothing to ` +
+          'retire';
+        return;
+      }
+
+      const feeCodes = feeCodesByProvider.get(dto.name) ?? [];
+      if (feeCodes.length > 0) {
+        fields[`[${index}].name`] =
+          `still has ${feeCodes.length} active base fee` +
+          `${feeCodes.length === 1 ? '' : 's'} (${feeCodes.join(', ')}) - ` +
+          'deactivate those first, or merchants keep routing to a provider no ' +
+          'dropdown offers any more';
+        return;
+      }
+
+      // Already retired is the end state asked for, so it is not an error.
+      if (row.deletedAt === null) retirable.push(dto.name);
+    });
+
+    if (Object.keys(fields).length > 0) {
+      throw ApiError.validationFailed(fields);
+    }
+
+    return retirable;
   }
 
   /**
