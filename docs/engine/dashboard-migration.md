@@ -24,6 +24,14 @@ you tried the endpoint announced on Friday.
   never arrives. It is now guarded inside the date decorator rather than left to
   each field.
 
+- **`BaseFeeDto` gains `isActive` and `deletedAt`** — additive, nothing
+  removed or renamed, and it reaches **three** endpoints:
+  `GET /super-admin/base-fee`, `GET /fee/config` and the `baseFeeConfig` inside
+  `GET merchant/:merchantId/config`. The one that matters is `/fee/config`: it
+  filters only `deletedAt`, so it has always listed **deactivated** fees
+  indistinguishably from live ones — which meant the `isActive` switch repaired
+  in **D25** had no visible effect through any endpoint at all. It does now. See
+  **D25**.
 - **Three new endpoints under `/super-admin/provider`** — `POST` to activate a
   partner, `POST provider/retire` to take one out of circulation, `GET` to read
   both states — and the first of them is the reason D25's and D26's endpoints
@@ -1460,6 +1468,24 @@ waved through. D3 still stands for the endpoints that rely on
 | `POST` | `/super-admin/base-fee` | Upsert an array of provider-level base fees, keyed on `(providerName, paymentMethodName, transactionType)` |
 | `GET` | `/super-admin/base-fee` | The same rows **including inactive and soft-deleted ones** |
 
+**Added 2026-11-09: the read side can now show what the write side sets.**
+`BaseFeeDto` carries `isActive` (boolean) and `deletedAt` (nullable Jakarta ISO
+string). Additive on every endpoint that serves it, and what each one shows
+depends on how it filters:
+
+| Endpoint | Filters | So |
+|---|---|---|
+| `GET /super-admin/base-fee` | nothing | both vary — this is the configuration view |
+| `GET /fee/config` | `deletedAt: null` | **`isActive` varies**, `deletedAt` is always null |
+| `GET merchant/:merchantId/config` | `isActive: true, deletedAt: null` | both constant |
+
+The middle row is the one worth reading twice. `/fee/config` never filtered
+`isActive`, so it has always returned deactivated fees looking exactly like live
+ones — and the routing lookup *does* filter `isActive`, so those rows are
+configured and dead. Until this field existed, fixing the switch below changed
+nothing anyone could see. If you list fees from `/fee/config`, that listing was
+wrong in a way nothing reported, and the fix is to read the new field.
+
 **What you have to change.** `isActive` must be a JSON boolean:
 
 ```json
@@ -1590,12 +1616,12 @@ needs, appear in your dropdown, and fail at the first transaction.
 | `createdAt` | `"2026-11-09T14:02:11+07:00"` — the closest thing stored to "when did we go live with this partner" |
 | `deletedAt` | `null` while active |
 
-`deletedAt` is there on purpose. `GET /super-admin/base-fee` is documented as
-the wider configuration view "including inactive and soft-deleted rows", but
-`BaseFeeDto` carries neither `isActive` nor `deletedAt` — so it returns those
-rows and gives you no way to tell them apart. This endpoint does not repeat
-that. **If you build a base-fee configuration screen and need the same thing
-there, ask and it is a two-field change.**
+`deletedAt` is there on purpose, and it exposed the same omission one table
+over: `GET /super-admin/base-fee` is documented as the wider configuration view
+"including inactive and soft-deleted rows" while `BaseFeeDto` carried neither
+`isActive` nor `deletedAt`, so it returned those rows and gave you no way to
+tell them apart. **Fixed the same day — see D25.** `BaseFeeDto` now carries
+both.
 
 **Rejections:**
 
