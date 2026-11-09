@@ -24,10 +24,12 @@ you tried the endpoint announced on Friday.
   never arrives. It is now guarded inside the date decorator rather than left to
   each field.
 
-- **Two new endpoints, `POST` / `GET /super-admin/provider`** — and they are
-  the reason the other two work at all outside development. See **D27**. There
-  is nothing for you to change today; there is a screen worth building when the
-  fee-config screens get a sibling.
+- **Three new endpoints under `/super-admin/provider`** — `POST` to activate a
+  partner, `POST provider/retire` to take one out of circulation, `GET` to read
+  both states — and the first of them is the reason D25's and D26's endpoints
+  work at all outside development. See **D27**. Nothing for you to change
+  today; there is a screen worth building when the fee-config screens get a
+  sibling.
 
 Backend-only otherwise (`docs/uat` refresh, Teleanjar's windows into the
 transaction engine seed). Nothing else reaches your side.
@@ -1561,7 +1563,8 @@ shape a cutover starts from.
 
 | Method | Route | What it is |
 |---|---|---|
-| `POST` | `/super-admin/provider` | Upsert an array of providers by name. Activates a partner |
+| `POST` | `/super-admin/provider` | Upsert an array of providers by name. Activates a partner, and reactivates a retired one |
+| `POST` | `/super-admin/provider/retire` | Soft-deletes an array of providers. Refused while any of them still has an active base fee |
 | `GET` | `/super-admin/provider` | Every provider, **retired ones included** |
 
 Both are `SUPER_ADMIN`-only and enforced.
@@ -1608,9 +1611,52 @@ reactivates a partner. Re-posting a live one changes nothing except the
 `updatedBy` the audit trail stamps, which is a fair record of someone having
 re-activated it.
 
-**There is no retire endpoint yet.** Soft-deleting a provider is a
-database-level action for now. Say if a screen needs it; the read already shows
-the result.
+### Retiring one
+
+`POST /super-admin/provider/retire` takes the same one-field entries:
+
+```json
+[{ "name": "TELEANJAR" }]
+```
+
+**It is refused while the provider still has an active base fee, and that
+refusal is the whole value of the endpoint.** Retiring on its own is cosmetic:
+it removes the provider from `GET common/div?div=PROVIDER`, which filters
+`deletedAt: null` — but *nothing in the routing path reads this table*. A
+merchant's provider is resolved through `merchantFee.baseFee`, filtering on the
+**base fee's** `isActive` and `deletedAt`, never the provider's. So a provider
+retired with live fees vanishes from every dropdown and keeps taking
+transactions: the config screen says the partner is gone while money still
+arrives at it.
+
+The 422 names the fee codes that would have kept routing, so the fix is visible
+from the error:
+
+```
+[0].name: still has 2 active base fees
+  (MOTIONPAY_QRIS_PURCHASE, MOTIONPAY_TRANSFERBANK_DISBURSEMENT) -
+  deactivate those first, or merchants keep routing to a provider no dropdown
+  offers any more
+```
+
+Deactivate them with `POST /super-admin/base-fee` and `isActive: false`
+(**D25**), then retire.
+
+| Payload | Result |
+|---|---|
+| `[]` | 400 |
+| Two entries naming the same provider | 400 |
+| `INTERNAL` | 422 — the house provider, and what admins and agent-less agents resolve to |
+| A provider never activated | 422 `is not configured, so there is nothing to retire` |
+| A provider with an active base fee | 422 naming the codes |
+| A provider **already** retired | accepted, and does nothing |
+
+A mixed batch reports every offending entry at once, indexed as you sent them,
+and writes nothing at all.
+
+**Retiring is reversible**: `POST /super-admin/provider` on the same name clears
+the tombstone. So the pair is activate / retire / reactivate, and the `GET`
+shows which state each one is in.
 
 ---
 
