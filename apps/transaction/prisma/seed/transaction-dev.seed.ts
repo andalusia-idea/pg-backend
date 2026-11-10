@@ -8,6 +8,11 @@ import {
   BalanceSourceTypeEnum,
   INTERNAL_HOLDER_ID,
 } from '@app/balance';
+import {
+  PaymentMethodNameEnum,
+  ProviderNameEnum,
+  SYSTEM_USER_ID,
+} from '@app/microservice';
 import { PrismaClient } from '@transaction/prisma';
 import Decimal from 'decimal.js';
 import { findAuthUserIdsByEmail, logSeeded } from './seed.helper';
@@ -49,6 +54,136 @@ import { findAuthUserIdsByEmail, logSeeded } from './seed.helper';
  * payout request. Doing them in one transaction would test a path production
  * never takes.
  */
+
+/**
+ * The instant these schedules are treated as having come into force.
+ *
+ * A fixed constant, never `new Date()`. `effectiveFrom` is part of the unique
+ * key, so a moving value would insert a fresh row on every seed run instead of
+ * matching the existing one - the seed would stop being idempotent, and
+ * `FOLLOW_UPSTREAM` would then find several windows where it expects one.
+ *
+ * Backdated so it is already in force for any transaction this database has
+ * ever seen. A real schedule change gets a *new* row with a later
+ * `effectiveFrom` and an `effectiveTo` on this one, which is what the effective
+ * dating is for.
+ */
+const SCHEDULES_IN_FORCE_FROM = new Date('2026-01-01T00:00:00+07:00');
+
+/**
+ * Upstream settlement windows - what each partner has published about when they
+ * release our money, transcribed from
+ * docs/accounting/upstream-settlement-schedules.md.
+ *
+ * **These moved here from the engine tier on 2026-11-09, and the reason is the
+ * admin API.** The engine tier used to be the only way a row could exist, so it
+ * had to carry them however little it liked doing so: `FOLLOW_UPSTREAM`
+ * eligibility cannot answer anything without a window, which made them
+ * vocabulary the system booted with. `POST /super-admin/settlement-window` (D26)
+ * replaced that, and D27 taught the general shape of the rule the hard way - a
+ * table kept out of the engine tier needs *some* production path, or production
+ * has none at all. There is one now, so these rows become what they always
+ * looked like: a convenience so a development database has plausible schedules
+ * without anyone hand-posting four of them, and a production database gets its
+ * own from the partner notice through the API, like base fees and providers.
+ *
+ * Seeded before the auth-user lookup below, deliberately: unlike every balance
+ * fixture here, a window belongs to nobody and needs no `auth.User` to exist.
+ *
+ * **`windowStart` / `windowEnd` are not consumed yet.** Eligibility derives the
+ * release moment from the payment's own calendar day plus `settlementOffset`,
+ * and choosing *which* window a payment falls into is deferred to Step 10 -
+ * deliberately, because the boundary rules are still open questions with the
+ * partners. The columns record what was published so that work has something to
+ * start from.
+ *
+ * A window whose end equals its start spans the full day. The alternative,
+ * writing `23:59` as MotionPay words it, would silently drop the final minute
+ * once something reads these under the half-open `[start, end)` convention the
+ * column documents.
+ */
+const UPSTREAM_WINDOWS: {
+  providerName: ProviderNameEnum;
+  paymentMethodName: PaymentMethodNameEnum;
+  label: string;
+  windowStart: string;
+  windowStartDayOffset: number;
+  windowEnd: string;
+  settlementOffset: number;
+  settlementTime: string | null;
+  explain: string;
+}[] = [
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.QRIS,
+    label: 'DAILY',
+    windowStart: '00:00',
+    windowStartDayOffset: 0,
+    windowEnd: '00:00',
+    settlementOffset: 1,
+    settlementTime: '15:00',
+    explain: 'QRIS, next day 15:00',
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.DIRECTEWALLET,
+    label: 'DAILY',
+    windowStart: '00:00',
+    windowStartDayOffset: 0,
+    windowEnd: '00:00',
+    settlementOffset: 3,
+    // No published time. Eligibility treats null as end of day rather than
+    // start, so we never release before the upstream plausibly has.
+    settlementTime: null,
+    explain: 'E-Wallet, H+3, no published time (window assumed same day)',
+  },
+
+  /*
+   * Teleanjar runs two batches on one rail, which is the case `label` exists in
+   * the unique key for.
+   *
+   * **Restated as half-open intervals**, which is what the reference doc asks
+   * the partner to confirm. As they word it the batches are `18:00 - 12:00` and
+   * `12:01 - 18:00`, and that wording has two faults: 18:00 appears in both, so
+   * a transaction at exactly 18:00:00 belongs to neither batch or to both, and
+   * nothing at all owns 12:00:01 - 12:00:59. Under `[start, end)` both faults
+   * disappear, and the two windows then tile the day exactly - 18 hours plus 6,
+   * batch 2 ending where the next batch 1 begins. That the arithmetic closes is
+   * the evidence the restatement is right; it is still worth getting in
+   * writing.
+   *
+   * **The payment method is the one field the reference doc does not give.**
+   * It records the batches with no product named. `TRANSFERBANK` here because
+   * the only other mention of Teleanjar in the tree is
+   * `libs/upstream/src/upstream.constant.ts`, which groups it with MotionPay
+   * and Jatelindo as a bank payout rail. Correct it in place while nothing
+   * reads these - once something does, a change of product is a new row.
+   */
+  {
+    providerName: ProviderNameEnum.TELEANJAR,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    label: 'BATCH_1',
+    windowStart: '18:00',
+    // The window opens the evening before it closes, which is the only thing
+    // this column is for.
+    windowStartDayOffset: -1,
+    windowEnd: '12:00',
+    settlementOffset: 0,
+    settlementTime: '13:00',
+    explain: 'batch 1, 18:00 (D-1) to 12:00, same day 13:00',
+  },
+  {
+    providerName: ProviderNameEnum.TELEANJAR,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    label: 'BATCH_2',
+    windowStart: '12:00',
+    windowStartDayOffset: 0,
+    windowEnd: '18:00',
+    settlementOffset: 0,
+    settlementTime: '19:00',
+    explain: 'batch 2, 12:00 to 18:00, same day 19:00',
+  },
+];
 
 /** Whose money each fixture belongs to, and what happened to it. */
 type BalanceFixture = {
@@ -134,6 +269,11 @@ const SEED_PRINCIPAL_EMAIL = 'system01@pg.id';
 
 export async function transactionDevSeed(prisma: PrismaClient): Promise<void> {
   assertSplitsBalance();
+
+  // First, and outside the auth-user guard below: a settlement window belongs
+  // to nobody, so it has nothing to resolve and no reason to be skipped when
+  // the auth dev users are missing.
+  await seedUpstreamWindows(prisma);
 
   const emails = [
     SEED_PRINCIPAL_EMAIL,
@@ -229,6 +369,53 @@ export async function transactionDevSeed(prisma: PrismaClient): Promise<void> {
 
   logSeeded(NO_BALANCE_MERCHANT, 'no balance rows (intentional)');
   logSeeded('movements posted', movements);
+}
+
+/**
+ * Upserts the published schedules on the unique key, `update: {}` - the same
+ * contract the other seeders use. Re-running fills in what is missing and never
+ * overwrites a schedule an admin has since corrected through
+ * `POST /super-admin/settlement-window`, which is the whole point of the empty
+ * update now that the API is where real rows come from.
+ */
+async function seedUpstreamWindows(prisma: PrismaClient): Promise<void> {
+  await prisma.$transaction(
+    UPSTREAM_WINDOWS.map((window) =>
+      prisma.upstreamSettlementWindow.upsert({
+        where: {
+          providerName_paymentMethodName_label_effectiveFrom: {
+            providerName: window.providerName,
+            paymentMethodName: window.paymentMethodName,
+            label: window.label,
+            effectiveFrom: SCHEDULES_IN_FORCE_FROM,
+          },
+        },
+        // Listed field by field rather than spread, so `explain` - which is
+        // documentation for the log line, not a column - cannot leak in.
+        create: {
+          providerName: window.providerName,
+          paymentMethodName: window.paymentMethodName,
+          label: window.label,
+          windowStart: window.windowStart,
+          windowStartDayOffset: window.windowStartDayOffset,
+          windowEnd: window.windowEnd,
+          settlementOffset: window.settlementOffset,
+          settlementTime: window.settlementTime,
+          effectiveFrom: SCHEDULES_IN_FORCE_FROM,
+          createdBy: SYSTEM_USER_ID,
+        },
+        update: {},
+        select: { id: true },
+      }),
+    ),
+  );
+
+  for (const window of UPSTREAM_WINDOWS) {
+    logSeeded(
+      `${window.providerName} ${window.paymentMethodName}`,
+      window.explain,
+    );
+  }
 }
 
 /**

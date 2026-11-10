@@ -1758,7 +1758,8 @@ transaction window and releases our money. `FOLLOW_UPSTREAM` eligibility cannot
 answer anything without it — it is what turns "this purchase settled" into a
 date a merchant can be paid on.
 
-Until now the only rows came from `transaction-engine.seed.ts`, hardcoded, and
+Until now the only rows came from a hardcoded seed (`transaction-engine.seed.ts`,
+since deleted — the windows live in the dev tier now that this API exists), and
 there were exactly two: MotionPay QRIS and MotionPay e-wallet. **Jatelindo and
 Teleanjar had none**, so those rails had no answer at all.
 
@@ -1845,7 +1846,8 @@ live upstreams. Until someone enters one, settlement cannot answer
 `FOLLOW_UPSTREAM` for that rail.
 
 **Teleanjar's two batches went in on 2026-11-09**, through the transaction
-engine seed rather than the API, so a fresh database has them. They are stored
+**dev** seed rather than the API, so a development database has them and a
+production one starts empty and is filled from the partner notice. They are stored
 as half-open intervals — `18:00 (D-1) - 12:00` and `12:00 - 18:00` — which is
 the restatement the partner has been asked to confirm, and which makes the two
 windows tile the day exactly, 18 hours plus 6. Their *payment method* is the one
@@ -2110,20 +2112,34 @@ npm run prisma:seed:auth          # engine only
 npm run prisma:seed:auth:dev      # engine + dev fixtures
 npm run prisma:seed:config        # nothing to do, and says so
 npm run prisma:seed:config:dev    # dev fixtures
-npm run prisma:seed:transaction      # engine only
-npm run prisma:seed:transaction:dev  # engine + dev fixtures
+npm run prisma:seed:transaction      # nothing to do, and says so
+npm run prisma:seed:transaction:dev  # dev fixtures
 ```
 
-The transaction seeder was missing from this section until 2026-11-06. It
-matters more than it looks: a production `transaction` schema is correct
-precisely when its tables are *empty*, because almost everything in it is a
-record of something that happened. The one exception is the `settlement` schema
-riding along in the same migrations — `UpstreamSettlementWindow` is a
-transcription of what each partner has told us about when they release our
-money, which is vocabulary the system boots with. Its engine tier currently
-holds two rows, both MotionPay; the rest is entered through
-`POST /super-admin/settlement-window` (D26), and the seed's `update: {}` means
-re-running never overwrites a correction made that way.
+**As of 2026-11-09 the transaction seeder has no engine tier either**, and for
+two independent reasons. A production `transaction` schema is correct precisely
+when its tables are *empty*, because almost everything in it is a record of
+something that happened. And the `settlement` schema riding along in the same
+migrations no longer needs one: `UpstreamSettlementWindow` was seeded there
+because the seed was the only way a row could exist at all, and
+`POST /super-admin/settlement-window` (**D26**) replaced that. A production
+schedule is now transcribed from the partner notice through the API, the same as
+base fees and providers.
+
+The four published windows — two MotionPay, two Teleanjar — moved to the dev
+tier, where they are a convenience so a development database has plausible
+schedules without anyone hand-posting them. The seed's `update: {}` still means
+re-running never overwrites a correction made through the API, which matters
+more now that the API is where real rows come from. They are seeded before the
+dev tier's `auth.User` lookup, because a window belongs to nobody and has
+nothing to resolve.
+
+The general rule here was learned from **D27**, one table over: deciding
+something stays out of the engine tier is only half the work, because a tier
+with no production path leaves production with nothing. `UpstreamSettlementWindow`
+has one now. `BusinessDayCalendar` is the remaining table in that shape, and it
+is deliberately unbuilt.
+
 `MerchantSettlementPolicy` is not seeded at all — `registerMerchant` creates the
 default row in the same transaction as the merchant.
 

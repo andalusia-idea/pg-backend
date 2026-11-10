@@ -202,6 +202,7 @@ describe('merchant onboard', () => {
     expect(agentInternal.token).toBeTruthy();
     expect(agentInternal.authInfo.userId).toBeGreaterThan(0);
     expect(superAdmin.token).toBeTruthy();
+    expect(superAdmin.authInfo.userId).toBeGreaterThan(0);
   });
 
   /**

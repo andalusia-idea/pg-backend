@@ -2,24 +2,27 @@ import { PrismaClient } from '@transaction/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { transactionDevSeed } from './transaction-dev.seed';
-import { transactionEngineSeed } from './transaction-engine.seed';
 
 /**
- * transaction seeder.
+ * transaction seeder - development fixtures only.
  *
- *   npm run prisma:seed:transaction        engine data only (safe anywhere)
- *   npm run prisma:seed:transaction:dev    engine + development fixtures
+ *   npm run prisma:seed:transaction        nothing to do, and says so
+ *   npm run prisma:seed:transaction:dev    development fixtures
  *
- * Two tiers, same contract as the other apps:
- *   - ENGINE   data the system cannot boot without. Safe in any environment,
- *              including production. Almost nothing qualifies: the transaction
- *              schema holds recorded activity, so an empty production copy of
- *              it is correct. The exception is the settlement schema riding
- *              along in the same migrations - `UpstreamSettlementWindow` is a
- *              transcription of what each partner publishes about when they
- *              release our money, which the system has to boot knowing.
- *   - DEV      balance fixtures across all three buckets. Transaction fixtures
- *              are still unchosen.
+ * **There is no engine tier**, which is the right answer twice over. The
+ * transaction schema holds recorded activity - transactions, fee details,
+ * webhook logs, audits, balance entries - so an empty production copy of it is
+ * correct. And the settlement schema riding along in the same migrations no
+ * longer needs one either: `UpstreamSettlementWindow` used to be seeded here
+ * because the seed was the only way a row could exist, and
+ * `POST /super-admin/settlement-window` (D26) has replaced that. A production
+ * schedule is now transcribed from the partner notice through the API, like
+ * base fees and providers, and the windows in the dev tier are a convenience
+ * for a development database rather than data the system boots with.
+ *
+ *   - DEV      the published upstream settlement windows, plus balance
+ *              fixtures across all three buckets. Transaction fixtures are
+ *              still unchosen.
  *
  * Every step must stay idempotent, so re-running only fills in what is missing.
  * The dev tier achieves that by **skipping** fixtures already present rather
@@ -60,11 +63,12 @@ async function main(): Promise<void> {
     `Seeding transaction  [NODE_ENV=${process.env.NODE_ENV ?? 'unset'}] [dev fixtures: ${devRequested}]`,
   );
 
-  console.log('\nEngine data (mandatory):');
-  await transactionEngineSeed(prisma);
-
   if (!devRequested) {
-    console.log('\nDevelopment fixtures skipped (pass --dev to include them).');
+    console.log(
+      '\nNothing to seed - the transaction schema holds recorded activity, and' +
+        '\nsettlement schedules are entered through the dashboard.' +
+        '\nPass --dev for the development fixtures.',
+    );
     return;
   }
 
