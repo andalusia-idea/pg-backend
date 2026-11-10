@@ -6,6 +6,41 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-10 frontend push comparison (frontend side)
+
+Compared backend `apps/dashboard` + `docs/batch/*` + this doc at `96a15dd` (no new backend commits; `docs/batch/*` still unchanged since `9786271`) against frontend `e2a2073`, five commits past `f17e16c`. Each frontend fix was checked against the backend source, not just the commit message.
+
+| Frontend commit | What it fixes | Checked against | Result |
+|---|---|---|---|
+| `5e07d26` | **D28.** Fee-config money/percentage fields are typed `string` on all five DTOs; edits are serialized at the API boundary (`formatFixedDecimals(x, 2)` for money, `(x, 4)` for percentages); reads convert with `Number()` and display percentages at 4 decimals. The mock now emits strings and 422s a JSON number | `money.decorator.ts` (`MONEY_PATTERN`, `percentagePattern(4)`), `upsert-merchant-fee.dto.ts` | ✅ The wire format now passes `@IsMoney()`/`@IsPercentage()`. `formatFixedDecimals` uses `useGrouping: false`, so no thousands separator reaches the pattern. Rows 21/22 → ✅ |
+| `c4a0629` | **D29 part 2.** `createAgent()` sends `bankCode: agentData.bankCode` | `CreateAgentDto`, auth schema `bankCode VarChar(10)` | ✅ The hidden form field holds the catalogue code (e.g. `014`), so it fits the column. Row 6 keeps only the password issue |
+| `e765b12` | **D25 read side.** `BaseFeeDto` gains `isActive`/`deletedAt`; the provider page has a Status column with an Active/Inactive filter; the merchant fee-config fallback list drops inactive fees | `BaseFeeDto` (`isActive`, `deletedAt` always `null` on `fee/config`) | ✅ Row 19 → ✅ |
+| `2596f1e` | Mock only: merchant config is stored per merchant instead of regenerated on every GET | `ConfigMerchantService.findAllConfigByMerchantId` sort order | Nothing to check against the real backend |
+| `e2a2073` | `new-task.md` only | — | — |
+
+Three things this check turned up that the frontend commits did not cover:
+
+- **New finding, pre-existing: agent-shareholder saves will often fail the backend's 100% rule (D30, row 23).** Now that the payload passes validation, saves reach `assertShareholderPercentagesTotal()`, which requires the **submitted batch's** non-`D` rows to sum to exactly `100`. The frontend breaks this in three ways. It sends only changed rows: unchanged rows are filtered out. Its auto-split and manual edits store 2 decimals, so three agents get `33.33` each, which sums to 99.99. And its own pre-check only rejects totals **over** 100, and rounds to 2 decimals before checking. The mock never checks the total, so the frontend's live test passed. Fix is frontend-only; see D30.
+- **Correction to how this doc described array-body errors (§2.7 intro, D13).** A DTO-shape failure inside a `ParseDtoArrayPipe` body (wrong type, bad pattern) comes back as a 422 keyed by the **bare field name** of the first failing entry, e.g. `{"feeInternalFixed": "..."}`, with no row index. Nest's `ParseArrayPipe` validates entries with `Promise.all` (its default `stopAtFirstError`), and the inner `ValidationPipe` uses `validationExceptionFactory` directly. The `[i].field` keys only come from the service-level checks in `super-admin.service.ts` (unknown provider, unsupported transaction type, overlap, retire refusal). The frontend mock keys its new 422s `0.feeInternalFixed`, which matches neither form. Nothing reads `error.fields` yet, so nothing breaks today. The mock should match whenever a screen starts placing field errors.
+- **Minor, frontend: the fee-percentage inputs on the merchant fee-config tab have `min={0}` but no `max={100}`**, so a typed `150` goes out as `"150.0000"` and comes back as a 422. The shareholder inputs already cap at 100.
+
+Still open after this push: D29 part 1 (the hardcoded `"password123"`, which waits on a product decision), D30, and the five optional super-admin screens (§2.7). `docs/engine/named-principals.md` §7 still says `RolesGuard` is unregistered.
+
+---
+
+## Update — 2026-11-09 post-pull comparison (frontend side)
+
+Compared backend `apps/dashboard` + `docs/batch/*` + this doc at `96a15dd` (22 commits past `7d9a6c3`) against frontend `f17e16c`. **The frontend has no code change since `f01cb07`**: `f17e16c` only commits `new-task.md`. `docs/batch/*` is unchanged since `9786271` (2026-11-03). D25–D27 below were written by the backend; this block records what they mean for the frontend, plus two frontend defects found while checking them. Neither defect was caused by this pull.
+
+- **Nothing the frontend calls today broke.** Every new route sits under `/super-admin/*`, and the frontend has no caller for any of them, so D25's stricter `isActive` validation and D26's 500 fix change nothing on screen yet. They are listed as backend-first rows 54–62 in the new §2.7.
+- **Role enforcement is live on three sites, so D3 is partly resolved.** `RolesGuard` is now registered: `register-merchant` is AGENT-only, `register-agent` is SUPER_ADMIN/ADMIN, and `/super-admin/*` is SUPER_ADMIN-only. SUPER_ADMIN passes every `@Roles()` as a wildcard. The frontend's route gating already matches (`/acc-management/create-merchant` → AGENT, `create-agent` → SUPER_ADMIN), and its ky error hook shows the 403 message as a toast. Every other endpoint is still authentication-only. D3's row is updated. `docs/engine/named-principals.md` §7 still says the guard is unregistered; that bullet is stale as of this pull.
+- **`BaseFeeDto` gained `isActive`/`deletedAt` (row 19, D25). Frontend action needed.** The provider page (`src/pages/provider/index.tsx`) lists `GET fee/config` and shows a deactivated fee exactly like a live one. The merchant fee-config page also falls back to the whole `fee/config` list when a merchant has no config yet, so it can offer a deactivated fee for assignment.
+- **New finding, pre-existing: the frontend's fee-config writes cannot pass validation (D28).** Rows 22/23 were marked ✅, but the frontend sends money and percentages as JSON numbers, and the backend has required decimal strings since `c978a16` (2026-08-11) with no implicit conversion. Every save on the merchant fee and agent-shareholder screens should therefore be a 422. The read side has the matching problem: the types say `number`, and `formatFixedDecimals()` turns a wire string into `"0.00"`.
+- **New finding, pre-existing: dashboard registration of agents and merchants (D29).** Both calls hardcode `password: "password123"`, so every account created through the dashboard shares a password that ships in the JS bundle. `createAgent` also sends the bank's display name as `bankCode`; 60 of the 95 catalogue names are longer than the `VarChar(10)` column.
+- **Screens that are now unblocked (optional):** base-fee admin, provider activate/retire, upstream settlement windows (the "future provider-settings screen" the frontend had parked for lack of an API), admin registration, and password reset. Reset matters most: it is the documented first step after go-live for `superadmin@pg.id`/`agentinternal@pg.id` (`named-principals.md`), and today it can only be done by a raw API call.
+
+---
+
 ## Update — 2026-11-09 the settlement-window fix, and a provider can be created in production
 
 One correction and one new pair of endpoints. The correction only matters if
@@ -203,8 +238,8 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` | Any authenticated (see D8) | ✅ Matches | — | — |
 | 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` | Any authenticated | ✅ Matches | — | — |
 | 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches | — | — |
-| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ✅ **Updated 2026-11-02** — frontend no longer sends the removed `settlementInterval` | No frontend task. New merchants receive the default `FOLLOW_UPSTREAM` policy; policy editing remains mock-only until dashboard policy endpoints exist. See D24 | — |
-| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `SUPER_ADMIN`, `ADMIN` (`AGENT_ADMIN_ROLES`). Frontend route `/acc-management/create-agent` grants only `SUPER_ADMIN` | ✅ Matches (route is reachable now — see the resolved role-rename note above) | **Frontend, minor residual gap.** The lockout that made this route unreachable is fixed. One narrower gap remains: `roles: ["SUPER_ADMIN"]` on this route doesn't include plain `ADMIN`, which backend's `AGENT_ADMIN_ROLES` does permit — low priority, since no `ADMIN`-role account exists in the test data yet (§7 only exercises `SUPER_ADMIN`/`AGENT`/`MERCHANT`) | — (body is `CreateAgentDto`, already correct — no backend change needed) |
+| 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ⚠️ **Updated 2026-11-09** — frontend no longer sends the removed `settlementInterval`; `@Roles(AGENT)` is now **enforced** (SUPER_ADMIN passes as a wildcard) | **Frontend.** `createMerchant()` hardcodes `password: "password123"` for every merchant (D29). Route gating already matches the enforced role. New merchants receive the default `FOLLOW_UPSTREAM` policy (D24) | — |
+| 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `SUPER_ADMIN`, `ADMIN` (`AGENT_ADMIN_ROLES`). Frontend route `/acc-management/create-agent` grants only `SUPER_ADMIN` | ⚠️ **Updated 2026-11-10** — `@Roles(SUPER_ADMIN, ADMIN)` is **enforced** (2026-11-09). The `bankCode` defect is fixed on the frontend (`c4a0629`); the hardcoded password remains (D29 part 1) | **Frontend + product.** `createAgent()` still hardcodes `password: "password123"`; that waits on a product decision (D29). ~~Sends `bankCode: agentData.bankName`~~ fixed 2026-11-10: it now sends `agentData.bankCode`. **Older, minor residual gap:** The lockout that made this route unreachable is fixed. One narrower gap remains: `roles: ["SUPER_ADMIN"]` on this route doesn't include plain `ADMIN`, which backend's `AGENT_ADMIN_ROLES` does permit — low priority, since no `ADMIN`-role account exists in the test data yet (§7 only exercises `SUPER_ADMIN`/`AGENT`/`MERCHANT`) | — (body is `CreateAgentDto`, already correct — no backend change needed) |
 | 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` | `SUPER_ADMIN` | ✅ Matches | — | — |
 | 8 | GET | `agent-detail/dropdown` | `agent-detail` | `getDropdownAgent` | `SUPER_ADMIN` | ✅ Matches | — | — |
 | 9 | GET | `agent-detail/:userId` | `agent-detail` | `getAgentById` | `SUPER_ADMIN` | ✅ Matches | — | — |
@@ -276,11 +311,11 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 |---|---|---|---|---|---|---|---|---|
 | 17 | GET | `agent/:agentId/merchants` | `agent` | `getAgentMerchants` | `SUPER_ADMIN` (agent detail page) | ✅ Matches | — | — |
 | 18 | GET | `common/div?div=` | `common` | `getCommonByDiv` | Any authenticated — dropdown data (bank/provider/payment-method) reused across the create-agent, create-merchant, config-fee, provider and withdrawal pages | ✅ Matches, and **`?div=BANK` fixed 2026-10-21** — see the note below | — | — |
-| 19 | GET | `fee/config` | `fee` | `getBaseFee` | `SUPER_ADMIN`, `MERCHANT` (provider page + config-fee) | ✅ Matches | — | — |
+| 19 | GET | `fee/config` | `fee` | `getBaseFee` | `SUPER_ADMIN`, `MERCHANT` (provider page + config-fee) | ✅ **Updated 2026-11-10** — response gained `isActive` and `deletedAt` (always null here) and still lists deactivated fees (D25). The frontend handles both now (`e765b12`, `5e07d26`) | None. The frontend types `isActive`/`deletedAt`, shows a Status column with an Active/Inactive filter on the provider page, and drops inactive fees from the merchant fee-config fallback list. Money/percentage fields are typed as strings and displayed at 4 decimals (D28) | — |
 | 20 | GET | `merchant/:merchantId/interval` | `merchant` | `getMerchantInterval` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail / create-merchant) | ⚠️ **Deprecated shape cleaned 2026-10-26** — interval fields are no longer returned; frontend no longer calls the legacy interval mock/API | No frontend task for the removed fields. Policy management is tracked separately under D24 and remains mock-backed. | — |
-| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ **Updated 2026-10-26** — `settlementInterval`/`lastSettlementAt` removed | No frontend references remain for those fields. Real settlement-policy controller is still absent; see D24. | — |
-| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
-| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ Matches | — | — |
+| 21 | GET | `merchant/:merchantId/config` | `merchant` | `getMerchantConfig` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` (merchant detail + config-fee) | ✅ **Updated 2026-11-10** — `settlementInterval`/`lastSettlementAt` removed (2026-10-26); percentages no longer rounded to 2 decimals (`18ee3dc`); `baseFeeConfig` gained `isActive`/`deletedAt` (constant here). The frontend reads all of it correctly since `5e07d26`/`e765b12` | None for this route. Money/percentages are read as strings, converted with `Number()` only for arithmetic, and percentages display at 4 decimals (D28). The real settlement-policy controller is still absent (D24) | — |
+| 22 | POST | `merchant/:merchantId/provider` | `merchant` | `upsertMerchantFee` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | ✅ **Fixed 2026-11-10** (frontend `5e07d26`) — route and payload both match | None blocking. All four fee fields go out as decimal strings (money at 2 decimals, percentages at 4); see D28. **Minor:** the two fee-percentage inputs have no `max={100}`, so a typed value over 100 is a 422 rather than an input-level error | Array of `UpsertMerchantFeeDto { action, baseFeeId: number, feeInternalFixed: "1000.00", feeInternalPercentage: "0.7250", feeAgentFixed?: string \| null, feeAgentPercentage?: string \| null }` |
+| 23 | POST | `merchant/:merchantId/agent-shareholder` | `merchant` | `upsertMerchantAgentShareholder` | `SUPER_ADMIN`, `AGENT`, `MERCHANT` | 🔴 **Updated 2026-11-10** — the payload type is fixed (`5e07d26`), but the batch still fails the 100% total rule in common cases (D30) | **Frontend.** `percentagePerAgent` now goes out as a 4-decimal string (D28 ✅). The backend requires the submitted batch's non-`D` rows to sum to exactly `100`. The frontend sends only changed rows, splits and stores shares at 2 decimals (3 agents → `33.33` × 3 = 99.99), and only blocks totals **over** 100. The result is a 400 `Sum of agent shareholder percentage must be 100%`. See D30 | Array of `UpsertMerchantAgentShareholderDto { action, agentId: number, percentagePerAgent: "50.0000" }` |
 
 ### 2.3 From transaction-service
 
@@ -360,6 +395,29 @@ Section 7's progress checklist below still says "35 of 38 ported" — that line 
 **Update (2026-08-28, later same day): row 53 done.** Commit `9d749a8` adds the IP whitelist card and its caller — see the "Update" note appended to the row 53 callout in §2.1 for what was verified and the one gap it turned up (generic validation-error messages hid which entry was malformed, dashboard-wide, not just here — fixed the same day, commit `b7578bf`, see the same callout). Nothing in this doc's scope remains without at least a route to hit; what's left open is D17/D3 (§5) and the 🟡-stubbed handlers (rows 40–48), none of which are new to this pass.
 
 **Update (2026-09-13): re-audited backend, frontend, and this doc against each other end to end.** Every route in `apps/dashboard` was re-listed from the controllers directly (`grep` across every `*.controller.ts`) and matches this inventory exactly — no backend route exists that isn't already a row here, and nothing already-ported regressed. One new gap found, **D21** (§5): the frontend's `39fd47b` ("feat: change withdraw flow, add bank transfer and usdt withdraw. new withdraw approval for admin") added a `withdrawMethod`/`bankName`/`accountNumber` split to the withdraw-create request and response (rows 34, 35) and an `approvalMethod` to the approve request (row 40), none of which the schema or the stub DTO has caught up to yet. Not urgent — rows 35/40 are still gated on D17 regardless — but tracked now rather than found again the next time someone reads this doc against the code. No other new frontend-called endpoint exists beyond the 53 already tracked; confirmed by re-listing `src/api/*.api.ts` and diffing against the previous pass's list.
+
+### 2.7 Backend-first: super-admin routes (added 2026-11-05 → 2026-11-09)
+
+New `SuperAdminController` (`apps/dashboard/src/super-admin`). It has no legacy equivalent and **no frontend caller yet**, so these rows are not counted in §2.6's 49 in-scope totals, which track frontend calls. All nine are `@Roles(ROLE.SUPER_ADMIN)` at class level, and that **is enforced** (`RolesGuard` is registered). Every array endpoint uses `ParseDtoArrayPipe` plus service-level batch checks. In practice:
+
+- `[]` is a 400.
+- Duplicate keys are a 400.
+- A rejected batch writes nothing.
+- A 422 key depends on which layer rejected the entry:
+  - **Business-rule failures** (unknown provider, unsupported transaction type, window overlap, retire refused) are keyed `[i].field`.
+  - **DTO-shape failures** (wrong JSON type, bad pattern) are keyed by the **bare field name** of the first failing entry, with no row index. *Corrected 2026-11-10:* Nest's `ParseArrayPipe` validates entries with `Promise.all` and the inner `ValidationPipe` throws on the first entry that fails.
+
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 54 | POST | `super-admin/register-admin` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`e0870db`, 2026-11-05) | **Frontend, optional.** No screen | `CreateAdminDto { email, password (min 16), fullname, address, phone }` |
+| 55 | POST | `super-admin/reset-password` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`e0870db`) | **Frontend, recommended.** Resetting `superadmin@pg.id`/`agentinternal@pg.id` is the documented first step after go-live (`named-principals.md` §6); each login on the provisioning password logs a warning until it's done. Today it is a raw API call | `ResetPasswordDto { email, password (min 16) }` |
+| 56 | POST | `super-admin/base-fee` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Fixed (`18ee3dc`, 2026-11-06) | **Frontend, optional.** See D25 for the full rejection table | Array of `UpsertBaseFeeDto { providerName, paymentMethodName, transactionType, isActive: boolean, feeProviderFixed: "1000.00", feeProviderPercentage: "0.7250" }`. `isActive` must be a real JSON boolean |
+| 57 | GET | `super-admin/base-fee` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`18ee3dc`; `isActive`/`deletedAt` added `1f8fda1`) | Use only on an admin fee-config screen; `fee/config` (row 19) stays the operational read | — returns `BaseFeeDto[]` **including inactive and soft-deleted** rows |
+| 58 | POST | `super-admin/provider` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`5e44ef6`, 2026-11-09) | **Frontend, optional.** Activates or reactivates a partner (D27). Required before any base fee or settlement window can be created for that partner in production | Array of `{ name: ProviderNameEnum }` |
+| 59 | POST | `super-admin/provider/retire` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`b711389`, 2026-11-09) | Refused (422 naming the fee codes) while the provider still has an active base fee; `INTERNAL` is always refused (D27) | Array of `{ name: ProviderNameEnum }` |
+| 60 | GET | `super-admin/provider` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`5e44ef6`) | `common/div?div=PROVIDER` (row 18) stays the dropdown read | — returns `ProviderDto { name, createdAt, deletedAt }[]`, retired included |
+| 61 | POST | `super-admin/settlement-window` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Fixed 2026-11-09 (`b4e10c4`; it was a 500 on every request from `3a776b2`) | **Frontend, optional.** This is the API the frontend's parked `UpstreamSettlementWindow` screen was waiting for. Don't offer `businessDaysOnly: true` (422). Show overlap errors against `label` (D26) | Array of `UpsertSettlementWindowDto { providerName, paymentMethodName, label: /^[A-Z][A-Z0-9_]{1,23}$/, windowStart: "HH:MM", windowStartDayOffset: -1\|0, windowEnd: "HH:MM", settlementOffset: 0-31, settlementTime?: "HH:MM"\|null, businessDaysOnly: false, timezone?, effectiveFrom: ISO, effectiveTo?: ISO\|null }` |
+| 62 | GET | `super-admin/settlement-window` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`3a776b2`) | Returns derived `window`/`releases` display strings, so no client-side formatting is needed | — returns `SettlementWindowDto[]`, retired included, newest schedule first per rail |
 
 ---
 
@@ -493,7 +551,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Twenty-seven entries (D1–D27), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the six in the table below do.
+Thirty entries (D1–D30), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the eight in the table below do. D28, D29 and D30 are frontend defects found during the frontend-side comparisons, and none needs a backend change. D28 was fixed on the frontend on 2026-11-10. D29's `bankCode` half was fixed the same day; its password half waits on a product decision. D30 is new on 2026-11-10.
 
 ### Open — needs a decision or action
 
@@ -501,7 +559,9 @@ Twenty-seven entries (D1–D27), each a real defect or ambiguity found while rea
 |---|---|---|---|
 | **D25** | `POST /super-admin/base-fee` now validates `isActive` as a boolean, and rejects payloads it used to accept | **You** — send `isActive` as a JSON boolean, and surface the new 422 field errors | A string or an omitted value is now a 422. Before the fix the field was silently dropped, so the switch never worked at all |
 | **D22** | Snapshot balance reads, the agent holder-filter fix, frontend three-bucket support, and the admin profit view are all done; only the manual-adjustment write feature remains | **You** — build the `BalanceAdjustment` endpoint (mandatory reason, visible audit history, `BigInt` id serialized as a string) when ready | Admins can see profit and all three buckets everywhere now; manual balance correction still has no write path at all |
-| **D3** | No authorization is enforced — `@Roles()` / `@CheckPolicies()` are placeholders | **You** (discussing internally) | Any authenticated user can call any endpoint. Must be settled before production |
+| **D30** | Agent-shareholder saves fail the backend's "submitted batch sums to exactly 100" rule. The frontend sends only changed rows, keeps shares at 2 decimals, and only blocks totals over 100 | **Frontend.** Send the full shareholder set, keep shares at 4 decimals with the remainder on the last row, and require exactly 100 before submitting | Now that D28 is fixed, these saves pass validation and hit the total check. Two cases come back as a 400: a manual edit that leaves any row unchanged, and an auto-split that doesn't divide 100 evenly at 2 decimals (3, 7 or 9 agents give 99.99, 100.03 or 99.99) |
+| **D29** | Dashboard agent/merchant registration hardcodes `password: "password123"`. The `bankCode` half was fixed on the frontend 2026-11-10 (`c4a0629`) | **You + product** to decide how a new account's first password is set; then the frontend implements it | Every dashboard-created account shares a password that ships in the JS bundle |
+| **D3** | Authorization is **partly** enforced (2026-11-09): `RolesGuard` is registered, so `@Roles()` now gates `register-merchant` (AGENT), `register-agent` (SUPER_ADMIN/ADMIN) and `/super-admin/*` (SUPER_ADMIN), with SUPER_ADMIN passing every `@Roles()`. `@CheckPolicies()` is still a placeholder everywhere else | **You** (discussing internally) | Every endpoint without `@Roles()` — including all of balance, transactions, merchant/agent detail and config — is still open to any authenticated user. Must be settled before production |
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
 | **D21** | Withdrawal read fields now align; create/approve/reject dashboard behavior and approval-mode semantics remain unfinished | **Backend/product** — settle request contract and implement routes; frontend — wait for that contract | The listing can display backend fields, but dashboard writes remain absent or stubs |
@@ -532,6 +592,7 @@ Twenty-seven entries (D1–D27), each a real defect or ambiguity found while rea
 | D17 | Legacy balance-ledger write path: writes escaping their transaction, no advisory locks, wrong `merchantId` in the withdraw callback | **Fixed 2026-10-12** — not ported as originally recommended, but superseded by `@app/balance`'s `reserve()`/`post()`, which solves all three more robustly. Live in the purchase and disbursement paths, verified against fixtures and a nightly snapshot-integrity job. See the write-up for what this does and doesn't finish |
 | D20 | `BaseFee.code` dropped from the config schema | Fixed — `BaseFeeDto.code` derived from the three columns, so the response is unchanged |
 | D27 | No way to create a `Provider` outside development — the migrations insert `INTERNAL` alone and the only other writer refuses to run in production, so base fees, settlement windows and the provider dropdown were all dead for every real partner | **New surface, nothing required of you.** `POST` / `GET /super-admin/provider`. Activating a partner is now an audited call rather than a remembered SQL statement at cutover. See the write-up |
+| D28 | Frontend fee-config payloads sent money/percentages as JSON numbers where the backend requires decimal strings | **Fixed on the frontend 2026-11-10** (`5e07d26`). All five DTOs are typed as strings, edits are serialized at 2/4 decimals at the API boundary, percentages display at 4 decimals, and the mock 422s a number. Agent-shareholder saves still have the separate total-rule problem in D30 |
 | D26 | Upstream settlement schedules had no write path — the two MotionPay windows were hardcoded in a seed, and Jatelindo and Teleanjar had none at all | **New surface, nothing required of you.** `POST` / `GET /super-admin/settlement-window` ship the admin write path. A screen for it is worth building when the fee-config screen gets a sibling; until then the rows go in by API call. See the write-up |
 
 ---
@@ -1792,6 +1853,79 @@ thing nobody has published, so `TRANSFERBANK` there is an inference, not a fact.
 
 Nothing about any of this blocks a screen: the endpoints work, the table is just
 thin.
+
+---
+
+### D28 — the frontend's fee-config payloads send numbers where the backend requires decimal strings → **fixed on the frontend, 2026-11-10 (`5e07d26`)**
+
+> **Resolution, 2026-11-10.** The frontend applied the fix described at the end of this entry. Checked against `money.decorator.ts`:
+>
+> - All five DTOs type money/percentages as `string`.
+> - The fee-config submit and both shareholder components serialize at the API boundary, with `formatFixedDecimals(x, 2)` for money and `(x, 4)` for percentages. It uses `toLocaleString` with `useGrouping: false`, so the output matches `MONEY_PATTERN`/`percentagePattern(4)`.
+> - Sorters and arithmetic wrap reads in `Number()`, and percentages display at 4 decimals.
+> - The mock now 422s a JSON number.
+>
+> Two loose ends remain. The fee-percentage inputs lack `max={100}` (minor, row 22). Agent-shareholder saves now reach the 100% total check and often fail it, which is a separate defect tracked as D30.
+
+Found 2026-11-09, while checking what D25's `BaseFeeDto` change means for the frontend. **Pre-existing, not caused by this pull:** `UpsertMerchantFeeDto` and `UpsertMerchantAgentShareholderDto` have used `@IsMoney()` / `@IsPercentage()` since they were ported (`c978a16`, 2026-08-11). Rows 22/23 were marked ✅ on route shape alone; their payloads were never checked.
+
+**The write side.** Both decorators are `IsString()` plus a pattern (D4: `^\d{1,13}(\.\d{1,2})?$` for money, 0–100 with up to 4 decimals for percentages). Neither `CustomValidationPipe` nor `ParseDtoArrayPipe` sets `enableImplicitConversion`, so a JSON number is not coerced to a string; it fails `IsString` as-is. The frontend sends numbers:
+
+| Frontend call | Fields sent as `number` | Where |
+|---|---|---|
+| `upsertMerchantFee()` → `POST merchant/:id/provider` (row 22) | `feeInternalFixed`, `feeInternalPercentage`, `feeAgentFixed`, `feeAgentPercentage` | `src/api/config-merchant.type.ts` (`UpsertMerchantFeeDto`), filled by `Number(val)` in `config-merchant-provider/index.tsx` |
+| `upsertMerchantAgentShareholder()` → `POST merchant/:id/agent-shareholder` (row 23) | `percentagePerAgent` | `config-merchant-agent/index.tsx` and `merchant/components/merchant-detail-agent.tsx`, both via `Number(agent.feeInPercentage)` |
+
+So every save on the merchant fee-config tab and the agent-shareholder tab should come back as a 422 naming the fields. This was determined by reading both sides; it has not been reproduced against a running backend. The mock server accepts numbers, which is the likely reason it was never noticed.
+
+**The read side has the matching drift.** `BaseFeeDto`, `MerchantFeeDto` and `AgentShareholderDto` in the frontend type every money/percentage field as `number`, but they arrive as `@ToMoneyString()` / `@ToPercentageString()` strings. Two visible consequences:
+
+- `formatFixedDecimals(value)` starts with `Number.isFinite(value)`, which is `false` for a string, so it returns `"0.00"`. `config-merchant-provider/index.tsx` passes `feeProviderPercentage` and `feeAgentPercentage` straight in, so those columns read `0.00%` against the real backend. The provider page is unaffected because it wraps the value in `Number()` first.
+- `formatFixedDecimals` defaults to 2 decimals, so even where it gets a number, a stored `0.7250` displays as `0.73%`. This is the display-side twin of the rounding D25 just removed from the backend.
+
+**Fix (frontend only).** Type money/percentage fields as `string` on all three read DTOs and both upsert DTOs. Serialize edits as strings at the API boundary (money at 2 decimals, percentages at up to 4). Convert to `number` only for arithmetic and antd numeric props, the same pattern `f01cb07` used for balances. Display percentages at 4 decimals. Make the mock emit and validate strings so the next drift fails locally.
+
+---
+
+### D29 — dashboard registration hardcodes a shared password, and `createAgent` sends the bank name as `bankCode` → **`bankCode` fixed 2026-11-10; password waits on a product decision**
+
+> **Status, 2026-11-10.**
+>
+> - **Part 2 is fixed** (frontend `c4a0629`). `createAgent()` now sends `bankCode: agentData.bankCode`, the catalogue code that the bank `Select` writes into the hidden form field.
+> - **Part 1 is unchanged.** Both registration calls still send `password: "password123"`.
+
+Found 2026-11-09, while checking which registration endpoints `RolesGuard` now gates. Pre-existing, not caused by this pull.
+
+**1. Every dashboard-created account gets `"password123"`.** `createAgent()` (`src/api/agent.api.ts`) and `createMerchant()` (`src/api/merchant.api.ts`) both send `password: "password123"` literally, ignoring any form value. The string ships in the production JS bundle, so anyone who can open dev tools knows the password of every agent and merchant created through the dashboard. Neither the frontend nor the backend has a change-password endpoint (`named-principals.md` §7), so these accounts cannot rotate it either. **The fix is a product decision first:** an admin-entered initial password, a generated one shown once, or an invite/set-password flow. The last needs new backend endpoints. Until then, treat every dashboard-created account as sharing a known credential.
+
+**2. `createAgent` sends the display name as `bankCode`.** The create-agent form stores the bank's display name in `bankName` and the real code in a hidden `bankCode` field (`manage-agent/index.tsx`), but `createAgent()` sends `bankCode: agentData.bankName`. `bankCode` is `VarChar(10)` with no foreign key (`apps/auth/prisma/schema.prisma`). Of the 95 names in `20261106090000_bank_catalogue`, 60 are longer than 10 characters, so registering an agent with one of those banks should fail at the database. The other 35 (e.g. `BCA`) would store a name where `014` belongs, which breaks any later lookup by code. **Fix:** send `bankCode: agentData.bankCode`. `createMerchant()` already does this correctly.
+
+---
+
+### D30 — agent-shareholder saves fail the backend's "exactly 100%" rule → **frontend fix needed**
+
+Found 2026-11-10, while checking the D28 fix. **Pre-existing:** it was hidden behind D28, because every shareholder save failed validation before reaching this check. The mock never checks the total, which is why the frontend's live test after `5e07d26` passed.
+
+**The backend rule.** `ConfigMerchantService.assertShareholderPercentagesTotal()` sums `percentagePerAgent` over the **submitted** entries whose `action` is not `D`, using `Decimal`. Unless that sum equals exactly `100`, it throws a 400 `Sum of agent shareholder percentage must be 100%`, with `fields.percentagePerAgent = "Current sum is …%"`. It checks the batch, not the resulting table. Its comment says the frontend "has to post the merchant's complete shareholder set, which is what it does", and that assumption is wrong.
+
+**What the frontend does.** Both `config-merchant-agent/index.tsx` and `merchant/components/merchant-detail-agent.tsx` have identical logic:
+
+| Step | Behavior | Effect against the backend |
+|---|---|---|
+| Building the payload (`selectedAgents`) | Filters out rows with `action === N` | A manual edit that leaves any shareholder unchanged sends a partial set. Example: A 50 / B 25 / C 25, change B → 30 and C → 20. Only B and C are sent, the sum is 50, and the backend returns 400 although the resulting table totals 100 |
+| Adding or removing an agent | Re-splits every row to `formatFixedDecimals(100 / n)`, which is **2 decimals**, and marks them all `U` | The full set is sent, but n = 3, 7 or 9 gives 99.99, 100.03 or 99.99 → 400, or the frontend's own "exceeds 100" error |
+| Manual edit (`updateFee`) | Stores `formatFixedDecimals(numericFee)`, which is **2 decimals** | A 4-decimal split (`33.3333`/`33.3333`/`33.3334`) cannot be entered. D28 fixed the 4-decimal *display* but not this *input* |
+| Pre-submit check | `roundToDecimals(sum, 2) > 100` | Under 100 passes locally and fails on the server. The 2-decimal rounding also hides near-misses such as 99.999 |
+
+**Fix (frontend only; both components):**
+
+1. Send every non-deleted shareholder, mapping unchanged rows from `N` to `U`; `U` is an upsert on the backend, so resending is harmless. Keep the `D` rows.
+2. Store shares at 4 decimals in the add, delete and edit handlers.
+3. When auto-splitting, give the last row the exact remainder, e.g. `33.3333` / `33.3333` / `33.3334`. The mock's `randomShareholders()` already does this.
+4. Before submitting, require the non-`D` total to be exactly `100.0000`, compared at 4 decimals (or in integer ten-thousandths). Show the current sum when it isn't.
+5. Make the mock's `POST merchant/:id/agent-shareholder` apply the same total check, so the next drift fails locally.
+
+**Backend alternative, not recommended.** The backend could validate the resulting table instead of the batch. That would also accept partial batches, but it means reading the current rows inside the transaction and changing a documented contract. Steps 1–4 on the frontend are smaller and keep the contract as written.
 
 ---
 
