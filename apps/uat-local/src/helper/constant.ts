@@ -1,5 +1,12 @@
 import { CreateMerchantDto } from 'apps/dashboard/src/modules/user/dto/create-merchant.dto';
 import { CreateAgentDto } from 'apps/dashboard/src/modules/user/dto/create-agent.dto';
+import { UpsertBaseFeeDto } from 'apps/dashboard/src/super-admin/dto/base-fee.dto';
+import {
+  ProviderNameEnum,
+  PaymentMethodNameEnum,
+  TransactionTypeEnum,
+} from '@app/microservice/microservice.enum';
+import Decimal from 'decimal.js';
 
 export const DASHBOARD_BASE_URL =
   process.env.DASHBOARD_BASE_URL ?? 'http://localhost:3000';
@@ -149,3 +156,85 @@ export const AGENTS: Array<CreateAgentDto> = [
     address: `Jl. Merchant ${AGENT_4}`,
   },
 ];
+
+const ZERO = new Decimal(0).toFixed(2);
+
+const BASE_FFES_MOTIONPAY: Array<UpsertBaseFeeDto> = [
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.QRIS,
+    transactionType: TransactionTypeEnum.PURCHASE,
+    isActive: true,
+    feeProviderFixed: ZERO,
+    feeProviderPercentage: new Decimal(0.9).toFixed(4),
+  },
+];
+
+const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    transactionType: TransactionTypeEnum.WITHDRAW,
+    isActive: true,
+    feeProviderFixed: new Decimal(500).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFERBANK,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    isActive: true,
+    feeProviderFixed: new Decimal(1_500).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_DANA,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    isActive: true,
+    feeProviderFixed: new Decimal(350).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_GOPAY,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    isActive: true,
+    feeProviderFixed: new Decimal(500).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_OVO,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    isActive: true,
+    feeProviderFixed: new Decimal(700).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+  {
+    providerName: ProviderNameEnum.JATELINDO,
+    paymentMethodName: PaymentMethodNameEnum.TRANSFEREWALLET_SHOPEEPAY,
+    transactionType: TransactionTypeEnum.DISBURSEMENT,
+    isActive: true,
+    feeProviderFixed: new Decimal(650).toFixed(2),
+    feeProviderPercentage: ZERO,
+  },
+];
+
+export const BASE_FEES: Array<UpsertBaseFeeDto> = [
+  ...BASE_FFES_MOTIONPAY,
+  ...BASE_FEES_JATELINDO,
+];
+
+export const baseFeeCode = (
+  dtos: Array<{
+    providerName: ProviderNameEnum;
+    paymentMethodName: PaymentMethodNameEnum;
+    transactionType: TransactionTypeEnum;
+  }>,
+) => {
+  return dtos.map((dto) => {
+    return `${dto.providerName}_${dto.paymentMethodName}_${dto.transactionType}`;
+  });
+};

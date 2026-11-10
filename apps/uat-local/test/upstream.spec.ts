@@ -1,86 +1,21 @@
 import { AuthDto } from 'apps/dashboard/src/auth/dto/auth.dto';
 import {
-  callDashboard,
   loginAgentInternal,
   loginSuperAdmin,
+  providerFindAll,
+  providerRetire,
+  providerUpsert,
+  SettlementWindowBody,
+  settlementWindowFindAll,
+  settlementWindowUpsert,
 } from '../src/helper';
 import {
   PaymentMethodNameEnum,
   ProviderNameEnum,
 } from '@app/microservice/microservice.enum';
-import {
-  ProviderDto,
-  UpsertProviderDto,
-} from 'apps/dashboard/src/super-admin/dto/provider.dto';
-import {
-  SettlementWindowDto,
-  UpsertSettlementWindowDto,
-} from 'apps/dashboard/src/super-admin/dto/settlement-window.dto';
+import { UpsertProviderDto } from 'apps/dashboard/src/super-admin/dto/provider.dto';
 import { ResponseStatus } from 'apps/dashboard/src/shared/response.dto';
-
-const upstreamRegister = async (
-  authDto: AuthDto,
-  providerName: UpsertProviderDto[],
-) => {
-  const res = await callDashboard<null>({
-    method: 'POST',
-    url: '/api/v1/super-admin/provider',
-    data: providerName,
-    headers: {
-      Authorization: `Bearer ${authDto.token}`,
-    },
-  });
-  return res;
-};
-
-const upstreamFindAll = async (authDto: AuthDto) => {
-  const res = await callDashboard<ProviderDto[]>({
-    method: 'GET',
-    url: '/api/v1/super-admin/provider',
-    headers: {
-      Authorization: `Bearer ${authDto.token}`,
-    },
-  });
-  return res;
-};
-
-/**
- * The JSON shape of `UpsertSettlementWindowDto`.
- *
- * The DTO types `effectiveFrom` as a `Date` because `@ToJsDate()` has already
- * run by the time a handler sees it. On the wire it is an ISO 8601 string with
- * an explicit offset, so a request body is this shape rather than the DTO's.
- */
-type SettlementWindowBody = Omit<
-  UpsertSettlementWindowDto,
-  'effectiveFrom' | 'effectiveTo'
-> & { effectiveFrom: string; effectiveTo?: string | null };
-
-const settlementWindowUpsert = async (
-  authDto: AuthDto,
-  windows: SettlementWindowBody[],
-) => {
-  const res = await callDashboard<null>({
-    method: 'POST',
-    url: '/api/v1/super-admin/settlement-window',
-    data: windows,
-    headers: {
-      Authorization: `Bearer ${authDto.token}`,
-    },
-  });
-  return res;
-};
-
-const settlementWindowFindAll = async (authDto: AuthDto) => {
-  const res = await callDashboard<SettlementWindowDto[]>({
-    method: 'GET',
-    url: '/api/v1/super-admin/settlement-window',
-    headers: {
-      Authorization: `Bearer ${authDto.token}`,
-    },
-  });
-  return res;
-};
+import { HttpStatus } from '@nestjs/common';
 
 /**
  * The message `callDashboard` throws on a non-2xx, which carries the status and
@@ -118,14 +53,22 @@ const window = (
   ...fields,
 });
 
+/** The providers this spec needs, and the only ones it registers. */
+const PROVIDERS = [
+  ProviderNameEnum.INTERNAL,
+  ProviderNameEnum.JATELINDO,
+  ProviderNameEnum.MOTIONPAY,
+];
+
 /**
- * The schedules this spec installs, chosen to cover every convention the column
- * comments describe rather than to be realistic.
+ * Schedules chosen to cover every convention the column comments describe
+ * rather than to be realistic.
  *
- * MOTIONPAY and JATELINDO only. TELEANJAR is deliberately never registered as a
- * provider: it is the fixture for the "provider is not configured" refusal, and
- * leaving it out keeps that case reachable on every run - as well as keeping
- * `register` above able to assert an exact provider count.
+ * `TELEANJAR` is never activated here. It is the fixture for the "provider is
+ * not configured" refusals, and `loadProviderCatalogue` filters
+ * `deletedAt: null`, so the retire test below can register and retire it
+ * without making those cases unreachable - a retired provider is still not a
+ * configured one.
  */
 const WINDOWS: SettlementWindowBody[] = [
   // A full day is written end-equals-start. `23:59`, as MotionPay words it,
@@ -137,10 +80,7 @@ const WINDOWS: SettlementWindowBody[] = [
     ProviderNameEnum.MOTIONPAY,
     PaymentMethodNameEnum.DIRECTEWALLET,
     'DAILY',
-    {
-      settlementOffset: 3,
-      settlementTime: null,
-    },
+    { settlementOffset: 3, settlementTime: null },
   ),
   // Two batches on one rail: the case `label` is in the natural key for. They
   // tile the day exactly - 18 hours plus 6, batch 2 ending where the next
@@ -181,48 +121,54 @@ describe('upstream', () => {
     expect(agentInternal.authInfo.userId).toBeGreaterThan(0);
     expect(superAdmin.token).toBeTruthy();
     expect(superAdmin.authInfo.userId).toBeGreaterThan(0);
+
+    // Setup, not a step. The equivalents under test/inject are what an
+    // injection run uses; doing it here too keeps this spec runnable on its
+    // own and in any order relative to the other spec files, which jest runs
+    // in parallel workers. Both endpoints upsert, so this is idempotent.
+    await providerUpsert(
+      superAdmin,
+      PROVIDERS.map((name) => ({ name }) as UpsertProviderDto),
+    );
+    await settlementWindowUpsert(superAdmin, WINDOWS);
   });
 
-  it('register', async () => {
-    const providers = [
-      ProviderNameEnum.INTERNAL,
-      ProviderNameEnum.JATELINDO,
-      ProviderNameEnum.MOTIONPAY,
-    ];
-    const resRegister = await upstreamRegister(
-      superAdmin,
-      providers.map((p) => ({ name: p }) as UpsertProviderDto),
-    );
-    expect(resRegister.statusCode).toEqual(201);
-    expect(resRegister.status).toBe(ResponseStatus.CREATED);
+  it('serves the configured providers', async () => {
+    const res = await providerFindAll(superAdmin);
+    expect(res.statusCode).toEqual(HttpStatus.OK);
+    expect(res.status).toBe(ResponseStatus.SUCCESS);
 
-    const resFindAll = await upstreamFindAll(superAdmin);
-    expect(resFindAll.statusCode).toEqual(200);
-    expect(resFindAll.status).toBe(ResponseStatus.SUCCESS);
-    expect(resFindAll.data).toBeTruthy();
-    expect(resFindAll.data?.length).toEqual(providers.length); // INTERNAL already seed
-    for (const p of resFindAll.data!) {
-      expect(providers).toContain(p.name);
+    const byName = new Map(res.data!.map((p) => [p.name, p]));
+    for (const name of PROVIDERS) {
+      const provider = byName.get(name)!;
+      expect(provider).toBeDefined();
+      expect(provider.deletedAt).toBeNull();
+      // The closest thing stored to "when did we go live with this partner".
+      expect(provider.createdAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+07:00$/,
+      );
     }
   });
 
-  it('settlement window', async () => {
-    const resUpsert = await settlementWindowUpsert(superAdmin, WINDOWS);
-    expect(resUpsert.statusCode).toEqual(201);
-    expect(resUpsert.status).toBe(ResponseStatus.CREATED);
+  it('serves the configured windows', async () => {
+    const res = await settlementWindowFindAll(superAdmin);
+    expect(res.statusCode).toEqual(HttpStatus.OK);
+    expect(res.status).toBe(ResponseStatus.SUCCESS);
 
-    const resFindAll = await settlementWindowFindAll(superAdmin);
-    expect(resFindAll.statusCode).toEqual(200);
-    expect(resFindAll.status).toBe(ResponseStatus.SUCCESS);
-    expect(resFindAll.data).toBeTruthy();
-    expect(resFindAll.data?.length).toEqual(WINDOWS.length);
+    const mine = res.data!.filter((w) =>
+      WINDOWS.some(
+        (sent) =>
+          sent.providerName === w.providerName &&
+          sent.paymentMethodName === w.paymentMethodName &&
+          sent.label === w.label,
+      ),
+    );
+    expect(mine.length).toEqual(WINDOWS.length);
 
     // Ordered providerName asc, paymentMethodName asc, effectiveFrom desc,
     // label asc - the configuration screen reads it top to bottom.
     expect(
-      resFindAll.data!.map(
-        (w) => `${w.providerName} ${w.paymentMethodName} ${w.label}`,
-      ),
+      mine.map((w) => `${w.providerName} ${w.paymentMethodName} ${w.label}`),
     ).toEqual([
       'JATELINDO TRANSFERBANK BATCH_1',
       'JATELINDO TRANSFERBANK BATCH_2',
@@ -230,22 +176,22 @@ describe('upstream', () => {
       'MOTIONPAY QRIS DAILY',
     ]);
 
-    // The two derived strings, which exist so a listing row needs no formatting
-    // logic on the frontend's side.
-    expect(resFindAll.data!.map((w) => w.window)).toEqual([
+    // The two derived strings, which exist so a listing row needs no
+    // formatting logic on the frontend's side.
+    expect(mine.map((w) => w.window)).toEqual([
       '18:00 (D-1) - 12:00',
       '12:00 - 18:00',
       '00:00 - 00:00',
       '00:00 - 00:00',
     ]);
-    expect(resFindAll.data!.map((w) => w.releases)).toEqual([
+    expect(mine.map((w) => w.releases)).toEqual([
       'H+0 13:00',
       'H+0 19:00',
       'H+3 end of day',
       'H+1 15:00',
     ]);
 
-    for (const w of resFindAll.data!) {
+    for (const w of mine) {
       expect(w.id).toBeGreaterThan(0);
       expect(w.timezone).toBe('Asia/Jakarta'); // the column default
       expect(w.businessDaysOnly).toBe(false);
@@ -257,7 +203,7 @@ describe('upstream', () => {
     }
   });
 
-  it('settlement window update', async () => {
+  it('updates a window in place', async () => {
     // Same natural key, a later release time: the upsert has to match the
     // stored row and update it rather than insert a second schedule.
     const resUpsert = await settlementWindowUpsert(superAdmin, [
@@ -273,16 +219,22 @@ describe('upstream', () => {
         },
       ),
     ]);
-    expect(resUpsert.statusCode).toEqual(201);
+    expect(resUpsert.statusCode).toEqual(HttpStatus.CREATED);
+    expect(resUpsert.status).toBe(ResponseStatus.CREATED);
 
-    const resFindAll = await settlementWindowFindAll(superAdmin);
-    expect(resFindAll.data?.length).toEqual(WINDOWS.length);
-    expect(resFindAll.data!.find((w) => w.label === 'BATCH_2')?.releases).toBe(
-      'H+0 20:00',
+    const res = await settlementWindowFindAll(superAdmin);
+    const matching = res.data!.filter(
+      (w) =>
+        w.providerName === ProviderNameEnum.JATELINDO && w.label === 'BATCH_2',
     );
+    expect(matching.length).toEqual(1);
+    expect(matching[0].releases).toBe('H+0 20:00');
+
+    // Put it back, so the fixtures describe the database again.
+    await settlementWindowUpsert(superAdmin, WINDOWS);
   });
 
-  it('settlement window rejects bad input', async () => {
+  it('rejects bad input', async () => {
     // Nothing to apply, and almost certainly a bug in the caller.
     expect(await rejection(settlementWindowUpsert(superAdmin, []))).toContain(
       '-> 400',
@@ -299,9 +251,9 @@ describe('upstream', () => {
     expect(duplicate).toContain('-> 400');
     expect(duplicate).toContain('Duplicate settlement window');
 
-    // TELEANJAR is in ProviderNameEnum but was never registered, so there is no
-    // config.Provider row. This table has no foreign key to it, which is why
-    // the service checks rather than relying on Postgres.
+    // TELEANJAR is in ProviderNameEnum but is never activated by this suite, so
+    // it has no live config.Provider row. This table has no foreign key to it,
+    // which is why the service checks rather than relying on Postgres.
     const unknownProvider = await rejection(
       settlementWindowUpsert(superAdmin, [
         window(
@@ -324,9 +276,7 @@ describe('upstream', () => {
           ProviderNameEnum.MOTIONPAY,
           PaymentMethodNameEnum.VIRTUALACCOUNT,
           'DAILY',
-          {
-            businessDaysOnly: true,
-          },
+          { businessDaysOnly: true },
         ),
       ]),
     );
@@ -360,9 +310,7 @@ describe('upstream', () => {
           ProviderNameEnum.MOTIONPAY,
           PaymentMethodNameEnum.VIRTUALACCOUNT,
           'DAILY',
-          {
-            effectiveTo: IN_FORCE_FROM,
-          },
+          { effectiveTo: IN_FORCE_FROM },
         ),
       ]),
     );
@@ -370,10 +318,10 @@ describe('upstream', () => {
     expect(badPeriod).toContain('[0].effectiveTo');
   });
 
-  it('settlement window rejects overlaps', async () => {
+  it('rejects overlaps', async () => {
     // Against a stored row: a mistyped label does not correct the window from
-    // the first test, it creates a second schedule covering the same
-    // transactions with nothing to say which wins.
+    // the setup, it creates a second schedule covering the same transactions
+    // with nothing to say which wins.
     const againstStored = await rejection(
       settlementWindowUpsert(superAdmin, [
         window(
@@ -394,19 +342,13 @@ describe('upstream', () => {
           ProviderNameEnum.MOTIONPAY,
           PaymentMethodNameEnum.VIRTUALACCOUNT,
           'MORNING',
-          {
-            windowStart: '00:00',
-            windowEnd: '12:00',
-          },
+          { windowStart: '00:00', windowEnd: '12:00' },
         ),
         window(
           ProviderNameEnum.MOTIONPAY,
           PaymentMethodNameEnum.VIRTUALACCOUNT,
           'AFTERNOON',
-          {
-            windowStart: '06:00',
-            windowEnd: '18:00',
-          },
+          { windowStart: '06:00', windowEnd: '18:00' },
         ),
       ]),
     );
@@ -414,11 +356,15 @@ describe('upstream', () => {
     expect(withinRequest).toContain('also in this request');
 
     // The refusals above must have written nothing.
-    const resFindAll = await settlementWindowFindAll(superAdmin);
-    expect(resFindAll.data?.length).toEqual(WINDOWS.length);
+    const res = await settlementWindowFindAll(superAdmin);
+    expect(
+      res.data!.some((w) =>
+        ['DAILY_2', 'MORNING', 'AFTERNOON'].includes(w.label),
+      ),
+    ).toBe(false);
   });
 
-  it('settlement window rejects a bad shape', async () => {
+  it('rejects a bad shape', async () => {
     // "24:00" is rejected on purpose: a full day is already expressible as
     // end-equals-start, and a second spelling would put rows in the table that
     // look different and behave identically.
@@ -429,9 +375,7 @@ describe('upstream', () => {
             ProviderNameEnum.MOTIONPAY,
             PaymentMethodNameEnum.VIRTUALACCOUNT,
             'DAILY',
-            {
-              windowStart: '24:00',
-            },
+            { windowStart: '24:00' },
           ),
         ]),
       ),
@@ -458,9 +402,7 @@ describe('upstream', () => {
             ProviderNameEnum.MOTIONPAY,
             PaymentMethodNameEnum.VIRTUALACCOUNT,
             'DAILY',
-            {
-              windowStartDayOffset: 1,
-            },
+            { windowStartDayOffset: 1 },
           ),
         ]),
       ),
@@ -474,16 +416,68 @@ describe('upstream', () => {
             ProviderNameEnum.MOTIONPAY,
             PaymentMethodNameEnum.VIRTUALACCOUNT,
             'DAILY',
-            {
-              settlementOffset: 99,
-            },
+            { settlementOffset: 99 },
           ),
         ]),
       ),
     ).toContain('-> 422');
   });
 
-  it('settlement window is super admin only', async () => {
+  it('retires a provider, and refuses the ones it must not', async () => {
+    // TELEANJAR has no base fees, so retiring it is allowed - and it stays the
+    // "not configured" fixture afterwards, because loadProviderCatalogue
+    // filters deletedAt: null and a retired provider therefore does not count
+    // as configured.
+    await providerUpsert(superAdmin, [
+      { name: ProviderNameEnum.TELEANJAR } as UpsertProviderDto,
+    ]);
+    const resRetire = await providerRetire(superAdmin, [
+      { name: ProviderNameEnum.TELEANJAR },
+    ]);
+    expect(resRetire.statusCode).toEqual(HttpStatus.CREATED);
+
+    const retired = (await providerFindAll(superAdmin)).data!.find(
+      (p) => p.name === ProviderNameEnum.TELEANJAR,
+    )!;
+    expect(retired.deletedAt).not.toBeNull();
+
+    // The desired end state is already true, so doing it twice is not an error.
+    expect(
+      (await providerRetire(superAdmin, [{ name: ProviderNameEnum.TELEANJAR }]))
+        .statusCode,
+    ).toEqual(HttpStatus.CREATED);
+
+    // INTERNAL is the house provider: engine data, excluded from the dropdowns
+    // because no merchant routes to it, and what admins and agent-less agents
+    // resolve to. Retiring it is never meant.
+    const internal = await rejection(
+      providerRetire(superAdmin, [{ name: ProviderNameEnum.INTERNAL }]),
+    );
+    expect(internal).toContain('-> 422');
+    expect(internal).toContain('house provider');
+
+    // A provider with live base fees is refused, because nothing in the
+    // routing path reads this table - retiring it would hide it from the
+    // dropdowns and keep sending transactions to it. base-fee.spec.ts may or
+    // may not have configured MOTIONPAY by now, so this asserts the outcome is
+    // one of the two correct ones rather than racing it.
+    const motionpay = await providerRetire(superAdmin, [
+      { name: ProviderNameEnum.MOTIONPAY },
+    ]).then(
+      () => 'retired',
+      (error: Error) => error.message,
+    );
+    if (motionpay !== 'retired') {
+      expect(motionpay).toContain('-> 422');
+      expect(motionpay).toContain('active base fee');
+    }
+    // Either way MOTIONPAY has to end up usable for everything else.
+    await providerUpsert(superAdmin, [
+      { name: ProviderNameEnum.MOTIONPAY } as UpsertProviderDto,
+    ]);
+  });
+
+  it('is super admin only', async () => {
     // RolesGuard is registered and the controller carries
     // @Roles(ROLE.SUPER_ADMIN), so agentinternal gets a 403 here rather than
     // being waved through - unlike the endpoints that rely on @CheckPolicies().
@@ -493,5 +487,13 @@ describe('upstream', () => {
     expect(await rejection(settlementWindowFindAll(agentInternal))).toContain(
       '-> 403',
     );
+    expect(await rejection(providerFindAll(agentInternal))).toContain('-> 403');
+    expect(
+      await rejection(
+        providerUpsert(agentInternal, [
+          { name: ProviderNameEnum.MOTIONPAY } as UpsertProviderDto,
+        ]),
+      ),
+    ).toContain('-> 403');
   });
 });
