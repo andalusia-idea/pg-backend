@@ -69,6 +69,21 @@ const PROVIDERS = [
  * `deletedAt: null`, so the retire test below can register and retire it
  * without making those cases unreachable - a retired provider is still not a
  * configured one.
+ *
+ * **The Jatelindo batch pair carries Teleanjar's times, and is not a
+ * transcription.** Teleanjar published those two batches; Jatelindo has
+ * published no schedule at all. They are attached to Jatelindo because the
+ * batch case needs an *activated* provider and `TELEANJAR` deliberately is not
+ * one, per the paragraph above.
+ *
+ * That matters more than a usual fixture would, because these rows outlive the
+ * run: `beforeAll` upserts them into the shared test database, where the "is
+ * any rail ambiguous" query in `docs/batch/settlement-policy-explained.md` §14
+ * finds them and reports Jatelindo settling TRANSFERBANK in two batches. It
+ * does not. The transcribed schedules are in
+ * `docs/accounting/upstream-settlement-schedules.md` - under TELEANJAR in
+ * `transaction-dev.seed.ts`, which is the one to copy from - and Jatelindo's
+ * absence from both is the gap worth filling.
  */
 const WINDOWS: SettlementWindowBody[] = [
   // A full day is written end-equals-start. `23:59`, as MotionPay words it,
@@ -85,6 +100,9 @@ const WINDOWS: SettlementWindowBody[] = [
   // Two batches on one rail: the case `label` is in the natural key for. They
   // tile the day exactly - 18 hours plus 6, batch 2 ending where the next
   // batch 1 begins - so they do not overlap and both are accepted.
+  //
+  // The times are Teleanjar's, borrowed. See the block above before quoting
+  // them at anyone.
   window(
     ProviderNameEnum.JATELINDO,
     PaymentMethodNameEnum.TRANSFERBANK,
