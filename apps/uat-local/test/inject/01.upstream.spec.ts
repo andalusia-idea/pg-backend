@@ -31,7 +31,6 @@
  *    |---|---|---|---|---|
  *    | MOTIONPAY | QRIS | DAILY | full day | H+1 15:00 |
  *    | MOTIONPAY | DIRECTEWALLET | DAILY | full day | H+3, no published time |
- *    | JATELINDO | ? | ? | **not published** | **not published** |
  *
  *    Two conventions the column comments spell out and the API enforces:
  *    a **full day is `windowEnd` equal to `windowStart`** (`"24:00"` is
@@ -40,15 +39,112 @@
  *    `settlementTime: null` means no published time, which eligibility reads as
  *    end of day rather than start.
  *
- *    **Jatelindo has no schedule anywhere** - not here, not in the reference
- *    doc - and it is a live upstream, so settlement cannot answer
- *    `FOLLOW_UPSTREAM` for that rail until someone transcribes one from a
- *    partner notice. That is the gap worth filling first.
+ *    **MotionPay is the only provider with windows, and that is not a gap.** A
+ *    window affects *payin* settlement and nothing else - the claim reads
+ *    `transaction.PurchaseTransaction` - while Jatelindo serves payouts only,
+ *    WITHDRAW and DISBURSEMENT. A schedule for TRANSFERBANK or a
+ *    TRANSFEREWALLET_* method could never match a row, and giving one of those
+ *    methods a window would make the enqueuer create runs that claim nothing.
+ *    The comment on `SETTLEMENT_WINDOWS` in `src/helper/constant.ts` has the
+ *    reasoning in full.
  *
  * Fixtures belong in `src/helper/constant.ts` beside `BASE_FEES`, not here.
  */
 
+import { HttpStatus } from '@nestjs/common';
+import { AuthDto } from 'apps/dashboard/src/auth/dto/auth.dto';
+import { ResponseStatus } from 'apps/dashboard/src/shared/response.dto';
+import { UpsertProviderDto } from 'apps/dashboard/src/super-admin/dto';
+import {
+  loginSuperAdmin,
+  providerFindAll,
+  PROVIDERS,
+  providerUpsert,
+  SETTLEMENT_WINDOWS,
+  settlementWindowFindAll,
+  settlementWindowUpsert,
+} from 'apps/uat-local/src/helper';
+
 describe('inject upstream', () => {
-  it.todo('register');
-  it.todo('settlement window');
+  let superAdmin: AuthDto;
+
+  beforeAll(async () => {
+    superAdmin = await loginSuperAdmin();
+    expect(superAdmin.token).toBeTruthy();
+    expect(superAdmin.authInfo.userId).toBeGreaterThan(0);
+  });
+
+  it('1 register provider', async () => {
+    const providers = PROVIDERS.map<UpsertProviderDto>((p) => ({ name: p }));
+    const resUpsert = await providerUpsert(superAdmin, providers);
+    expect(resUpsert.statusCode).toEqual(HttpStatus.CREATED);
+    expect(resUpsert.status).toBe(ResponseStatus.CREATED);
+
+    const resFindAll = await providerFindAll(superAdmin);
+    expect(resFindAll.statusCode).toEqual(HttpStatus.OK);
+    expect(resFindAll.status).toBe(ResponseStatus.SUCCESS);
+
+    const byName = new Map(resFindAll.data!.map((p) => [p.name, p]));
+    for (const p of PROVIDERS) {
+      const provider = byName.get(p);
+      expect(provider).toBeDefined();
+      expect(provider?.deletedAt).toBeNull();
+    }
+  });
+
+  it('2 settlement windows', async () => {
+    const resUpsert = await settlementWindowUpsert(
+      superAdmin,
+      SETTLEMENT_WINDOWS,
+    );
+    expect(resUpsert.statusCode).toEqual(HttpStatus.CREATED);
+    expect(resUpsert.status).toBe(ResponseStatus.CREATED);
+
+    const resFindAll = await settlementWindowFindAll(superAdmin);
+    expect(resFindAll.statusCode).toEqual(HttpStatus.OK);
+    expect(resFindAll.status).toBe(ResponseStatus.SUCCESS);
+
+    // The natural key without `effectiveFrom`: the fixture carries one schedule
+    // per rail, so provider + method + label identifies a row inside it. Keyed
+    // rather than compared by index because the GET orders by rail, not by the
+    // order the payload was sent in - and deliberately not an exact count,
+    // since the E2E specs upsert their own fixtures into the same database.
+    const byKey = new Map(
+      resFindAll.data!.map((w) => [
+        `${w.providerName}|${w.paymentMethodName}|${w.label}`,
+        w,
+      ]),
+    );
+
+    for (const sent of SETTLEMENT_WINDOWS) {
+      const key = `${sent.providerName}|${sent.paymentMethodName}|${sent.label}`;
+      const stored = byKey.get(key);
+
+      expect(stored).toBeDefined();
+      expect(stored!.deletedAt).toBeNull();
+      expect(stored!.effectiveTo).toBeNull();
+
+      // Field by field rather than through the derived `window` / `releases`
+      // strings: this step cares that the stored values are the ones it meant
+      // to inject, and an hour wrong in any of them moves the payout time for
+      // every merchant on the rail. The derived strings are presentation, and
+      // test/upstream.spec.ts covers them.
+      expect(stored!.windowStart).toEqual(sent.windowStart);
+      expect(stored!.windowStartDayOffset).toEqual(sent.windowStartDayOffset);
+      expect(stored!.windowEnd).toEqual(sent.windowEnd);
+      expect(stored!.settlementOffset).toEqual(sent.settlementOffset);
+      expect(stored!.settlementTime).toEqual(sent.settlementTime ?? null);
+      expect(stored!.businessDaysOnly).toEqual(sent.businessDaysOnly);
+
+      // The fixture omits `timezone`, so this is the server's default landing.
+      expect(stored!.timezone).toEqual(sent.timezone ?? 'Asia/Jakarta');
+
+      // Compared as instants, not as strings: `effectiveFrom` is in the natural
+      // key, so a schedule in force from a different moment is a new row rather
+      // than a correction of this one.
+      expect(new Date(stored!.effectiveFrom).getTime()).toEqual(
+        new Date(sent.effectiveFrom).getTime(),
+      );
+    }
+  });
 });

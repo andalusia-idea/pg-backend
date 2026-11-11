@@ -7,6 +7,8 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice/microservice.enum';
 import Decimal from 'decimal.js';
+import { UpsertProviderDto } from 'apps/dashboard/src/super-admin/dto/provider.dto';
+import { SettlementWindowBody } from './api';
 
 export const DASHBOARD_BASE_URL =
   process.env.DASHBOARD_BASE_URL ?? 'http://localhost:3000';
@@ -31,6 +33,71 @@ export const AGENT_INTERNAL_PASSWORD = 'password123456789';
 
 export const SUPER_ADMIN_EMAIL = 'superadmin@pg.id';
 export const SUPER_ADMIN_PASSWORD = 'password123456789';
+
+export const PROVIDERS = [
+  ProviderNameEnum.INTERNAL,
+  ProviderNameEnum.JATELINDO,
+  ProviderNameEnum.MOTIONPAY,
+];
+
+const now = '2026-01-01T00:00:00+07:00';
+const SETTLEMENT_WINDOWS_MOTIONPAY: SettlementWindowBody[] = [
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.QRIS,
+    label: 'DAILY',
+    settlementOffset: 1,
+    settlementTime: '15:00',
+    businessDaysOnly: false,
+    // A full day is windowEnd equal to windowStart - "24:00" is refused, so
+    // there is one spelling. The offset is 0 because the window opens on the
+    // day it closes; -1 is for a window opening the evening before it closes,
+    // as a partner's batch 1 does.
+    windowStart: '00:00',
+    windowStartDayOffset: 0,
+    windowEnd: '00:00',
+    effectiveFrom: now,
+  },
+  {
+    providerName: ProviderNameEnum.MOTIONPAY,
+    paymentMethodName: PaymentMethodNameEnum.DIRECTEWALLET,
+    label: 'DAILY',
+    settlementOffset: 3,
+    // No settlementTime on purpose: MotionPay publishes no hour for H+3. The
+    // service maps the missing field to null, which eligibility reads as end
+    // of day rather than start, so we never release before they plausibly have.
+    businessDaysOnly: false,
+    windowStart: '00:00',
+    windowStartDayOffset: 0,
+    windowEnd: '00:00',
+    effectiveFrom: now,
+  },
+];
+
+/*
+ * MotionPay only, and Jatelindo's absence is the deliberate part.
+ *
+ * A window affects *payin* settlement and nothing else: the claim reads
+ * `transaction.PurchaseTransaction`, so a schedule for a payout rail can never
+ * match a row. Jatelindo is payout-only today - its base fees are WITHDRAW and
+ * DISBURSEMENT, and it is wired under `upstream/jatelindo/transfer`, never under
+ * `api-v1/purchase` - so windows for TRANSFERBANK or the TRANSFEREWALLET_*
+ * methods would be inert at best. At worst they are noise: the enqueuer fans a
+ * `'*'` FOLLOW_UPSTREAM policy into one run per method that has a window, and
+ * every one of those runs would claim nothing.
+ *
+ * Give a provider windows the day it serves a purchase rail. Several payin
+ * methods on one schedule means one row each - `paymentMethodName` has no `'*'`
+ * sentinel, because a partner publishes per product and a default here would
+ * silence the "nobody entered this schedule" check - so build them with a
+ * flatMap rather than by hand if that day brings more than a couple.
+ *
+ * Two batches on one rail still has coverage in test/upstream.spec.ts, which
+ * exercises the endpoint rather than modelling a rail that settles.
+ */
+export const SETTLEMENT_WINDOWS: SettlementWindowBody[] = [
+  ...SETTLEMENT_WINDOWS_MOTIONPAY,
+];
 
 const address = {
   province: 'Jakarta',
@@ -159,7 +226,7 @@ export const AGENTS: Array<CreateAgentDto> = [
 
 const ZERO = new Decimal(0).toFixed(2);
 
-const BASE_FFES_MOTIONPAY: Array<UpsertBaseFeeDto> = [
+const BASE_FEES_MOTIONPAY: Array<UpsertBaseFeeDto> = [
   {
     providerName: ProviderNameEnum.MOTIONPAY,
     paymentMethodName: PaymentMethodNameEnum.QRIS,
@@ -223,7 +290,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
 ];
 
 export const BASE_FEES: Array<UpsertBaseFeeDto> = [
-  ...BASE_FFES_MOTIONPAY,
+  ...BASE_FEES_MOTIONPAY,
   ...BASE_FEES_JATELINDO,
 ];
 
