@@ -19,15 +19,24 @@ const path = require('path');
  * freshly reset database (`node scripts/test-db-all.js`).
  */
 
-const INJECT_DIR = path.join('apps', 'uat-local', 'test', 'inject');
-const CONFIG = path.join(INJECT_DIR, 'jest-inject.config.js');
+/**
+ * Resolved from this file's own location, not the working directory, so the
+ * script runs the same from the repo root, from scripts/, or from anywhere
+ * else. Unlike test-start-all.js and test-db-all.js it hardcodes no absolute
+ * path, so it needs no edit on another machine.
+ */
+const REPO_ROOT = path.resolve(__dirname, '..');
+
+/** Repo-relative, forward slashes, because these are passed to jest. */
+const INJECT_DIR = 'apps/uat-local/test/inject';
+const CONFIG = `${INJECT_DIR}/jest-inject.config.js`;
 
 /**
  * The number in the filename is the order. Read off disk rather than listed
  * here, so adding `06.whatever.spec.ts` needs no edit to this script - which is
  * the whole reason the order lives in the filenames.
  */
-const steps = readdirSync(INJECT_DIR)
+const steps = readdirSync(path.join(REPO_ROOT, INJECT_DIR))
   .filter((file) => /^\d+\..+\.spec\.ts$/.test(file))
   .sort();
 
@@ -46,10 +55,25 @@ for (const [i, file] of steps.entries()) {
 
   const result = spawnSync(
     'npx',
-    ['jest', '--config', CONFIG, '--runInBand', path.join(INJECT_DIR, file)],
-    // shell: true because npx is a .cmd on Windows and spawnSync will not
-    // resolve it otherwise.
-    { stdio: 'inherit', shell: true },
+    [
+      'jest',
+      '--config',
+      CONFIG,
+      '--runInBand',
+      // --runTestsByPath, not a bare positional: jest treats a positional
+      // argument as a *regex* matched against test paths, and a Windows path
+      // carries backslashes that a regex reads as escapes.
+      '--runTestsByPath',
+      `${INJECT_DIR}/${file}`,
+    ],
+    {
+      // Jest resolves rootDir and the module mappings against where it was
+      // started, so it runs from the repo root whatever the caller's cwd was.
+      cwd: REPO_ROOT,
+      stdio: 'inherit',
+      // npx is a .cmd on Windows and spawnSync will not resolve it otherwise.
+      shell: true,
+    },
   );
 
   if (result.status !== 0) {
