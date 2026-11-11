@@ -26,6 +26,10 @@ import {
 } from 'apps/dashboard/src/modules/config-merchant/dto/upsert-merchant-fee.dto';
 import { CreateAgentDto } from 'apps/dashboard/src/modules/user/dto/create-agent.dto';
 import { CreateMerchantDto } from 'apps/dashboard/src/modules/user/dto/create-merchant.dto';
+import { MerchantSignatureStatusDto } from 'apps/dashboard/src/modules/merchant-signature/dto/merchant-signature-status.dto';
+import { RegisterWebhookUrlDto } from 'apps/dashboard/src/modules/merchant-signature/dto/register-webhook-url.dto';
+import { SignedRequest } from '../merchant/merchant-signer';
+import { TRANSACTION_BASE_URL } from './constant';
 
 export const callDashboard = async <T>(
   config: AxiosRequestConfig,
@@ -259,3 +263,76 @@ export const merchantConfigFindAll = async (
     url: `/api/v1/merchant/${merchantId}/config`,
     headers: bearer(authDto),
   });
+
+/* -------------------------------------------------------------------------- */
+/* The merchant's own side                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Rotates the merchant's shared secret and returns it.
+ *
+ * Safe to repeat: the old value moves to `secretKeyPrevious` and keeps working
+ * for the grace period. The secret is shown here and nowhere else, so a caller
+ * that loses it rotates again rather than looking it up.
+ */
+export const merchantSecretKeyGenerate = async (authDto: AuthDto) =>
+  callDashboard<string>({
+    method: 'GET',
+    url: '/api/v1/merchant-signature/generate-secret-key',
+    headers: bearer(authDto),
+  });
+
+/**
+ * Registers where this merchant wants its webhooks delivered.
+ *
+ * Both fields carry `@IsUrl()`, and validator defaults to
+ * `require_tld: true` - so `localhost` is a 400 and the loopback has to be
+ * written `127.0.0.1`.
+ */
+export const merchantWebhookRegister = async (
+  authDto: AuthDto,
+  urls: RegisterWebhookUrlDto,
+) =>
+  callDashboard<null>({
+    method: 'POST',
+    url: '/api/v1/merchant-signature/register-webhook-url',
+    data: urls,
+    headers: bearer(authDto),
+  });
+
+/** The caller's own signature status. Carries no `clientId`. */
+export const merchantSignatureStatus = async (authDto: AuthDto) =>
+  callDashboard<MerchantSignatureStatusDto>({
+    method: 'GET',
+    url: '/api/v1/merchant-signature/status',
+    headers: bearer(authDto),
+  });
+
+/**
+ * Sends an already-signed request to the transaction app's Open API, the way a
+ * merchant's own server would.
+ *
+ * Takes the signed request rather than signing here, because that is what lets
+ * a caller send the *same* signed bytes twice - which is the only way to prove
+ * the nonce store is consulted rather than decorative.
+ *
+ * Returns the status and the raw text rather than a parsed envelope, and never
+ * throws on a non-2xx: the Open API answers with its own `responseCode` shape
+ * rather than the dashboard's `ResponseDto`, and the rejections are the
+ * interesting part.
+ */
+export const sendOpenApi = async (
+  method: 'GET' | 'POST',
+  endpoint: string,
+  signed: SignedRequest,
+): Promise<{ status: number; text: string }> => {
+  const res = await fetch(`${TRANSACTION_BASE_URL}${endpoint}`, {
+    method,
+    headers: signed.headers,
+    // The exact bytes the signature was computed over. Re-serialising a parsed
+    // object here is the usual cause of a signature that will not verify.
+    body: method === 'POST' ? signed.body : undefined,
+  });
+
+  return { status: res.status, text: await res.text() };
+};
