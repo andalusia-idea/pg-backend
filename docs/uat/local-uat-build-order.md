@@ -67,10 +67,22 @@ that. Watch the second hazard there too - that resolve is a `findFirstOrThrow`
 with **no `orderBy`**, so two rows matching one (paymentMethod, transactionType)
 pairing make the chosen provider depend on Postgres row order.
 
-**Two specs sit one dot apart**, both tracked, doing different things:
-`merchant.onboard.spec.ts` is the 248-line original that met Sighting 3, and
-`merchant-onboard.spec.ts` is the 41-line replacement. Worth deciding which one
-survives before a third reader has to work it out.
+**Resolved 2026-11-11, and `test/` is now split in two.** `test/inject/` holds
+the ordered data-injection steps - numbered by filename, run by
+`npm run test:inject` - and the specs beside it assert behaviour. See
+`apps/uat-local/test/inject/README.md`.
+
+Sighting 3 moved out of the 248-line `merchant.onboard.spec.ts` into
+**`test/merchant-signature.spec.ts`**, where it belongs: it is the first
+behaviour check rather than an onboarding step. The secret rotation, the webhook
+registration, the `clientId` read, the signed `POST /open/v1/test` and the
+replay all carried over, and a tampered-signature case was added. Measured
+2026-11-11 against a live stack: Sighting 3 answers **HTTP 201 `2000000`** with
+the merchant's own `userId`, the replay **409 `4090000`** "X-Nonce already
+used", and a signature with one hex digit flipped **401 `4010008`** "Invalid
+X-Signature" - the last of which has to be distinguished from `4010002`,
+the *format* complaint, because lengthening a signature is refused on shape
+before the HMAC is ever compared.
 
 **One sentence in Step 1 has gone stale, and it is harmless.** Sighting 1 says
 every app binds `'localhost'` outside production, which Step 2b then changed for
