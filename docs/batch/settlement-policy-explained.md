@@ -473,41 +473,144 @@ is not a property of the merchant at all.
 
 ```prisma
 model UpstreamSettlementWindow {
-  providerName      String      // MOTIONPAY
-  paymentMethodName String      // QRIS
-  label             String      // "DAILY", "BATCH_1", "BATCH_2"
-  settlementOffset  Int         // 0 same day, 1 = H+1, 3 = H+3
-  settlementTime    String?     // "15:00", or NULL when the partner gives no time
-  timezone          String      @default("Asia/Jakarta")
-  effectiveFrom     DateTime
-  effectiveTo       DateTime?
+  id                Int    @id @default(autoincrement())
+  providerName      String // MOTIONPAY
+  paymentMethodName String // QRIS
+  label             String // "DAILY", "BATCH_1", "BATCH_2"
+
+  // Which transactions the window covers, as a half-open interval
+  // [start, end) in `timezone`.
+  windowStart          String // "18:00"
+  windowStartDayOffset Int    @default(0) // -1 when it opens the previous day
+  windowEnd            String // "12:00"
+
+  // When the partner releases that window's money to us.
+  settlementOffset Int     // 0 same day, 1 = H+1, 3 = H+3
+  settlementTime   String? // "15:00", or NULL when they give no time
+  businessDaysOnly Boolean @default(false)
+
+  timezone String @default("Asia/Jakarta")
+
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+
+  // ...and the six audit columns, for the reason the model's own comment
+  // gives: an hour entered wrong here moves the payout time for *every*
+  // merchant on that rail, quietly, until somebody notices.
+
   @@unique([providerName, paymentMethodName, label, effectiveFrom])
+  @@schema("settlement")
 }
 ```
 
-Seeded today, from what MotionPay has actually published:
+### Two halves, and the code reads one of them
 
-| Provider | Method | Offset | Time | Meaning |
+| Columns | Status |
+|---|---|
+| `settlementOffset`, `settlementTime`, `timezone` | **read** — together they are the release moment |
+| `windowStart`, `windowEnd`, `windowStartDayOffset` | **recorded, not read** — see the last part of this section |
+| `businessDaysOnly` | **refused at the API**, and ignored if it arrives any other way |
+
+`EligibilityWindow` in
+[policy.type.ts](../../apps/settlement/src/policy/policy.type.ts) is the honest
+statement of that — three fields, with a comment saying the interval columns are
+absent because choosing *which* window a payment falls into is the caller's job.
+So a release moment today is "the payment's own calendar day, plus
+`settlementOffset`, at `settlementTime`", and the interval is never consulted.
+
+`businessDaysOnly` is the trap of the three, because the window's flag does not
+behave like the policy's flag of the same name. The policy's throws (§5).
+`assertSettlementWindowsAreUsable` answers **422** for the window's, so it
+cannot arrive through the API — but `EligibilityWindow` omits it and the
+enqueuer's `select` never fetches it, so a row carrying it from a seed or a
+hand-written `INSERT` settles as though it were `false`, silently. That API
+refusal is the whole defence.
+
+### Where the rows come from
+
+**Production starts with none.** They are entered through
+`POST /super-admin/settlement-window`, which upserts on
+`(providerName, paymentMethodName, label, effectiveFrom)` — the same key
+corrects a row, and a new `effectiveFrom` is a new schedule. The provider has to
+be configured first, through `POST /super-admin/provider`. The request shape,
+the conventions and the full rejection list are **D26** and **D27** in
+[dashboard-migration.md](../engine/dashboard-migration.md).
+
+The development fixtures in `transaction-dev.seed.ts` hold four rows, all in
+force from 1 January 2026, transcribed from
+[upstream-settlement-schedules.md](../accounting/upstream-settlement-schedules.md):
+
+| Provider | Method | Label | Window | Releases |
 |---|---|---|---|---|
-| MOTIONPAY | QRIS | 1 | `15:00` | next day at 15:00 |
-| MOTIONPAY | DIRECTEWALLET | 3 | `NULL` | three days later, no stated time |
+| MOTIONPAY | QRIS | `DAILY` | full day | H+1 at 15:00 |
+| MOTIONPAY | DIRECTEWALLET | `DAILY` | full day | H+3, no stated time |
+| TELEANJAR | TRANSFERBANK | `BATCH_1` | 18:00 (D-1) → 12:00 | H+0 at 13:00 |
+| TELEANJAR | TRANSFERBANK | `BATCH_2` | 12:00 → 18:00 | H+0 at 19:00 |
+
+Jatelindo is a live upstream with **no published schedule recorded anywhere** —
+not in this seed, not in the reference doc — so `FOLLOW_UPSTREAM` cannot answer
+for that rail until someone transcribes one from a partner notice. (The
+`uat-local` suite does post Jatelindo windows, but with Teleanjar's times
+borrowed as a fixture. Do not read them as a transcription.)
+
+**A full day is `windowEnd` equal to `windowStart`.** `"24:00"` is not a valid
+time of day anywhere in the system, which leaves exactly one spelling for a full
+day; `IsTimeOfDay`'s rejection message says so outright. `windowStartDayOffset`
+is constrained to `-1` or `0`, and `settlementOffset` to 0–31 — a partner
+releasing more than a month after the window closes is a typo, not a schedule.
 
 **`settlementTime: NULL` means end of day, not start.** MotionPay's e-wallet
 schedule is "H+3" with no hour attached. Releasing at 00:00 on H+3 would be us
 paying the merchant before MotionPay plausibly paid us, so the code assumes
-`23:59:59.999`. Pessimistic on purpose.
+`23:59:59.999` — written as `endOf('day')` and never as the clock time
+`"23:59"`, for a reason §12 comes back to. Pessimistic on purpose.
 
-**One method can have several windows.** Teleanjar settles batch 1 at 13:00 and
-batch 2 at 19:00, both in force from the same date — which is why `label` is in
-the unique key. A screen or a seed assuming one window per provider+method will
-not fit them.
+### Half-open is what settles the boundary question
 
-**Choosing which window a payment falls into is not implemented yet**, and that
-is deliberate: the partner doc records real open questions about the boundaries
-(Teleanjar's 18:00 appears in *both* batches, and 12:00:01–12:00:59 belongs to
-neither). Guessing would mean inventing an answer they have not given. For now
-the code takes the window it is handed and uses `settlementOffset` +
-`settlementTime` from the payment's own calendar day.
+Teleanjar's own wording is `18:00 - 12:00` and `12:01 - 18:00`, and that wording
+has two faults: 18:00 appears in both batches, so a transaction at exactly
+18:00:00 belongs to both or to neither, and nothing at all owns
+12:00:01–12:00:59. Under `[start, end)` both disappear, and the two windows then
+**tile the day exactly** — 18 hours plus 6, batch 2 ending where the next batch 1
+begins. That the arithmetic closes is the evidence the restatement is right.
+
+So the model answers the question. What is still open is getting the restatement
+**confirmed in writing**, which is question 6 of the reference doc. Those are
+two different things, and only the second is outstanding.
+
+The overlap check in `SuperAdminService` is what holds the invariant: two
+windows on one rail must not claim the same minute, compared against the stored
+rows and not only against the payload. `label` is in the natural key, so a
+misspelt one does not correct the existing window — it creates a second, and the
+rail then has two schedules covering the same transactions with nothing to say
+which wins. Teleanjar's pair is legitimate precisely because their intervals do
+not touch.
+
+### One method, several windows: representable, not yet settleable
+
+This is the gap worth knowing before building anything on this table.
+
+The rows are keyed by `(provider, method, label)`. Both consumers resolve by
+**method alone**, because `SettlementRun` carries a payment method and no
+provider — so more than one in-force window on a method is ambiguous rather than
+a choice to be made, and both sides refuse it:
+
+- the enqueuer logs an error and **skips**, so no run is created for that method
+  at all (`runsFor` in `enqueuer.service.ts`, and §12);
+- `SettlementService.resolveWindow` **throws** if a run exists anyway.
+
+With Teleanjar's batch pair in force, `TRANSFERBANK` is therefore a rail
+`FOLLOW_UPSTREAM` cannot settle today. Nothing is mis-settled — refusing is the
+point — but nothing settles either, and §14 has the query that finds it.
+
+Fixing it properly means the enqueuer resolving a **provider** per run, which is
+the same change that makes the interval columns usable: once a run knows its
+provider, picking the window a payment falls into is exactly the `[start, end)`
+comparison those three columns exist for.
+
+Until then, one in-force window per method is the settleable shape — and a
+screen or a seed assuming one window per provider+method still will not fit a
+partner who runs batches.
 
 ---
 
@@ -663,9 +766,11 @@ export function mostRecentDueAt(
       return lastBoundaryAtOrBefore(policy.releaseTimes, SETTLEMENT_TIMEZONE, now);
 
     case SettlementModeEnum.FOLLOW_UPSTREAM: {
-      if (!window) return null;             // nobody seeded this method's window
-      // A null settlementTime means "end of day" - the same assumption
-      // settlementReleaseAt makes, so the two cannot disagree.
+      if (!window) return null;             // nobody entered this method's window
+      // A null settlementTime means end of day - the same assumption
+      // settlementReleaseAt makes, so the two cannot disagree. Shown as a
+      // clock time only to keep this listing to one helper; the shipped code
+      // uses endOf('day'), and the note below says why that matters.
       const times = [window.settlementTime ?? '23:59'];
       return lastBoundaryAtOrBefore(times, window.timezone, now);
     }
@@ -699,6 +804,19 @@ function lastBoundaryAtOrBefore(
   return atTimeOnDay(today.minus({ days: 1 }), sorted[sorted.length - 1]).toJSDate();
 }
 ```
+
+**One boundary cannot be written as a clock time at all, which is why the
+shipped code passes a function rather than a list of `HH:mm` strings.** A window
+with no published `settlementTime` releases at `endOf('day')` — 23:59:59.999.
+Writing that as `"23:59"`, as the listing above does for brevity, puts the
+boundary 59.999 seconds early, and a cutoff derived from it would claim payments
+whose release moment has not actually passed: paying a merchant before the
+upstream paid us, the one error this whole design exists to prevent. So
+`policy.due-at.ts` builds each day's boundaries through a `BoundaryBuilder`,
+`(day: DateTime) => DateTime[]`, with `timeBoundaries` for the clock-time modes
+and `upstreamBoundaries` returning `[day.endOf('day')]` for that one case. The
+two helpers above are the same logic with the builder inlined, which is accurate
+for every mode except this one.
 
 Worked through, for `releaseTimes: ["06:00","12:00","18:00","23:00"]`:
 
@@ -973,19 +1091,50 @@ SELECT DISTINCT p."merchantId", p."paymentMethodName"
 FROM "settlement"."MerchantSettlementPolicy" p
 WHERE p."mode" = 'FOLLOW_UPSTREAM'
   AND p."deletedAt" IS NULL
-  AND ("effectiveTo" IS NULL OR "effectiveTo" > now())
+  AND (p."effectiveTo" IS NULL OR p."effectiveTo" > now())
   AND p."paymentMethodName" <> '*'
   AND NOT EXISTS (
     SELECT 1 FROM "settlement"."UpstreamSettlementWindow" w
     WHERE w."paymentMethodName" = p."paymentMethodName"
       AND w."deletedAt" IS NULL
+      AND w."effectiveFrom" <= now()
+      AND (w."effectiveTo" IS NULL OR w."effectiveTo" > now())
   );
 ```
 
 A row here is a merchant whose settlement will throw with *"FOLLOW_UPSTREAM
-needs the UpstreamSettlementWindow"* — because nobody seeded that method's
+needs the UpstreamSettlementWindow"* — because nobody entered that method's
 schedule. (The `'*'` rows are excluded because their method depends on the
 payment, so this query cannot judge them.)
+
+**The window subquery has to be effective-dated too.** Filtering on `deletedAt`
+alone counts a schedule that expired by `effectiveTo` as present, and the
+enqueuer — which does apply the dates — would then find nothing while this query
+reports the rail healthy.
+
+### Is any rail ambiguous — several in-force windows on one method?
+
+The condition from §10 that stops a rail without failing anything:
+
+```sql
+SELECT "paymentMethodName",
+       count(*) AS windows,
+       string_agg("providerName" || ' ' || "label", ', '
+                  ORDER BY "providerName", "label") AS which
+FROM "settlement"."UpstreamSettlementWindow"
+WHERE "deletedAt" IS NULL
+  AND "effectiveFrom" <= now()
+  AND ("effectiveTo" IS NULL OR "effectiveTo" > now())
+GROUP BY 1
+HAVING count(*) > 1;
+```
+
+A row here is **not** a misconfiguration — Teleanjar's batch pair is a correct
+schedule, and today it is the expected answer for `TRANSFERBANK`. It is a rail
+`FOLLOW_UPSTREAM` cannot settle until the enqueuer resolves a provider per run,
+so every `FOLLOW_UPSTREAM` merchant on that method is accruing `PENDING` that
+will not move. Read it alongside the "money waiting that should have moved"
+query in [settlement-explained.md](settlement-explained.md).
 
 ---
 
@@ -1002,6 +1151,7 @@ payment, so this query cannot judge them.)
 | **Effective dating** | `effectiveFrom` / `effectiveTo` — terms have a lifespan, and changing them means a new row |
 | **In force** | `effectiveFrom <= now AND (effectiveTo IS NULL OR effectiveTo > now)` |
 | **Window** | `UpstreamSettlementWindow` — what a *partner* published about when they pay us |
+| **Rail** | One `(provider, method)` pairing — the unit a partner publishes a schedule for, and the unit the overlap check guards |
 | **Offset** | `settlementOffset` — whole days from the payment's date to the partner's settlement |
 | **Cutoff** | A release moment turned into a timestamp the claim's `WHERE` can compare `paidAt` against |
 | **T+N** | N days after the transaction. `FIXED_DELAY` with `delayDays: N` |
