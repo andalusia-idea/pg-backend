@@ -26,6 +26,7 @@ import {
 } from 'apps/dashboard/src/modules/config-merchant/dto/upsert-merchant-fee.dto';
 import { CreateAgentDto } from 'apps/dashboard/src/modules/user/dto/create-agent.dto';
 import { CreateMerchantDto } from 'apps/dashboard/src/modules/user/dto/create-merchant.dto';
+import { ProfileDto } from 'apps/dashboard/src/modules/user/dto/profile.dto';
 import { MerchantSignatureStatusDto } from 'apps/dashboard/src/modules/merchant-signature/dto/merchant-signature-status.dto';
 import { RegisterWebhookUrlDto } from 'apps/dashboard/src/modules/merchant-signature/dto/register-webhook-url.dto';
 import { SignedRequest } from '../merchant/merchant-signer';
@@ -196,6 +197,21 @@ export const settlementWindowFindAll = async (authDto: AuthDto) =>
   callDashboard<SettlementWindowDto[]>({
     method: 'GET',
     url: '/api/v1/super-admin/settlement-window',
+    headers: bearer(authDto),
+  });
+
+/**
+ * The caller's own profile. Any authenticated role, and it serves only the
+ * caller - so the token decides what comes back, not an id in the path.
+ *
+ * Exactly one of `admin` / `agent` / `merchant` is populated, by the DTO's
+ * contract, which makes it the cheapest proof that a registration wrote its
+ * detail row and not merely an `auth.User`.
+ */
+export const userProfile = async (authDto: AuthDto) =>
+  callDashboard<ProfileDto>({
+    method: 'GET',
+    url: '/api/v1/user/profile',
     headers: bearer(authDto),
   });
 
