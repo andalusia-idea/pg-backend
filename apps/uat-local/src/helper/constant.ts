@@ -7,7 +7,6 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice/microservice.enum';
 import Decimal from 'decimal.js';
-import { UpsertProviderDto } from 'apps/dashboard/src/super-admin/dto/provider.dto';
 import { SettlementWindowBody } from './api';
 
 export const DASHBOARD_BASE_URL =
@@ -305,3 +304,5 @@ export const baseFeeCode = (
     return `${dto.providerName}_${dto.paymentMethodName}_${dto.transactionType}`;
   });
 };
+
+export const BASE_FEE_CODES = baseFeeCode(BASE_FEES);
