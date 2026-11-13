@@ -6,6 +6,29 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-13 the settlement-policy controller, and where it lives
+
+`MerchantSettlementPolicy` finally has a write path, which closes the last thing
+**D24** left open. The table has existed since the `settlementInterval` integer
+was retired, the settlement enqueuer and runner read it, and
+`auditTrailExtension` covers it — but the only writer in the tree was
+`registerMerchant`, creating the default `FOLLOW_UPSTREAM` row on `'*'` and
+never coming back. A merchant's terms were therefore fixed at registration,
+which left `INSTANT`, `FIXED_DELAY` and `SCHEDULED` unreachable in production
+however the contract was written.
+
+**It is deliberately not under `/super-admin`.** The routes are `POST` / `GET
+/merchant/:merchantId/settlement-policy`, beside the fee and shareholder writes
+in `ConfigMerchantController`, because per-merchant commercial terms are an
+ADMIN's job — the same reasoning that puts `MerchantFee` there. Upstream
+settlement *windows* stay in super-admin: those are partner-wide and describe
+someone else's schedule, not this merchant's deal.
+
+**For the frontend:** your policy configuration page can come off its mock. Rows
+63–64 in §2.8 have the contract; the full write-up is **D32**.
+
+---
+
 ## Update — 2026-11-11 frontend fix `bd0c56f` (second pass, same day)
 
 Frontend fixed D31, found earlier the same day in the pass below, in `bd0c56f` (committed and pushed to `main`). Backend is still `28aa7ec`; `origin/dev` has no newer commits, and `apps/dashboard` and `docs/batch/*` are unchanged since `96a15dd`. Checked against `ConfigMerchantService` and the mock:
@@ -491,6 +514,30 @@ New `SuperAdminController` (`apps/dashboard/src/super-admin`). It has no legacy 
 
 ---
 
+### 2.8 Backend-first: merchant settlement policy (added 2026-11-13)
+
+Not super-admin routes, unlike §2.7. These sit in `ConfigMerchantController`
+beside the fee and shareholder writes, because a merchant's settlement terms are
+per-merchant commercial configuration and an ADMIN owns them. They are the only
+two routes in that controller with an enforced role — see the note under the
+table.
+
+| # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
+|---|---|---|---|---|---|---|---|---|
+| 63 | POST | `merchant/:merchantId/settlement-policy` | *(none — new)* | *(mock only)* | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | **Frontend, now worth doing.** This is what the policy page was waiting for (D24 → D32). An array upsert on `(paymentMethodName, effectiveFrom)` for the merchant in the path: a **new `effectiveFrom` supersedes** the terms before it, closing them in the same transaction, and the **same `effectiveFrom` corrects** that row in place. Don't offer `businessDaysOnly: true` (422). Omit `effectiveTo` to leave a stored end date alone; send `null` to clear it | Array of `UpsertMerchantSettlementPolicyDto { paymentMethodName: "*" \| method, mode: INSTANT\|FOLLOW_UPSTREAM\|FIXED_DELAY\|SCHEDULED, delayDays?: 0-31, releaseTimes?: ["HH:MM"], businessDaysOnly: false, effectiveFrom: ISO, effectiveTo?: ISO\|null }`. **No `merchantId` in the body** — it is the path parameter |
+| 64 | GET | `merchant/:merchantId/settlement-policy` | *(none — new)* | *(mock only)* | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | Carries a derived `releases` string (`"T+2 at 10:00"`, `"daily at 06:00, 12:00"`, `"when the upstream settles"`, `"immediately on capture"`), so a listing row needs no mode-switching logic. 404 on an unknown merchant rather than an empty list | — returns `MerchantSettlementPolicyDto[]`: `id`, `merchantId`, `paymentMethodName`, `mode`, `releases`, `delayDays`, `releaseTimes`, `businessDaysOnly`, `effectiveFrom`/`effectiveTo`/`deletedAt` as `+07:00` ISO. Superseded and retired rows included, newest terms first per method |
+
+> **These two carry `@Roles(SUPER_ADMIN, ADMIN)` and the rest of the controller
+> does not.** Rows 20, 21, and the fee and shareholder POSTs have
+> `@CheckPolicies()` alone, which enforces nothing (D3), so they are reachable
+> by any authenticated role today — including a MERCHANT. That is tracked under
+> D3 and was not a reason to ship a new route open: a merchant who could put
+> itself on `INSTANT` would be writing itself a credit line against money we
+> have not received. AGENT is excluded too, since an agent should not set the
+> fees it earns a share of.
+
+---
+
 ## 3. Module plan
 
 Ported in dependency order. Each is self-contained: `controller` → `service` → `dto/`.
@@ -621,7 +668,7 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Thirty-one entries (D1–D31), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the seven in the table below do. D28–D31 are frontend defects found during the frontend-side comparisons, and none needs a backend change. Their status:
+Thirty-two entries (D1–D32), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the seven in the table below do. D28–D31 are frontend defects found during the frontend-side comparisons, and none needs a backend change. Their status:
 
 - **D28** was fixed on the frontend on 2026-11-10.
 - **D29**'s `bankCode` half was fixed the same day; its password half waits on a product decision.
@@ -670,6 +717,7 @@ Thirty-one entries (D1–D31), each a real defect or ambiguity found while readi
 | D31 | The rewritten agent-shareholder delete handler dropped earlier `D` rows, and the add handler turned `D` rows back into `U` | **Fixed on the frontend 2026-11-11** (`bd0c56f`). The delete handler now carries every existing `D` row through untouched, adding only the newly-deleted one. The add handler only removes the target id from the deleted set and resplits `live + the new row`, leaving other `D` rows alone. The last live shareholder's delete button is now disabled |
 | D28 | Frontend fee-config payloads sent money/percentages as JSON numbers where the backend requires decimal strings | **Fixed on the frontend 2026-11-10** (`5e07d26`). All five DTOs are typed as strings, edits are serialized at 2/4 decimals at the API boundary, percentages display at 4 decimals, and the mock 422s a number. The separate total-rule problem in agent-shareholder saves was D30, fixed in `b77c1af` |
 | D26 | Upstream settlement schedules had no write path — the two MotionPay windows were hardcoded in a seed, and Jatelindo and Teleanjar had none at all | **New surface, nothing required of you.** `POST` / `GET /super-admin/settlement-window` ship the admin write path. A screen for it is worth building when the fee-config screen gets a sibling; until then the rows go in by API call. See the write-up |
+| D32 | `MerchantSettlementPolicy` had no controller — the only writer was `registerMerchant`, so a merchant's settlement terms were fixed at registration and `INSTANT` / `FIXED_DELAY` / `SCHEDULED` were unreachable in production | **New surface, and your policy page can leave its mock.** `POST` / `GET /merchant/:merchantId/settlement-policy`, in the config-merchant module rather than super-admin. A new `effectiveFrom` supersedes the terms before it; the same one corrects that row. See the write-up |
 
 ---
 
@@ -1256,6 +1304,8 @@ The migration (`20260930134813_rename_payout_destination_columns`) is a hand-wri
 > **Resolved in code, 2026-10-26:** this pull removed the obsolete interval fields from both legacy config GET DTOs/services. No frontend migration remains for those response fields.
 
 > **Current status, 2026-11-02:** the frontend no longer sends or reads `settlementInterval`/`lastSettlementAt`, and the backend no longer returns them. The policy configuration page exists only against the frontend mock; `apps/dashboard` has no policy read/write controller. `businessDaysOnly` must stay false/unavailable, and `FOLLOW_UPSTREAM` still depends on an upstream-window resolver. See the batch policy guide and the current frontend task summary.
+
+> **Superseded, 2026-11-13:** the policy controller now exists — `POST` / `GET /merchant/:merchantId/settlement-policy`, under **D32**. The frontend's policy page can move off its mock. `businessDaysOnly` is still refused with a 422, and `FOLLOW_UPSTREAM` still needs a window for the payment's method before it resolves to anything.
 
 Backend work 2026-10-13 → 2026-10-16, commits `4215a4f`, `d4ade10`, `0896962` (plus `476f1c7` and `e1d7be1`, which are the attribution half below). This is the backend's Steps 8–9 in
 [docs/batch/settlement-batching-implementation.md](../batch/settlement-batching-implementation.md);
@@ -2064,6 +2114,149 @@ As D30 records, `assertShareholderPercentagesTotal()` checks the batch, not the 
    - Delete one, add another, and confirm the deleted one does not reappear.
 
 **Related backend question, no action implied.** A merchant can legitimately have **no** shareholders: one registered by SUPER_ADMIN has none, and `GET merchant/:id/config` returns `agentShareholders: null`. But an all-`D` batch sums to 0 and is refused, so once a merchant has shareholders they can never be cleared to none through the API. If "no shareholders" should be reachable again, the rule needs an exception for an empty surviving set, and the frontend would then drop its guard. If it should not, nothing more is needed: since `bd0c56f` the frontend disables the delete button on the last live shareholder (tooltip "A merchant must keep at least one shareholder"), so it never sends an all-`D` batch. **Still unanswered.**
+
+---
+
+### D32 — `MerchantSettlementPolicy` had no controller → **fixed; new endpoints, your policy page can leave its mock**
+
+The last thing **D24** left open. D24 replaced `Merchant.settlementInterval`
+with `settlement.MerchantSettlementPolicy` and four modes, and its own ownership
+table said the new table is edited "**admin, through this dashboard**". Nothing
+was ever built for it.
+
+What existed before this change:
+
+| | |
+|---|---|
+| `user.service.ts` — `registerMerchant` | the **only** write in the repo: the default `FOLLOW_UPSTREAM` row on `'*'` |
+| `apps/settlement` enqueuer and runner | reads |
+| `AUDITED_MODELS` | the model was already listed, ready for writes that did not exist |
+
+So a merchant's settlement terms were fixed at registration and could not be
+changed through the API at all. `INSTANT`, `FIXED_DELAY` and `SCHEDULED` were
+unreachable in production however the contract was written — you could not sell
+a merchant T+2, because there was nowhere to record it.
+
+The route that *looked* like the read is a husk. `GET
+merchant/:merchantId/interval` (row 20) still carries the summary "Merchant
+settlement interval", but since the Step 15 cleanup dropped the column its
+service only checks the merchant exists and returns `MerchantIntervalDto`, which
+has exactly one field: `userId`. **Nothing for you to change** — you already
+stopped calling it — but do not read its name as a feature.
+
+#### Where it went, and why not super-admin
+
+`POST` / `GET /merchant/:merchantId/settlement-policy`, in
+`ConfigMerchantController` beside the fee and shareholder writes.
+
+A settlement policy is per-merchant commercial configuration, negotiated per
+merchant, the same kind of thing as `MerchantFee` — and an ADMIN owns it, not
+only a SUPER_ADMIN. Upstream settlement **windows** stay under `/super-admin`
+(rows 61–62) because those are partner-wide and describe when *someone else*
+pays *us*. Two different tables, two different owners.
+
+#### The one behaviour to build the UI around: a change is two rows
+
+A batch that ran last month ran under last month's terms, so editing a policy in
+place destroys the only answer to "why was this merchant paid T+1 in September
+when their contract says T+2?". The server therefore treats `effectiveFrom` as
+part of the key:
+
+- **A new `effectiveFrom`** closes the row in force before it — setting its
+  `effectiveTo` to the new row's start — and inserts the new one, in one
+  transaction. Two rows, one of them historical.
+- **The same `effectiveFrom`** corrects that row in place. This is what a typo
+  needs, and it works on a *historical* row too: correcting September's terms is
+  allowed even though October's exist, and it does **not** re-open September.
+
+The server does the closing rather than asking you to send both rows, because
+the invariant is "at most one row in force per `(merchant, method)`" and a caller
+who has to restate the old row's exact key to maintain it will eventually get it
+wrong.
+
+**`effectiveTo` has three meanings, so send it deliberately:**
+
+| You send | What happens |
+|---|---|
+| omitted | a stored end date is left alone — use this when correcting a superseded row |
+| `null` | the terms are current, with no end date |
+| an ISO date | a term known to end on that date |
+
+Omitting it on a superseded row and having the server write `null` would re-open
+it and leave two rows in force. That is why it is omit-means-leave rather than
+omit-means-null.
+
+#### The rejection list
+
+All 422 with per-field keys, `[index].field`, the same shape as rows 56 and 61:
+
+| Field | Refused when |
+|---|---|
+| `paymentMethodName` | not `'*'` and not a configured `PaymentMethod`; also a shape failure if it is not `'*'` or upper-case |
+| `delayDays` | absent on `FIXED_DELAY`; outside 0–31 |
+| `releaseTimes` | not exactly one entry on `FIXED_DELAY`; empty on `SCHEDULED`; duplicates; any entry not zero-padded `HH:MM` (`"7:00"` and `"24:00"` are both refused) |
+| `businessDaysOnly` | `true` — `BusinessDayCalendar` is unbuilt and settlement eligibility throws rather than guessing a holiday policy. **Do not offer the checkbox** |
+| `effectiveFrom` | a later schedule for that method already starts at or after it, and the key is new. Retire that one first, or pick a later date |
+| `effectiveTo` | at or before `effectiveFrom` |
+
+Plus 400 for an empty array or two entries sharing `(paymentMethodName,
+effectiveFrom)`, and **404** for an unknown `:merchantId` — on both verbs. The
+GET 404s rather than returning an empty list, so "this merchant has no policies"
+and "this merchant does not exist" are distinguishable.
+
+#### What the GET gives you
+
+`MerchantSettlementPolicyDto[]`, superseded and retired rows included, newest
+terms first per method. It carries a derived **`releases`** string so a listing
+row needs no mode-switching logic:
+
+| Mode | `releases` |
+|---|---|
+| `INSTANT` | `immediately on capture` |
+| `FOLLOW_UPSTREAM` | `when the upstream settles` |
+| `FIXED_DELAY` | `T+2 at 10:00` |
+| `SCHEDULED` | `daily at 06:00, 12:00, 23:00` |
+
+Built from the mode rather than from whichever columns happen to be set, so a
+leftover `delayDays` on a `SCHEDULED` row cannot leak into the description of a
+rule that ignores it. Times are sorted for display.
+
+Two things to know when rendering the list:
+
+1. **`'*'` sorts before a real method name** — `*` is ASCII 42 — which is the
+   *opposite* of resolution order, where an exact method match beats the
+   default. The listing is history, not precedence. If you want to show "the
+   rule that applies", pick the override first; D24's "How a policy is chosen"
+   section has the query.
+2. **Dates are `+07:00` ISO strings**, like every other date in this API.
+
+#### Enforcement, and the hole next door
+
+These two routes carry `@Roles(SUPER_ADMIN, ADMIN)` — the new
+`MERCHANT_TERMS_ROLES` constant — and they are the only routes in
+`ConfigMerchantController` with an enforced role. The rest, rows 20 and 21 plus
+the fee and shareholder POSTs, have `@CheckPolicies()` alone, which enforces
+nothing (**D3**), so they are reachable by any authenticated role today.
+
+That is a pre-existing gap tracked under D3, not something this change
+introduced, and it was not a reason to ship a new route open: a MERCHANT who
+could set its own policy to `INSTANT` would be writing itself a credit line
+against money we have not received yet. AGENT is excluded for the matching
+reason — an agent should not set the fees it earns a share of.
+
+**Nothing for you to change here**, but if your policy page is reachable by a
+non-admin role it will now get a 403 where the fee page does not.
+
+#### Verified
+
+Measured against a throwaway Postgres with the auth, config and transaction
+migrations applied, payloads pushed through the same `ParseDtoArrayPipe` the
+controller uses and into the real service with the audit extension attached: 40
+checks, all passing. That run found two defects before the endpoint shipped —
+correcting a historical row was refused whenever a later schedule existed, and
+correcting a superseded row re-opened it and left two rows in force. Both are
+invisible to types and lint and obvious the first time a real payload goes
+through, which is the same lesson as the `b4e10c4` settlement-window 500.
 
 ---
 

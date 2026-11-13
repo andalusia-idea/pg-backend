@@ -13,7 +13,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { MERCHANT_TERMS_ROLES } from '../../auth/auth.constant';
 import { CheckPolicies } from '../../auth/decorator';
+import { Roles } from '../../auth/decorator/roles.decorator';
 import { ParseDtoArrayPipe } from '../../shared/pipe';
 import { ResponseDto, ResponseStatus } from '../../shared/response.dto';
 import { ConfigMerchantService } from './config-merchant.service';
@@ -21,6 +23,10 @@ import {
   MerchantConfigDto,
   MerchantIntervalDto,
 } from './dto/merchant-config.dto';
+import {
+  MerchantSettlementPolicyDto,
+  UpsertMerchantSettlementPolicyDto,
+} from './dto/settlement-policy.dto';
 import {
   UpsertMerchantAgentShareholderDto,
   UpsertMerchantFeeDto,
@@ -76,5 +82,46 @@ export class ConfigMerchantController {
   ): Promise<ResponseDto<null>> {
     await this.configMerchantService.upsertAgentShareholder(merchantId, body);
     return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  @Post(':merchantId/settlement-policy')
+  @Roles(...MERCHANT_TERMS_ROLES)
+  @CheckPolicies()
+  @ApiOperation({
+    summary: 'Upsert merchant settlement terms (batch)',
+    description:
+      'When this merchant\'s money stops being "coming" and becomes theirs ' +
+      'to spend. A new effectiveFrom supersedes the terms before it, closing ' +
+      'them in the same transaction; the same effectiveFrom corrects that row ' +
+      "in place. Send '*' as paymentMethodName for the merchant's default, or " +
+      'a method name to override just that one.',
+  })
+  @ApiBody({ type: UpsertMerchantSettlementPolicyDto, isArray: true })
+  async upsertSettlementPolicy(
+    @Param('merchantId', ParseIntPipe) merchantId: number,
+    @Body(ParseDtoArrayPipe(UpsertMerchantSettlementPolicyDto))
+    body: UpsertMerchantSettlementPolicyDto[],
+  ): Promise<ResponseDto<null>> {
+    await this.configMerchantService.upsertSettlementPolicy(merchantId, body);
+    return new ResponseDto({ status: ResponseStatus.CREATED });
+  }
+
+  @Get(':merchantId/settlement-policy')
+  @Roles(...MERCHANT_TERMS_ROLES)
+  @CheckPolicies()
+  @ApiOperation({
+    summary: 'Merchant settlement terms, superseded rows included',
+    description:
+      'Newest terms first per method. Superseded rows are kept because ' +
+      'effectiveFrom is part of the key: an old row is what an old payout was ' +
+      'computed from.',
+  })
+  @ApiOkResponse({ type: MerchantSettlementPolicyDto, isArray: true })
+  findAllSettlementPolicyByMerchantId(
+    @Param('merchantId', ParseIntPipe) merchantId: number,
+  ): Promise<MerchantSettlementPolicyDto[]> {
+    return this.configMerchantService.findAllSettlementPolicyByMerchantId(
+      merchantId,
+    );
   }
 }
