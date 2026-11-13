@@ -7,13 +7,22 @@ import {
   TransactionTypeEnum,
 } from '@app/microservice/microservice.enum';
 import Decimal from 'decimal.js';
-import { SettlementWindowBody } from './api';
+import {
+  SettlementWindowBody,
+  UpsertMerchantAgentShareholderBody,
+  UpsertMerchantFeeBody,
+} from './api';
+import { ActionEnum } from 'apps/dashboard/src/modules/config-merchant/config-merchant.constant';
+import { CreateAdminDto } from 'apps/dashboard/src/super-admin/dto/create-admin.dto';
 
 export const DASHBOARD_BASE_URL =
   process.env.DASHBOARD_BASE_URL ?? 'http://localhost:3000';
 export const TRANSACTION_BASE_URL =
   process.env.TRANSACTION_BASE_URL ?? 'http://localhost:3003';
 export const PORT = process.env.PORT ?? '3010';
+
+export const ADMIN_1 = 'admin1@example.com';
+export const ADMIN_PASSWORD = 'password123456789';
 
 export const MERCHANT_1 = 'merchant1@example.com';
 export const MERCHANT_2 = 'merchant2@example.com';
@@ -32,6 +41,16 @@ export const AGENT_INTERNAL_PASSWORD = 'password123456789';
 
 export const SUPER_ADMIN_EMAIL = 'superadmin@pg.id';
 export const SUPER_ADMIN_PASSWORD = 'password123456789';
+
+export const ADMINS: CreateAdminDto[] = [
+  {
+    email: ADMIN_1,
+    password: ADMIN_PASSWORD,
+    fullname: 'Admin one',
+    address: 'Jalan Admin one',
+    phone: '0894236579812111',
+  },
+];
 
 export const PROVIDERS = [
   ProviderNameEnum.INTERNAL,
@@ -293,6 +312,14 @@ export const BASE_FEES: Array<UpsertBaseFeeDto> = [
   ...BASE_FEES_JATELINDO,
 ];
 
+const buildCode = (
+  providerName: ProviderNameEnum,
+  paymentMethodName: PaymentMethodNameEnum,
+  transactionType: TransactionTypeEnum,
+) => {
+  return `${providerName}_${paymentMethodName}_${transactionType}`;
+};
+
 export const baseFeeCode = (
   dtos: Array<{
     providerName: ProviderNameEnum;
@@ -301,8 +328,168 @@ export const baseFeeCode = (
   }>,
 ) => {
   return dtos.map((dto) => {
-    return `${dto.providerName}_${dto.paymentMethodName}_${dto.transactionType}`;
+    return buildCode(
+      dto.providerName,
+      dto.paymentMethodName,
+      dto.transactionType,
+    );
   });
 };
 
 export const BASE_FEE_CODES = baseFeeCode(BASE_FEES);
+
+// feeInternalFixed;
+// feeInternalPercentage;
+// feeAgentFixed;
+// feeAgentPercentage;
+const MATRIX_MERCHANT_FEE = new Map<string, Map<string, Array<number>>>([
+  [
+    buildCode('MOTIONPAY', 'QRIS', 'PURCHASE'),
+    new Map([
+      [MERCHANT_1, [0, 0.1, 0, 0.05]],
+      [MERCHANT_2, [0, 0.05, 0, 0.05]],
+      [MERCHANT_3, [0, 0.15, 0, 0.075]],
+      [MERCHANT_4, [0, 0.2, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFERBANK', 'WITHDRAW'),
+    new Map([
+      [MERCHANT_1, [150, 0, 50, 0]],
+      [MERCHANT_2, [100, 0, 50, 0]],
+      [MERCHANT_3, [200, 0, 30, 0]],
+      [MERCHANT_4, [200, 0, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFERBANK', 'DISBURSEMENT'),
+    new Map([
+      [MERCHANT_1, [150, 0, 50, 0]],
+      [MERCHANT_2, [100, 0, 50, 0]],
+      [MERCHANT_3, [200, 0, 30, 0]],
+      [MERCHANT_4, [200, 0, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFEREWALLET_DANA', 'DISBURSEMENT'),
+    new Map([
+      [MERCHANT_1, [175, 0, 50, 0]],
+      [MERCHANT_2, [125, 0, 100, 0]],
+      [MERCHANT_3, [100, 0, 60, 0]],
+      [MERCHANT_4, [225, 0, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFEREWALLET_GOPAY', 'DISBURSEMENT'),
+    new Map([
+      [MERCHANT_1, [75, 0, 50, 0]],
+      [MERCHANT_2, [50, 0, 50, 0]],
+      [MERCHANT_3, [25, 0, 60, 0]],
+      [MERCHANT_4, [125, 0, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFEREWALLET_OVO', 'DISBURSEMENT'),
+    new Map([
+      [MERCHANT_1, [75, 0, 50, 0]],
+      [MERCHANT_2, [50, 0, 50, 0]],
+      [MERCHANT_3, [25, 0, 60, 0]],
+      [MERCHANT_4, [125, 0, 0, 0]],
+    ]),
+  ],
+  [
+    buildCode('JATELINDO', 'TRANSFEREWALLET_SHOPEEPAY', 'DISBURSEMENT'),
+    new Map([
+      [MERCHANT_1, [175, 0, 50, 0]],
+      [MERCHANT_2, [125, 0, 100, 0]],
+      [MERCHANT_3, [100, 0, 60, 0]],
+      [MERCHANT_4, [225, 0, 0, 0]],
+    ]),
+  ],
+]);
+
+/**
+ * MERCHANT_1 = Punya 1 agent
+ * MERCHANT_2 = Punya 2 agent
+ * MERCHANT_3 = Punya 3 agent
+ * MERCHANT_4 = Punya 0 agent
+ */
+
+export const MERCHANT_FEES = (): Map<string, UpsertMerchantFeeBody[]> => {
+  const map = new Map<string, UpsertMerchantFeeBody[]>();
+  for (const [code, value] of MATRIX_MERCHANT_FEE) {
+    for (const [email, fees] of value) {
+      const body: UpsertMerchantFeeBody = {
+        action: ActionEnum.I,
+        // `baseFeeId` is absent by type, not left at a placeholder: the id is
+        // only knowable at run time, and a 0 sitting in the fixture is one
+        // forgotten resolution away from writing a fee against the wrong rail.
+        code: code,
+        feeInternalFixed: new Decimal(fees[0]).toFixed(2),
+        feeInternalPercentage: new Decimal(fees[1]).toFixed(4),
+        feeAgentFixed: new Decimal(fees[2]).toFixed(2),
+        feeAgentPercentage: new Decimal(fees[3]).toFixed(4),
+      };
+      const old = map.get(email) ?? [];
+      map.set(email, [...old, body]);
+    }
+  }
+  return map;
+};
+
+const MATRIX_AGENT_SHAREHOLDER = new Map<
+  string,
+  Array<{ email: string; percent: number }>
+>([
+  [MERCHANT_1, [{ email: AGENT_1, percent: 100 }]],
+  [
+    MERCHANT_2,
+    [
+      { email: AGENT_1, percent: 30 },
+      { email: AGENT_2, percent: 70 },
+    ],
+  ],
+  [
+    MERCHANT_3,
+    [
+      { email: AGENT_1, percent: 30 },
+      { email: AGENT_3, percent: 30 },
+      { email: AGENT_4, percent: 40 },
+    ],
+  ],
+  [MERCHANT_4, []],
+]);
+
+export const AGENT_SHAREHOLDERS = (): Map<
+  string,
+  UpsertMerchantAgentShareholderBody[]
+> => {
+  const map = new Map<string, UpsertMerchantAgentShareholderBody[]>();
+
+  for (const [emailMerchant, value] of MATRIX_AGENT_SHAREHOLDER) {
+    // Seeded before the inner loop so a merchant with no agents gets an empty
+    // array rather than no key at all. MERCHANT_4 is that merchant, and
+    // `map.get(email)!` on a missing key is a TypeError rather than a skip.
+    map.set(emailMerchant, []);
+
+    for (const share of value) {
+      // As with `baseFeeId`: `agentId` is absent by type and resolved from
+      // `email` at run time, so it cannot be posted as a placeholder.
+      const body: UpsertMerchantAgentShareholderBody = {
+        action: ActionEnum.I,
+        email: share.email,
+        percentagePerAgent: new Decimal(share.percent).toFixed(4),
+      };
+      map.set(emailMerchant, [...map.get(emailMerchant)!, body]);
+    }
+  }
+
+  return map;
+};
+
+// export const AGENT_SHAREHOLDER = new Map<
+//   string,
+//   UpsertMerchantAgentShareholderBody[]
+// >([[MERCHANT_1, [{
+//   action: ActionEnum.I
+// }]]]);

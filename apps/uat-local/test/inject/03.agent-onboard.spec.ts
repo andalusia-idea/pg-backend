@@ -98,6 +98,7 @@ describe('inject agent onboard', () => {
       expect(res.statusCode).toEqual(HttpStatus.OK);
       expect(res.status).toBe(ResponseStatus.SUCCESS);
 
+      expect(res.data).toBeTruthy();
       const profile = res.data!;
       expect(profile.userId).toEqual(auth.authInfo.userId);
       expect(profile.profileId).toEqual(auth.authInfo.profileId);
@@ -105,16 +106,18 @@ describe('inject agent onboard', () => {
 
       // Exactly one of the three is populated, matching the role. An agent
       // whose detail row is missing would answer with all three null.
-      expect(profile.agent).not.toBeNull();
       expect(profile.admin).toBeNull();
       expect(profile.merchant).toBeNull();
+      expect(profile.agent).not.toBeNull();
 
-      expect(profile.agent!.fullname).toEqual(a.fullname);
-      expect(profile.agent!.phone).toEqual(a.phone);
-      expect(profile.agent!.address).toEqual(a.address);
-      expect(profile.agent!.bankName).toEqual(a.bankName);
-      expect(profile.agent!.accountNumber).toEqual(a.accountNumber);
-      expect(profile.agent!.accountHolderName).toEqual(a.accountHolderName);
+      const agent = profile.agent!;
+      expect(agent.fullname).toEqual(a.fullname);
+      expect(agent.phone).toEqual(a.phone);
+      expect(agent.address).toEqual(a.address);
+      expect(agent.bankCode).toEqual(a.bankCode);
+      expect(agent.bankName).toEqual(a.bankName);
+      expect(agent.accountNumber).toEqual(a.accountNumber);
+      expect(agent.accountHolderName).toEqual(a.accountHolderName);
     }
 
     // Four fixtures, four distinct users - not one row that four emails

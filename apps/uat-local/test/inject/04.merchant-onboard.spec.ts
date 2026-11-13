@@ -45,6 +45,78 @@
  * As with agents, a second run fails on the duplicate email.
  */
 
+import { ROLE } from '@app/microservice/microservice.enum';
+import { HttpStatus } from '@nestjs/common';
+import { AuthDto } from 'apps/dashboard/src/auth/dto/auth.dto';
+import { ResponseStatus } from 'apps/dashboard/src/shared/response.dto';
+import {
+  login,
+  loginAgentInternal,
+  loginSuperAdmin,
+  MERCHANT_PASSWORD,
+  merchantRegister,
+  MERCHANTS,
+  userProfile,
+} from 'apps/uat-local/src/helper';
+
 describe('inject merchant onboard', () => {
-  it.todo('register');
+  let superAdmin: AuthDto;
+  let agentInternal: AuthDto;
+
+  beforeAll(async () => {
+    superAdmin = await loginSuperAdmin();
+    expect(superAdmin.token).toBeTruthy();
+    expect(superAdmin.authInfo.userId).toBeGreaterThan(0);
+    agentInternal = await loginAgentInternal();
+    expect(agentInternal.token).toBeTruthy();
+    expect(agentInternal.authInfo.userId).toBeGreaterThan(0);
+  });
+
+  it('1. register merchant', async () => {
+    for (const m of MERCHANTS) {
+      const res = await merchantRegister(agentInternal, m);
+      expect(res.statusCode).toEqual(HttpStatus.CREATED);
+      expect(res.status).toBe(ResponseStatus.CREATED);
+    }
+  });
+
+  it('2. sign in each merchant', async () => {
+    const merchantIds = new Set<number>();
+    for (const m of MERCHANTS) {
+      const auth = await login(m.email, MERCHANT_PASSWORD);
+
+      expect(auth.token).toBeTruthy();
+      expect(auth.authInfo.role).toEqual(ROLE.MERCHANT);
+      expect(auth.authInfo.userId).toBeGreaterThan(0);
+      expect(auth.authInfo.profileId).toBeGreaterThan(0);
+
+      merchantIds.add(auth.authInfo.userId);
+
+      const res = await userProfile(auth);
+      expect(res.statusCode).toEqual(HttpStatus.OK);
+      expect(res.status).toBe(ResponseStatus.SUCCESS);
+
+      expect(res.data).toBeTruthy();
+      const profile = res.data!;
+      expect(profile.userId).toEqual(auth.authInfo.userId);
+      expect(profile.profileId).toEqual(auth.authInfo.profileId);
+      expect(profile.email).toEqual(m.email);
+
+      expect(profile.admin).toBeNull();
+      expect(profile.merchant).not.toBeNull();
+      expect(profile.agent).toBeNull();
+
+      const merchant = profile.merchant!;
+      expect(merchant.bankCode).toEqual(m.bankCode);
+      expect(merchant.bankName).toEqual(m.bankName);
+      expect(merchant.accountNumber).toEqual(m.accountNumber);
+      expect(merchant.accountHolderName).toEqual(m.accountHolderName);
+      expect(merchant.address).toEqual(m.address);
+      expect(merchant.npwp).toEqual(m.npwp);
+      expect(merchant.businessName).toEqual(m.businessName);
+    }
+    expect(merchantIds.size).toEqual(MERCHANTS.length);
+  });
+
+  it('3. merchant signature', async () => {});
 });

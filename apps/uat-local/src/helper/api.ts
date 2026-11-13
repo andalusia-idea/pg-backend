@@ -31,6 +31,7 @@ import { MerchantSignatureStatusDto } from 'apps/dashboard/src/modules/merchant-
 import { RegisterWebhookUrlDto } from 'apps/dashboard/src/modules/merchant-signature/dto/register-webhook-url.dto';
 import { SignedRequest } from '../merchant/merchant-signer';
 import { TRANSACTION_BASE_URL } from './constant';
+import { CreateAdminDto } from 'apps/dashboard/src/super-admin/dto/create-admin.dto';
 
 export const callDashboard = async <T>(
   config: AxiosRequestConfig,
@@ -107,6 +108,25 @@ export type SettlementWindowBody = Omit<
   'effectiveFrom' | 'effectiveTo'
 > & { effectiveFrom: string; effectiveTo?: string | null };
 
+/**
+ * A merchant fee as a fixture can express it: the rail named by its base-fee
+ * `code` instead of by an id.
+ *
+ * `baseFeeId` is omitted rather than defaulted, because the id is only knowable
+ * once `baseFeeFindAll` has run. Omitting it makes the resolution a type
+ * requirement - `{ ...body, baseFeeId }` is the only way to reach the DTO - so
+ * a forgotten one is a compile error instead of a fee written against rail 0.
+ */
+export type UpsertMerchantFeeBody = Omit<UpsertMerchantFeeDto, 'baseFeeId'> & {
+  code: string;
+};
+
+/** The same trade for shareholders: the agent named by email, not by id. */
+export type UpsertMerchantAgentShareholderBody = Omit<
+  UpsertMerchantAgentShareholderDto,
+  'agentId'
+> & { email: string };
+
 const bearer = (authDto: AuthDto) => ({
   Authorization: `Bearer ${authDto.token}`,
 });
@@ -120,6 +140,18 @@ export const providerUpsert = async (
     method: 'POST',
     url: '/api/v1/super-admin/provider',
     data: providers,
+    headers: bearer(authDto),
+  });
+
+/** Registers an admin. SUPER_ADMIN only. */
+export const adminRegister = async (
+  authDto: AuthDto,
+  createAdminDto: CreateAdminDto,
+) =>
+  callDashboard<null>({
+    method: 'POST',
+    url: '/api/v1/super-admin/register-admin',
+    data: createAdminDto,
     headers: bearer(authDto),
   });
 

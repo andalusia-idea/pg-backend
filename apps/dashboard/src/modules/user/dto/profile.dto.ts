@@ -31,6 +31,9 @@ export class ProfileAgentDetailDto {
   phone: string;
 
   @ApiProperty()
+  bankCode: string;
+
+  @ApiProperty()
   bankName: string;
 
   @ApiProperty()
@@ -53,6 +56,9 @@ export class ProfileMerchantDetailDto {
 
   @ApiProperty()
   address: string;
+
+  @ApiProperty()
+  bankCode: string;
 
   @ApiProperty()
   bankName: string;
