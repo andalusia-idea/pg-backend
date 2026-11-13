@@ -4,6 +4,7 @@ import { UpsertBaseFeeDto } from 'apps/dashboard/src/super-admin/dto/base-fee.dt
 import {
   ProviderNameEnum,
   PaymentMethodNameEnum,
+  SettlementModeEnum,
   TransactionTypeEnum,
 } from '@app/microservice/microservice.enum';
 import Decimal from 'decimal.js';
@@ -14,6 +15,7 @@ import {
 } from './api';
 import { ActionEnum } from 'apps/dashboard/src/modules/config-merchant/config-merchant.constant';
 import { CreateAdminDto } from 'apps/dashboard/src/super-admin/dto/create-admin.dto';
+import { UpsertMerchantSettlementPolicyDto } from 'apps/dashboard/src/modules/config-merchant/dto/settlement-policy.dto';
 
 export const DASHBOARD_BASE_URL =
   process.env.DASHBOARD_BASE_URL ?? 'http://localhost:3000';
@@ -487,9 +489,95 @@ export const AGENT_SHAREHOLDERS = (): Map<
   return map;
 };
 
-// export const AGENT_SHAREHOLDER = new Map<
-//   string,
-//   UpsertMerchantAgentShareholderBody[]
-// >([[MERCHANT_1, [{
-//   action: ActionEnum.I
-// }]]]);
+/**
+ * When the injected terms come into force.
+ *
+ * **Read at import time on purpose, and it must not become a fixed date.**
+ * `effectiveFrom` is part of the natural key, so a fixed value would be the
+ * idempotent choice - the way SETTLEMENT_WINDOWS uses `now` - except that
+ * `registerMerchant` writes every merchant's default FOLLOW_UPSTREAM row with
+ * `effectiveFrom: new Date()`. A fixture dated in the past therefore sits
+ * *behind* a later schedule, and the upsert answers 422: "a later schedule for
+ * this method already starts at ...". This works because step 06 runs after
+ * step 04 in its own process, so this reading is always later than the
+ * registration default it supersedes.
+ *
+ * The cost is that re-running step 06 against the same database stacks a new
+ * schedule each time rather than correcting one. That is acceptable only
+ * because the steps before it already require a reset - registration fails on
+ * a duplicate email - so the whole chain is run from empty.
+ */
+const POLICY_IN_FORCE_FROM = new Date();
+
+export const MERCHANT_SETTLEMENT_POLICY = new Map<
+  string,
+  UpsertMerchantSettlementPolicyDto[]
+>([
+  [
+    MERCHANT_1,
+    [
+      {
+        paymentMethodName: '*',
+        mode: SettlementModeEnum.FOLLOW_UPSTREAM,
+        businessDaysOnly: false,
+        effectiveFrom: POLICY_IN_FORCE_FROM,
+      },
+    ],
+  ],
+  [
+    MERCHANT_2,
+    [
+      {
+        paymentMethodName: PaymentMethodNameEnum.QRIS,
+        mode: SettlementModeEnum.SCHEDULED,
+        businessDaysOnly: false,
+        effectiveFrom: POLICY_IN_FORCE_FROM,
+        releaseTimes: ['06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+      },
+      {
+        paymentMethodName: '*',
+        mode: SettlementModeEnum.FIXED_DELAY,
+        businessDaysOnly: false,
+        delayDays: 1,
+        effectiveFrom: POLICY_IN_FORCE_FROM,
+        releaseTimes: ['13:00'],
+      },
+    ],
+  ],
+  [
+    MERCHANT_3,
+    [
+      {
+        paymentMethodName: '*',
+        mode: SettlementModeEnum.SCHEDULED,
+        businessDaysOnly: false,
+        effectiveFrom: POLICY_IN_FORCE_FROM,
+        releaseTimes: [
+          '00:00',
+          '01:00',
+          '02:00',
+          '03:00',
+          '06:00',
+          '12:00',
+          '18:00',
+          '19:00',
+          '20:00',
+          '21:00',
+          '22:00',
+          '23:00',
+        ],
+      },
+    ],
+  ],
+  [
+    MERCHANT_4,
+    [
+      {
+        paymentMethodName: '*',
+        mode: SettlementModeEnum.INSTANT,
+        businessDaysOnly: false,
+        effectiveFrom: POLICY_IN_FORCE_FROM,
+      },
+    ],
+  ],
+]);

@@ -32,6 +32,10 @@ import { RegisterWebhookUrlDto } from 'apps/dashboard/src/modules/merchant-signa
 import { SignedRequest } from '../merchant/merchant-signer';
 import { TRANSACTION_BASE_URL } from './constant';
 import { CreateAdminDto } from 'apps/dashboard/src/super-admin/dto/create-admin.dto';
+import {
+  MerchantSettlementPolicyDto,
+  UpsertMerchantSettlementPolicyDto,
+} from 'apps/dashboard/src/modules/config-merchant/dto/settlement-policy.dto';
 
 export const callDashboard = async <T>(
   config: AxiosRequestConfig,
@@ -268,6 +272,44 @@ export const merchantRegister = async (
     method: 'POST',
     url: '/api/v1/user/admin/register-merchant',
     data: createMerchantDto,
+    headers: bearer(authDto),
+  });
+
+/**
+ * Upserts a merchant's settlement terms - when their money stops being
+ * "coming" and becomes theirs to spend.
+ *
+ * SUPER_ADMIN or ADMIN, and unlike the rest of this controller the role is
+ * enforced: an AGENT or MERCHANT token gets a 403.
+ *
+ * A new `effectiveFrom` supersedes the terms before it, closing them in the
+ * same transaction; the same `effectiveFrom` corrects that row in place. No
+ * `merchantId` in the body - it is the path parameter.
+ */
+export const merchantSettlementPolicyUpsert = async (
+  authDto: AuthDto,
+  merchantId: number,
+  policies: UpsertMerchantSettlementPolicyDto[],
+) =>
+  callDashboard<null>({
+    method: 'POST',
+    url: `/api/v1/merchant/${merchantId}/settlement-policy`,
+    data: policies,
+    headers: bearer(authDto),
+  });
+
+/**
+ * One merchant's settlement terms, superseded and retired rows included,
+ * newest first per method - so a method can appear more than once, including
+ * the `'*'` default every merchant gets at registration.
+ */
+export const merchantSettlementPolicyFindAll = async (
+  authDto: AuthDto,
+  merchantId: number,
+) =>
+  callDashboard<MerchantSettlementPolicyDto[]>({
+    method: 'GET',
+    url: `/api/v1/merchant/${merchantId}/settlement-policy`,
     headers: bearer(authDto),
   });
 
