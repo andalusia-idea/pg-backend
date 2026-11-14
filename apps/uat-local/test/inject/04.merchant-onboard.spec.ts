@@ -56,6 +56,7 @@ import {
   MERCHANT_PASSWORD,
   merchantRegister,
   MERCHANTS,
+  merchantSignatureStatus,
   userProfile,
 } from 'apps/uat-local/src/helper';
 
@@ -118,5 +119,41 @@ describe('inject merchant onboard', () => {
     expect(merchantIds.size).toEqual(MERCHANTS.length);
   });
 
-  it('3. merchant signature', async () => {});
+  /**
+   * Pins the state registration leaves behind, rather than filling it in.
+   *
+   * A `MerchantSignature` row exists from the moment the merchant does, but
+   * nothing on it can sign yet: no secret, no webhook URLs, no IP allowlist.
+   * Rotating the secret belongs to the behaviour run, for the reason in this
+   * file's header - the value is shown once and never again, so a step that
+   * generated it here would have nowhere to put it that a later *process*
+   * could read.
+   *
+   * Asserting the absence is worth a test on its own: it is what makes
+   * `test/merchant-signature.spec.ts` meaningful, since that spec proves a
+   * merchant can sign only if it starts from a merchant that cannot.
+   *
+   * `clientId` is the one field no endpoint returns - `status` omits it
+   * deliberately - so it is not asserted here. The signature spec reads it out
+   * of `auth.MerchantSignature` directly when it needs it.
+   */
+  it('3. merchant signature', async () => {
+    for (const m of MERCHANTS) {
+      const auth = await login(m.email, MERCHANT_PASSWORD);
+      const res = await merchantSignatureStatus(auth);
+
+      expect(res.statusCode).toEqual(HttpStatus.OK);
+      expect(res.status).toBe(ResponseStatus.SUCCESS);
+      expect(res.data).toBeTruthy();
+
+      const status = res.data!;
+      expect(status.secretKeyGeneratedAt).toBeNull();
+      expect(status.payinUrl).toBeNull();
+      expect(status.payoutUrl).toBeNull();
+
+      // Empty means unrestricted, which is the default and the open risk
+      // tracked for callbacks - not something this step should quietly fix.
+      expect(status.allowedIps).toEqual([]);
+    }
+  });
 });

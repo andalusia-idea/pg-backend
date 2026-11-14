@@ -125,6 +125,11 @@ describe('inject merchant settlement policy', () => {
       // registration default on `'*'` as well, so the method alone is not
       // unique and a Map would keep the last entry for it - which, ordered
       // newest first, is the superseded row rather than the one just written.
+      //
+      // Comparing the instant exactly is only sound because
+      // `POLICY_IN_FORCE_FROM` is a whole second: the API serves dates at
+      // second precision, so a fixture carrying milliseconds comes back
+      // truncated and never matches. Its comment has the measurement.
       const byKey = new Map(
         resFindAll.data!.map((p) => [
           `${p.paymentMethodName}|${new Date(p.effectiveFrom).getTime()}`,

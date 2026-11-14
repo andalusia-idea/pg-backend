@@ -244,7 +244,19 @@ export const AGENTS: Array<CreateAgentDto> = [
   },
 ];
 
+/**
+ * Zero at each column's own scale.
+ *
+ * Money is `Decimal(15,2)` and a percentage is `Decimal(8,4)`, so the same
+ * number is `'0.00'` in one and `'0.0000'` in the other. Using the money
+ * spelling for a percentage states a value the API can never return: measured
+ * against the injected database, six base-fee rows read back `'0.0000'` where
+ * the fixture said `'0.00'`. Harmless while every comparison goes through
+ * `Number()`, and a false failure the moment one compares strings - which is
+ * the natural thing to write.
+ */
 const ZERO = new Decimal(0).toFixed(2);
+export const ZERO_PERCENT = new Decimal(0).toFixed(4);
 
 const BASE_FEES_MOTIONPAY: Array<UpsertBaseFeeDto> = [
   {
@@ -264,7 +276,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.WITHDRAW,
     isActive: true,
     feeProviderFixed: new Decimal(500).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
   {
     providerName: ProviderNameEnum.JATELINDO,
@@ -272,7 +284,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     isActive: true,
     feeProviderFixed: new Decimal(1_500).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
 
   {
@@ -281,7 +293,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     isActive: true,
     feeProviderFixed: new Decimal(350).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
   {
     providerName: ProviderNameEnum.JATELINDO,
@@ -289,7 +301,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     isActive: true,
     feeProviderFixed: new Decimal(500).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
   {
     providerName: ProviderNameEnum.JATELINDO,
@@ -297,7 +309,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     isActive: true,
     feeProviderFixed: new Decimal(700).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
   {
     providerName: ProviderNameEnum.JATELINDO,
@@ -305,7 +317,7 @@ const BASE_FEES_JATELINDO: Array<UpsertBaseFeeDto> = [
     transactionType: TransactionTypeEnum.DISBURSEMENT,
     isActive: true,
     feeProviderFixed: new Decimal(650).toFixed(2),
-    feeProviderPercentage: ZERO,
+    feeProviderPercentage: ZERO_PERCENT,
   },
 ];
 
@@ -439,6 +451,24 @@ export const MERCHANT_FEES = (): Map<string, UpsertMerchantFeeBody[]> => {
   return map;
 };
 
+/**
+ * Who splits the agent cut, per merchant.
+ *
+ * **This is not the whole stored set.** `registerMerchant` writes the
+ * registering agent - `agentinternal` - as a shareholder at `0.0000%` before
+ * any of this is posted, so every merchant carries one row more than its
+ * fixture declares. Verified against the injected database. It is left out
+ * here because the fixture describes what step 05 *sends*, and sending that
+ * row would be re-stating something onboarding already did; step 05 asserts
+ * its presence instead.
+ *
+ * MERCHANT_4 is the no-agent case, and the stored percentages for it therefore
+ * total `0`, not `100`. That is consistent rather than broken: its
+ * `MATRIX_MERCHANT_FEE` row is zero on `feeAgentFixed` and
+ * `feeAgentPercentage` for all seven rails, so there is no agent cut to split.
+ * Note that `assertShareholderPercentagesTotal` only ever sums the *request*,
+ * so nothing enforces the exactly-100 rule against what is stored.
+ */
 const MATRIX_AGENT_SHAREHOLDER = new Map<
   string,
   Array<{ email: string; percent: number }>
@@ -506,8 +536,29 @@ export const AGENT_SHAREHOLDERS = (): Map<
  * schedule each time rather than correcting one. That is acceptable only
  * because the steps before it already require a reset - registration fails on
  * a duplicate email - so the whole chain is run from empty.
+ *
+ * ## Whole seconds, because that is all the API can name
+ *
+ * Dates leave the API through `ToJakartaISO`, whose format is
+ * `yyyy-MM-dd'T'HH:mm:ssZZ` - **second precision, milliseconds deliberately
+ * dropped** to match the gateway convention. A date carrying milliseconds is
+ * therefore written in full but served truncated, which has two consequences
+ * for a value sitting in a natural key:
+ *
+ * 1. The read-back cannot be keyed on the instant it sent. `new Date()` at
+ *    `.953` comes back as `...:02+07:00`, 953ms away from what the fixture
+ *    holds, and step 06's lookup finds nothing. Measured: that is exactly what
+ *    failed on the first live run of the chain.
+ * 2. The row could never be *corrected* afterwards, only superseded, because
+ *    the same `effectiveFrom` can no longer be restated - which quietly
+ *    contradicts what this endpoint promises.
+ *
+ * Rounded **up** rather than down: the supersession guard refuses an
+ * `effectiveFrom` at or before an existing later schedule, so flooring could
+ * land on the same second as the registration default and be refused. Ceiling
+ * is always strictly after it, and a second in the future is allowed.
  */
-const POLICY_IN_FORCE_FROM = new Date();
+const POLICY_IN_FORCE_FROM = new Date(Math.ceil(Date.now() / 1000) * 1000);
 
 export const MERCHANT_SETTLEMENT_POLICY = new Map<
   string,

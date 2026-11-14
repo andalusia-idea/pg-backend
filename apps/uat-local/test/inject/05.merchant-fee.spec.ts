@@ -100,6 +100,7 @@ import {
   MERCHANTS,
   UpsertMerchantAgentShareholderBody,
   UpsertMerchantFeeBody,
+  ZERO_PERCENT,
 } from 'apps/uat-local/src/helper';
 
 describe('inject merchant fee', () => {
@@ -274,11 +275,36 @@ describe('inject merchant fee', () => {
       // Resolved from the email again, exactly as step 5 posted them. The
       // fixture carries no `agentId` to read back by - that is the point of
       // the Omit on UpsertMerchantAgentShareholderBody.
-      resolveShareholders(agentShareholders.get(email)).forEach((value) => {
+      const expected = resolveShareholders(agentShareholders.get(email));
+      expected.forEach((value) => {
         const shared = shareByAgentId.get(value.agentId)!;
         expect(shared).toBeDefined();
         expect(shared.percentagePerAgent).toEqual(value.percentagePerAgent);
       });
+
+      // The stored set is the fixture *plus* one row the fixture never sends:
+      // `registerMerchant` writes the registering agent - agentinternal - as a
+      // shareholder at 0%. The lookup above is by agentId, so on its own it
+      // would never notice an extra row, and a change that started giving that
+      // row a real percentage would move money without failing anything.
+      const stored = resFindAllMerchantFee.data!.agentShareholders ?? [];
+      const expectedIds = new Set(expected.map((v) => v.agentId));
+      const extra = stored.filter((s) => !expectedIds.has(s.agentId));
+
+      expect(extra.map((s) => s.agentId)).toEqual([
+        agentInternal.authInfo.userId,
+      ]);
+      expect(extra[0].percentagePerAgent).toEqual(ZERO_PERCENT);
+
+      // MERCHANT_4 has no agents, so its stored percentages total 0 rather
+      // than 100 - correct, because its fee rows carry no agent cut on any
+      // rail. Worth stating because `assertShareholderPercentagesTotal` sums
+      // the request, never the stored set, so nothing else checks this.
+      const total = stored.reduce(
+        (sum, s) => sum + Number(s.percentagePerAgent),
+        0,
+      );
+      expect(total).toEqual(expectedIds.size === 0 ? 0 : 100);
     }
   });
 });
