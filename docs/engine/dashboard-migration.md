@@ -6,6 +6,32 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-14 settlement-policy dates are whole seconds now
+
+One behaviour correction to yesterday's endpoint, found by running the local
+injection chain against a live stack for the first time.
+
+Dates leave this API at **second precision** — `2026-11-14T23:28:56+07:00` —
+but the default policy row created at registration was written straight off the
+clock, milliseconds and all. Since `effectiveFrom` is part of that table's key,
+the value you were served was never quite the value stored: posting it back to
+correct a merchant's starting terms missed by a fraction of a second, and the
+server superseded instead of correcting, leaving two rows where you expected
+one.
+
+**For the frontend: keep doing the obvious thing** — send back the exact
+`effectiveFrom` string the GET gave you. That now works. For merchants
+registered **before today** it still supersedes, so an edit to their starting
+terms leaves a `'*'` row whose `effectiveFrom` and `effectiveTo` are in the same
+second. Harmless — newest row still wins and the merchant settles on the terms
+you entered — but it will look odd in a history listing. **D32** has the table
+of which rows are affected.
+
+Fixed in `bcb6f06` with `DateHelper.nowAtApiPrecision()`. Rows written before it
+keep their milliseconds; nothing backfills them.
+
+---
+
 ## Update — 2026-11-13 the settlement-policy controller, and where it lives
 
 `MerchantSettlementPolicy` finally has a write path, which closes the last thing
@@ -2186,6 +2212,41 @@ Omitting it on a superseded row and having the server write `null` would re-open
 it and leave two rows in force. That is why it is omit-means-leave rather than
 omit-means-null.
 
+#### One caveat on "the same `effectiveFrom`", for merchants registered before 2026-11-14
+
+**Send back the exact `effectiveFrom` string the GET gave you** — that is all
+the UI has to do, and from now on it works. There is one set of rows where it
+will not, and it is worth knowing why before you see it in the wild.
+
+Dates leave this API at **second precision** — `2026-11-14T23:28:56+07:00`, no
+milliseconds, the same shape as every other date here. Until 2026-11-14 the
+default policy row created at registration was written straight off the clock,
+*with* milliseconds. So the value you were served was never quite the value
+stored, your correction missed the key by a fraction of a second, and the server
+did the only thing it could: treated it as a new term, closed the original and
+inserted a second row.
+
+| Row | Correcting it in place |
+|---|---|
+| any policy **you** wrote through this endpoint | works |
+| a registration default from **2026-11-14 onward** | works |
+| a registration default from **before that** | silently supersedes instead |
+
+What you would see in the third case: you edit a merchant's starting terms, the
+call succeeds, and the GET comes back with **two** rows for `'*'` instead of one
+— the original closed with an `effectiveTo` a fraction of a second after its
+start, and your edit as a new term beside it.
+
+**Nothing for you to build around it.** The resolution rule is unchanged, the
+newest row still wins, and the merchant settles on the terms you entered. It is
+untidy history, not wrong behaviour. If a listing shows a `'*'` row whose
+`effectiveFrom` and `effectiveTo` are in the same second, that is what it is.
+
+The fix is `DateHelper.nowAtApiPrecision()` in `registerMerchant`
+(`bcb6f06`) — the clock truncated to the second, so what is stored is exactly
+what you are served. Rows written before it keep their milliseconds; nothing
+backfills them.
+
 #### The rejection list
 
 All 422 with per-field keys, `[index].field`, the same shape as rows 56 and 61:
@@ -2257,6 +2318,14 @@ correcting a historical row was refused whenever a later schedule existed, and
 correcting a superseded row re-opened it and left two rows in force. Both are
 invisible to types and lint and obvious the first time a real payload goes
 through, which is the same lesson as the `b4e10c4` settlement-window 500.
+
+A third defect survived that run and only surfaced the next day, when the local
+injection chain ran against a live stack: the millisecond mismatch above. It was
+invisible to the throwaway-Postgres run because that run posted dates it had
+constructed itself, never dates the API had served back. Re-measured end to end
+afterwards — a freshly registered merchant stores `16:28:56.000`, the GET serves
+`2026-11-14T23:28:56+07:00`, and posting that string back with different terms
+updates the same row id and leaves the merchant with exactly one policy row.
 
 ---
 
