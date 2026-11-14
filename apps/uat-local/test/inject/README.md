@@ -43,9 +43,22 @@ these.
 
 ## Writing a step
 
-- **Idempotent.** Every endpoint used here upserts, so a step may be re-run
-  without a reset. Keep it that way; it is what makes iterating on fixture data
-  cheap.
+- **Idempotent where the endpoint allows it**, and say which in the header.
+  Upserts make a step cheap to re-run while iterating on fixture data, so
+  prefer one — but three steps cannot be, and pretending otherwise wastes an
+  afternoon:
+
+  | Step                     | Re-runnable against the same database                                                                                                |
+  | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+  | 01 upstream, 02 base fee | yes, both upsert                                                                                                                     |
+  | 03 agent, 04 merchant    | **no** — registration creates, and a second run is a duplicate-email 422                                                             |
+  | 05 merchant fee          | the fee and shareholder writes upsert, but it registers an admin first, so no                                                        |
+  | 06 settlement policy     | within one process, yes; a new process reads the clock again and stacks a schedule                                                   |
+  | 07 merchant signature    | yes — rotation moves the old secret to `secretKeyPrevious`. It does invalidate step 04's third assertion, which is one-way by design |
+
+  So the chain as a whole starts from a reset. Steps 01, 02 and 07 are the ones
+  worth re-running on their own.
+
 - **Named by what it injects**, since the name is how a script can select one
   step: `it('register')`, not `it('should register providers')`.
 - **No negative cases.** A refusal belongs in the E2E spec for that domain, one

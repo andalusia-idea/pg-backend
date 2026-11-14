@@ -16,12 +16,34 @@ import {
 import { ActionEnum } from 'apps/dashboard/src/modules/config-merchant/config-merchant.constant';
 import { CreateAdminDto } from 'apps/dashboard/src/super-admin/dto/create-admin.dto';
 import { UpsertMerchantSettlementPolicyDto } from 'apps/dashboard/src/modules/config-merchant/dto/settlement-policy.dto';
+import { RegisterWebhookUrlDto } from 'apps/dashboard/src/modules/merchant-signature/dto/register-webhook-url.dto';
 
 export const DASHBOARD_BASE_URL =
   process.env.DASHBOARD_BASE_URL ?? 'http://localhost:3000';
 export const TRANSACTION_BASE_URL =
   process.env.TRANSACTION_BASE_URL ?? 'http://localhost:3003';
 export const PORT = process.env.PORT ?? '3010';
+
+/**
+ * Where this harness wants its own webhooks delivered - the merchant side of
+ * the fake, served by this app.
+ *
+ * **`127.0.0.1`, never `localhost`.** `RegisterWebhookUrlDto` puts `@IsUrl()`
+ * on both fields and validator defaults to `require_tld: true`, so a TLD-less
+ * host is a 400 that reads like an auth problem. `src/main.ts` binds the IPv4
+ * loopback outside production to match, which is the other half of the same
+ * trap.
+ *
+ * Both fields are required, so a merchant cannot register one and not the
+ * other. The receiving controllers are Step 5 of the build order and do not
+ * exist yet: registration validates the shape and stores it, it never calls
+ * them, so registering ahead of the receiver is safe - and it is what gives
+ * the callback dispatcher somewhere to aim once it is built.
+ */
+export const MERCHANT_WEBHOOK_URLS: RegisterWebhookUrlDto = {
+  payinUrl: `http://127.0.0.1:${PORT}/merchant/webhook/payin`,
+  payoutUrl: `http://127.0.0.1:${PORT}/merchant/webhook/payout`,
+};
 
 export const ADMIN_1 = 'admin1@example.com';
 export const ADMIN_PASSWORD = 'password123456789';

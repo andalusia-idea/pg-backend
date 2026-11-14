@@ -11,7 +11,7 @@ import {
   merchantSecretKeyGenerate,
   merchantSignatureStatus,
   merchantWebhookRegister,
-  PORT,
+  MERCHANT_WEBHOOK_URLS,
   sendOpenApi,
 } from '../src/helper';
 import { signRequest } from '../src/merchant/merchant-signer';
@@ -48,13 +48,11 @@ const authDsn = (): string => {
 };
 
 /**
- * `127.0.0.1`, never `localhost`. `RegisterWebhookUrlDto` puts `@IsUrl()` on
- * both fields and validator defaults to `require_tld: true`, so a TLD-less host
- * is a 400 that reads like an auth problem - and the harness binds the IPv4
- * loopback to match, which is the other half of the same trap.
+ * Shared with inject step 07, which registers the same two URLs for all four
+ * merchants - so the `127.0.0.1`-never-`localhost` reasoning lives on the
+ * constant rather than being restated in both places.
  */
-const PAYIN_URL = `http://127.0.0.1:${PORT}/merchant/webhook/payin`;
-const PAYOUT_URL = `http://127.0.0.1:${PORT}/merchant/webhook/payout`;
+const { payinUrl: PAYIN_URL, payoutUrl: PAYOUT_URL } = MERCHANT_WEBHOOK_URLS;
 
 const ENDPOINT = '/open/v1/test';
 
