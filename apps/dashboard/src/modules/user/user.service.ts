@@ -11,6 +11,7 @@ import {
   SettlementModeEnum,
 } from '@app/microservice';
 import { generateClientId } from '@app/signature';
+import { DateHelper } from '../../shared/helper';
 
 @Injectable()
 export class UserService {
@@ -94,7 +95,13 @@ export class UserService {
           merchantId: user.id,
           paymentMethodName: '*',
           mode: SettlementModeEnum.FOLLOW_UPSTREAM,
-          effectiveFrom: new Date(),
+          // Whole seconds rather than `new Date()`. `effectiveFrom` is part of
+          // this table's unique key and the API serves dates at second
+          // precision, so a row written with milliseconds can never be
+          // restated by a client - an admin correcting these terms would
+          // supersede them instead, leaving a stub with a sub-second lifetime.
+          // See DateHelper.nowAtApiPrecision for the measurement.
+          effectiveFrom: DateHelper.nowAtApiPrecision(),
         },
       });
 
