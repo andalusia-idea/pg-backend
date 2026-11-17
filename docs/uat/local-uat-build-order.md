@@ -18,21 +18,37 @@ that looks like a crash.
 
 ---
 
-## Where the tree stands (9 Nov 2026)
+## Where the tree stands (17 Nov 2026)
 
-Verified against the working tree. **Steps 0-2 are done. Start at Step 3.**
+Verified against the working tree and a live stack. **Steps 0-6 are done. Start
+at Step 7.**
 
 | Step | State |
 |---|---|
 | 0 - compile errors | Done. `npx tsc --noEmit -p tsconfig.json` is clean, and `JatelindoTransferInterface` / `jatelindo.contract.dto` are gone from the tree |
 | 1 - boot under `NODE_ENV=test` | Done. `/health` comes from [libs/health](../../libs/health/src/health.controller.ts) for auth, config and transaction, and from a local controller in dashboard, settlement and uat-local |
 | 2 - the two loopback traps | Done. uat-local binds `127.0.0.1` at [main.ts:44](../../apps/uat-local/src/main.ts:44), and both allowlists are filled in [apps/transaction/.env.test](../../apps/transaction/.env.test) |
-| 3 - onboard the merchant | Sighting 3 met 3 Nov against the seeded `merchant1`, in `test/merchant.onboard.spec.ts`. **Being redone through the real admin path, and that is where the work is** - see below |
-| 4 - the fake MotionPay provider | Not started. `test/upstream.spec.ts` is a one-line stub |
+| 3 - onboard the merchant | Done, but **not as this step describes it** - see the notes below. The ordered chain in `test/inject/` (steps 01-07) registers agents, merchants, base fees, merchant fees, settlement policies and signing credentials through the real admin path. Sighting 3 lives in `test/merchant-signature.spec.ts` |
+| 4 - the fake MotionPay provider | Done, `8bb4947`. QRIS only: Transfer and Biller are not reachable in production, confirmed with the provider, so there is nothing to imitate |
+| 5 - the merchant's webhook receiver | Done, `d75ec42` |
+| 6 - the callback dispatcher | Done, `1011732`. Sighting 6 met 17 Nov: created 15:06:02, settled 15:06:20 - eighteen seconds, untouched |
+| 7 - the merchant crons | Not started |
+| 8 - Jatelindo | Not started. `JATELINDO_TRANSFER_BASE_URL` still points at the real sandbox |
+| 9 - turn the switchboard on | Not started, and it is now a one-line env change: `UAT_SWITCHBOARD_ENABLED=false` in [apps/uat-local/.env.test](../../apps/uat-local/.env.test) holds delivery to the `SUCCESS` band, and flipping it is the step. `scenarioFor` has assigned every band at create time since Step 4 |
+| 10 - watch settlement | Not started |
 
-All of it is on `dev`, through PR #3 (`7d9a6c3`) and the commits around it:
+Steps 0-2 landed on `dev` through PR #3 (`7d9a6c3`) and the commits around it:
 `c4a6504` bound the harness and filled the allowlists, `8657115` corrected what
 `BlockList` does with IPv4-mapped addresses, `55e127d` added the merchant signer.
+
+**Steps 3-6 landed 11-17 Nov.** The inject chain is `bcb6f06` and `b3a57bc`
+with the steps before them; `8bb4947` is the fake provider, `d75ec42` the
+merchant's receiver, `1011732` the dispatcher. One finding came out of Step 5
+and is worth knowing before reading the balance tables: `36e7fb3` stops both
+movement builders creating a zero-amount leg for a `0.0000%` agent
+shareholder - which `registerMerchant` writes onto every merchant - because
+`assertPositiveMoney` refused it and rolled back a captured payment. See
+[docs/batch/balance-explained.md](../batch/balance-explained.md).
 
 Sighting 1 was green - six 200s - on 3 Nov. That one line is from the log rather
 than re-measured: the stack is not running today, so everything else above was
@@ -43,6 +59,12 @@ with `ScheduleModule.forRoot()`, a `DatabaseModule` wiring the auth, config and
 transaction Prisma clients, `GET /app`, `GET /health`, and
 `merchant/merchant-signer.ts` - a pure `signRequest` helper, with no controller
 and no module of its own. Still no `provider/`; that is Step 4.
+
+That paragraph described 9 Nov. The app now also carries `provider/` (the fake
+MotionPay, the scenario switchboard, the in-memory store and the callback
+dispatcher), `merchant/` (the signer, plus the webhook receiver and its store),
+and `config/` - a `UatConfig` in the `libs/configuration` shape, kept in the app
+because nothing outside it has any business reading those keys.
 
 **Step 3 below is no longer the plan.** It says to onboard the seeded
 `merchant1@example.com` by hand, which is how Sighting 3 was first met. The tree
@@ -459,14 +481,25 @@ switchboard pick anything else.
 > 1. the transaction window logs *"QRIS transaction settled from callback"*;
 > 2. `PurchaseTransaction.status` is `SUCCESS` with a non-null `paidAt`;
 > 3. `PurchaseFeeDetail` has one row per party - merchant, provider, internal,
->    and one per agent;
-> 4. the balance tables carry a movement crediting merchant1 and Agent Internal
->    into the `PENDING` bucket, and **no leg for the provider's cut** - that is
->    deducted upstream and never lands in a balance we track;
+>    and one per agent, **including an agent whose share is `0.00`**;
+> 4. the balance tables carry a movement crediting `MERCHANT 27`, `INTERNAL 0`
+>    and `AGENT 23` into the `PENDING` bucket - three legs, and **no leg for
+>    the provider's cut**, which is deducted upstream and never lands in a
+>    balance we track;
 > 5. the payin webhook arrives in the `uat-local` window.
 >
 > Five observations, all from one randomly-amounted purchase nobody typed. If
 > you only ever get this far, the harness has already paid for itself.
+>
+> **Corrected 17 Nov 2026.** Item 4 read *"crediting merchant1 and Agent
+> Internal"*. Agent Internal is agent 22, which `registerMerchant` writes onto
+> every merchant at `0.0000%` - and since `36e7fb3` a zero share deliberately
+> gets **no** balance leg, because `assertPositiveMoney` refuses one and the
+> throw rolled back a payment that had genuinely arrived. So the movement for
+> `merchant1` is three legs, not four: the merchant, our own `INTERNAL` cut,
+> and `agent1` on its 100% share. Agent Internal still gets a fee *detail* row
+> at `0.00`, which is why item 3 now says so - the audit trail keeps every
+> party, only the balance drops the zeros.
 
 ---
 
@@ -625,7 +658,16 @@ UAT_PURCHASE_PER_MINUTE=6
 UAT_DISBURSEMENT_PER_MINUTE=3
 UAT_AMOUNT_MIN=10000
 UAT_AMOUNT_MAX=500000
+
+# The scenario switchboard. False delivers only the SUCCESS band, which is
+# Step 6; Step 9 flips it. Anything but the literal "true" is false, so a
+# typo holds at Step 6 rather than releasing ten scenarios at once.
+UAT_SWITCHBOARD_ENABLED=false
 ```
+
+Of those, `TRANSACTION_BASE_URL`, `DASHBOARD_BASE_URL` and
+`UAT_SWITCHBOARD_ENABLED` are in the file as of Step 6 and are read by
+`UatConfig`. The rest are Step 7's, and nothing reads them yet.
 
 **`apps/dashboard/.env.test`** - new file. Copy `.env.local` and change: `PORT`
 stays 3000, `NODE_ENV=test`, and the two DSNs point at `pgtest` with no
