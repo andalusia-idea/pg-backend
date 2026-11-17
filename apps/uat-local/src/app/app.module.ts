@@ -10,6 +10,7 @@ import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { ProviderModule } from '../provider';
 import { MerchantModule } from '../merchant';
+import { UatConfigModule } from '../config';
 
 @Module({
   controllers: [AppController, HealthController],
@@ -23,6 +24,7 @@ import { MerchantModule } from '../merchant';
     RedisModule,
     DatabaseModule,
     ScheduleModule.forRoot(),
+    UatConfigModule,
     ProviderModule,
     MerchantModule,
   ],
