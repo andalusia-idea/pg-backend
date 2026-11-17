@@ -300,56 +300,112 @@ transit.
 
 ### Step 3 — the merchant requests a 30,000 payout
 
+**Two numbers here, and the difference between them matters.** `nominal` is the
+30,000 the recipient gets. `netNominal` is what the payout costs merchant 27 —
+that 30,000 plus every fee it attracts:
+
+| Who | Amount | Note |
+|---|---|---|
+| Recipient | 30,000 | what was asked for |
+| Provider (upstream) | 2,000 | they keep it — it never reaches us |
+| Us (`INTERNAL`) | 400 | our cut |
+| Agent 5 | 100 | their share |
+| **`netNominal`** | **32,500** | what leaves merchant 27 |
+
+> **Note the mirror.** For a **pay-in**, `netNominal` is what the merchant is
+> *left with* after fees. For a **payout** it is `nominal` *plus* fees. Same
+> field name, opposite direction — and reserving `nominal` by mistake would let
+> every payout overdraw the merchant by exactly the fee.
+
 `reserve()` runs first. It asks the database one question:
 
-> Is merchant 27's `AVAILABLE` at least 30,000 — and if so, lock that row so
+> Is merchant 27's `AVAILABLE` at least 32,500 — and if so, lock that row so
 > nobody else can spend it while I work?
 
-98,000 ≥ 30,000, so yes. Then it posts `PAYOUT_RESERVED`:
+98,000 ≥ 32,500, so yes. Then it posts `PAYOUT_RESERVED`:
 
 | id | holder | bucket | dir | amount | reason |
 |---|---|---|---|---|---|
-| 10 | MERCHANT 27 | AVAILABLE | DEBIT | 30,000.00 | PAYOUT_RESERVED |
-| 11 | MERCHANT 27 | RESERVED | CREDIT | 30,000.00 | PAYOUT_RESERVED |
+| 10 | MERCHANT 27 | AVAILABLE | DEBIT | 32,500.00 | PAYOUT_RESERVED |
+| 11 | MERCHANT 27 | RESERVED | CREDIT | 32,500.00 | PAYOUT_RESERVED |
 
 | holder | bucket | amount |
 |---|---|---|
-| MERCHANT 27 | AVAILABLE | **68,000.00** |
-| MERCHANT 27 | RESERVED | **30,000.00** |
+| MERCHANT 27 | AVAILABLE | **65,500.00** |
+| MERCHANT 27 | RESERVED | **32,500.00** |
 
 **This happens before the provider is called.** The merchant's spendable balance
 drops the instant the payout is created, not when it completes.
 
 ### Step 4a — the payout succeeds
 
+> **Corrected 17 Nov 2026.** This section showed `PAYOUT_COMPLETED` as a bare
+> `RESERVED | DEBIT` and said "one entry, not two". That shape **loses the
+> fee** — debiting the reservation without crediting anyone makes the internal
+> and agent share vanish on every payout. §6.3 of
+> [settlement-batching-implementation.md](settlement-batching-implementation.md)
+> was corrected for this on 12 Oct 2026 and the fix never reached this
+> document, so what stood here was the superseded draft rather than a
+> simplification.
+
+The reservation is consumed *and* the fees it earned are paid out:
+
 | id | holder | bucket | dir | amount | reason |
 |---|---|---|---|---|---|
-| 12 | MERCHANT 27 | RESERVED | DEBIT | 30,000.00 | PAYOUT_COMPLETED |
+| 12 | MERCHANT 27 | RESERVED | DEBIT | 32,500.00 | PAYOUT_COMPLETED |
+| 13 | INTERNAL 0 | AVAILABLE | CREDIT | 400.00 | PAYOUT_COMPLETED |
+| 14 | AGENT 5 | AVAILABLE | CREDIT | 100.00 | PAYOUT_COMPLETED |
 
 | holder | bucket | amount |
 |---|---|---|
 | MERCHANT 27 | PENDING | 0.00 |
-| MERCHANT 27 | AVAILABLE | 68,000.00 |
+| MERCHANT 27 | AVAILABLE | 65,500.00 |
 | MERCHANT 27 | RESERVED | **0.00** |
+| INTERNAL 0 | AVAILABLE | **1,400.00** |
+| AGENT 5 | AVAILABLE | **300.00** |
 
-One entry, not two — the money genuinely left. It is not in another bucket, it
-is gone to the recipient. This is why `PAYOUT_COMPLETED` is **not** in
-`TRANSFER_REASONS`: its legs are *supposed* to change the holder's total.
+**The provider's 2,000 gets no leg**, same as a pay-in — the upstream keeps it
+and it never reaches a balance we track. So the net across every holder is
+-32,500 + 400 + 100 = **-32,000**, which is exactly `nominal + providerFee`:
+the money that genuinely left the system.
+
+**The fees land in `AVAILABLE`, not `PENDING`.** This money came out of a
+balance that was already settled, so there is nothing to wait for — and the
+settlement batch claims purchases and never disbursements, so a payout fee
+parked in `PENDING` would sit there forever.
+
+**The merchant's own leg is one entry, not two** — their money genuinely left.
+It is not in another bucket, it is gone to the recipient. This is why
+`PAYOUT_COMPLETED` is **not** in `TRANSFER_REASONS`: its legs are *supposed* to
+change the holders' totals.
+
+> **A share of zero gets no leg either.** `registerMerchant` writes the
+> registering agent onto every merchant at `0.0000%`, so a `0.00` share is a
+> normal thing for the fee service to return — and `post()` refuses a
+> non-positive leg, so building one would roll the entire payout back. Both
+> movement builders skip it. The fee detail rows still itemise every party,
+> including the ones owed nothing, so the breakdown the export reads stays
+> complete.
 
 ### Step 4b — or, the payout fails
 
 | id | holder | bucket | dir | amount | reason |
 |---|---|---|---|---|---|
-| 12 | MERCHANT 27 | RESERVED | DEBIT | 30,000.00 | PAYOUT_FAILED |
-| 13 | MERCHANT 27 | AVAILABLE | CREDIT | 30,000.00 | PAYOUT_FAILED |
+| 12 | MERCHANT 27 | RESERVED | DEBIT | 32,500.00 | PAYOUT_FAILED |
+| 13 | MERCHANT 27 | AVAILABLE | CREDIT | 32,500.00 | PAYOUT_FAILED |
 
 | holder | bucket | amount |
 |---|---|---|
 | MERCHANT 27 | AVAILABLE | **98,000.00** |
 | MERCHANT 27 | RESERVED | 0.00 |
 
-Back where it was. Two legs, netting to zero for the holder — a transfer, so the
-zero-sum check applies.
+Back where it was, fee included. Two legs, netting to zero for the holder — a
+transfer, so the zero-sum check applies.
+
+**And no fee legs at all.** That asymmetry with 4a is the whole reason the fees
+are credited at completion rather than at reservation: a fee is earned by a
+payout that *works*, so the failure path has nothing to reverse, because
+nothing was ever credited.
 
 ---
 
@@ -383,7 +439,7 @@ statement*, so there is no gap between them to slip through:
 
 ```sql
 SELECT 1 FROM "BalanceSnapshot"
-WHERE ... AND "bucket" = 'AVAILABLE' AND "amount" >= 30000
+WHERE ... AND "bucket" = 'AVAILABLE' AND "amount" >= 32500
 FOR UPDATE;
 ```
 
