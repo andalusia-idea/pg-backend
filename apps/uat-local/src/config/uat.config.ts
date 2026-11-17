@@ -51,4 +51,75 @@ export class UatConfig {
 
     return (value ?? '').trim().toLowerCase() === 'true';
   }
+
+  /**
+   * Which seeded merchant the harness acts as.
+   *
+   * The email, not the credentials. `clientId` and `secretKey` are read from
+   * `auth.MerchantSignature` at use time rather than copied here, because
+   * inject step 07 rotates the secret - a copy in this file would be correct
+   * until the first rotation and then fail as an authentication error, which
+   * is the least informative way for it to break.
+   */
+  get MERCHANT_EMAIL(): string {
+    return this.configService.getOrThrow<string>('UAT_MERCHANT_EMAIL');
+  }
+
+  /**
+   * How many purchases the merchant cron creates each minute.
+   *
+   * **Zero turns the cron off**, which is why there is no separate enable
+   * flag: "how much traffic" and "any traffic at all" are the same question,
+   * and two keys that can disagree about it is one too many.
+   */
+  get PURCHASE_PER_MINUTE(): number {
+    return this.rate('UAT_PURCHASE_PER_MINUTE');
+  }
+
+  /** Same contract as `PURCHASE_PER_MINUTE`; zero is off. */
+  get DISBURSEMENT_PER_MINUTE(): number {
+    return this.rate('UAT_DISBURSEMENT_PER_MINUTE');
+  }
+
+  get AMOUNT_MIN(): number {
+    return this.wholeRupiah('UAT_AMOUNT_MIN');
+  }
+
+  get AMOUNT_MAX(): number {
+    return this.wholeRupiah('UAT_AMOUNT_MAX');
+  }
+
+  /**
+   * A non-negative rate, defaulting to zero.
+   *
+   * `get` rather than `getOrThrow`, and silent about a missing key: a harness
+   * that refuses to boot because nobody said how much traffic to generate is
+   * worse than one that generates none. A *malformed* value is different -
+   * `UAT_PURCHASE_PER_MINUTE=six` means someone tried, and failing loudly
+   * beats silently sending nothing.
+   */
+  private rate(key: string): number {
+    const raw = this.configService.get<string>(key);
+    if (raw === undefined || raw.trim() === '') return 0;
+
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error(`key [${key}] value [${raw}] must be a number >= 0`);
+    }
+
+    return value;
+  }
+
+  private wholeRupiah(key: string): number {
+    const raw = this.configService.getOrThrow<string>(key);
+    const value = Number(raw);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new Error(
+        `key [${key}] value [${raw}] must be a whole number of rupiah above zero`,
+      );
+    }
+
+    return value;
+  }
 }
