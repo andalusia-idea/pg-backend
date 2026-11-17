@@ -6,6 +6,56 @@ Source of truth for "what to migrate" is the frontend's own API client layer at 
 
 ---
 
+## Update — 2026-11-16 frontend fix (second pass, same day)
+
+Frontend wired the settlement-policy tab to D32's contract (D33), found earlier the same day in the pass below. Checked against `ConfigMerchantService` and `UpsertMerchantSettlementPolicyDto`:
+
+- ✅ **Request shape fixed.** The POST now sends an array, always including the required `businessDaysOnly: false`. The type is renamed `UpsertMerchantSettlementPolicyDto` (from `CreateMerchantSettlementPolicyBody`), matching the DTO name.
+- ✅ **Effective From added**, defaulting to now, sent at whole-second precision with an explicit offset (`dayjs(v).startOf("second").format()`), so a correction's round trip actually matches the natural key.
+- ✅ **Correct-in-place added.** A new "Correct" action on every row (current, upcoming, history) disables both `paymentMethodName` and `effectiveFrom` - both part of the natural key - and resends `effectiveFrom` exactly as the GET returned it. The end-date field starts blank even when correcting, so leaving it untouched omits the key rather than risking a `null` that would re-open a superseded row.
+- ✅ **Listing caught up.** `MerchantSettlementPolicyDto` gained `releases`/`deletedAt`; the screen now splits Current/Upcoming/History instead of showing a future-dated row under History.
+- ✅ **Role gating added.** The whole tab, not just its write actions, is now hidden for any role but `adminSuper` - a merchant can no longer reach the admin-only routes at all. No frontend `ADMIN` role exists yet, so today this also hides it from a hypothetical ADMIN login; tracked as a known gap, not re-opening D33.
+- ✅ **Mock brought to the same contract**, including the business-rule 422s checked across the whole batch, the DTO-shape 422s keyed by the first failing entry's bare field name, the "a later schedule already starts" refusal, and the empty-array/duplicate-key 400s.
+- Verified in the browser against the mock, with state persisting correctly across page reloads: adding `FIXED_DELAY` T+2 for `'*'` correctly superseded the prior active row, closing it in history at exactly the new row's `effectiveFrom`; correcting the new row's `delayDays` kept the identical `effectiveFrom` and stayed the sole active row; the superseded rows stayed closed throughout; submitting `FIXED_DELAY` with no `delayDays` left the save blocked.
+
+Committed on the frontend as `1a2bf47`. Not done this pass, left as a disclosed gap: mapping business-rule field errors onto the specific form field, rather than relying on the existing global toast that already joins them into one line.
+
+**Also on the frontend, `0021acb`: My Profile is rebuilt as a read-only view (row 4).** Its "Save" and "Change Password" used to show a fake success toast with no request behind them. That matches the backend: `UserController` serves `GET user/profile` and nothing else for the signed-in user, with no update-profile, change-password or avatar-upload route anywhere in `apps/dashboard`. The edit form and password modal are hidden behind flags until those routes exist, and the profile types now carry `bankCode` (`4d1a0f8`). No backend action is implied; the missing change-password route is already noted under D29.
+
+---
+
+## Update — 2026-11-16 post-pull comparison (frontend side)
+
+Compared backend `apps/dashboard` + `docs/batch/*` + this doc at `b3a57bc` (21 commits past `28aa7ec`) against frontend `0ca459f`. The frontend has **no code change** since `bd0c56f`; `0ca459f` only updates `new-task.md`. Each backend change below was read in source, not only from its commit message.
+
+| Backend commit | What it is | Frontend impact |
+|---|---|---|
+| `64bcbdb` | `POST` / `GET merchant/:merchantId/settlement-policy` (D32, rows 63–64), gated `@Roles(SUPER_ADMIN, ADMIN)` | **Frontend work — D33.** The policy tab's client was written against its own mock before the endpoint existed, and its write does not match the shipped contract |
+| `bcb6f06` | The registration default policy row is written on a whole second | Nothing to build: send back the `effectiveFrom` string the GET gave you. Merchants registered before 2026-11-14 still supersede instead of correcting (D32's caveat) |
+| `0eb0865` | Doc: that caveat, in D32 | — |
+| `4d1a0f8` | `uat-local` steps 04–05, **plus** `bankCode` added to `ProfileAgentDetailDto` / `ProfileMerchantDetailDto`. The profile DTO is an allowlist (`DtoHelper.assign`), so the column was not served before | Additive. The frontend's matching types in `src/api/user.type.ts` lack it; add it when a screen needs it. Row 4 |
+| `e383917` | `docs/batch/settlement-policy-explained.md` §10/§12/§14 brought back to the code | **Matters for the optional settlement-window screen (row 61).** Settlement resolves a window by **payment method alone**, so a method with more than one in-force window is skipped by the enqueuer and cannot settle under `FOLLOW_UPSTREAM` today — Teleanjar's `BATCH_1`/`BATCH_2` pair on `TRANSFERBANK` is exactly that case |
+| `2af49cb` | What the first live run of the inject chain found | No contract change. Confirms that `registerMerchant` gives every agent-registered merchant a **0%** shareholder row for the registering agent (pre-existing since `f25343c`); see the D33 notes |
+| `440e28f`, `78a615e`, `931500e`, `0b8a89a`, `83a86fb`, `1ea0978`, `ea13f4c`, `bc17567`, `4700e23`, `46df966`, `58e041b`, `b3a57bc`, two merges | `uat-local` harness and inject chain | — |
+| `f0986ec` | Doc: the 2026-11-11 frontend-side blocks, committed | — |
+
+**New finding (D33): the frontend's settlement-policy client predates D32.** URLs and the GET envelope already match. The write does not:
+
+- the POST sends **one object** where the route takes an array;
+- it has no `businessDaysOnly` and no `effectiveFrom`, both of which are required;
+- there is no way to correct a row in place.
+
+Separately, the tab is shown to `MERCHANT`, which the new `@Roles()` now refuses with a 403. Against the real API the first save fails as a 422 **with an empty field map**, so the toast does not say what is wrong. It is frontend-only to fix; see D33, which also carries two backend questions: should merchants read their own terms, and how does a mistaken future-dated policy get removed?
+
+**Re-checked, unchanged since the last pass:**
+
+- D29 part 1: `password: "password123"` is still in both `createAgent()` and `createMerchant()`.
+- Withdrawal create still sends `withdrawMethod`, and approve/reject are still stubs (D21).
+- None of the five §2.7 screens has been started.
+- D31's "clear to none" question is still unanswered.
+
+---
+
 ## Update — 2026-11-14 settlement-policy dates are whole seconds now
 
 One behaviour correction to yesterday's endpoint, found by running the local
@@ -356,7 +406,7 @@ Two more columns since the last pass: **Issue & Responsible** (populated only wh
 | 1 | POST | `login` | `auth` | `postLogin` | Public | ✅ Matches | — | — |
 | 2 | GET | `permissions` | `permissions` | `getPermissionByAuthInfo`, `fetchPermissionAll` | Any authenticated (see D8) | ✅ Matches | — | — |
 | 3 | GET | `permissions/:id` | `permissions` | `fetchPermissionById` | Any authenticated | ✅ Matches | — | — |
-| 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches | — | — |
+| 4 | GET | `user/profile` | `users` | `getUserProfile` | Any authenticated (own profile) | ✅ Matches. Since `4d1a0f8` (2026-11-13) the `agent` and `merchant` blocks also carry `bankCode` | None. The frontend types and mock carry `bankCode` since `0021acb` (2026-11-16), and the rebuilt read-only My Profile shows it. It is the only user-profile route: no update-profile or change-password route exists, so the page's edit UI is hidden | — |
 | 5 | POST | `user/admin/register-merchant` | `users` | `createMerchant` | `AGENT` (backend `@Roles`, frontend route `/acc-management/create-merchant`) | ⚠️ **Updated 2026-11-09** — frontend no longer sends the removed `settlementInterval`; `@Roles(AGENT)` is now **enforced** (SUPER_ADMIN passes as a wildcard) | **Frontend.** `createMerchant()` hardcodes `password: "password123"` for every merchant (D29). Route gating already matches the enforced role. New merchants receive the default `FOLLOW_UPSTREAM` policy (D24) | — |
 | 6 | POST | `user/admin/register-agent` | `users` | `createAgent` | Backend `@Roles`: `SUPER_ADMIN`, `ADMIN` (`AGENT_ADMIN_ROLES`). Frontend route `/acc-management/create-agent` grants only `SUPER_ADMIN` | ⚠️ **Updated 2026-11-10** — `@Roles(SUPER_ADMIN, ADMIN)` is **enforced** (2026-11-09). The `bankCode` defect is fixed on the frontend (`c4a0629`); the hardcoded password remains (D29 part 1) | **Frontend + product.** `createAgent()` still hardcodes `password: "password123"`; that waits on a product decision (D29). ~~Sends `bankCode: agentData.bankName`~~ fixed 2026-11-10: it now sends `agentData.bankCode`. **Older, minor residual gap:** The lockout that made this route unreachable is fixed. One narrower gap remains: `roles: ["SUPER_ADMIN"]` on this route doesn't include plain `ADMIN`, which backend's `AGENT_ADMIN_ROLES` does permit — low priority, since no `ADMIN`-role account exists in the test data yet (§7 only exercises `SUPER_ADMIN`/`AGENT`/`MERCHANT`) | — (body is `CreateAgentDto`, already correct — no backend change needed) |
 | 7 | GET | `agent-detail` | `agent-detail` | `getAgentList` | `SUPER_ADMIN` | ✅ Matches | — | — |
@@ -535,7 +585,7 @@ New `SuperAdminController` (`apps/dashboard/src/super-admin`). It has no legacy 
 | 58 | POST | `super-admin/provider` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`5e44ef6`, 2026-11-09) | **Frontend, optional.** Activates or reactivates a partner (D27). Required before any base fee or settlement window can be created for that partner in production | Array of `{ name: ProviderNameEnum }` |
 | 59 | POST | `super-admin/provider/retire` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`b711389`, 2026-11-09) | Refused (422 naming the fee codes) while the provider still has an active base fee; `INTERNAL` is always refused (D27) | Array of `{ name: ProviderNameEnum }` |
 | 60 | GET | `super-admin/provider` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`5e44ef6`) | `common/div?div=PROVIDER` (row 18) stays the dropdown read | — returns `ProviderDto { name, createdAt, deletedAt }[]`, retired included |
-| 61 | POST | `super-admin/settlement-window` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Fixed 2026-11-09 (`b4e10c4`; it was a 500 on every request from `3a776b2`) | **Frontend, optional, but more valuable since `5c7ffad` (2026-11-11).** Production now starts with **no** windows for any partner, so `FOLLOW_UPSTREAM` resolves nothing until rows are posted here. This is the API the frontend's parked `UpstreamSettlementWindow` screen was waiting for. The POST is an upsert on `(providerName, paymentMethodName, label, effectiveFrom)`: the same key corrects a row, and a new `effectiveFrom` is a new schedule. Don't offer `businessDaysOnly: true` (422). Show overlap errors against `label` (D26). The full rejection list is in the 2026-11-11 update block | Array of `UpsertSettlementWindowDto { providerName, paymentMethodName, label: /^[A-Z][A-Z0-9_]{1,23}$/, windowStart: "HH:MM", windowStartDayOffset: -1\|0, windowEnd: "HH:MM", settlementOffset: 0-31, settlementTime?: "HH:MM"\|null, businessDaysOnly: false, timezone?, effectiveFrom: ISO, effectiveTo?: ISO\|null }` |
+| 61 | POST | `super-admin/settlement-window` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Fixed 2026-11-09 (`b4e10c4`; it was a 500 on every request from `3a776b2`) | **Frontend, optional, but more valuable since `5c7ffad` (2026-11-11).** Production now starts with **no** windows for any partner, so `FOLLOW_UPSTREAM` resolves nothing until rows are posted here. This is the API the frontend's parked `UpstreamSettlementWindow` screen was waiting for. The POST is an upsert on `(providerName, paymentMethodName, label, effectiveFrom)`: the same key corrects a row, and a new `effectiveFrom` is a new schedule. Don't offer `businessDaysOnly: true` (422). Show overlap errors against `label` (D26). The full rejection list is in the 2026-11-11 update block. **Settleability (2026-11-16, from `e383917`):** the API accepts several windows on one payment method, but settlement resolves by method alone, so a method with more than one in-force window — across providers too — is skipped and cannot settle under `FOLLOW_UPSTREAM` today. A screen should warn before saving a second in-force window for a method. **Correcting and replacing (2026-11-17, from `upsertSettlementWindow`):** unlike D32, an omitted optional field is **reset**, not kept — the update writes `effectiveTo ?? null`, `settlementTime ?? null` and `timezone ?? SETTLEMENT_TIMEZONE` — so an edit must resend the row's own `effectiveTo`/`settlementTime`, or it re-opens a closed window. A new `effectiveFrom` does not close the old row either: the overlap check needs **both** the hours and the effective periods to overlap, so a new schedule whose hours overlap the still-open old row is a 422 on `[i].label` ("already stored") unless the same batch also closes the old row | Array of `UpsertSettlementWindowDto { providerName, paymentMethodName, label: /^[A-Z][A-Z0-9_]{1,23}$/, windowStart: "HH:MM", windowStartDayOffset: -1\|0, windowEnd: "HH:MM", settlementOffset: 0-31, settlementTime?: "HH:MM"\|null, businessDaysOnly: false, timezone?, effectiveFrom: ISO, effectiveTo?: ISO\|null }` |
 | 62 | GET | `super-admin/settlement-window` | *(none — new)* | *(none yet)* | `SUPER_ADMIN` (enforced) | ✅ Live (`3a776b2`) | Returns derived `window`/`releases` display strings, so no client-side formatting is needed. A dev database has the four seeded windows; a production one starts empty (`5c7ffad`) | — returns `SettlementWindowDto[]` (`id`, provider/method/label, the time fields, `timezone`, `businessDaysOnly`, `effectiveFrom`/`effectiveTo` as `+07:00` ISO, `deletedAt`, `window`, `releases`), retired included, newest schedule first per rail |
 
 ---
@@ -550,8 +600,8 @@ table.
 
 | # | Method | Path | Legacy module | Frontend caller | Role | Status | Issue & Responsible | Request Body / Requirement |
 |---|---|---|---|---|---|---|---|---|
-| 63 | POST | `merchant/:merchantId/settlement-policy` | *(none — new)* | *(mock only)* | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | **Frontend, now worth doing.** This is what the policy page was waiting for (D24 → D32). An array upsert on `(paymentMethodName, effectiveFrom)` for the merchant in the path: a **new `effectiveFrom` supersedes** the terms before it, closing them in the same transaction, and the **same `effectiveFrom` corrects** that row in place. Don't offer `businessDaysOnly: true` (422). Omit `effectiveTo` to leave a stored end date alone; send `null` to clear it | Array of `UpsertMerchantSettlementPolicyDto { paymentMethodName: "*" \| method, mode: INSTANT\|FOLLOW_UPSTREAM\|FIXED_DELAY\|SCHEDULED, delayDays?: 0-31, releaseTimes?: ["HH:MM"], businessDaysOnly: false, effectiveFrom: ISO, effectiveTo?: ISO\|null }`. **No `merchantId` in the body** — it is the path parameter |
-| 64 | GET | `merchant/:merchantId/settlement-policy` | *(none — new)* | *(mock only)* | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | Carries a derived `releases` string (`"T+2 at 10:00"`, `"daily at 06:00, 12:00"`, `"when the upstream settles"`, `"immediately on capture"`), so a listing row needs no mode-switching logic. 404 on an unknown merchant rather than an empty list | — returns `MerchantSettlementPolicyDto[]`: `id`, `merchantId`, `paymentMethodName`, `mode`, `releases`, `delayDays`, `releaseTimes`, `businessDaysOnly`, `effectiveFrom`/`effectiveTo`/`deletedAt` as `+07:00` ISO. Superseded and retired rows included, newest terms first per method |
+| 63 | POST | `merchant/:merchantId/settlement-policy` | *(none — new)* | `upsertSettlementPolicies` — **matches, fixed 2026-11-16 (D33)** | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | None blocking. The frontend sends an array upsert on `(paymentMethodName, effectiveFrom)`: a **new `effectiveFrom` supersedes** the terms before it, closing them in the same transaction, and the **same `effectiveFrom` corrects** that row in place, resent exactly as the GET returned it. `businessDaysOnly` is always sent `false`. `effectiveTo` is omitted to leave a stored end date alone | Array of `UpsertMerchantSettlementPolicyDto { paymentMethodName: "*" \| method, mode: INSTANT\|FOLLOW_UPSTREAM\|FIXED_DELAY\|SCHEDULED, delayDays?: 0-31, releaseTimes?: ["HH:MM"], businessDaysOnly: false, effectiveFrom: ISO, effectiveTo?: ISO\|null }`. **No `merchantId` in the body** — it is the path parameter |
+| 64 | GET | `merchant/:merchantId/settlement-policy` | *(none — new)* | `getMerchantSettlementPolicies` — **matches, fixed 2026-11-16 (D33)**: reads `releases`/`deletedAt` and splits Current/Upcoming/History | `SUPER_ADMIN`, `ADMIN` (**enforced**) | ✅ Live (2026-11-13) | None blocking. Carries a derived `releases` string (`"T+2 at 10:00"`, `"daily at 06:00, 12:00"`, `"when the upstream settles"`, `"immediately on capture"`), so a listing row needs no mode-switching logic. 404 on an unknown merchant rather than an empty list | — returns `MerchantSettlementPolicyDto[]`: `id`, `merchantId`, `paymentMethodName`, `mode`, `releases`, `delayDays`, `releaseTimes`, `businessDaysOnly`, `effectiveFrom`/`effectiveTo`/`deletedAt` as `+07:00` ISO. Superseded and retired rows included, newest terms first per method |
 
 > **These two carry `@Roles(SUPER_ADMIN, ADMIN)` and the rest of the controller
 > does not.** Rows 20, 21, and the fee and shareholder POSTs have
@@ -694,12 +744,13 @@ Unchanged from legacy — the frontend's `ResponseDto<T>` in `global.type.ts` al
 
 ## 5. Decisions
 
-Thirty-two entries (D1–D32), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the seven in the table below do. D28–D31 are frontend defects found during the frontend-side comparisons, and none needs a backend change. Their status:
+Thirty-three entries (D1–D33), each a real defect or ambiguity found while reading the legacy code — or, from D24 on, a change the backend has made that reaches your side. Most are settled and need nothing from you; the seven in the table below do. D28–D31 and D33 are frontend defects found during the frontend-side comparisons, and none needs a backend change. Their status:
 
 - **D28** was fixed on the frontend on 2026-11-10.
 - **D29**'s `bankCode` half was fixed the same day; its password half waits on a product decision.
 - **D30** was fixed in `b77c1af`.
 - **D31**, found 2026-11-11 in the handlers that D30's fix rewrote, was fixed the same day (`bd0c56f`). Its side question, whether shareholders can be cleared to none, is still open for the backend; see the end of D31.
+- **D33**, found 2026-11-16, was fixed the same day. Its two side questions (merchant read access, removing a mistaken policy row) are still open for the backend/product; see the end of D33.
 
 ### Open — needs a decision or action
 
@@ -708,12 +759,12 @@ Thirty-two entries (D1–D32), each a real defect or ambiguity found while readi
 | **D25** | `POST /super-admin/base-fee` now validates `isActive` as a boolean, and rejects payloads it used to accept | **You** — send `isActive` as a JSON boolean, and surface the new 422 field errors | A string or an omitted value is now a 422. Before the fix the field was silently dropped, so the switch never worked at all |
 | **D22** | Snapshot balance reads, the agent holder-filter fix, frontend three-bucket support, and the admin profit view are all done; only the manual-adjustment write feature remains | **You** — build the `BalanceAdjustment` endpoint (mandatory reason, visible audit history, `BigInt` id serialized as a string) when ready | Admins can see profit and all three buckets everywhere now; manual balance correction still has no write path at all |
 | **D29** | Dashboard agent/merchant registration hardcodes `password: "password123"`. The `bankCode` half was fixed on the frontend 2026-11-10 (`c4a0629`) | **You + product** to decide how a new account's first password is set; then the frontend implements it | Every dashboard-created account shares a password that ships in the JS bundle |
-| **D3** | Authorization is **partly** enforced (2026-11-09): `RolesGuard` is registered, so `@Roles()` now gates `register-merchant` (AGENT), `register-agent` (SUPER_ADMIN/ADMIN) and `/super-admin/*` (SUPER_ADMIN), with SUPER_ADMIN passing every `@Roles()`. `@CheckPolicies()` is still a placeholder everywhere else | **You** (discussing internally) | Every endpoint without `@Roles()` — including all of balance, transactions, merchant/agent detail and config — is still open to any authenticated user. Must be settled before production |
+| **D3** | Authorization is **partly** enforced (2026-11-09): `RolesGuard` is registered, so `@Roles()` now gates `register-merchant` (AGENT), `register-agent` (SUPER_ADMIN/ADMIN) and `/super-admin/*` (SUPER_ADMIN), with SUPER_ADMIN passing every `@Roles()`. Since 2026-11-13 (`64bcbdb`) also `merchant/:merchantId/settlement-policy` (SUPER_ADMIN/ADMIN, D32). `@CheckPolicies()` is still a placeholder everywhere else, including the rest of `ConfigMerchantController` | **You** (discussing internally) | Every endpoint without `@Roles()` — including all of balance, transactions, merchant/agent detail and config — is still open to any authenticated user. Must be settled before production |
 | **D10** | ~~`prisma migrate` unusable repo-wide~~ — **fixed**; one item remains | **You** | Decide how to baseline: the dev DB has tables (from `db push`) but no migration history |
 | **D8** | `GET permissions` serves two opposite needs from one URL | **You** + frontend dev | Every signed-in user gets the full admin menu client-side. UI-only, not a data breach |
 | **D21** | Withdrawal read fields now align; create/approve/reject dashboard behavior and approval-mode semantics remain unfinished | **Backend/product** — settle request contract and implement routes; frontend — wait for that contract | The listing can display backend fields, but dashboard writes remain absent or stubs |
 
-> **D17, D18, D19, D23, D24, and D15 are settled.** D22's read side (both backend and frontend) and admin profit view are done; only its manual-adjustment write feature remains open. D21 remains open for withdrawal write behavior and approval semantics.
+> **D17, D18, D19, D23, D24, and D15 are settled.** D22's read side (both backend and frontend) and admin profit view are done; only its manual-adjustment write feature remains open. D21 remains open for withdrawal write behavior and approval semantics. D32 and its frontend half D33 are both settled.
 
 ### Settled — no action needed
 
@@ -744,6 +795,7 @@ Thirty-two entries (D1–D32), each a real defect or ambiguity found while readi
 | D28 | Frontend fee-config payloads sent money/percentages as JSON numbers where the backend requires decimal strings | **Fixed on the frontend 2026-11-10** (`5e07d26`). All five DTOs are typed as strings, edits are serialized at 2/4 decimals at the API boundary, percentages display at 4 decimals, and the mock 422s a number. The separate total-rule problem in agent-shareholder saves was D30, fixed in `b77c1af` |
 | D26 | Upstream settlement schedules had no write path — the two MotionPay windows were hardcoded in a seed, and Jatelindo and Teleanjar had none at all | **New surface, nothing required of you.** `POST` / `GET /super-admin/settlement-window` ship the admin write path. A screen for it is worth building when the fee-config screen gets a sibling; until then the rows go in by API call. See the write-up |
 | D32 | `MerchantSettlementPolicy` had no controller — the only writer was `registerMerchant`, so a merchant's settlement terms were fixed at registration and `INSTANT` / `FIXED_DELAY` / `SCHEDULED` were unreachable in production | **New surface, and your policy page can leave its mock.** `POST` / `GET /merchant/:merchantId/settlement-policy`, in the config-merchant module rather than super-admin. A new `effectiveFrom` supersedes the terms before it; the same one corrects that row. See the write-up |
+| D33 | The frontend's settlement-policy tab predated D32's contract: one object instead of an array, no `businessDaysOnly` or `effectiveFrom`, no correct-in-place, and the tab was shown to `MERCHANT` | **Fixed on the frontend 2026-11-16** (`1a2bf47`). The POST now sends an array with both required fields, a "Correct" action resends the GET's exact `effectiveFrom` to edit a row in place, the listing splits Current/Upcoming/History and reads `releases`/`deletedAt`, the whole tab is hidden for any role but `adminSuper`, and the mock enforces the same contract. See the write-up |
 
 ---
 
@@ -2326,6 +2378,100 @@ constructed itself, never dates the API had served back. Re-measured end to end
 afterwards — a freshly registered merchant stores `16:28:56.000`, the GET serves
 `2026-11-14T23:28:56+07:00`, and posting that string back with different terms
 updates the same row id and leaves the merchant with exactly one policy row.
+
+---
+
+### D33 — the frontend's settlement-policy tab doesn't match D32's contract → **fixed on the frontend, 2026-11-16**
+
+> **Resolution, 2026-11-16, same day as the finding (`1a2bf47`).** The frontend implements steps 1–7 below:
+>
+> - The POST sends an array of `UpsertMerchantSettlementPolicyDto`, always including `businessDaysOnly: false`.
+> - A new "Effective From" field defaults to now and is sent at whole-second precision with an offset (`dayjs(v).startOf("second").format()`).
+> - A "Correct" action on every row (current, upcoming, history) disables `paymentMethodName` and `effectiveFrom` and resends `effectiveFrom` exactly as the GET returned it; the end-date field starts blank so an untouched save omits the key rather than risking a `null`.
+> - `MerchantSettlementPolicyDto` gained `releases`/`deletedAt`; the listing splits Current/Upcoming/History.
+> - The whole tab, not just its write actions, is hidden for any role but `adminSuper`.
+> - The mock was brought to the same contract, including the batch-wide business-rule 422s, the first-entry DTO-shape 422s, the "later schedule" refusal, and the empty-array/duplicate-key 400s.
+>
+> Verified against the mock, with state persisting correctly across page reloads: adding `FIXED_DELAY` T+2 for `'*'` correctly superseded the prior active row, closing it in history at exactly the new row's `effectiveFrom`; correcting the new row's `delayDays` kept the identical `effectiveFrom` and stayed the sole active row; the superseded rows stayed closed throughout; submitting `FIXED_DELAY` with no `delayDays` left the save blocked. Not done, left as a disclosed gap: mapping business-rule field errors onto the specific form field (the existing global toast already joins them into one line). The two backend questions below remain open.
+
+Found 2026-11-16, comparing D32 against the frontend's `config-merchant-settlement` tab. That tab was built ahead of the backend against the frontend's own stateful mock, and its comments still describe the pre-D32 design ("a policy is never edited in place"). **Already right:**
+
+- the URLs (`merchant/:id/settlement-policy`, with the same merchant id the fee and shareholder tabs use);
+- the GET envelope (`ResponseDto<MerchantSettlementPolicyDto[]>`) and its existing fields;
+- `'*'` for the default, and the four modes with their mode-dependent fields;
+- `businessDaysOnly` never offered.
+
+The gaps, all in `src/api/merchant-settlement-policy.api.ts`, `.type.ts`, the tab component and `fake/`:
+
+| Frontend today | Backend (D32) | What happens against the real API |
+|---|---|---|
+| The POST body is **one object** | An array (`ParseDtoArrayPipe`) | 422 `Request validation failed` with an **empty** `fields` map. Nest's `ParseArrayPipe` passes its "parsable array expected" string to `validationExceptionFactory`, which finds no field errors in it, so the toast does not say what is wrong |
+| No `businessDaysOnly` | Required boolean | 422 on `businessDaysOnly`, once the body is an array |
+| No `effectiveFrom`; the mock stamps "now" itself | A required ISO date, and part of the key | 422 on `effectiveFrom` |
+| POST typed as returning the created row | `data: null`, `status: CREATED` | Type only. The page refetches after saving anyway |
+| `MerchantSettlementPolicyDto` lacks `releases` and `deletedAt` | Both are served | Type only today. `pickActivePerMethod()` never checks `deletedAt`, so a retired row with no end date would be picked as current |
+| No way to correct a row | The same `effectiveFrom` corrects that row in place | Every typo fix becomes a new term in the history |
+| The tab is shown to everyone who can open `/config/merchant` (`SUPER_ADMIN`, `MERCHANT`), with the form disabled for non-admins | `@Roles(SUPER_ADMIN, ADMIN)` on **both** verbs | A MERCHANT opening the tab now gets a 403 toast instead of a read-only view |
+
+**Fix (frontend only):**
+
+1. **The request.** Post an array of `UpsertMerchantSettlementPolicyDto`:
+   - `paymentMethodName` is `'*'` or the method name;
+   - `mode`, plus `delayDays`/`releaseTimes` as the mode needs;
+   - `businessDaysOnly: false`;
+   - `effectiveFrom`;
+   - `effectiveTo` only when the admin sets an end date.
+
+   The POST's return type becomes `ResponseDto<null>`.
+2. **An effective-from field.** It defaults to now.
+   - Send it at **whole seconds with an offset**: `dayjs(v).startOf("second").format()` gives `2026-11-16T10:00:00+07:00`. `ToJsDate` keeps whatever precision arrives, so a millisecond sent by the client becomes part of a key the API can never serve back (see `bcb6f06`'s note in `DateHelper.nowAtApiPrecision`).
+   - A future date schedules the change. The server closes the current row at that moment.
+   - A date at or before an already-stored later schedule for the same method is refused with a 422 on `[0].effectiveFrom`.
+3. **A "correct" action on each row.**
+   - Prefill the form.
+   - Keep `effectiveFrom` read-only, and send it **exactly as the GET returned it**.
+   - **Omit** `effectiveTo`, so a superseded row keeps the end date it was given. Sending `null` would re-open it.
+   - For merchants registered before 2026-11-14, correcting the registration default still supersedes instead (D32's caveat). That is expected; it shows up as a same-second row in the history.
+4. **Types and the listing.**
+   - Add `releases` and `deletedAt`.
+   - Pick the current row from rows with `deletedAt === null`.
+   - Show a future-dated row as upcoming rather than as history.
+   - `releases` is English-only, so keep the localized `describeTerms()` for display if the Indonesian locale matters.
+5. **Mirror the cheap checks** before submitting:
+   - `delayDays` 0–31;
+   - exactly one release time for `FIXED_DELAY` (already done);
+   - at least one and at most 48 release times for `SCHEDULED`, with no duplicates;
+   - `effectiveTo` after `effectiveFrom`.
+
+   Everything else comes back as a 422 keyed `[0].field`. The ky hook already joins these into its toast; mapping them onto the form fields is better.
+6. **Gate the tab to admins** (`AccessControlRoles.adminSuper`), at least until the first question below is answered.
+7. **Bring the mock to the same contract:**
+   - array body and required fields;
+   - supersede on a new `effectiveFrom`, correct on an existing one;
+   - the "later schedule" 422, and the validations above;
+   - `data: null`;
+   - rows with `releases` and `deletedAt`, dated as `+07:00` whole-second strings, so step 3's round trip is exercised locally.
+
+**Verify** against the mock and, if possible, the backend dev stack:
+
+- Add `FIXED_DELAY` T+2 at 10:00 effective now. The GET should show two `'*'` rows, with the old one closed at the new one's start.
+- Correct that new row's `delayDays`. It should keep the same `id` and still be the only row in force.
+- Correct the superseded row. It should stay closed.
+- Save `FIXED_DELAY` without days. That should be a 422 on the field.
+- Log in as a merchant. There should be no settlement tab and no 403.
+
+**Questions for the backend, no action implied:**
+
+- **Should a merchant read its own settlement terms?** The tab was designed to show them read-only, and the GET now refuses MERCHANT. If merchants should see them, that needs a merchant-scoped read; the write stays admin-only either way.
+- **How is a policy row removed?**
+  - `resolveSupersededPolicies()` answers a new `effectiveFrom` that falls behind a later schedule with "retire it first".
+  - But no route retires a policy row, and the upsert clears `deletedAt`.
+  - So a future-dated row entered by mistake can only have its terms corrected, never moved or removed. Until it takes effect, it also blocks every earlier change on that method.
+
+**Related, frontend-side, no action yet:**
+
+- **No `ADMIN` role on the frontend.** `MERCHANT_TERMS_ROLES` admits ADMIN, but no frontend route lists an `ADMIN` role, so an ADMIN account sees no menus. This matters once `POST super-admin/register-admin` (row 54) is used to create operators.
+- **The registering agent's 0% row and the auto-split.** Every merchant an agent registers carries that agent as a 0% shareholder (`registerMerchant`, confirmed by `2af49cb`). When another agent is added, the shareholder tab's `splitEvenly()` gives that row an even share. Whether the registrar should stay at 0 by default is a product call; today the admin edits it back by hand.
 
 ---
 
