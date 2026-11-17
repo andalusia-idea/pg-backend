@@ -169,11 +169,26 @@ export class PurchaseWebhookService {
         },
       });
 
-      if (isPaid)
-        await this.balanceService.post(
-          tx,
-          this.buildPayinMovement(purchase, fee),
-        );
+      if (isPaid) {
+        const movement = this.buildPayinMovement(purchase, fee);
+
+        // Every share being zero leaves no legs at all, and `post` rejects an
+        // empty movement - which would roll back the update above, the very
+        // failure dropping the zero legs is meant to prevent. Reachable when a
+        // fixed provider fee swallows the whole amount: the merchant nets
+        // nothing and there is nothing left for anyone else. The payment is
+        // recorded anyway, loudly, because money arrived and nobody was
+        // credited for it.
+        if (movement.legs.length === 0) {
+          this.logger.error({
+            msg: 'Paid QRIS credited nobody - every share came to zero',
+            purchaseId: purchase.id,
+            nominal: purchase.nominal.toFixed(2),
+          });
+        } else {
+          await this.balanceService.post(tx, movement);
+        }
+      }
     });
 
     this.logger.log({
@@ -205,6 +220,11 @@ export class PurchaseWebhookService {
    * never lands in a balance we track - it stays recorded on the fee detail row
    * for the export and nothing more.
    *
+   * **Nor does a share of zero**, for the reason `credit` gives below. Only
+   * the balance legs drop those; the `PurchaseFeeDetail` rows still itemise
+   * every party, including the ones owed nothing, so the breakdown the export
+   * reads stays complete.
+   *
    * With no fee breakdown the merchant is credited the gross. That is wrong by
    * the width of the fees, and deliberately preferred to recording nothing:
    * money did arrive, and the caller logs the missing breakdown for the
@@ -215,44 +235,73 @@ export class PurchaseWebhookService {
     purchase: PurchaseRow,
     fee: FeeCalculationResultDto | null,
   ): BalanceMovement {
-    // `purchase.merchantId`, never `fee.merchantFee.merchantId`. The fee service
-    // echoes the id back and they should agree, but trusting a remote echo over
-    // the row already in hand means a disagreement sends money to the wrong
-    // merchant with nothing to catch it.
     const legs: BalanceLeg[] = [];
 
-    if (fee) {
-      legs.push(
-        {
-          holderType: BalanceHolderTypeEnum.MERCHANT,
-          holderId: purchase.merchantId,
-          amount: new Decimal(fee.merchantFee.netNominal),
-          bucket: BalanceBucketEnum.PENDING,
-          direction: BalanceDirectionEnum.CREDIT,
-        },
-        {
-          holderType: BalanceHolderTypeEnum.INTERNAL,
-          holderId: INTERNAL_HOLDER_ID,
-          amount: new Decimal(fee.internalFee.nominal),
-          bucket: BalanceBucketEnum.PENDING,
-          direction: BalanceDirectionEnum.CREDIT,
-        },
-        ...fee.agentFee.agents.map<BalanceLeg>((agent) => ({
-          holderType: BalanceHolderTypeEnum.AGENT,
-          holderId: agent.agentId,
-          amount: new Decimal(agent.nominal),
-          bucket: BalanceBucketEnum.PENDING,
-          direction: BalanceDirectionEnum.CREDIT,
-        })),
-      );
-    } else {
+    /**
+     * Credit one holder their share - and give a share of exactly nothing no
+     * leg at all.
+     *
+     * A zero here is what configuration produces, not a fault.
+     * `registerMerchant` writes the registering agent into every merchant's
+     * shareholder list at `0.0000%`, and an internal fee can be configured at
+     * zero too; both arrive as a well-formed `0.00`. Passed through, `post()`
+     * refuses it - `assertPositiveMoney` rejects any non-positive leg - and
+     * because that post shares a `$transaction` with the status update, the
+     * throw rolls back a payment that genuinely arrived. The provider then
+     * retries the non-200 three times and drops the notification for good, so
+     * the capture is lost rather than delayed.
+     *
+     * **Zero only.** A negative share is corruption rather than
+     * configuration, and is deliberately left to reach `assertPositiveMoney`
+     * and throw: skipping it would credit the merchant their net while that
+     * much silently went nowhere. (The settlement service's `transfer` skips
+     * everything `<= 0`; this is the stricter half of it, on purpose.)
+     */
+    const credit = (
+      holderType: BalanceHolderTypeEnum,
+      holderId: number,
+      amount: Decimal,
+    ): void => {
+      if (amount.isZero()) return;
+
       legs.push({
-        holderType: BalanceHolderTypeEnum.MERCHANT,
-        holderId: purchase.merchantId,
-        amount: new Decimal(purchase.nominal),
+        holderType,
+        holderId,
+        amount,
         bucket: BalanceBucketEnum.PENDING,
         direction: BalanceDirectionEnum.CREDIT,
       });
+    };
+
+    if (fee) {
+      // `purchase.merchantId`, never `fee.merchantFee.merchantId`. The fee
+      // service echoes the id back and they should agree, but trusting a remote
+      // echo over the row already in hand means a disagreement sends money to
+      // the wrong merchant with nothing to catch it.
+      credit(
+        BalanceHolderTypeEnum.MERCHANT,
+        purchase.merchantId,
+        new Decimal(fee.merchantFee.netNominal),
+      );
+      credit(
+        BalanceHolderTypeEnum.INTERNAL,
+        INTERNAL_HOLDER_ID,
+        new Decimal(fee.internalFee.nominal),
+      );
+
+      for (const agent of fee.agentFee.agents) {
+        credit(
+          BalanceHolderTypeEnum.AGENT,
+          agent.agentId,
+          new Decimal(agent.nominal),
+        );
+      }
+    } else {
+      credit(
+        BalanceHolderTypeEnum.MERCHANT,
+        purchase.merchantId,
+        new Decimal(purchase.nominal),
+      );
     }
 
     return {

@@ -332,11 +332,21 @@ export class DisbursementCommonService {
     ];
 
     for (const feeDetail of feeDetails) {
+      // A fee of exactly nothing gets no leg, for the same reason a pay-in's
+      // does not: a 0% agent shareholder or a zero internal fee is
+      // configuration, and `assertPositiveMoney` would throw on it and roll
+      // back a payout the upstream has already made. Unlike a pay-in this can
+      // never empty the movement - the merchant's RESERVED debit above is
+      // `netNominal`, which reserve() never accepted as zero.
+      const nominal = new Decimal(feeDetail.nominal);
+
       if (FeeTypeEnum.INTERNAL === feeDetail.type) {
+        if (nominal.isZero()) continue;
+
         legs.push({
           holderType: BalanceHolderTypeEnum.INTERNAL,
           holderId: INTERNAL_HOLDER_ID,
-          amount: new Decimal(feeDetail.nominal),
+          amount: nominal,
           bucket: BalanceBucketEnum.AVAILABLE,
           direction: BalanceDirectionEnum.CREDIT,
         });
@@ -345,7 +355,9 @@ export class DisbursementCommonService {
       if (FeeTypeEnum.AGENT === feeDetail.type) {
         // An agent fee with no agent cannot be credited to anyone. Without this
         // the id reaches Prisma as null and surfaces as a foreign-key error
-        // several frames away from the row that caused it.
+        // several frames away from the row that caused it. Checked before the
+        // zero skip: a fee row with no agent is a defect worth seeing whatever
+        // it is worth.
         if (feeDetail.agentId === null) {
           this.logger.error({
             msg: 'Agent fee detail has no agentId; cannot credit it',
@@ -355,10 +367,12 @@ export class DisbursementCommonService {
           throw TransactionException.internalError();
         }
 
+        if (nominal.isZero()) continue;
+
         legs.push({
           holderType: BalanceHolderTypeEnum.AGENT,
           holderId: feeDetail.agentId,
-          amount: new Decimal(feeDetail.nominal),
+          amount: nominal,
           bucket: BalanceBucketEnum.AVAILABLE,
           direction: BalanceDirectionEnum.CREDIT,
         });
