@@ -11,6 +11,7 @@ import {
   ProviderStore,
 } from './provider.store';
 import { SCENARIO } from './scenario';
+import { jatelindoTransferCallback } from './jatelindo/jatelindo.payload';
 import { motionPayQrisCallback } from './motionpay/motionpay.payload';
 
 /**
@@ -133,8 +134,8 @@ export class CallbackDispatcher {
     const envelope = this.envelope(row, outcome);
 
     if (!envelope) {
-      // Nothing can produce a Jatelindo row until Step 8 builds its fake, so
-      // this is unreachable today. Dropped rather than retried: a row no
+      // Both providers have a builder since Step 8, so this is unreachable
+      // until a third one arrives. Dropped rather than retried: a row no
       // builder understands will not become deliverable in fifteen seconds.
       this.logger.error({
         msg: 'No payload builder for this provider; dropping the row',
@@ -245,20 +246,44 @@ export class CallbackDispatcher {
      * The one scenario that lies about identity: a callback for a reference we
      * never issued. Everything else about it is well-formed, so what is under
      * test is the lookup miss rather than the parser.
+     *
+     * **It lands on a different field for each provider, because the two
+     * callback services look a transaction up by different keys.** QRIS is
+     * found by the provider's own `transaction_id`
+     * (`purchase.webhook.service.ts` → `findPurchase(payload.providerReference)`),
+     * so ghosting that is what misses. The transfer callback is found by *our*
+     * `traceNumber` - `disbursement.webhook.service.ts` says so outright,
+     * *"the opposite of QRIS"* - so a ghost `jpaReferenceNo` would find the
+     * real payout anyway, settle it, and write the invented reference onto the
+     * row. That is not a lookup miss, it is corruption of a good row by the
+     * scenario meant to test a miss.
      */
-    const reference =
+    const ghost =
       row.scenario === SCENARIO.UNKNOWN_REFERENCE
         ? `GHOST-${randomUUID()}`
-        : row.providerReference;
+        : null;
 
     if (row.provider === PROVIDER.MOTIONPAY) {
       return {
         url: '/callback/motionpay/qris',
-        body: motionPayQrisCallback(row, outcome, reference),
+        body: motionPayQrisCallback(
+          row,
+          outcome,
+          ghost ?? row.providerReference,
+        ),
       };
     }
 
-    // Jatelindo joins here at Step 8, alongside rather than replacing.
+    if (row.provider === PROVIDER.JATELINDO) {
+      return {
+        url: '/callback/jatelindo/transfer',
+        body: jatelindoTransferCallback(row, outcome, {
+          systemReference: ghost ?? row.systemReference,
+          providerReference: row.providerReference,
+        }),
+      };
+    }
+
     return null;
   }
 }

@@ -47,9 +47,25 @@ export class UatConfig {
    * silently become a success.
    */
   get SWITCHBOARD_ENABLED(): boolean {
-    const value = this.configService.get<string>('UAT_SWITCHBOARD_ENABLED');
+    return this.flag('UAT_SWITCHBOARD_ENABLED');
+  }
 
-    return (value ?? '').trim().toLowerCase() === 'true';
+  /**
+   * Whether the Jatelindo fake answers an accepted transfer with an empty
+   * `DisbursementResponse`.
+   *
+   * Build-order Step 8d: the array is permitted by the schema and read at `[0]`
+   * with no non-empty check, so this turns a successful payout into a
+   * `TypeError` inside the client. Off by default, pointed at one request when
+   * you want to watch it, and kept afterwards so the handled version can be
+   * re-verified rather than taken on trust.
+   *
+   * A flag rather than a scenario band: the bands are the pay-in vocabulary,
+   * keyed on an amount the merchant chooses, and this is not a mood the
+   * provider is ever in - it is a probe.
+   */
+  get JATELINDO_EMPTY_DISBURSEMENT(): boolean {
+    return this.flag('UAT_JATELINDO_EMPTY_DISBURSEMENT');
   }
 
   /**
@@ -108,6 +124,20 @@ export class UatConfig {
     }
 
     return value;
+  }
+
+  /**
+   * A boolean that is false unless the value is literally `true`.
+   *
+   * `get`, not `getOrThrow`: the restrictive reading is the safe default for
+   * every flag here, so a typo or a missing key leaves the harness in its
+   * quietest state rather than quietly switching something on.
+   */
+  private flag(key: string): boolean {
+    return (
+      (this.configService.get<string>(key) ?? '').trim().toLowerCase() ===
+      'true'
+    );
   }
 
   private wholeRupiah(key: string): number {

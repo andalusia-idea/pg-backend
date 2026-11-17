@@ -142,10 +142,36 @@ export class JatelindoTransferService {
       });
     }
 
+    // `DisbursementResponse` is `Type.Array` with no `minItems`, so an empty one
+    // parses cleanly - and an `A01` carrying nothing is a shape the spec allows.
+    // Reading `[0]` unguarded made that a `TypeError`, which is caught by
+    // `DisbursementService.send` as a plain error with no
+    // `UpstreamTransferException` to read, so `outcomeUnknown` defaulted to
+    // false and the row was marked FAILED. For `A01` that is the one outcome the
+    // response-code table exists to prevent: the spec marks it `Need Check = Y`,
+    // and a merchant told their payout failed will retry and pay twice.
+    //
+    // Absent, not fatal. `bankReference` is nullable on the response schema and
+    // both MotionPay payout clients already send `null` - it is a reconciliation
+    // reference, not an outcome, and `jpaReferenceNo` identifies the transfer
+    // either way. `paymentStatus` still carries the provider's actual answer.
+    const bankReference =
+      payment.DisbursementResponse[0]?.transactionNumber ?? null;
+
+    if (bankReference === null) {
+      this.logger.warn({
+        msg: 'Jatelindo answered without a DisbursementResponse entry; no bankReference recorded',
+        systemReference: params.systemReference,
+        providerReference: payment.jpaReferenceNo,
+        responseCode: payment.status.responseCode,
+        status: paymentStatus,
+      });
+    }
+
     return {
       systemReference: params.systemReference,
       providerReference: payment.jpaReferenceNo,
-      bankReference: payment.DisbursementResponse[0].transactionNumber,
+      bankReference,
 
       ...beneficiary,
 

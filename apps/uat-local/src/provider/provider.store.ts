@@ -36,6 +36,16 @@ export interface FakeTransaction {
   /** Theirs, which we invent: jpaReferenceNo / transaction_id. */
   readonly providerReference: string;
   readonly amount: number;
+  /**
+   * Where a payout is going, for the rails that have a destination.
+   *
+   * Absent on `PURCHASE`, where money arrives from a scanner nobody addressed.
+   * Only the Jatelindo callback reads it, to echo the account back the way the
+   * provider does - so a blank would do no harm, and echoing is still the
+   * difference between a payload that could be a real one and a payload that
+   * obviously could not.
+   */
+  readonly destinationAccount?: string;
   readonly scenario: Scenario;
   readonly createdAt: number;
 

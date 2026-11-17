@@ -1,6 +1,7 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { CallbackDispatcher } from './callback.dispatcher';
+import { JatelindoFakeController } from './jatelindo/jatelindo.fake.controller';
 import { MotionPayFakeController } from './motionpay/motionpay.fake.controller';
 import { ProviderStore } from './provider.store';
 
@@ -13,13 +14,21 @@ import { ProviderStore } from './provider.store';
  * needs an import from `apps/transaction`, that is the signal the fake has
  * stopped being a fake.
  *
- * MotionPay QRIS only so far: the create routes are build-order Step 4 and the
- * dispatcher is Step 6. The Jatelindo transfer fake is Step 8 and joins this
- * module rather than replacing anything in it.
+ * **Two providers, one store, one dispatcher.** MotionPay carries QRIS pay-ins
+ * (build-order Step 4) and Jatelindo carries bank and e-wallet payouts (Step
+ * 8); the dispatcher is Step 6 and delivers for both. The store keeps its state
+ * in neutral terms precisely so one of it can serve two providers whose status
+ * vocabularies share nothing - `OUTCOME.SUCCESS` becomes MotionPay's
+ * `status: 'SUCCESS'` or Jatelindo's `A00` in the payload builders, and nowhere
+ * else.
+ *
+ * The two fakes share no helper of their own, which is deliberate: they imitate
+ * unrelated providers, and a helper they both reach for is the beginning of a
+ * harness where changing one silently changes the other.
  */
 @Module({
   imports: [HttpModule],
-  controllers: [MotionPayFakeController],
+  controllers: [MotionPayFakeController, JatelindoFakeController],
   providers: [ProviderStore, CallbackDispatcher],
   exports: [ProviderStore],
 })

@@ -18,10 +18,10 @@ that looks like a crash.
 
 ---
 
-## Where the tree stands (17 Nov 2026)
+## Where the tree stands (18 Nov 2026)
 
-Verified against the working tree and a live stack. **Steps 0-6 are done. Start
-at Step 7.**
+Verified against the working tree and a live stack. **Steps 0-8 are done. Start
+at Step 9**, which is a one-line env change.
 
 | Step | State |
 |---|---|
@@ -32,8 +32,8 @@ at Step 7.**
 | 4 - the fake MotionPay provider | Done, `8bb4947`. QRIS only: Transfer and Biller are not reachable in production, confirmed with the provider, so there is nothing to imitate |
 | 5 - the merchant's webhook receiver | Done, `d75ec42` |
 | 6 - the callback dispatcher | Done, `1011732`. Sighting 6 met 17 Nov: created 15:06:02, settled 15:06:20 - eighteen seconds, untouched |
-| 7 - the merchant crons | Not started |
-| 8 - Jatelindo | Not started. `JATELINDO_TRANSFER_BASE_URL` still points at the real sandbox |
+| 7 - the merchant crons | Done, `7935cc1`, but **the purchase half only**. Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. No payout cron: Step 7 asks for it second, and it had to wait for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host |
+| 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
 | 9 - turn the switchboard on | Not started, and it is now a one-line env change: `UAT_SWITCHBOARD_ENABLED=false` in [apps/uat-local/.env.test](../../apps/uat-local/.env.test) holds delivery to the `SUCCESS` band, and flipping it is the step. `scenarioFor` has assigned every band at create time since Step 4 |
 | 10 - watch settlement | Not started |
 
@@ -54,17 +54,33 @@ Sighting 1 was green - six 200s - on 3 Nov. That one line is from the log rather
 than re-measured: the stack is not running today, so everything else above was
 read off the tree instead.
 
+**Step 7 landed 17 Nov and Step 8 on 18 Nov.** `7935cc1` is the purchase cron;
+Step 8's fake, its callback payload and the `DisbursementResponse[0]` fix came
+with it. Two findings came out of Step 8 and both are about a payout that does
+not complete: the empty-array read marked an accepted `A01` as FAILED, which is
+the one transition the response-code table exists to prevent, and a payout that
+fails at create never releases the merchant's `RESERVED` balance at all. The
+first is fixed; the second is written up in 8f and is not.
+
 `apps/uat-local` is no longer a bare scaffold, though it is close: `AppModule`
 with `ScheduleModule.forRoot()`, a `DatabaseModule` wiring the auth, config and
 transaction Prisma clients, `GET /app`, `GET /health`, and
 `merchant/merchant-signer.ts` - a pure `signRequest` helper, with no controller
 and no module of its own. Still no `provider/`; that is Step 4.
 
-That paragraph described 9 Nov. The app now also carries `provider/` (the fake
-MotionPay, the scenario switchboard, the in-memory store and the callback
-dispatcher), `merchant/` (the signer, plus the webhook receiver and its store),
-and `config/` - a `UatConfig` in the `libs/configuration` shape, kept in the app
-because nothing outside it has any business reading those keys.
+That paragraph described 9 Nov. The app now carries `provider/` - the fake
+MotionPay QRIS service **and the fake Jatelindo transfer service**, the scenario
+switchboard, the in-memory store shared by both, and the callback dispatcher
+that delivers for both - plus `merchant/` (the signer, the webhook receiver and
+its store, and the purchase cron) and `config/`, a `UatConfig` in the
+`libs/configuration` shape kept in the app because nothing outside it has any
+business reading those keys.
+
+The two fakes share the store and the dispatcher and no helper of their own.
+That is deliberate rather than untidy: they imitate unrelated providers, so each
+hand-writes its own payload shapes and its own response codes. A fake that read
+our parser could not catch a wrong parser, and a helper both reached for would
+be the start of a harness where changing one silently changes the other.
 
 **Step 3 below is no longer the plan.** It says to onboard the seeded
 `merchant1@example.com` by hand, which is how Sighting 3 was first met. The tree
@@ -531,6 +547,72 @@ cron. Both at once and a failure belongs to either.
 **Goal.** A payout over a second provider. The config work comes first because
 without it the fake is never called and you will be debugging a working system.
 
+> **8a and 8b were already done, and both of their premises are now false.**
+> Measured against pgtest on 18 Nov 2026, after the inject chain. The original
+> text is kept below because the hazard 8b names is still real and still worth
+> reading - it just is not triggered here. The only work left in this step was
+> 8c and 8d.
+
+**What the tree actually holds.** `config.BaseFee` carries a `JATELINDO` /
+`TRANSFERBANK` / `DISBURSEMENT` row (id 3) and four `TRANSFEREWALLET_*` rows,
+written through the real admin path by `02.base-fee.spec.ts` rather than coming
+from `DEV_BASE_FEES`. `05.merchant-fee.spec.ts` then gives **every** merchant a
+`MerchantFee` pointing at each of them, so all four merchants route their bank
+and wallet payouts to `JATELINDO` and only `QRIS` / `PURCHASE` goes to
+MotionPay. The Jatelindo client is reached on the first payout anyone sends.
+
+That makes the old 8a reading dangerous rather than merely stale: it says the
+client is unreachable, which is the reason someone might think it safe to point
+a cron at that rail while `JATELINDO_TRANSFER_BASE_URL` still held the
+provider's real dev host. It did not, and that is why Step 7 ships with
+`UAT_DISBURSEMENT_PER_MINUTE=0`.
+
+**8b's hazard is untriggered, not absent.**
+[profile-provider.service.ts:54](../../apps/config/src/profile-provider/profile-provider.service.ts:54)
+still resolves with `findFirstOrThrow` and **no `orderBy`**, so two
+`MerchantFee` rows for one (payment method, transaction type) pairing would
+still make the provider depend on Postgres row order. The inject chain writes
+exactly one row per pairing per merchant, so nothing is ambiguous today. Keep
+it that way; one provider per pairing per merchant.
+
+**merchant3 is still the right merchant, for the opposite reason.** 8b said to
+use it *because* it has no `AgentShareholder` rows. It has four - agent 22 at
+`0.0000%` plus 23, 25 and 26 at 30/30/40 - and its `feeAgentFixed` is `30.00`,
+which is what makes it the best payout on the tree: the agent cut splits three
+ways and the 0% shareholder produces a `0.00` share that
+[the zero-leg fix](../batch/balance-explained.md) has to drop. The merchant with
+nothing to split is **merchant4**, whose agent fee is `0.00` and whose only
+shareholder is the 0% one - and whose fee service emits no `AGENT` fee detail
+at all, so it does not exercise the skip.
+
+### 8e. Funding the merchant, which Step 8 needs and does not mention
+
+`reserve()` draws on `AVAILABLE`, and a pay-in credits `PENDING`. Nothing moves
+one to the other except the settlement runner - so a freshly seeded merchant
+cannot pay out at all, and Sighting 8 is unreachable until settlement has run
+once for it. That is Step 10's machinery arriving early; it needs no code, only
+the wait.
+
+How long the wait is depends on the merchant's own policy, which
+`06.merchant-settlement-policy.spec.ts` sets differently for each on purpose:
+
+| Merchant | Mode | First `AVAILABLE` after a purchase |
+|---|---|---|
+| merchant1 | `FOLLOW_UPSTREAM` | 15:00 Jakarta the next day - MOTIONPAY/QRIS is `settlementOffset: 1` |
+| merchant2 | `SCHEDULED` 6-hourly + `FIXED_DELAY` | up to six hours |
+| merchant3 | `SCHEDULED`, twelve release times | up to an hour |
+| merchant4 | `INSTANT` | the next enqueuer tick, so ten minutes |
+
+So: send the merchant a QRIS purchase, let Step 6's dispatcher settle it, and
+wait for the window. **merchant4 is the one to use when you just want to see a
+payout work**; merchant3 is the one to use when you want to see the fee split.
+Keep the amount's last two digits in `00`-`69` so the purchase does not land in
+a band the switchboard is holding.
+
+---
+
+**The original 8a and 8b, for the reasoning rather than the instructions:**
+
 **8a. Nothing routes to Jatelindo today.** `DEV_BASE_FEES` in
 `config-dev.seed.ts` is MOTIONPAY for every rail, plus one INTERNAL row.
 Routing is the merchant's `MerchantFee` row - `resolveProvider` asks config,
@@ -571,10 +653,95 @@ get a `TypeError` inside the client instead of a handled upstream error. Fix it
 once you have watched it happen - a bug you have seen is worth more than a bug
 you were told about.
 
+> **Collected 18 Nov 2026**, and it is worse than "a `TypeError` instead of a
+> handled error". `DisbursementService.send` catches it, `recordFailure` finds
+> no `UpstreamTransferException` to read, so `outcomeUnknown` falls back to
+> `false` and the row is marked **FAILED** - for a transfer the provider
+> answered `A01 REQUESTED` to. `A01` is one of the three codes the spec marks
+> `Need Check = Y`, and the doc block on
+> `JATELINDO_STATUS_BY_RESPONSE_CODE` says exactly why that must never become
+> terminal: *a merchant told their payout failed will retry, paying the
+> recipient twice*. So the empty array fails in the one direction the whole
+> response-code table exists to prevent.
+>
+> Fixed by reading it as absent rather than fatal:
+> `DisbursementResponse[0]?.transactionNumber ?? null`, with a warning when it
+> fires. `bankReference` is nullable on `UpstreamTransferResponseSchema` and
+> both MotionPay payout clients already send `null` - it is a reconciliation
+> reference, not an outcome, and `jpaReferenceNo` identifies the transfer
+> either way. The same `[0]` read on `LoginResponse` in
+> `jatelindo-transfer.auth.service.ts` was already guarded by a
+> `length <= 0` check, so this was the one place it was missed.
+>
+> The probe stays, behind `UAT_JATELINDO_EMPTY_DISBURSEMENT` - off by default,
+> point it at one request. A flag rather than a scenario band because the bands
+> are the pay-in vocabulary and are keyed on an amount the *merchant* chooses,
+> and this is not a mood the provider is ever in.
+
 > **Sighting 8.** A payout from merchant3 reaches the Jatelindo fake, comes
 > back `A01` → `PENDING`, and settles on the next dispatcher tick via
 > `POST /callback/jatelindo/transfer`. Then the empty-array case throws, in
 > your own harness, on purpose.
+
+**Met 18 Nov 2026.** Four payouts, two rails, nothing touched after the POST.
+
+| | merchant | rail | `nominal` | `netNominal` | outcome |
+|---|---|---|---|---|---|
+| 1 | merchant4 | `TRANSFERBANK` | 75,000 | 76,700 | created 02:40:45, SUCCESS 02:41:00 |
+| 2 | merchant4 | `TRANSFERBANK` | 75,077 | 76,777 | refused `T40` at create → FAILED. See 8f |
+| 3 | merchant3 | `TRANSFERBANK` | 120,000 | 121,730 | created 03:00:52, SUCCESS 03:01:10 |
+| 4 | merchant3 | `TRANSFEREWALLET_DANA` | 60,000 | 60,510 | SUCCESS, wallet addressed by `phoneNo` |
+
+Payout 3 is the one worth reading in full, because it is the first live
+exercise of the **payout half** of the zero-leg fix (`36e7fb3`), which until
+now had only been typechecked. Seven `DisbursementFeeDetail` rows -
+MERCHANT 121,730, PROVIDER 1,500, INTERNAL 200 and one per shareholder at
+`0.00 / 9.00 / 9.00 / 12.00` - and seven `BalanceEntry` rows: the two
+`PAYOUT_RESERVED` legs, then `MERCHANT 29 RESERVED DEBIT 121,730`,
+`INTERNAL AVAILABLE CREDIT 200` and three agent credits. **Agent 22's `0.00`
+share is itemised in the fee rows and has no balance leg**, which is exactly
+the shape the fix asks for. `1,483,125 - 121,730 = 1,361,395` AVAILABLE,
+`RESERVED 0.00`, and `120,000 + 1,500 + 200 + 30 = 121,730` accounts for every
+rupiah that left.
+
+The whole-tree nightly check - sum the entries, compare to the snapshot - was
+exact on all sixteen holder/bucket rows afterwards, **including the stranded
+`MERCHANT 30 RESERVED 76,777.00`**. That is the point of 8f: the invariant is
+not the thing that will tell you.
+
+Also proved in passing, and worth knowing before Step 10: a seeded merchant's
+first `AVAILABLE` balance really does arrive on its own. merchant4's `INSTANT`
+policy settled a 500,000 purchase within one enqueuer tick, and merchant3's
+`SCHEDULED` policy settled three of them on its 03:00 Jakarta release - the
+first `SettlementBatch` rows on the tree, and the first balances to move bucket
+with nobody asking.
+
+**8f. One bug nobody knew about, which the step produced on its own.**
+
+Send a payout whose amount ends `75`-`77` - the `REJECTED_AT_CREATE` band - and
+the fake refuses it with `T40`. That is a *verified* rejection, so the row is
+correctly marked FAILED. But the merchant's money does not come back.
+
+`reserveTransactionAndBalance` moves `netNominal` from `AVAILABLE` to
+`RESERVED` before the provider is called. On failure,
+`DisbursementService.recordFailure` calls `markFailedFrom` → `markFailed`,
+which updates the row's status and **posts no balance movement at all**.
+`buildPayoutFailed` is the correct release and is correct, but its only caller
+is `postPayoutOutcome`, whose only caller is
+`DisbursementWebhookService.settle` - the callback path. A payout that dies at
+create never reaches it, and the gross amount sits in `RESERVED` for ever.
+
+Measured: disbursement 2, merchant 30, `netNominal` 76,777.00. Row FAILED, two
+`PAYOUT_RESERVED` entries and nothing else, snapshot left
+`RESERVED 76,777.00`. **The nightly entries-vs-snapshot check passes on this** -
+both sides agree - which is the case `buildPayoutCompleted`'s own comment warns
+about. Nothing writes `transaction.BalanceAdjustment` today either, so there is
+no recovery path at all.
+
+Not fixed here: it is a money path and wants its own change. The shape is for
+the mark-failed path to post `buildPayoutFailed` in the same `$transaction` as
+the status update. Double release is already prevented - `TERMINAL_STATUSES`
+includes FAILED, so a later callback exits at `done('already terminal')`.
 
 ---
 
@@ -655,7 +822,9 @@ DASHBOARD_BASE_URL=http://localhost:3000
 UAT_MERCHANT_EMAIL=merchant1@example.com
 
 UAT_PURCHASE_PER_MINUTE=6
-UAT_DISBURSEMENT_PER_MINUTE=3
+# Zero, not 3. There is no payout cron yet - see the Step 7 row above - and
+# raising this before one exists does nothing.
+UAT_DISBURSEMENT_PER_MINUTE=0
 UAT_AMOUNT_MIN=10000
 UAT_AMOUNT_MAX=500000
 
@@ -663,11 +832,35 @@ UAT_AMOUNT_MAX=500000
 # Step 6; Step 9 flips it. Anything but the literal "true" is false, so a
 # typo holds at Step 6 rather than releasing ten scenarios at once.
 UAT_SWITCHBOARD_ENABLED=false
+
+# The empty-array probe for the Jatelindo fake, which is Step 8d. True makes
+# an accepted single transfer answer A01 with an empty DisbursementResponse.
+# Point it at one request; it is not a mood the provider is ever in.
+UAT_JATELINDO_EMPTY_DISBURSEMENT=false
 ```
 
-Of those, `TRANSACTION_BASE_URL`, `DASHBOARD_BASE_URL` and
-`UAT_SWITCHBOARD_ENABLED` are in the file as of Step 6 and are read by
-`UatConfig`. The rest are Step 7's, and nothing reads them yet.
+**Every key above is live as of Step 8** and read by `UatConfig`, except
+`UAT_DISBURSEMENT_PER_MINUTE`, which exists on the class and has no injector
+yet - it is waiting for the payout cron. `UAT_AMOUNT_MIN` / `UAT_AMOUNT_MAX`
+feed the purchase cron's random amount, which keeps the last two digits inside
+the `SUCCESS` band while the switchboard is off; flipping the switchboard opens
+them to the full range.
+
+Both `.env.test` files need the app **restarted** after an edit:
+`nest start --watch` watches sources, not env files. Touching the app's
+`main.ts` after writing the env is enough, and in that order - the other way
+round picks up the code and leaves the old value in place, which reads as the
+flag not working.
+
+> **Restarting `uat-local` orphans every callback in flight.** `ProviderStore`
+> is a `Map` in the process, by design - *"the store dies with the process,
+> which is honest"* - so a restart loses every row whose callback has not been
+> delivered, and those transactions stay `PENDING` for ever. Nothing sweeps
+> them up; that is Step 9's `NEVER_DELIVERS` lesson arriving by accident.
+> Measured: twelve of the Step 7 cron's purchases were orphaned this way during
+> Step 8's five restarts, all of them in the `SUCCESS` band. Harmless, but if
+> you want a clean table afterwards, set `UAT_PURCHASE_PER_MINUTE=0` before a
+> run of env edits rather than after.
 
 **`apps/dashboard/.env.test`** - new file. Copy `.env.local` and change: `PORT`
 stays 3000, `NODE_ENV=test`, and the two DSNs point at `pgtest` with no
@@ -688,7 +881,7 @@ Worth keeping straight, so the harness is not trusted for more than it shows.
 | 4 | the client speaks the provider's create contract **as we read it** | that the provider agrees with our reading |
 | 6 | fees, balances and the merchant webhook, from one real callback | that the callback was genuine - nothing verifies it |
 | 7 | the system survives sustained traffic | concurrency; it is one process |
-| 8 | a second provider routes, and a real latent bug | Jatelindo's actual behaviour |
+| 8 | a second provider routes, and **two** real latent bugs | Jatelindo's actual behaviour |
 | 9 | our handling of nine failure modes | that these are the nine that happen |
 | 10 | settlement reads what transaction wrote | the multi-pod claim path |
 
