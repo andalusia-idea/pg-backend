@@ -9,6 +9,7 @@ import { DatabaseModule } from '../database';
 import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
 import { ProviderModule } from '../provider';
+import { MerchantModule } from '../merchant';
 
 @Module({
   controllers: [AppController, HealthController],
@@ -23,6 +24,7 @@ import { ProviderModule } from '../provider';
     DatabaseModule,
     ScheduleModule.forRoot(),
     ProviderModule,
+    MerchantModule,
   ],
 })
 export class AppModule {}
