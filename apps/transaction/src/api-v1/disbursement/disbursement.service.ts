@@ -172,6 +172,13 @@ export class DisbursementService {
    * holding it - and a merchant who believes that retries, paying twice. Those
    * rows stay PENDING for the status poll to resolve.
    *
+   * **That is also the line the reservation follows.** `markFailedFrom` gives
+   * the merchant their money back, because a verified failure means it never
+   * left; the `outcomeUnknown` path deliberately does not, because money that
+   * may be in flight must stay held. So the one decision below settles both the
+   * status and the balance, which is why it has to be made here rather than in
+   * either of the two places that act on it.
+   *
    * When the inquiry had already succeeded, its beneficiary is recorded first.
    * Without that, a payout that failed at the payment leg keeps the merchant's
    * unverified destination forever - exactly the row someone later has to

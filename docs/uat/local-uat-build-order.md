@@ -33,7 +33,7 @@ at Step 9**, which is a one-line env change.
 | 5 - the merchant's webhook receiver | Done, `d75ec42` |
 | 6 - the callback dispatcher | Done, `1011732`. Sighting 6 met 17 Nov: created 15:06:02, settled 15:06:20 - eighteen seconds, untouched |
 | 7 - the merchant crons | Done, `7935cc1`, but **the purchase half only**. Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. No payout cron: Step 7 asks for it second, and it had to wait for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host |
-| 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
+| 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own, now fixed too. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
 | 9 - turn the switchboard on | Not started, and it is now a one-line env change: `UAT_SWITCHBOARD_ENABLED=false` in [apps/uat-local/.env.test](../../apps/uat-local/.env.test) holds delivery to the `SUCCESS` band, and flipping it is the step. `scenarioFor` has assigned every band at create time since Step 4 |
 | 10 - watch settlement | Not started |
 
@@ -59,8 +59,9 @@ Step 8's fake, its callback payload and the `DisbursementResponse[0]` fix came
 with it. Two findings came out of Step 8 and both are about a payout that does
 not complete: the empty-array read marked an accepted `A01` as FAILED, which is
 the one transition the response-code table exists to prevent, and a payout that
-fails at create never releases the merchant's `RESERVED` balance at all. The
-first is fixed; the second is written up in 8f and is not.
+fails at create never releases the merchant's `RESERVED` balance at all. Both
+are fixed; the second one is 8f, and it brought the first spec this service has
+ever had with it.
 
 `apps/uat-local` is no longer a bare scaffold, though it is close: `AppModule`
 with `ScheduleModule.forRoot()`, a `DatabaseModule` wiring the auth, config and
@@ -738,10 +739,51 @@ both sides agree - which is the case `buildPayoutCompleted`'s own comment warns
 about. Nothing writes `transaction.BalanceAdjustment` today either, so there is
 no recovery path at all.
 
-Not fixed here: it is a money path and wants its own change. The shape is for
-the mark-failed path to post `buildPayoutFailed` in the same `$transaction` as
-the status update. Double release is already prevented - `TERMINAL_STATUSES`
-includes FAILED, so a later callback exits at `done('already terminal')`.
+> **Fixed 18 Nov 2026.** `markFailed` now writes the status and posts
+> `buildPayoutFailed` as one transaction, and **the transition out of PENDING is
+> what authorises the release**: `updateMany` with `status: PENDING` in its
+> `where` means only the call that actually moved the row may hand the money
+> back, so two concurrent failures cannot release twice.
+> `BalanceEntry`'s `(holderType, holderId, bucket, reason, sourceType, sourceId)`
+> unique key is the backstop, and the webhook's `TERMINAL_STATUSES` guard
+> already stops a late callback settling a row this finished.
+>
+> It still does not throw. The caller is on an error path with a merchant-facing
+> exception already chosen, so a throw would replace a precise 502 with a 500 -
+> and a rolled-back transaction leaves the row PENDING with its reservation
+> held, which is the recoverable state rather than the stranded one.
+>
+> Measured side by side in `pgtest`, which is the clearest way to read it:
+>
+> ```
+> sourceId  bucket     direction  amount     reason
+> 2         AVAILABLE  DEBIT      76777.00   PAYOUT_RESERVED   <- before the fix
+> 2         RESERVED   CREDIT     76777.00   PAYOUT_RESERVED      two legs, stranded
+>
+> 5         AVAILABLE  DEBIT      51777.00   PAYOUT_RESERVED   <- after the fix
+> 5         RESERVED   CREDIT     51777.00   PAYOUT_RESERVED
+> 5         AVAILABLE  CREDIT     51777.00   PAYOUT_FAILED        four legs, net zero
+> 5         RESERVED   DEBIT      51777.00   PAYOUT_FAILED
+> ```
+>
+> Both are `T40` refusals of a `…77` amount. Afterwards merchant 30's AVAILABLE
+> is unchanged at 341,023.00 and its RESERVED is 76,777.00 - disbursement 2's
+> leftover and nothing else.
+>
+> **The fix does not reach back.** Disbursement 2 is still stranded, and a
+> payout that failed before this change stays stranded wherever one exists. Only
+> `pgtest` has any: the dev database has no `DisbursementTransaction` rows at
+> all, so there is nothing to backfill outside the harness - and `pgtest` is
+> rebuilt by `test-db-all` anyway. Left in place as the before-and-after
+> exhibit.
+>
+> `disbursement-common.service.spec.ts` is new and guards it: seven cases over
+> the release, the atomicity, the PENDING gate and the swallowed failure. Five
+> of the seven fail against the previous code, which is the point - the other
+> two pass vacuously, because code that never posts a movement cannot post a
+> second one. It is also the first spec for any service that imports a generated
+> Prisma client; see the virtual mock at the top of the file for why that took a
+> workaround rather than a `moduleNameMapper` entry.
 
 ---
 

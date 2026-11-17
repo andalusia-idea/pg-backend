@@ -244,10 +244,16 @@ export class DisbursementCommonService {
   /**
    * Release the merchant's reservation the way the outcome demands.
    *
-   * The single entry point for a settled payout's balance effect - the webhook
-   * says what happened and this owns what that means, so leg shapes stay in one
-   * file. Runs on the caller's transaction, so it commits with the status
-   * update or not at all.
+   * The single entry point for a payout's balance effect: the caller says what
+   * happened and this owns what that means, so leg shapes stay in one file.
+   * Runs on the caller's transaction, so it commits with the status update or
+   * not at all.
+   *
+   * **Two callers, and both are needed.** `DisbursementWebhookService.settle`
+   * for an outcome the provider reported, and `markFailed` for a payout that
+   * died at create and never got as far as a callback. It had only the first
+   * for a while, which is how every failed-at-create payout came to leave its
+   * reservation stranded - see `markFailed`.
    */
   async postPayoutOutcome(
     tx: BalanceTx,
@@ -711,21 +717,91 @@ export class DisbursementCommonService {
     await this.markFailed(disbursementId, { [metadataKey]: detail });
   }
 
+  /**
+   * Write FAILED **and give the reservation back**, as one transaction.
+   *
+   * The release used to be missing entirely, and the money was simply gone:
+   * `reserveTransactionAndBalance` moves `netNominal` from AVAILABLE to
+   * RESERVED before the provider is called, and this method wrote the status and
+   * nothing else. `buildPayoutFailed` existed and was correct, but the only
+   * caller was `postPayoutOutcome`, and the only caller of *that* was the
+   * webhook - so a payout that died at create never reached it and left its
+   * whole gross amount stranded in RESERVED for ever. Measured at 76,777.00 on
+   * one payout during build-order Step 8; a merchant's spendable balance bleeds
+   * away one failed payout at a time, and nothing writes `BalanceAdjustment` to
+   * get it back.
+   *
+   * **The nightly check cannot see it**, which is why it survived: the two
+   * reservation entries and the snapshot agree perfectly. Nothing is
+   * inconsistent. The money is just in the wrong bucket with no way out.
+   *
+   * ## Why one transaction, and why the status is the gate
+   *
+   * Either both happen or neither does. Releasing without the status written
+   * would leave a PENDING payout the merchant can spend against twice; writing
+   * the status without the release is the bug above. A crash between two
+   * separate statements would produce one or the other.
+   *
+   * The transition out of PENDING is also what *authorises* the release:
+   * `updateMany` with `status: PENDING` in its `where` means only the call that
+   * actually moved the row may hand the money back, so two concurrent failures
+   * cannot release twice. `BalanceEntry`'s
+   * `(holderType, holderId, bucket, reason, sourceType, sourceId)` unique key is
+   * the backstop under that, and the webhook's own `TERMINAL_STATUSES` guard
+   * stops a late callback settling a row this already finished.
+   *
+   * ## Why it still does not throw
+   *
+   * The caller is on an error path and has a merchant-facing exception ready to
+   * raise; throwing from here would replace a precise 502 with a 500. A rolled
+   * back transaction leaves the row PENDING with its reservation held, which is
+   * the conservative state - recoverable by a status poll, unlike the FAILED
+   * row with stranded money this method exists to avoid.
+   */
   async markFailed(
     disbursementId: number,
     metadata: Record<string, unknown>,
   ): Promise<void> {
     try {
-      await this.prismaMaster.disbursementTransaction.update({
-        where: { id: disbursementId },
-        data: {
-          status: TransactionStatusEnum.FAILED,
-          metadata: metadata as Prisma.InputJsonValue,
-        },
+      await this.prismaMaster.$transaction(async (tx) => {
+        const moved = await tx.disbursementTransaction.updateMany({
+          where: { id: disbursementId, status: TransactionStatusEnum.PENDING },
+          data: {
+            status: TransactionStatusEnum.FAILED,
+            metadata: metadata as Prisma.InputJsonValue,
+          },
+        });
+
+        if (moved.count === 0) {
+          // Somebody else already took it out of PENDING - a callback that
+          // raced us, or a second failure on the same row. Whoever moved it
+          // owns the balance effect, so this must not add another one.
+          this.logger.warn({
+            msg: 'Payout was already out of PENDING; not marking it FAILED and not releasing anything',
+            disbursementId,
+          });
+          return;
+        }
+
+        // Read inside the transaction, and only the two figures the release
+        // needs. `netNominal` has to be the exact amount `reserve()` credited
+        // to RESERVED - recomputing it from the fee details would leave a
+        // residue in that bucket that the nightly check could not see either.
+        const row = await tx.disbursementTransaction.findUniqueOrThrow({
+          where: { id: disbursementId },
+          select: { merchantId: true, netNominal: true },
+        });
+
+        await this.postPayoutOutcome(tx, {
+          disbursementId,
+          merchantId: row.merchantId,
+          netNominal: row.netNominal,
+          isPaid: false,
+        });
       });
     } catch (error) {
       this.logger.error({
-        msg: 'Could not mark disbursement FAILED',
+        msg: 'Could not mark disbursement FAILED - it is still PENDING and its reservation is still held',
         disbursementId,
         error,
       });
