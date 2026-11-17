@@ -8,6 +8,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '../database';
 import { HealthController } from './health.controller';
 import { TerminusModule } from '@nestjs/terminus';
+import { ProviderModule } from '../provider';
 
 @Module({
   controllers: [AppController, HealthController],
@@ -21,6 +22,7 @@ import { TerminusModule } from '@nestjs/terminus';
     RedisModule,
     DatabaseModule,
     ScheduleModule.forRoot(),
+    ProviderModule,
   ],
 })
 export class AppModule {}
