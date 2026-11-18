@@ -20,8 +20,12 @@ that looks like a crash.
 
 ## Where the tree stands (18 Nov 2026)
 
-Verified against the working tree and a live stack. **Steps 0-8 are done. Start
-at Step 9**, which is a one-line env change.
+Verified against the working tree and a live stack. **Steps 0-9 are done. Start
+at Step 10.**
+
+The harness is now in the state Step 10 wants: `UAT_SWITCHBOARD_ENABLED=true`
+and the purchase cron running at six a minute, so the traffic settlement reads
+carries the full band mix rather than only successes.
 
 | Step | State |
 |---|---|
@@ -34,7 +38,7 @@ at Step 9**, which is a one-line env change.
 | 6 - the callback dispatcher | Done, `1011732`. Sighting 6 met 17 Nov: created 15:06:02, settled 15:06:20 - eighteen seconds, untouched |
 | 7 - the merchant crons | Done, `7935cc1`, but **the purchase half only**. Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. No payout cron: Step 7 asks for it second, and it had to wait for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host |
 | 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own, now fixed too. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
-| 9 - turn the switchboard on | Not started, and it is now a one-line env change: `UAT_SWITCHBOARD_ENABLED=false` in [apps/uat-local/.env.test](../../apps/uat-local/.env.test) holds delivery to the `SUCCESS` band, and flipping it is the step. `scenarioFor` has assigned every band at create time since Step 4 |
+| 9 - turn the switchboard on | Done, 18 Nov, and it really was the one env line - `scenarioFor` has stamped every band since Step 4, so no code changed. Sighting 9 met: ten amounts, ten outcomes, each matching the `scenario` the fake logged. One finding, 9a: `CREATE_TIMEOUT` leaves a row whose `providerReference` was never written, so the provider's SUCCESS callback can never match it and the purchase stays PENDING for ever |
 | 10 - watch settlement | Not started |
 
 Steps 0-2 landed on `dev` through PR #3 (`7d9a6c3`) and the commits around it:
@@ -815,6 +819,125 @@ most useful thing on this list.
 > **Sighting 9.** Ten amounts, ten different outcomes, each one matching the
 > `scenario` field logged by the fake.
 
+**Met 18 Nov 2026**, and it needed no code at all - `scenarioFor` has stamped
+every band since Step 4, so the step really was the one env line. Ten amounts
+on a 50,000 base, sent by hand with the purchase cron stopped so the table
+could be read. Every band matched the `scenario` the fake logged for it, which
+is the sighting's own wording.
+
+| Amount | Band | Create answered | Final status | Callbacks | Legs | Fee rows |
+|---|---|---|---|---|---|---|
+| 50,000 | `SUCCESS` | 201 `2009000` | SUCCESS | 1 | 3 | 5 |
+| 50,072 | `FAILED_BY_CALLBACK` | 201 `2009000` | FAILED | 1 | 0 | 0 |
+| 50,076 | `REJECTED_AT_CREATE` | 502 `5029000` | FAILED | 0 | 0 | 0 |
+| 50,080 | `EXPIRED` | 201 `2009000` | **EXPIRED** | 1 | 0 | 0 |
+| 50,084 | `DUPLICATE_CALLBACK` | 201 `2009000` | SUCCESS | **2** | 3 | 5 |
+| 50,088 | `OUT_OF_ORDER` | 201 `2009000` | **FAILED** | **2** | 0 | 0 |
+| 50,091 | `NEVER_DELIVERS` | 201 `2009000` | PENDING | 0 | 0 | 0 |
+| 50,094 | `UNKNOWN_REFERENCE` | 201 `2009000` | PENDING | 0 | 0 | 0 |
+| 50,096 | `CREATE_500` | 502 `5029000` | FAILED | 0 | 0 | 0 |
+| 50,099 | `CREATE_TIMEOUT` | 504 `5049000` after **15,020ms** | PENDING | 0 | 0 | 0 |
+
+The three worth reading closely:
+
+- **`DUPLICATE_CALLBACK` settled once.** Two callbacks, both acknowledged 200,
+  both kept in `WebhookLog` as evidence - and three balance legs, not six. The
+  terminal-status guard did its job, and the webhook log holding two rows while
+  the ledger holds one movement is exactly the shape that lets you tell "the
+  provider sent it twice" from "we counted it twice".
+- **`OUT_OF_ORDER` ended FAILED**, which is the right answer and the
+  uncomfortable one. The FAILED landed at `20:49:20.116` and the SUCCESS ten
+  seconds later at `20:49:30.031`; the second was ignored on the terminal-status
+  guard, so nobody was credited for a payment the provider's *last* word called
+  successful. Correct under the current contract - a terminal state is
+  terminal - but it is the case to re-read if a provider ever genuinely corrects
+  itself. The ten-second gap is `advance()`'s reschedule; without it the two
+  would arrive in the same tick and ordering would stop being observable.
+- **`NEVER_DELIVERS` never appears in the dispatcher log at all.** Its delivery
+  plan starts empty, so `due()` never returns it and the row simply sits
+  PENDING. Nothing sweeps it up. That is the honest answer to *"what closes out
+  a transaction nobody ever told us about"*, and it is still nothing.
+
+`UNKNOWN_REFERENCE` behaved as designed: the callback arrived carrying
+`transaction_id: GHOST-5e21fc57-…`, was recorded in `WebhookLog` with
+`transactionId: null`, and touched no transaction - while the real purchase,
+which *does* hold its own `providerReference`, stayed PENDING.
+
+### 9a. `CREATE_TIMEOUT` leaves a row no callback can ever match
+
+The design doc frames this band as *"the client gave up, but the transfer still
+goes on to succeed by callback - which is exactly what makes it dangerous"*. On
+the QRIS rail it is worse than that, and specifically so.
+
+The client timed out at 15,020ms and `isTransportFailure` was true, so
+`purchase-qris.service.ts` correctly refused to assert a failure and left the
+row PENDING - that part is right. But the throw happens before
+`recordUpstreamResult`, so **`providerReference` is never written**, and
+`purchase.webhook.service.ts` finds a purchase by `findPurchase(payload.providerReference)`
+and nothing else. The fake then delivered the SUCCESS at `20:49:20.131` and got
+a 200:
+
+```
+WebhookLog 1889   transactionId=null   providerReference='FM-1794948547465-0008'
+                  external_id='UAT-S9-CREATE_TIMEOUT-…'   status='SUCCESS'
+```
+
+So the QR exists upstream, a customer can scan and pay it, the provider reports
+the payment, and we log *"QRIS callback for an unknown transaction"* and do
+nothing. The row stays PENDING for ever and the merchant is never credited.
+That is the failure `createPurchase`'s own doc block says the write-first
+ordering exists to prevent - *"a customer can scan and pay a QR we have no
+record of"* - arriving through a door that ordering does not cover. The row
+exists; it is the *reference* that is missing.
+
+**There is no safe fallback from the callback alone**, which is why this is
+written down rather than patched. The callback's `external_id` is the
+**merchant's** reference, not ours - `MotionPayQrisService.createQRIS` says so
+outright, and `MotionPayQrisCallbackService` carries it into *both*
+`systemReference` and `merchantReference` with a `// TODO Check lagi nanti`
+beside it. `merchantReference` is unique only per merchant
+(`@@unique([merchantId, merchantReference])`) and the callback names no
+merchant, so matching on it could credit the wrong one. Nor can the provider be
+asked: the only lookup MotionPay documents is by `transaction_id`, the one value
+we never received.
+
+Recovery is therefore the next day's reconciliation file, keyed on
+`external_id` - which is what that field is for, and which does not exist yet.
+Worth settling before production, and the `TODO` in the callback service is
+pointing at it.
+
+### 9b. Then the cron, with the switchboard left on
+
+The ten cases above were sent by hand with the purchase cron stopped. Turning
+it back on is what the harness looks like from here: `randomAmount` stops
+clamping to the `SUCCESS` band the moment the switchboard is on, so the
+generator starts producing the mix on its own. Thirty-seven purchases over five
+and a half minutes:
+
+| Band | Purchases | Statuses reached |
+|---|---|---|
+| `SUCCESS` | 24 | PENDING, SUCCESS |
+| `EXPIRED` | 4 | EXPIRED |
+| `FAILED_BY_CALLBACK` | 4 | FAILED |
+| `NEVER_DELIVERS` | 2 | PENDING |
+| `OUT_OF_ORDER` | 1 | FAILED |
+| `CREATE_500` | 1 | FAILED |
+| `UNKNOWN_REFERENCE` | 1 | PENDING |
+
+65% success, which is the 70% the band widths were chosen for. Every band that
+came up reached the status its scenario calls for, with no hand-picked amounts
+involved. The three that did not appear - `REJECTED_AT_CREATE`,
+`DUPLICATE_CALLBACK`, `CREATE_TIMEOUT` - are three or four digits wide out of a
+hundred, so thirty-seven draws missing them is unremarkable; all three were
+exercised by hand above.
+
+One effect worth predicting before it surprises someone: a cron tick that draws
+a `CREATE_TIMEOUT` amount holds its own HTTP request for the full twenty
+seconds, and `waitForCompletion` means that tick does not overlap the next. So
+roughly one tick in fifty runs long and the rate dips for half a minute. That
+is the scenario being honest about what a hung provider costs a single-threaded
+generator, not a fault in the cron.
+
 ---
 
 ## Step 10 - Watch settlement
@@ -871,9 +994,10 @@ UAT_AMOUNT_MIN=10000
 UAT_AMOUNT_MAX=500000
 
 # The scenario switchboard. False delivers only the SUCCESS band, which is
-# Step 6; Step 9 flips it. Anything but the literal "true" is false, so a
-# typo holds at Step 6 rather than releasing ten scenarios at once.
-UAT_SWITCHBOARD_ENABLED=false
+# Step 6. Anything but the literal "true" is false, so a typo holds at Step 6
+# rather than releasing ten scenarios at once. Step 9 flipped it, and the
+# file now carries `true`; set it back to false to get a quiet table again.
+UAT_SWITCHBOARD_ENABLED=true
 
 # The empty-array probe for the Jatelindo fake, which is Step 8d. True makes
 # an accepted single transfer answer A01 with an empty DisbursementResponse.
