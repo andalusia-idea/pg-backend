@@ -20,12 +20,13 @@ that looks like a crash.
 
 ## Where the tree stands (18 Nov 2026)
 
-Verified against the working tree and a live stack. **Steps 0-9 are done. Start
-at Step 10.**
+Verified against the working tree and a live stack. **Steps 0-10 are done.** The
+build order is finished; what is left is the open findings each step recorded,
+not more steps.
 
-The harness is now in the state Step 10 wants: `UAT_SWITCHBOARD_ENABLED=true`
-and the purchase cron running at six a minute, so the traffic settlement reads
-carries the full band mix rather than only successes.
+The harness is left running the way Step 10 wants it:
+`UAT_SWITCHBOARD_ENABLED=true` and the purchase cron at six a minute, so the
+traffic settlement reads carries the full band mix rather than only successes.
 
 | Step | State |
 |---|---|
@@ -39,7 +40,7 @@ carries the full band mix rather than only successes.
 | 7 - the merchant crons | Done, `7935cc1`, but **the purchase half only**. Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. No payout cron: Step 7 asks for it second, and it had to wait for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host |
 | 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own, now fixed too. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
 | 9 - turn the switchboard on | Done, 18 Nov, and it really was the one env line - `scenarioFor` has stamped every band since Step 4, so no code changed. Sighting 9 met: ten amounts, ten outcomes, each matching the `scenario` the fake logged. One finding, 9a: `CREATE_TIMEOUT` leaves a row whose `providerReference` was never written, so the provider's SUCCESS callback can never match it and the purchase stays PENDING for ever |
-| 10 - watch settlement | Not started |
+| 10 - watch settlement | Done, 18 Nov. Sighting 10 met: run 318 appeared, was claimed by `LeRuccoLOQ`, and moved 122,097.98 from `PENDING` to `AVAILABLE` with nobody asking. Six findings, 10a-10f. **10a is the one to read**: the merchant carrying every transaction in Steps 6-9 has never had a settlement run at all, and none of the documented checks can see it |
 
 Steps 0-2 landed on `dev` through PR #3 (`7d9a6c3`) and the commits around it:
 `c4a6504` bound the harness and filled the allowlists, `8657115` corrected what
@@ -951,12 +952,332 @@ behind it you can watch `SettlementRun` rows appear, get claimed with a
 `AVAILABLE`. [docs/batch/](../batch/) describes the pipeline and was reviewed
 against the code on 2 Nov 2026.
 
-What this *cannot* show you is two pods racing for the same run. The
-`FOR UPDATE SKIP LOCKED` claim exists for that case, and one process cannot
-produce it.
+The step used to say a single process cannot show two pods racing for the same
+run. That turned out not to be true - two database sessions running the runner's
+own claim statement show it exactly, and 10e below does. What stays out of reach
+is two *runners* both doing work, which needs more runs in the queue at once
+than this harness produces.
 
 > **Sighting 10.** A settlement run claims work it found, and a balance moves
 > bucket without you asking it to.
+
+**Met 18 Nov 2026.** One purchase for merchant 30 - the only merchant on
+`INSTANT`, so its boundary is the current ten-minute slot - and then nothing but
+watching. Eight and a half minutes, no intervention, polled every 150ms:
+
+| Clock | What happened |
+|---|---|
+| 05:22:00.000 | purchase 4896 paid, SUCCESS by callback; net 122,097.98 credited to merchant 30's `PENDING` by `createdBy: 1` |
+| 05:30:00.030 | the enqueuer writes **run 318**: `PENDING`, `dueAt=05:30:00.000`, `attempts=0`, `claimedBy` null |
+| 05:30:30 | the runner claims it: `RUNNING`, `attempts=1`, **`claimedBy=LeRuccoLOQ`**, and purchase 4896 gets `batchSettlementId=117` and a `settlementAt` |
+| 05:30:30.026 | batch 117 posted: 1 transaction, gross 123,456.00, net 122,097.98, fee 1,358.02, `sweptFrom`=`sweptTo`=05:22:00 |
+| 05:30:30.047 | `DONE`, and merchant 30's snapshot has gone `PENDING 122,097.98 -> 0.00`, `AVAILABLE 341,023.00 -> 463,120.98` |
+
+Twenty-one milliseconds between the batch insert and `DONE`, thirty seconds
+after the boundary, eight and a half minutes after the payment. Both halves of
+the sighting, and the second one is the point: nobody asked for that bucket
+change.
+
+(The claim's own two timestamps are missing from the table above on purpose -
+they are on a different clock and cannot be placed in this sequence. See 10c.)
+
+The six `BalanceEntry` rows for purchase 4896 are the clearest thing the harness
+has produced:
+
+| Holder | Bucket | Dir | Amount | Reason | Batch | `createdBy` |
+|---|---|---|---|---|---|---|
+| MERCHANT 30 | PENDING | CREDIT | 122,097.98 | `PAYIN_CAPTURED` | - | 1 |
+| INTERNAL 0 | PENDING | CREDIT | 246.91 | `PAYIN_CAPTURED` | - | 1 |
+| MERCHANT 30 | PENDING | DEBIT | 122,097.98 | `MERCHANT_SETTLED` | 117 | 11 |
+| MERCHANT 30 | AVAILABLE | CREDIT | 122,097.98 | `MERCHANT_SETTLED` | 117 | 11 |
+| INTERNAL 0 | PENDING | DEBIT | 246.91 | `MERCHANT_SETTLED` | 117 | 11 |
+| INTERNAL 0 | AVAILABLE | CREDIT | 246.91 | `MERCHANT_SETTLED` | 117 | 11 |
+
+Two principals for the two halves of the money's life - `SYSTEM_01` for the
+capture, `SCHEDULER_01` for the release - and a `batchId` on the second half
+only. `MERCHANT_SETTLED` nets to zero per holder, which is the ledger's way of
+asserting that nothing was *earned* here, only moved. No agent legs, because
+merchant 30 has no agent fee rows; merchant 29's settled purchases carry ten
+legs each for the same reason the other way round.
+
+The whole-tree invariant was re-run afterwards: **zero drift rows across 16
+holder/bucket pairs and 12,445 entries.**
+
+One number worth keeping from the 117 runs on the tree, because it confirms a
+comment that reads like a guess. `RUNNER_CRON` says its 30-second offset "turns
+that worst case from one runner interval into about half a minute". Measured
+across 116 claims: **30.02s average, range 29.77-30.31s** - half a minute,
+every time. The offset is exactly tuned to the enqueuer's cadence, since every
+boundary the enqueuer fires on is an even minute, so a `30 */2` runner always
+lands 30 seconds later and never 90. (The half-second of spread is not
+scheduler jitter - it is the clock disagreement in 10c, which this measurement
+spans.)
+
+### 10a. The merchant carrying all the traffic has never been settled once
+
+This is the finding of the step, and it is invisible from the settlement side:
+117 runs, **all** `DONE`, zero failures, zero stale, every documented invariant
+clean. The pipeline looks perfect. Then:
+
+```sql
+SELECT p."merchantId", p."paymentMethodName", count(*) AS unsettled,
+       sum(p."netNominal") AS net, min(p."paidAt") AS oldest_paid,
+       (SELECT max(r."dueAt") FROM settlement."SettlementRun" r
+         WHERE r."merchantId" = p."merchantId"
+           AND r."paymentMethodName" IN (p."paymentMethodName", '*')) AS last_run_due
+FROM transaction."PurchaseTransaction" p
+WHERE p."batchSettlementId" IS NULL AND p."status" = 'SUCCESS' AND p."deletedAt" IS NULL
+GROUP BY 1, 2 ORDER BY 3 DESC;
+```
+
+At 12:35 Jakarta:
+
+| merchantId | method | unsettled | net | oldest paid | last run due |
+|---|---|---|---|---|---|
+| 27 | QRIS | 4,105 | 1,048,338,838.97 | 17 Nov 19:58 | **null** |
+| 30 | QRIS | 1 | 122,097.98 | 18 Nov 12:22 | 18 Nov 12:20 |
+
+That `null` is the whole thing. Merchant 27 is `merchant1@example.com`, the one
+the purchase cron drives, so it is carrying every transaction Steps 6-9
+produced - and **no settlement run has ever existed for the method it transacts
+in**. Its `BalanceSnapshot` has no `AVAILABLE` row at all: over a billion rupiah
+in `PENDING` and nothing anywhere else.
+
+**Nothing is broken.** Merchant 27's in-force policy is `FOLLOW_UPSTREAM` on
+`'*'`, the QRIS window settles at 15:00 Jakarta H+1, and the policy came into
+force at 21:22 on 17 Nov. So the most recent boundary is *yesterday's* 15:00,
+the enqueuer's own guard refuses it - *"never enqueue a boundary from before the
+terms came into force"* - and today's 15:00 has not happened yet. Replaying
+`mostRecentDueAt` against the live row:
+
+```
+now=18 12:20  dueAt=17 15:00:00.000  cutoff=17 00:00  SKIPPED (dueAt < effectiveFrom)
+now=18 15:00  dueAt=18 15:00:00.000  cutoff=18 00:00  enqueued
+```
+
+So the first QRIS run for this merchant appears at **15:00 Jakarta on 18 Nov**,
+a seventeen-and-a-half-hour gap by construction, and its cutoff is 18 Nov 00:00
+- which claims **526 purchases, Rp 135,698,870.58 net**, all of 17 Nov's
+traffic and none of today's. At `CLAIM_LIMIT = 500` that is also the first time
+`settle()`'s batch loop runs more than once: two batches, 500 then 26. Correct
+under the terms, and worth seeing before someone reads a flat `AVAILABLE` line
+as a settlement failure.
+
+**What the harness should take from it:** Step 10's premise - *"with real
+traffic behind it you can watch runs appear"* - does not hold for the merchant
+that has the traffic. Either wait for 15:00, or move merchant 27 to `INSTANT`
+and keep `FOLLOW_UPSTREAM` coverage on a merchant with no volume. That is a
+policy row, not code.
+
+**And the documented diagnostic cannot see it.** All four checks in
+[settlement-explained.md §11](../batch/settlement-explained.md) return zero rows
+here, including *"is money waiting that should have moved?"* - because its
+threshold is `paidAt < now() - interval '3 days'` and none of this traffic is
+three days old. Three days is a reasonable threshold for a T+1 world and the
+query is not wrong; it is blind for the first three days, and it answers a
+different question from *"has this merchant+method ever had a run at all"*,
+which is the condition that actually held. The query above is the complement and
+belongs beside it.
+
+### 10b. The enqueuer fans a wildcard policy onto payout-only methods
+
+`EnqueuerService.runsFor` expands a `FOLLOW_UPSTREAM` policy on `'*'` into one
+run per payment method that has an in-force `UpstreamSettlementWindow`, with no
+filter on what kind of method it is. Two consequences, both live:
+
+- **`TRANSFERBANK` has two windows, so every tick logs an error.**
+  `config.PaymentMethod` gives `TRANSFERBANK` the types
+  `{TOPUP, DISBURSEMENT, WITHDRAW}` - it is a payout rail and can never appear
+  on a `PurchaseTransaction`, which is the only table settlement claims from.
+  Its two windows are `JATELINDO`/`BATCH_1` at 13:00 and `BATCH_2` at 19:00:
+  deliberate, seeded, and the exact case the schema's own comment on
+  `@@unique([providerName, paymentMethodName, label, effectiveFrom])` says
+  `label` exists for - *"Teleanjar settles batch 1 at 13:00 and batch 2 at 19:00
+  ... without it the schedule becomes unrepresentable rather than merely
+  wrong"*. The enqueuer sees two rows for one method, cannot derive one
+  boundary, and logs at **error** level - one per wildcard merchant per tick, 144 a day
+  each, forever, about a method this pipeline was never going to settle. 138
+  such lines in the two settlement logs so far.
+- **A `DIRECTEWALLET` run exists for a merchant with no `DIRECTEWALLET`
+  transactions.** One window, so no ambiguity, so a run - whose claim then
+  filters `p."paymentMethodName" = 'DIRECTEWALLET'` and matches nothing. Only
+  one such run exists, because the end-of-day boundary deduplicates, so it is
+  waste rather than noise.
+
+The gap is named in the code already. `EligibilityWindow`'s doc block says
+`windowStart`/`windowEnd`/`windowStartDayOffset` are left out because *"choosing
+which window a payment falls into is the caller's job"* - and the caller never
+took the job: both the enqueuer and `SettlementService.resolveWindow` refuse
+when there is more than one window. The discriminator is sitting in three
+columns that `apps/dashboard` validates on write and nothing reads on settle.
+
+The narrowest fix is the fan-out, not the window logic: restrict `targets` to
+methods that can carry a purchase. Note settlement **cannot** read
+`config.PaymentMethod` to find out - `database.module.ts` deliberately leaves
+the auth and config Prisma providers commented out, budgeting roughly 80 of 100
+connections across the other apps - so it would be a derived set beside
+`isEWalletPaymentMethod` in `@app/microservice`, which settlement already
+imports. The three `{PURCHASE}` methods today are `QRIS`, `VIRTUALACCOUNT` and
+`DIRECTEWALLET`.
+
+**A latent one in the same area, not firing yet.** A `'*'` run's claim has no
+method filter at all - `(${run.paymentMethodName} = '*' OR ...)` is a constant
+`TRUE` - so a wildcard run claims purchases in methods that have their own, more
+specific policy. `resolveCutoff` orders *"most specific first"* precisely so the
+specific policy wins, and the fan-out defeats it: whichever run fires first
+takes the rows, under whichever terms *that* run resolved. Merchant 28 carries
+both shapes right now (`QRIS` `SCHEDULED` and `'*'` `FIXED_DELAY`) and happens
+to be safe, because its specific policy is the more generous of the two. Invert
+that - a `'*'` `INSTANT` policy with a `QRIS` delay layered on - and the
+wildcard run pays the merchant early, which is the one error the whole design
+exists to prevent. Merchant 28 has no purchases, so nothing has tested it.
+
+### 10c. Two clocks write settlement's timestamps, and nothing says which
+
+**54 of 117 runs record a `finishedAt` earlier than their `claimedAt`** - 46%, a
+negative duration. Run 318, the sighting's own run, is one of them:
+`claimedAt = 05:30:30.330922`, `finishedAt = 05:30:30.047`.
+
+The cause is not a bug in the runner. It is that settlement writes timestamps
+from two different clocks, and the split follows the raw-SQL boundary rather
+than anything intentional. Postgres `now()` yields microseconds; a JavaScript
+`Date` yields milliseconds, so the stored precision says which wrote each
+column - and it is unanimous (row counts move between queries, the cron is
+still running):
+
+| Column | Rows | With sub-millisecond digits | Written by |
+|---|---|---|---|
+| `SettlementRun.createdAt` | 117 | 0 | app - Prisma `@default(now())` |
+| `SettlementRun.claimedAt` | 117 | **117** | database - `now()` in `claimOneRun`'s raw SQL |
+| `SettlementRun.finishedAt` | 117 | 0 | app - `new Date()` in `drain` and `sweep` |
+| `SettlementBatch.postedAt` | 3 | 0 | app - Prisma `@default(now())` |
+| `PurchaseTransaction.settlementAt` | 5 | **5** | database - `now()` in `claimBatch`'s raw SQL |
+| `BalanceEntry.createdAt` | 12,406 | 0 | app - Prisma `@default(now())` |
+
+Prisma generates `@default(now())` client-side and sends the value, so the
+`DEFAULT CURRENT_TIMESTAMP` in the DDL never fires. The only two columns on the
+database clock are the two the code writes in `$queryRaw` - and one of them is
+`claimedAt`, the lease, which everything else is naturally compared against.
+
+Those two clocks do not agree. Five measurements against this container, each
+internally tight to 1-2ms of round trip:
+
+```
+05:23:59  pg - node =  +89 ms
+05:31:07  pg - node = +251 ms
+05:31:25  pg - node =  -18 ms
+05:31:45  pg - node = +164 ms
+05:32:05  pg - node = -136 ms
+```
+
+It wanders a few hundred milliseconds either side - ordinary for a Postgres in
+Docker Desktop, and not something to fix in the harness. A run that claims
+nothing finishes within about 20ms of being claimed, so the *sign* of its
+recorded duration is just the sign of the clock disagreement at that instant,
+which is why 46% is so close to a coin flip.
+
+It also means **run 318's timeline cannot be read as a sequence**. `postedAt`
+(.026) looks earlier than `claimedAt` (.330922) even though the batch is
+provably inserted *after* the claim - the two numbers are from different clocks,
+about 300ms apart at that moment. The §10 timestamp table in
+[settlement-explained.md](../batch/settlement-explained.md) lists all of these
+columns side by side as though they were comparable; it needs a column saying
+which clock each one is on.
+
+Production hosts on NTP would shrink the magnitude, not change the shape: for
+work that takes less time than the residual offset, a duration computed across
+the two still has an arbitrary sign. Any dashboard, alert or SLO built on
+`finishedAt - claimedAt` is reading noise. Cheapest fix for the one visible
+defect is to stamp `finishedAt` from the database, which makes that one
+subtraction mean something; the general rule is to never compute a duration
+across a Prisma-written and a raw-SQL-written timestamp. The sweeper's
+`staleBefore` comparison crosses the same two clocks, but against a 15-minute
+threshold a few hundred milliseconds is immaterial - worth knowing, not worth
+changing.
+
+### 10d. The EXPLAIN the implementation doc deferred to this step
+
+[settlement-batching-implementation.md](../batch/settlement-batching-implementation.md)
+leaves one question open on purpose: *"`ORDER BY "paidAt"` ... is not covered by
+this index, so expect a sort node. Whether that is worth a third index column
+depends on how many unsettled rows a real merchant accumulates - settle it with
+an `EXPLAIN` at Step 10 rather than guessing the column order now."* Merchant
+27's backlog is the first chance to run it. Claim predicate, real cutoff,
+`EXPLAIN (ANALYZE, BUFFERS)` inside a rolled-back transaction:
+
+```
+Limit (actual time=3.126..4.250 rows=500)
+  -> LockRows (actual time=3.125..4.214 rows=500)
+     -> Sort (actual time=3.102..3.125 rows=500)  Sort Key: p."paidAt"
+          Sort Method: quicksort  Memory: 49kB
+        -> Nested Loop Semi Join (actual time=0.045..2.985 rows=526)
+           -> Seq Scan on "PurchaseTransaction" p (actual time=0.007..2.422 rows=526)
+                Rows Removed by Filter: 4408
+           -> Index Scan using "PurchaseFeeDetail_purchaseId_idx" (loops=526)
+Execution Time: 4.324 ms
+```
+
+Two things, and the second answers the question:
+
+- **`PurchaseTransaction_unsettled_idx` was not used.** The planner took a
+  sequential scan and discarded 4,408 rows, on fresh statistics (autoanalyzed 25
+  minutes earlier). At 4,936 rows and 5.5MB the whole table is cheaper to scan
+  than to look up, so this says nothing against the index - only that the
+  harness cannot produce a table big enough to exercise it.
+- **The sort is 23µs of 4,324µs - half a percent.** All the time is in the scan.
+  So `paidAt` is not worth a third index column *for the ordering*; if it ever
+  earns a place it will be for the `< cutoff` range filter, which is what the
+  seq scan is spending its time on. The doc's question can be closed in that
+  narrow form - the `ORDER BY` is not the problem. How the index behaves at a
+  hundred thousand unsettled rows is still unmeasured, and this harness will not
+  measure it.
+
+### 10e. Two pods racing for the same run, after all
+
+The step said one process cannot produce this. It can, if the two pods are two
+database sessions running the runner's own claim statement - both inside
+transactions that are rolled back, timed into the thirty-second gap between the
+enqueuer writing a run and the runner claiming it:
+
+```
+05:30:02.032  queue: 1 PENDING run(s): 318
+05:30:02.058  pod-a claimed: run 318 (merchant 30)
+05:30:02.061  pod-b claimed: nothing  (returned in 3ms - skipped, not blocked)
+05:30:03.585  pod-b WITHOUT skip locked: canceling statement due to statement
+              timeout after 1522ms - it queued behind pod-a
+05:30:03.587  both rolled back - the run is still PENDING for the real runner
+```
+
+Both halves of the claim's design, positively. With `SKIP LOCKED` the second
+session is handed nothing **in 3 milliseconds** - it stepped past the locked row
+rather than waiting for it. With the clause removed and a 1.5-second
+`statement_timeout`, the identical statement is cancelled at 1,522ms, having
+queued behind the first exactly as `claimOneRun`'s comment predicts: *"the
+second skips past the row the first holds and takes a different merchant,
+instead of queueing behind it."*
+
+Then the rollback - and run 318 went on to be claimed by the real runner 27
+seconds later with `attempts = 1`. The race left no trace, which is the other
+thing worth knowing.
+
+What this still does not show is two runners both *working*: with one `INSTANT`
+merchant there is never more than one run in the queue, so the loser has nothing
+else to take. That needs several merchants falling due on the same instant.
+
+### 10f. A note on empty batches
+
+`SettlementBatch` ids have reached **117 for three surviving rows**. Every quiet
+run inserts a batch, claims nothing, and deletes it again - deliberate, and the
+code says why: *"returning from inside `$transaction` COMMITS - it does not roll
+back. Without this delete, every quiet tick would leave a zero-row batch, and
+most ticks are quiet."* The sequence is still consumed. So batch ids are mostly
+gaps, 97% of them here, and anything that reads an id as a count of batches will
+be wrong by a factor of forty. Harmless; surprising once.
+
+The same thing is visible per merchant: merchant 30 has **102 runs and two
+batches**. `INSTANT` costs 144 runs a day whatever the volume, which the code's
+own note on `INSTANT_SLOT_MINUTES` prices honestly - *"linear in cost if it
+spreads - shorten it only for a merchant actually paying for the speed."*
 
 ---
 
@@ -1049,7 +1370,7 @@ Worth keeping straight, so the harness is not trusted for more than it shows.
 | 7 | the system survives sustained traffic | concurrency; it is one process |
 | 8 | a second provider routes, and **two** real latent bugs | Jatelindo's actual behaviour |
 | 9 | our handling of nine failure modes | that these are the nine that happen |
-| 10 | settlement reads what transaction wrote | the multi-pod claim path |
+| 10 | settlement reads what transaction wrote, and `SKIP LOCKED` both skips and would otherwise block (10e) | two runners both *doing work* - one run in the queue means the loser has nothing to take |
 
 Two of those gaps are worth saying plainly, because they are open production
 risks rather than harness limitations:
