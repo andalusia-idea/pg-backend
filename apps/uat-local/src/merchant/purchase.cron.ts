@@ -1,11 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { randomInt } from 'node:crypto';
 import { firstValueFrom } from 'rxjs';
 import { UatConfig } from '../config';
 import { MerchantCredentialsService } from './merchant-credentials.service';
 import { signRequest } from './merchant-signer';
+import { bandedRandomAmount } from './random-amount';
 
 const ENDPOINT = '/v1/qr/qr-mpm-generate';
 
@@ -19,17 +19,6 @@ const TICKS_PER_MINUTE = 6;
  * asked for, which looks like a bug in the harness.
  */
 const EXPIRE_SECONDS = 900;
-
-/**
- * The highest last-two-digits that `scenarioFor` treats as the happy path.
- *
- * Transcribed from `provider/scenario.ts` rather than imported: the merchant
- * side is supposed to know nothing about the provider's switchboard, and a
- * merchant that imported the scenario table would be choosing its own
- * outcomes. Reading the number here and reading it there is the honest version
- * of a fake merchant that happens to send well-behaved amounts.
- */
-const SUCCESS_BAND_MAX = 69;
 
 /** How long a create may take before we stop waiting on it. */
 const POST_TIMEOUT_MS = 20_000;
@@ -182,50 +171,29 @@ export class PurchaseCron {
 
   /**
    * A random amount, kept in the provider's happy band while the switchboard
-   * is off.
+   * is off. The band rule itself lives in `random-amount.ts`, shared with the
+   * payout cron.
    *
-   * `scenarioFor` keys on `amount % 100`, so an unconstrained random amount
-   * puts roughly three purchases in ten outside the `SUCCESS` band - some
-   * refused at create, some held undelivered, and two in a hundred holding a
-   * connection open for twenty seconds. Sighting 7 is *"come back to a table of
+   * Why it matters here specifically: Sighting 7 is *"come back to a table of
    * settled transactions"*, and that table reads as a fault when a third of it
    * is stuck `PENDING` for reasons the step has not introduced yet.
-   *
-   * So the same flag governs both halves: switchboard off means well-behaved
-   * amounts and Step 7's quiet table, switchboard on means the full range and
-   * Step 9's nine failure modes.
-   *
-   * The hundreds digit is drawn first and the last two added, rather than
-   * drawing an amount and rewriting its tail - rewriting can push a value
-   * below `AMOUNT_MIN` when that bound does not end in `00`.
    */
   private randomAmount(): number {
-    const min = this.config.AMOUNT_MIN;
-    const max = this.config.AMOUNT_MAX;
+    const { amount, tooNarrow } = bandedRandomAmount(
+      this.config.AMOUNT_MIN,
+      this.config.AMOUNT_MAX,
+      this.config.SWITCHBOARD_ENABLED,
+    );
 
-    if (this.config.SWITCHBOARD_ENABLED) {
-      return min >= max ? min : randomInt(min, max + 1);
-    }
-
-    const lowHundred = Math.ceil(min / 100);
-    const highHundred = Math.floor((max - SUCCESS_BAND_MAX) / 100);
-
-    // Nothing in [min, max] can both sit on a hundred and leave room for the
-    // band - a range narrower than ~170 rupiah. Falling back to the bounds is
-    // better than throwing, and the scenario is then whatever it is.
-    if (lowHundred > highHundred) {
+    if (tooNarrow) {
       this.logger.warn({
         msg: 'Amount range is too narrow to stay inside the SUCCESS band',
-        min,
-        max,
+        min: this.config.AMOUNT_MIN,
+        max: this.config.AMOUNT_MAX,
       });
-      return min;
     }
 
-    return (
-      randomInt(lowHundred, highHundred + 1) * 100 +
-      randomInt(0, SUCCESS_BAND_MAX + 1)
-    );
+    return amount;
   }
 
   /**
