@@ -25,8 +25,70 @@ import { settlementCutoff } from '../policy';
  * transaction and write 300,000 balance entries in a single commit; with it,
  * each commit stays small and other pods keep working other merchants
  * meanwhile.
+ *
+ * **It has to be read together with `BATCH_TIMEOUT_MS`.** A batch is one
+ * interactive transaction, so the limit is only reachable if the work fits in
+ * the time that transaction is allowed. At 500 and Prisma's 5-second default
+ * it did not, and the consequence was not a slow settlement but no settlement
+ * at all - see `BATCH_TIMEOUT_MS`.
+ *
+ * **Lowered from 500 to 100 on 20 Nov 2026, and the reason is not commit
+ * size.** `BalanceService.post` updates each holder's snapshot row inside the
+ * transaction, and every purchase in a batch credits the same `INTERNAL`
+ * holder. Those row locks are held until commit, so while a batch runs, *no
+ * other transaction anywhere* can post a movement touching the internal
+ * holder - not another merchant's payin capture, not another pod's settlement.
+ * The length of a batch is a platform-wide stall on balance writes, and that,
+ * rather than the number of rows in one commit, is what the cap governs.
+ *
+ * Measured: one run of 4,695 purchases took 10 batches with a slowest batch of
+ * **7,486ms at 500 per batch** - about 15ms of in-transaction work per
+ * purchase, six legs across three holders. 100 puts the stall near 1.5 seconds
+ * and costs only the per-batch overhead of a few more commits, which is
+ * milliseconds against seconds. `settle()` logs `slowestBatchMs` on every run,
+ * so this is a number to re-read rather than re-guess.
  */
-const CLAIM_LIMIT = 500;
+const CLAIM_LIMIT = 100;
+
+/**
+ * How long one batch's transaction may run before Prisma kills it.
+ *
+ * **Explicit because the default is 5 seconds and a full batch does not fit.**
+ * Found on 20 Nov 2026 by the UAT harness, the first time this code met a real
+ * backlog: merchant 27 had 4,746 ripe purchases, and every run died at exactly
+ * five seconds with
+ *
+ *     Transaction API error: A query cannot be executed on an expired
+ *     transaction. The timeout for this transaction was 5000 ms, however
+ *     5001 ms passed since the start of the transaction.
+ *
+ * leaving the run `RUNNING`, zero batches written and nothing settled. It is
+ * worth being precise about how bad that is: the money was not delayed, it was
+ * unsettleable. Each new boundary produced a new run that failed identically,
+ * and the sweeper retried each one until `MAX_ATTEMPTS` and gave up. Nothing in
+ * the documented checks notices for three days.
+ *
+ * It had never been hit because no batch before that day held more than three
+ * purchases. A cap chosen for "keep the commit small" was never measured
+ * against the clock the commit actually runs under.
+ *
+ * The number is deliberately far above the measured cost of a full batch rather
+ * than close to it: the failure mode of being too low is a merchant who cannot
+ * be paid, and the cost of being too high is only that a genuinely stuck batch
+ * takes longer to give up. It is still well under the sweeper's
+ * `STALE_AFTER_MINUTES`, so a batch can never outlive the lease that protects
+ * it - which would let a second pod claim a run this one is still working.
+ */
+const BATCH_TIMEOUT_MS = 120_000;
+
+/**
+ * How long to wait for a connection from the pool before starting the batch.
+ *
+ * Prisma's default is 2 seconds and that is the wrong shape here: the runner
+ * drains runs back to back, so a busy pool is ordinary rather than exceptional,
+ * and failing to *start* a batch costs the same as failing to finish one.
+ */
+const BATCH_MAX_WAIT_MS = 10_000;
 
 /** The run fields this service needs. */
 export type SettlementRunTarget = {
@@ -87,24 +149,36 @@ export class SettlementService {
 
     let batches = 0;
     let claimed = 0;
+    let slowestBatchMs = 0;
 
     for (;;) {
+      const startedAt = Date.now();
       const count = await this.settleOneBatch(run, cutoff);
+      const batchMs = Date.now() - startedAt;
+
       if (count === 0) break;
 
       batches += 1;
       claimed += count;
+      slowestBatchMs = Math.max(slowestBatchMs, batchMs);
 
       // Under the cap means the claim exhausted what was ripe.
       if (count < CLAIM_LIMIT) break;
     }
 
+    // `slowestBatchMs` is here so the next person sizing `CLAIM_LIMIT` or
+    // `BATCH_TIMEOUT_MS` has a measurement instead of the guess that produced
+    // the 5-second failure. It is the slowest batch rather than the mean
+    // because the timeout applies per batch, so the worst one is the only one
+    // that can breach it.
     this.logger.log({
       msg: 'run settled',
       runId: run.id,
       merchantId: run.merchantId,
       batches,
       claimed,
+      slowestBatchMs,
+      batchTimeoutMs: BATCH_TIMEOUT_MS,
     });
 
     return { batches, claimed };
@@ -118,62 +192,73 @@ export class SettlementService {
    * row has to exist before the claim can name it. Insert it with zero totals,
    * claim against its id, then correct the totals once they are known. Nothing
    * outside this transaction ever observes the zero state.
+   *
+   * The transaction options are not decoration - see `BATCH_TIMEOUT_MS`. With
+   * Prisma's defaults a full batch cannot commit at all.
    */
   private async settleOneBatch(
     run: SettlementRunTarget,
     cutoff: Date,
   ): Promise<number> {
-    return this.prismaMaster.$transaction(async (tx) => {
-      const batch = await tx.settlementBatch.create({
-        data: { runId: run.id },
-        select: { id: true },
-      });
+    return this.prismaMaster.$transaction(
+      async (tx) => {
+        const batch = await tx.settlementBatch.create({
+          data: { runId: run.id },
+          select: { id: true },
+        });
 
-      const rows = await this.claimBatch(tx, run, cutoff, batch.id);
+        const rows = await this.claimBatch(tx, run, cutoff, batch.id);
 
-      if (rows.length === 0) {
-        // Returning from inside `$transaction` COMMITS - it does not roll back.
-        // Without this delete, every quiet tick would leave a zero-row batch,
-        // and most ticks are quiet.
-        await tx.settlementBatch.delete({ where: { id: batch.id } });
+        if (rows.length === 0) {
+          // Returning from inside `$transaction` COMMITS - it does not roll back.
+          // Without this delete, every quiet tick would leave a zero-row batch,
+          // and most ticks are quiet.
+          await tx.settlementBatch.delete({ where: { id: batch.id } });
 
-        return 0;
-      }
+          return 0;
+        }
 
-      const fees = await this.feeLegsByPurchase(tx, rows);
+        const fees = await this.feeLegsByPurchase(tx, rows);
 
-      let gross = new Decimal(0);
-      let net = new Decimal(0);
+        let gross = new Decimal(0);
+        let net = new Decimal(0);
 
-      for (const row of rows) {
-        const movement = this.buildSettlementMovement(run, row, batch.id, fees);
-        await this.balanceService.post(tx, movement);
+        for (const row of rows) {
+          const movement = this.buildSettlementMovement(
+            run,
+            row,
+            batch.id,
+            fees,
+          );
+          await this.balanceService.post(tx, movement);
 
-        gross = gross.plus(row.nominal);
-        net = net.plus(row.netNominal);
-      }
+          gross = gross.plus(row.nominal);
+          net = net.plus(row.netNominal);
+        }
 
-      const paidAts = rows.map((row) => row.paidAt.getTime());
+        const paidAts = rows.map((row) => row.paidAt.getTime());
 
-      await tx.settlementBatch.update({
-        where: { id: batch.id },
-        data: {
-          transactionCount: rows.length,
-          grossAmount: gross,
-          netAmount: net,
-          // Everything the holders did not receive: provider cut plus the
-          // merchant's own fee. Derived rather than summed from the detail
-          // rows, so it cannot disagree with the two totals beside it.
-          feeAmount: gross.minus(net),
-          // Descriptive, derived from what was claimed. Never used to select -
-          // the claim selects on `batchSettlementId IS NULL`, never a range.
-          sweptFrom: new Date(Math.min(...paidAts)),
-          sweptTo: new Date(Math.max(...paidAts)),
-        },
-      });
+        await tx.settlementBatch.update({
+          where: { id: batch.id },
+          data: {
+            transactionCount: rows.length,
+            grossAmount: gross,
+            netAmount: net,
+            // Everything the holders did not receive: provider cut plus the
+            // merchant's own fee. Derived rather than summed from the detail
+            // rows, so it cannot disagree with the two totals beside it.
+            feeAmount: gross.minus(net),
+            // Descriptive, derived from what was claimed. Never used to select -
+            // the claim selects on `batchSettlementId IS NULL`, never a range.
+            sweptFrom: new Date(Math.min(...paidAts)),
+            sweptTo: new Date(Math.max(...paidAts)),
+          },
+        });
 
-      return rows.length;
-    });
+        return rows.length;
+      },
+      { timeout: BATCH_TIMEOUT_MS, maxWait: BATCH_MAX_WAIT_MS },
+    );
   }
 
   /**
