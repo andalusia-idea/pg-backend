@@ -589,6 +589,45 @@ can push it below `AMOUNT_MIN` - and two copies of that would have drifted.
 
 The beneficiary is fixed: bank `014`, account `1234567890`, the pair inject
 step 07 and the Step 8 manual payouts already proved resolves.
+
+**It found a money bug four minutes after it was switched on**, which is the
+best argument for having built it. Twelve payouts, bands behaving as the table
+says - and then disbursement 16, band 78, the `EXPIRED` case that maps to
+`E18 TIMEOUT` and therefore `PENDING`:
+
+```
+08:23:20.043  PAYOUT_RESERVED  AVAILABLE DEBIT  15,678.00
+08:23:20.043  PAYOUT_RESERVED  RESERVED  CREDIT 15,678.00
+08:23:30.026  PAYOUT_FAILED    AVAILABLE CREDIT 15,678.00
+08:23:30.026  PAYOUT_FAILED    RESERVED  DEBIT  15,678.00
+```
+
+Released ten seconds after reserving, with the row still `PENDING`.
+`DisbursementWebhookService.settle` derived one boolean -
+`isPaid = status === SUCCESS` - so everything that was not SUCCESS took the
+failed branch, `PENDING` included. Its own doc block claimed *"every terminal
+status is written"*; nothing checked terminality. Safe while MotionPay was the
+only payout provider, because every status its callback could carry was
+terminal; Jatelindo's `A01`, `E99` and `E18` map to `PENDING` on purpose,
+because the provider is saying it cannot confirm.
+
+The danger is the direction of the error. The transfer may still complete, so
+the merchant has their money back as spendable `AVAILABLE` while the
+beneficiary gets paid - and because the row stays `PENDING`, a later terminal
+callback passes the guard and posts `PAYOUT_COMPLETED`, debiting a `RESERVED`
+bucket that no longer holds it. There is no non-negative check in
+`applyToSnapshot` and no constraint on `BalanceSnapshot`, so it simply goes
+negative. It is the mirror of `2427cc7`, which stranded money in `RESERVED` on
+a terminal row; this released it from a non-terminal one.
+
+Fixed by gating the balance movement on the existing `TERMINAL_STATUSES` list -
+already in that file, already applied to the stored row, just never to the
+incoming status - and guarded by
+`apps/transaction/src/api-v1/disbursement/disbursement.webhook.service.spec.ts`,
+which fails exactly one test against the pre-fix code. Verified live: a
+hand-sent band-80 payout took its callback at 08:31:10 and kept its
+reservation, logging *"Payout callback is not terminal; reservation stays
+held"*, and the cron produced a second one twenty seconds later.
 `accountHolderName` is deliberately omitted, because the service records *"the
 one the bank confirmed during inquiry - a merchant's own spelling is not
 evidence of who owns the account"*, and sending nothing is what exercises that
