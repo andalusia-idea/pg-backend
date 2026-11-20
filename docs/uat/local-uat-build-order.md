@@ -37,10 +37,10 @@ traffic settlement reads carries the full band mix rather than only successes.
 | 4 - the fake MotionPay provider | Done, `8bb4947`. QRIS only: Transfer and Biller are not reachable in production, confirmed with the provider, so there is nothing to imitate |
 | 5 - the merchant's webhook receiver | Done, `d75ec42` |
 | 6 - the callback dispatcher | Done, `1011732`. Sighting 6 met 17 Nov: created 15:06:02, settled 15:06:20 - eighteen seconds, untouched |
-| 7 - the merchant crons | Done, `7935cc1`, but **the purchase half only**. Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. No payout cron: Step 7 asks for it second, and it had to wait for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host |
+| 7 - the merchant crons | Done, both halves. Purchase cron `7935cc1`; Sighting 7 met 17 Nov: six a minute for six minutes, 42 settled, 210 fee rows and 126 balance legs nobody typed, and the entries-vs-snapshot invariant exact on all four holders. **Payout cron added 20 Nov** - see 7b. It waited three steps for 8c to repoint `JATELINDO_TRANSFER_BASE_URL` off the provider's real dev host, and it ships at zero because it needs a merchant holding a settled `AVAILABLE` balance |
 | 8 - Jatelindo | Done. 8a and 8b were already done by the inject chain **and both of their premises are now false** - see the step. 8c is the fake; 8d collected its bug and it was worse than advertised; 8f is a second bug the step produced on its own, now fixed too. Sighting 8 met 18 Nov: created 02:40:45, settled 02:41:00 |
 | 9 - turn the switchboard on | Done, 18 Nov, and it really was the one env line - `scenarioFor` has stamped every band since Step 4, so no code changed. Sighting 9 met: ten amounts, ten outcomes, each matching the `scenario` the fake logged. One finding, 9a: `CREATE_TIMEOUT` leaves a row whose `providerReference` was never written, so the provider's SUCCESS callback can never match it and the purchase stays PENDING for ever |
-| 10 - watch settlement | Done, 18 Nov. Sighting 10 met: run 318 appeared, was claimed by `LeRuccoLOQ`, and moved 122,097.98 from `PENDING` to `AVAILABLE` with nobody asking. Six findings, 10a-10f. **10a is the one to read**: the merchant carrying every transaction in Steps 6-9 has never had a settlement run at all, and none of the documented checks can see it |
+| 10 - watch settlement | Done, 18 Nov. Sighting 10 met: run 318 appeared, was claimed by `LeRuccoLOQ`, and moved 122,097.98 from `PENDING` to `AVAILABLE` with nobody asking. Six findings, 10a-10f. Findings 10a-10h. **10h is the one to read**: on 20 Nov, with two days of backlog behind it, merchant 27's settlement could not complete *at all* - a 500-purchase batch does not fit Prisma's 5-second default transaction timeout, so ~Rp 1.2bn was unsettleable rather than merely late. Fixed and verified the same afternoon. 10a is its quieter twin: the same merchant had never had a run at all, and none of the documented checks could see either |
 
 Steps 0-2 landed on `dev` through PR #3 (`7d9a6c3`) and the commits around it:
 `c4a6504` bound the harness and filled the allowlists, `8657115` corrected what
@@ -545,6 +545,54 @@ cron. Both at once and a failure belongs to either.
 > **Sighting 7.** Leave it running for ten minutes and come back to a table of
 > settled transactions with fee rows and balance movements, none of which you
 > typed. This is the thing you described wanting: watching it be fine.
+
+### 7b. The payout cron, three steps late
+
+Built 20 Nov. Step 7 asks for the disbursement cron second and it waited for
+Step 8c: until `JATELINDO_TRANSFER_BASE_URL` pointed at the local fake, a cron
+on merchant1's `TRANSFERBANK` rail would have sent unattended payout requests
+to the provider's real dev host every few seconds. `7bc4662` repointed it, and
+`DisbursementCron` is the piece that was outstanding.
+
+It mirrors `PurchaseCron` deliberately - ten-second tick, fractional budget
+accumulator, real HMAC signing through `MerchantEndpoint`, every failure logged
+and swallowed - and differs in the three places the payout rail differs.
+
+**It needs a merchant holding money, which is not the default state.** A payout
+reserves `netNominal` - the amount *plus* the fee - from `AVAILABLE`, while a
+payin only credits `PENDING` until settlement moves it. So a merchant whose
+purchases have not settled cannot pay out at all. `UAT_DISBURSEMENT_PER_MINUTE`
+therefore ships as `0`: turn it on *after* a settlement run has given the
+merchant an `AVAILABLE` balance, or the only output is one refusal every ten
+seconds. This is not hypothetical - see 10h, which is the reason the cron could
+not be exercised on merchant1 the day it was written.
+
+**There is no balance pre-check, on purpose.** A real merchant discovers it is
+out of money from the refusal, and that path - reservation declined, no
+transaction row, no balance movement - is worth exercising rather than
+skipping. Querying the balance first would also be a lie about what a merchant
+can see.
+
+**The same switchboard, different meanings.** The fake's
+`Transaction/SingleTransfer` runs `scenarioFor(amount % 100)` just as the QRIS
+create does, so the bands are shared - but `EXPIRED` has no translation on a
+payout rail, and the fake reports it as `E18 TIMEOUT`, which is SUSPECT and
+maps to `PENDING`. A payout whose amount ends `78`-`81` is a transaction that
+stays `PENDING` for ever, and that is correct rather than a fault. Worth
+knowing before reading the table.
+
+The band-selection arithmetic moved to `merchant/random-amount.ts` and both
+crons now share it. It was thirty lines with a subtle invariant - draw the
+hundreds digit first and add the tail, because rewriting a drawn amount's tail
+can push it below `AMOUNT_MIN` - and two copies of that would have drifted.
+`PurchaseCron` is otherwise unchanged.
+
+The beneficiary is fixed: bank `014`, account `1234567890`, the pair inject
+step 07 and the Step 8 manual payouts already proved resolves.
+`accountHolderName` is deliberately omitted, because the service records *"the
+one the bank confirmed during inquiry - a merchant's own spelling is not
+evidence of who owns the account"*, and sending nothing is what exercises that
+rule.
 
 ---
 
@@ -1278,6 +1326,219 @@ The same thing is visible per merchant: merchant 30 has **102 runs and two
 batches**. `INSTANT` costs 144 runs a day whatever the volume, which the code's
 own note on `INSTANT_SLOT_MINUTES` prices honestly - *"linear in cost if it
 spreads - shorten it only for a merchant actually paying for the speed."*
+
+### 10g. Two pods, for real - and the tick that got away
+
+10e showed the claim *statement* behaving correctly from two sessions. This is
+the thing 10e said was out of reach: two settlement **processes**, both running
+all three crons, competing for real work and writing real balance rows. Ten
+ticks of it, on 18 Nov between 06:20 and 07:50 UTC.
+
+**How to run a second pod.** Not a second `nest start` - that would run a second
+webpack build into the `dist/` the first pod's `--watch` owns. Run the bundle
+the first pod is already running, with three variables overridden:
+
+```bash
+NODE_ENV=test APP_NAME=SETTLEMENT-B PORT=3005 POD_NAME=pod-b \
+  node dist/apps/settlement/main.js
+```
+
+Check first that nothing under `apps/settlement/src` or the libs it imports is
+newer than `dist/apps/settlement/main.js`, or the two pods are running different
+code. The overrides take precedence because `@nestjs/config`'s
+`assignVariablesToProcess` filters `key => !(key in process.env)` - the env file
+only fills gaps, so a shell value wins. `APP_NAME` is used for nothing but the
+log filename, the Swagger title and log text, so overriding it keeps pod B's
+output in `logs/SETTLEMENT-B.1.log` instead of interleaving. `POD_NAME` is the
+point: pod A has none set and falls back to `hostname()`, so `claimedBy` reads
+`LeRuccoLOQ` against `pod-b`.
+
+**Confirm both crons before trusting the run.** Debug logging is off in this
+profile, so a quiet cron leaves no trace at all and a dead pod looks identical
+to an idle one. Pod B's first enqueuer tick, at 06:20:00, reproduced 10b's error
+verbatim - `several upstream windows for one method` for merchant 27's
+`TRANSFERBANK` - and its runner won a claim ten minutes later. Those two facts
+together are what "the pod is alive" means here.
+
+**The runner race.** One run falls due every ten minutes (merchant 30,
+`INSTANT`), and both runners fire on the same `30 */2` instant:
+
+| Run | `dueAt` | `claimedBy` | `claimedAt` | attempts |
+|---|---|---|---|---|
+| 341 | 06:20:00 | `LeRuccoLOQ` | 06:20:29.988 | 1 |
+| 351 | 06:30:00 | `pod-b` | 06:30:29.890 | 1 |
+| 361 | 06:40:00 | `pod-b` | 06:40:30.174 | 1 |
+| 371 | 06:50:00 | `LeRuccoLOQ` | 06:50:30.381 | 1 |
+| 382 | 07:00:00 | `pod-b` | 07:00:30.164 | 1 |
+| 392 | 07:10:00 | `pod-b` | 07:10:30.340 | 1 |
+| 401 | 07:20:00 | `pod-b` | 07:20:29.980 | 1 |
+| 411 | 07:30:00 | `LeRuccoLOQ` | 07:30:30.191 | 1 |
+| 421 | 07:40:00 | `LeRuccoLOQ` | 07:40:30.068 | 1 |
+| 431 | 07:50:00 | `pod-b` | 07:50:29.957 | 1 |
+
+Six to four, no pattern, every run `DONE` with no `failureReason`. **The column
+that matters is the last one: `attempts = 1` on every run, and
+`max(attempts) = 1` across every claimed run on the tree.** The claim increments
+`attempts` at the moment of taking rather than on failure - deliberately, so
+*"a pod that dies mid-run never gets to record anything"* - so a run both pods
+took would carry `2`. None does.
+
+**The unplanned half was the better find.** Two pods means two *enqueuers*, and
+`createMany({ skipDuplicates: true })` exists for exactly that: *"a duplicate is
+the expected outcome rather than an error: this pod's previous tick and the
+other pod's tick both compute the same boundary."* Until now there had only ever
+been one pod, so "the other pod's tick" was hypothetical. With both running,
+every tick produced **exactly one row per boundary** - never two, never none -
+and the enqueuer race went eight-two to pod A (pod B won 06:50 and 07:50).
+
+The pairing is the detail worth keeping: **pod B enqueued run 371 and pod A
+claimed it.** Writing down that work is needed and doing it are separate races,
+won by different processes, which is what the enqueuer's doc block says the
+split is for - *"if settling throws, the record that it was needed has already
+been committed and another pod picks it up."*
+
+The losing pod is not mute, and that turned out to matter. Pod B's
+`CronHeartbeat` surfaced twice:
+
+```
+06:40:00.039  enqueuer alive, everything already enqueued   idleTicks=3
+07:20:00.048  enqueuer alive, everything already enqueued   idleTicks=3
+```
+
+Three idle ticks after starting, a reset when it won 06:50, then three more.
+That is the `count === 0` branch's comment coming true word for word - *"every
+boundary already enqueued is the normal steady state"* - except the state is now
+the other process rather than this one's previous tick. And it is the heartbeat
+earning its keep on precisely the pod that needs it: one that does nothing
+visible for half an hour because it keeps losing, where otherwise *"a dead cron
+and a quiet one look identical."*
+
+Why the enqueuer race went eight-two one way and the runner race six-four the
+other, the logs do not settle; the error lines are stamped mid-tick rather than
+at the insert, so they are no guide to ordering. A millisecond of timer skew
+would explain it, and so would nothing in particular.
+
+**No errors from either pod beyond the one 10b already describes.** Across both
+logs for the whole two-pod window the only `error` lines are the `TRANSFERBANK`
+ambiguity - no unique-key violation from the colliding inserts, no deadlock, no
+serialisation failure. Which also prices 10b exactly: that error is **per pod
+per tick**, so a second pod doubles it, 288 lines a day rather than 144.
+
+**What is still not proven, and why.** Every one of those ten ticks had exactly
+one run in the queue, so the pod that lost had nothing else to take. The tick
+that would have changed that was **08:00**, when merchant 27's QRIS run, merchant
+28's QRIS run and merchant 30's slot all fell due on the same instant - three
+runs, two pods, the first chance for both to settle concurrently. It never
+happened: the host went down at **07:55:45**, four minutes and fifteen seconds
+short, taking both pods and the watcher with it. Pod A's last line is
+`sweeper alive, no stale runs`; the `UAT-LOCAL` and `TRANSACTION` logs stop in
+the same second.
+
+So **two runners both doing work at once remains unobserved** - not because one
+process cannot produce it, which 10g disproves, but because the one tick that
+would have is daily and the machine picked the wrong four minutes. Reproducing
+it needs only the two-pod recipe above plus a tick with two or more runs queued;
+`INSTANT` on a second merchant would manufacture one every ten minutes instead
+of waiting for a boundary to coincide.
+
+### 10h. A merchant with a real backlog could not be settled at all
+
+The most serious thing the harness has found, and it needed exactly what Step
+10 was built to provide: traffic nobody typed, left alone long enough to
+accumulate.
+
+On 20 Nov merchant 27 had **4,746 unsettled purchases, about Rp 1.2 billion**,
+two days of cron output. Its first settlement run claimed them and died five
+seconds later:
+
+```
+Transaction API error: A query cannot be executed on an expired transaction.
+The timeout for this transaction was 5000 ms, however 5001 ms passed since
+the start of the transaction.
+```
+
+Twice, to the second:
+
+| Run | claimed | failed | batches | purchases settled |
+|---|---|---|---|---|
+| 437 | 07:50:29.767 | 07:50:35 | 0 | 0 |
+| 443 | 08:00:30.331 | 08:00:35 | 0 | 0 |
+
+`settleOneBatch` wraps a whole batch in `prismaMaster.$transaction(...)`, and
+**Prisma's default interactive-transaction timeout is 5 seconds**. A
+`CLAIM_LIMIT` of 500 purchases does not fit in it, so the transaction rolled
+back, no batch was written, and the run was left `RUNNING` for the sweeper.
+
+**The consequence is worse than slowness: the money was unsettleable.** Not
+delayed - there was no future point at which it would have gone out. Each daily
+boundary creates a new run that fails identically; the sweeper revives each run
+until `MAX_ATTEMPTS` and then marks it `FAILED`. `pg_stat_activity` confirmed it
+during the failure: no settlement transaction in flight at all, nothing slow,
+just nothing.
+
+**Why nothing had caught it.** Every settlement this tree had ever performed
+handled one to three purchases - the largest batch on record was 3, and
+Sighting 10 settled exactly one. The cap was chosen for a good reason, which
+its own doc block states: without it *"a merchant with 50,000 unsettled
+purchases would hold row locks for the length of one transaction and write
+300,000 balance entries in a single commit"*. The reasoning is right. The
+number was simply never measured against the clock the commit runs under, and
+no test could have caught it, because the failure needs a backlog rather than a
+case.
+
+It is also quiet. The run sits `RUNNING`, and the documented *"is anything
+stuck?"* query only flags `RUNNING` older than fifteen minutes, while *"money
+waiting that should have moved"* has a three-day threshold. A merchant can be
+unsettleable for days before either notices - which is 10a's lesson arriving a
+second time.
+
+**The fix, and why it is two numbers rather than one.**
+
+`BATCH_TIMEOUT_MS` is now explicit, far above the measured cost of a full
+batch, and still well under the sweeper's `STALE_AFTER_MINUTES` - so a batch
+can never outlive the lease protecting it, which would let a second pod claim a
+run this one is still working. `BATCH_MAX_WAIT_MS` is raised off its 2-second
+default for the same reason: the runner drains runs back to back, so a busy
+pool is ordinary, and failing to *start* a batch costs what failing to finish
+one costs.
+
+But a bigger timeout alone would be the wrong fix, because of what the batch
+holds while it runs. `BalanceService.post` updates each holder's snapshot row
+inside the transaction, and **every purchase in a batch credits the same
+`INTERNAL` holder 0**. Those row locks are held until commit, so for the whole
+duration of a batch no other transaction anywhere - any merchant's payin
+capture, any other settlement - can post a movement touching the internal
+holder. The batch duration is a platform-wide stall on balance writes.
+
+So the cap is not about commit size, it is about how long everyone else waits,
+and it has been re-sized from the measurement rather than from the guess that
+produced the 5-second failure: **`CLAIM_LIMIT` is now 100**, which puts the
+stall near 1.5 seconds. `settle()` logs `slowestBatchMs` beside
+`batchTimeoutMs` on every run, so the next person changing either has a number
+instead of a guess.
+
+**Verified the same afternoon.** The sweeper returned run 443 to `PENDING` at
+08:15:45, the runner reclaimed it at 08:16:29 on `attempts=2`, and it ran under
+the fix:
+
+```
+run settled  runId=443  batches=10  claimed=4695  slowestBatchMs=7486  batchTimeoutMs=120000
+```
+
+Ten batches, 4,695 purchases, 53 seconds, slowest batch 7,486ms - so Prisma's
+5-second default was about a third short of what one 500-batch needs, and the
+15ms-per-purchase figure above comes from this run. Merchant 27 ended with
+`AVAILABLE = 1,196,254,185.50`, its first `AVAILABLE` row ever and matching the
+net the watcher had predicted before the run to the rupiah, with
+`PENDING = 27,958,352.25` left as the day's not-yet-ripe traffic.
+
+**The exposure is contained to this one place.** Every other `$transaction` in
+the tree does bounded per-request work - the two disbursement paths, both
+webhook services, the dashboard writes - and the seeds run offline. Settlement
+is the only caller whose work inside one transaction scales with how much data
+has accumulated rather than with the size of one request. It is also, now, the
+only caller that sets a timeout at all; the rest inherit the 5-second default
+and are fine today because none of them loop over a backlog.
 
 ---
 
