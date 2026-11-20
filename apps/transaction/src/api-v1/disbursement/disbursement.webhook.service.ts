@@ -87,9 +87,13 @@ export class DisbursementWebhookService {
       return done('already terminal');
     }
 
-    await this.settle(disbursement, payload);
+    const settled = await this.settle(disbursement, payload);
 
-    return done(`settled as ${payload.status}`);
+    return done(
+      settled
+        ? `settled as ${payload.status}`
+        : `recorded as ${payload.status}, not terminal`,
+    );
   }
 
   /**
@@ -98,12 +102,39 @@ export class DisbursementWebhookService {
    * Every terminal status is written, not only SUCCESS - a rejected payout that
    * stayed PENDING would never release the merchant's funds or show up as
    * needing attention.
+   *
+   * **A non-terminal callback writes the status and nothing else.** That
+   * sentence above used to be the intent and not the behaviour: `isPaid` was
+   * `status === SUCCESS`, so anything else - `PENDING` included - took the
+   * failed branch and handed the reservation back. Found on 20 Nov 2026 by the
+   * payout cron, four minutes after it was first switched on.
+   *
+   * It was safe while MotionPay was the only payout provider, because every
+   * status its callback could carry was terminal. Jatelindo breaks that on
+   * purpose: `A01`, `E99` and `E18` are the codes its spec marks
+   * `Need Check = Y`, and `jatelindoMapperResponseCode` maps them to `PENDING`
+   * precisely because the provider is saying *it cannot confirm the outcome*.
+   *
+   * Releasing on those is the worst available answer. The transfer may still
+   * complete, so the merchant gets their money back as spendable `AVAILABLE`
+   * while the beneficiary is paid - the loss the response-code table exists to
+   * prevent. It also leaves the row `PENDING`, so a later terminal callback
+   * passes the guard above and posts `PAYOUT_COMPLETED`, debiting a `RESERVED`
+   * bucket that no longer holds the money; nothing in `applyToSnapshot` or on
+   * `BalanceSnapshot` stops that going negative.
+   *
+   * So the reservation stays held until something terminal arrives. Held funds
+   * are recoverable - `2427cc7` is the matching lesson from the other
+   * direction, where a terminal row left its reservation stranded.
+   *
+   * @returns whether this callback settled the payout.
    */
   private async settle(
     disbursement: DisbursementRow,
     // confirmed: UpstreamTransferStatusResponseDto,
     payload: UpstreamWebhookTransferDto,
-  ): Promise<void> {
+  ): Promise<boolean> {
+    const isTerminal = TERMINAL_STATUSES.includes(payload.status);
     const isPaid = payload.status === TransactionStatusEnum.SUCCESS;
 
     // The provider's callback has no timestamp of its own, so the moment we
@@ -123,6 +154,10 @@ export class DisbursementWebhookService {
           }),
         },
       });
+      // The one branch that must not be taken on a non-terminal status: this
+      // is what releases or consumes the reservation.
+      if (!isTerminal) return;
+
       await this.common.postPayoutOutcome(tx, {
         disbursementId: disbursement.id,
         merchantId: disbursement.merchantId,
@@ -130,6 +165,21 @@ export class DisbursementWebhookService {
         isPaid,
       });
     });
+
+    if (!isTerminal) {
+      // Warn rather than log: the provider has told us it does not know what
+      // happened to real money, and the payout now needs either a later
+      // callback or a person.
+      this.logger.warn({
+        msg: 'Payout callback is not terminal; reservation stays held',
+        disbursementId: disbursement.id,
+        merchantId: disbursement.merchantId,
+        status: payload.status,
+        providerReference: payload.providerReference,
+      });
+
+      return false;
+    }
 
     this.logger.log({
       msg: 'Payout settled from callback',
@@ -143,6 +193,8 @@ export class DisbursementWebhookService {
       paidAt,
       payload.status,
     );
+
+    return true;
   }
 
   /**
